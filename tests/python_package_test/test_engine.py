@@ -3684,6 +3684,60 @@ def test_interaction_constraints():
     )
 
 
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Interaction constraints are not yet supported on the CUDA version"
+)
+def test_tree_interaction_constraints():
+    def check_consistency(est, tree_interaction_constraints):
+        feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
+        tree_df = est.trees_to_dataframe()
+        inter_found = set()
+        for tree_index in tree_df["tree_index"].unique():
+            tree_df_per_index = tree_df[tree_df["tree_index"] == tree_index]
+            feat_used = [
+                feat_to_index[feat] for feat in tree_df_per_index["split_feature"].unique() if feat is not None
+            ]
+            inter_found.add(tuple(sorted(feat_used)))
+        for feats_found in inter_found:
+            found = False
+            for real_constraints in tree_interaction_constraints:
+                if set(feats_found) <= set(real_constraints):
+                    found = True
+                    break
+            assert found is True
+
+    X, y = make_synthetic_regression(n_samples=400, n_features=30)
+    num_features = X.shape[1]
+    train_data = lgb.Dataset(X, label=y)
+    # check that tree constraint containing all features is equivalent to no constraints.
+    params = {"verbose": -1, "seed": 0}
+    est = lgb.train(params, train_data, num_boost_round=10)
+    pred1 = est.predict(X)
+    est = lgb.train(
+        dict(params, tree_interaction_constraints=[list(range(num_features))]), train_data, num_boost_round=10
+    )
+    pred2 = est.predict(X)
+    np.testing.assert_allclose(pred1, pred2)
+
+    # check that each tree is composed exactly of 1 feature
+    tree_interaction_constraints = [[i] for i in range(num_features)]
+    new_params = dict(params, tree_interaction_constraints=tree_interaction_constraints)
+    est = lgb.train(new_params, train_data, num_boost_round=100)
+    check_consistency(est, tree_interaction_constraints)
+
+    # check that each tree is composed exactly of 2 features contained in the constrained set
+    tree_interaction_constraints = [[i, i + 1] for i in range(0, num_features - 1, 2)]
+    new_params = dict(params, tree_interaction_constraints=tree_interaction_constraints)
+    est = lgb.train(new_params, train_data, num_boost_round=100)
+    check_consistency(est, tree_interaction_constraints)
+
+    # check if tree features interaction constraints works with multiple set of features
+    tree_interaction_constraints = [list(range(i, i + 5)) for i in range(0, num_features - 5, 5)]
+    new_params = dict(params, tree_interaction_constraints=tree_interaction_constraints)
+    est = lgb.train(new_params, train_data, num_boost_round=100)
+    check_consistency(est, tree_interaction_constraints)
+
+
 def test_linear_trees_num_threads(rng_fixed_seed):
     # check that number of threads does not affect result
     x = np.arange(0, 1000, 0.1)

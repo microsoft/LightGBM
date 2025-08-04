@@ -689,6 +689,20 @@ Learning Control Parameters
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
+-  ``tree_interaction_constraints`` :raw-html:`<a id="tree_interaction_constraints" title="Permalink to this parameter" href="#tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  controls which features can appear in the same tree
+
+   -  by default interaction constraints are disabled, to enable them you can specify
+
+      -  for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+
+      -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+
+      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+
+   -  any two features can only appear in the same tree only if there exists a constraint containing both features
+
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
    -  controls the level of LightGBM's verbosity
