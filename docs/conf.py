@@ -67,7 +67,7 @@ class IgnoredDirective(Directive):
 
 # -- General configuration ------------------------------------------------
 
-os.environ["LIGHTGBM_BUILD_DOC"] = "1"
+os.environ["LIGHTGBM_BUILD_DOC"] = "True"
 C_API = os.environ.get("C_API", "").lower().strip() != "no"
 RTD = bool(os.environ.get("READTHEDOCS", ""))
 RTD_VERSION = os.environ.get("READTHEDOCS_VERSION", "stable")
@@ -254,8 +254,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
         output = "\n".join([i.decode("utf-8") for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
+        print(output)
     except BaseException as e:
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
@@ -303,9 +302,8 @@ def generate_r_docs(app: Sphinx) -> None:
         output = "\n".join([i for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
-            print("Done building R-package documentation")
+        print(output)
+        print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
