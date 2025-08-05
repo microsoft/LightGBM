@@ -3,7 +3,6 @@
 set -e -E -u -o pipefail
 
 # defaults
-AZURE=${AZURE:-"false"}
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 SETUP_CONDA=${SETUP_CONDA:-"true"}
 
@@ -11,16 +10,19 @@ ARCH=$(uname -m)
 
 
 if [[ $OS_NAME == "macos" ]]; then
+    # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+    # versions of Xcode
+    macos_ver=$(sw_vers --productVersion)
+    if [[ "${macos_ver}" =~ 13. ]]; then
+        xcode_path="/Applications/Xcode_14.3.app/Contents/Developer"
+    else
+        xcode_path="/Applications/Xcode_15.0.app/Contents/Developer"
+    fi
+    sudo xcode-select -s "${xcode_path}" || exit 1
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
-        if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
-        fi
     else  # gcc
-        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
-        # versions of Xcode
-        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-        brew install 'gcc@12'
+        brew install 'gcc@14'
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
@@ -29,7 +31,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
-    if type -f apt 2>&1 > /dev/null; then
+    if type -f apt > /dev/null 2>&1; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
             ca-certificates \
@@ -42,10 +44,10 @@ else  # Linux
     fi
     CMAKE_VERSION="3.30.0"
     curl -O -L \
-        https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh \
+        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
     || exit 1
     sudo mkdir /opt/cmake || exit 1
-    sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
+    sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
     sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
 
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
@@ -142,13 +144,13 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
             -o miniforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh
-        sh miniforge.sh -b -p $CONDA
+            "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh"
+        sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda

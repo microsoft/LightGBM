@@ -24,7 +24,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
     , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path.
         out_list[["make_args"]] <- arg
     } else if (any(grepl("=", arg, fixed = TRUE))) {
       split_arg <- strsplit(arg, "=", fixed = TRUE)[[1L]]
@@ -121,7 +121,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     pattern = "make_args_from_build_script <- character(0L)"
     , replacement = paste0(
       "make_args_from_build_script <- c(\""
-      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , paste(parsed_args[["make_args"]], collapse = "\", \"")
       , "\")"
     )
     , x = install_libs_content
@@ -147,7 +147,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint: undesirable_function
+        require("processx")  # nolint: undesirable_function, unused_import.
       })
     })
     if (has_processx && on_windows) {
@@ -167,7 +167,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
           , "make this faster."
         ))
       }
-      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      cmd <- paste0(cmd, " ", paste(args, collapse = " "))
       exit_code <- system(cmd)
     }
 
@@ -321,7 +321,7 @@ for (submodule in list.dirs(
   , recursive = FALSE
 )) {
   # compute/ is a submodule with boost, only needed if
-  # building the R package with GPU support;
+  # building the R-package with GPU support;
   # eigen/ has a special treatment due to licensing aspects
   if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
     next
@@ -426,6 +426,6 @@ install_args <- c("CMD", "INSTALL", "--no-multiarch", "--with-keep.source", tarb
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command(install_cmd, install_args)
 } else {
-  cmd <- paste0(install_cmd, " ", paste0(install_args, collapse = " "))
+  cmd <- paste0(install_cmd, " ", paste(install_args, collapse = " "))
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }

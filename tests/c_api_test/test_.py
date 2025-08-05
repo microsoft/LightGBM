@@ -9,7 +9,7 @@ from scipy import sparse
 try:
     from lightgbm.basic import _LIB as LIB
 except ModuleNotFoundError:
-    print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
+    print("Could not import lightgbm Python-package, looking for lib_lightgbm at the repo root")
     if system() in ("Windows", "Microsoft"):
         lib_file = Path(__file__).absolute().parents[2] / "Release" / "lib_lightgbm.dll"
     else:
@@ -184,9 +184,9 @@ def test_booster(tmp_path):
     model_path = tmp_path / "model.txt"
     LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
-    is_finished = ctypes.c_int(0)
+    produced_empty_tree = ctypes.c_int(0)
     for i in range(1, 51):
-        LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
+        LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(produced_empty_tree))
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_int(0)
         LIB.LGBM_BoosterGetEval(

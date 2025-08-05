@@ -4,9 +4,9 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_ROCM "Enable ROCm-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
-option(USE_SANITIZER "Use santizer flags" OFF)
-option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
+option(USE_SANITIZER "Use sanitizer flags" OFF)
 set(
   ENABLED_SANITIZERS
   "address" "leak" "undefined"
@@ -15,12 +15,13 @@ set(
   "Semicolon separated list of sanitizer names, e.g., 'address;leak'. \
 Supported sanitizers are address, leak, undefined and thread."
 )
-option(BUILD_CLI "Build the 'lightbgm' command-line interface in addition to lib_lightgbm" ON)
+option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
+option(BUILD_CLI "Build the 'lightgbm' command-line interface in addition to lib_lightgbm" ON)
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(INSTALL_HEADERS "Install headers to CMAKE_INSTALL_PREFIX (e.g. '/usr/local/include')" ON)
-option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the Python package" OFF)
-option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
+option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the Python-package" OFF)
+option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R-package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
 cmake_minimum_required(VERSION 3.28)
@@ -59,10 +60,10 @@ if(__INTEGRATE_OPENCL)
   message(STATUS "Building library with integrated OpenCL components")
 endif()
 
-if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R)
-    # the Python and R package don't require the CLI
+if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R OR USE_SWIG)
+    # the SWIG wrapper, the Python and R packages don't require the CLI
     set(BUILD_CLI OFF)
-    # installing the R and Python package shouldn't place LightGBM's headers
+    # installing the SWIG wrapper, the R and Python packages shouldn't place LightGBM's headers
     # outside of where the package is installed
     set(INSTALL_HEADERS OFF)
 endif()
@@ -104,15 +105,16 @@ if(USE_SWIG)
   include_directories(JNI_INCLUDE_DIRS)
   include_directories($ENV{JAVA_HOME}/include)
   if(WIN32)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
       include_directories($ENV{JAVA_HOME}/include/win32)
   elseif(APPLE)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
       include_directories($ENV{JAVA_HOME}/include/darwin)
   else()
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
       include_directories($ENV{JAVA_HOME}/include/linux)
   endif()
+  file(MAKE_DIRECTORY "${LGBM_SWIG_DESTINATION_DIR}")
 endif()
 
 set(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
@@ -157,6 +159,11 @@ if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
+endif()
+
+if(USE_ROCM)
+    enable_language(HIP)
+    set(USE_OPENMP ON CACHE BOOL "ROCm requires OpenMP" FORCE)
 endif()
 
 if(USE_OPENMP)
@@ -223,21 +230,28 @@ if(USE_CUDA)
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "60" "61" "62" "70" "75")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.5")
         list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.8")
         list(APPEND CUDA_ARCHS "89")
         list(APPEND CUDA_ARCHS "90")
     endif()
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.8")
+        list(APPEND CUDA_ARCHS "100")
+        list(APPEND CUDA_ARCHS "120")
+    endif()
+    # Generate PTX for the most recent architecture for forwards compatibility
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    list(TRANSFORM CUDA_ARCHS APPEND "-real")
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
+    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -251,54 +265,34 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD 11)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
+endif()
 
-    set(
-      BASE_DEFINES
-      -DPOWER_FEATURE_WORKGROUPS=12
-      -DUSE_CONSTANT_BUF=0
-    )
-    set(
-      ALLFEATS_DEFINES
-      ${BASE_DEFINES}
-      -DENABLE_ALL_FEATURES
-    )
-    set(
-      FULLDATA_DEFINES
-      ${ALLFEATS_DEFINES}
-      -DIGNORE_INDICES
-    )
+if(USE_ROCM)
+    find_package(HIP)
+    include_directories(${HIP_INCLUDE_DIRS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
 
-    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
-    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
+    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
+    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
+    # avoid many warnings about missing overrides
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+    # avoid warning: shift count >= width of type in feature_histogram.hpp
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
 
-    function(add_histogram hsize hname hadd hconst hdir)
-      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(
-        histo${hsize}${hname}
-        PROPERTIES
-          CUDA_SEPARABLE_COMPILATION ON
-          CUDA_ARCHITECTURES ${CUDA_ARCHS}
-      )
-      if(hadd)
-        list(APPEND histograms histo${hsize}${hname})
-        set(histograms ${histograms} PARENT_SCOPE)
-      endif()
-      target_compile_definitions(
-        histo${hsize}${hname}
-        PRIVATE
-        -DCONST_HESSIAN=${hconst}
-        ${hdir}
-      )
-    endfunction()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
 
-    foreach(hsize _16_64_256)
-      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
-    endforeach()
+    if(USE_DEBUG)
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
+    else()
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    endif()
+    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
+
+    add_definitions(-DUSE_ROCM)
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -376,18 +370,8 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    set(
-      variables
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_MINSIZEREL
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_MINSIZEREL
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    # compiling 'fmt' on MSVC: "Unicode support requires compiling with /utf-8"
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /utf-8")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
@@ -509,7 +493,7 @@ endif()
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
-# use with the R package
+# use with the R-package
 if(__BUILD_FOR_R)
   list(APPEND API_SOURCES "src/lightgbm_R.cpp")
 endif()
@@ -555,84 +539,41 @@ if(USE_SWIG)
       OUTPUT_NAME "lib_lightgbm_swig"
   )
   if(WIN32)
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dll")
     if(MINGW OR CYGWIN)
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll")
     else()
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll")
     endif()
   elseif(APPLE)
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
-          com/microsoft/ml/lightgbm/osx/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
-          com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dylib")
   else()
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.so")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.so")
   endif()
+  add_custom_command(
+      TARGET _lightgbm_swig
+      POST_BUILD
+      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_DESTINATION_DIR}"
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_SWIG_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_LIB_DESTINATION_PATH}"
+      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+    )
 endif()
 
 if(USE_MPI)
@@ -670,14 +611,14 @@ if(USE_CUDA)
   set_target_properties(
     lightgbm_objs
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_SEPARABLE_COMPILATION ON
   )
 
   set_target_properties(
     _lightgbm
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_RESOLVE_DEVICE_SYMBOLS ON
   )
 
@@ -685,18 +626,10 @@ if(USE_CUDA)
     set_target_properties(
       lightgbm
       PROPERTIES
-        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_ARCHITECTURES "${CUDA_ARCHS}"
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
-
-  # histograms are list of object libraries. Linking object library to other
-  # object libraries only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on final targets here.
-  if(BUILD_CLI)
-    target_link_libraries(lightgbm PRIVATE ${histograms})
-  endif()
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
 if(WIN32)

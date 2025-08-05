@@ -2,6 +2,7 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 
@@ -9,6 +10,7 @@
 
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 namespace LightGBM {
 
@@ -16,7 +18,7 @@ template <bool USE_INDICES>
 __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score_t* cuda_hessians,
   const data_size_t num_data, const data_size_t* cuda_bagging_data_indices,
   double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double gradient = 0.0f;
   double hessian = 0.0f;
@@ -43,7 +45,7 @@ __global__ void CUDAInitValuesKernel2(
   const data_size_t* cuda_data_indices_in_leaf,
   hist_t* cuda_hist_in_leaf,
   CUDALeafSplitsStruct* cuda_struct) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   double thread_sum_of_gradients = 0.0f;
   double thread_sum_of_hessians = 0.0f;
   for (int block_index = static_cast<int>(threadIdx.x); block_index < num_blocks_to_reduce; block_index += static_cast<int>(blockDim.x)) {
@@ -88,7 +90,7 @@ __global__ void CUDAInitValuesKernel3(const int16_t* cuda_gradients_and_hessians
   const score_t* grad_scale_pointer, const score_t* hess_scale_pointer) {
   const score_t grad_scale = *grad_scale_pointer;
   const score_t hess_scale = *hess_scale_pointer;
-  __shared__ int64_t shared_mem_buffer[32];
+  __shared__ int64_t shared_mem_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   int64_t int_gradient = 0;
   int64_t int_hessian = 0;
@@ -119,7 +121,7 @@ __global__ void CUDAInitValuesKernel4(
   const data_size_t* cuda_data_indices_in_leaf,
   hist_t* cuda_hist_in_leaf,
   CUDALeafSplitsStruct* cuda_struct) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   double thread_sum_of_gradients = 0.0f;
   double thread_sum_of_hessians = 0.0f;
   int64_t thread_sum_of_gradients_hessians = 0;
@@ -180,23 +182,23 @@ void CUDALeafSplits::LaunchInitValuesEmptyKernel() {
   InitValuesEmptyKernel<<<1, 1>>>(cuda_struct_.RawData());
 }
 
-void CUDALeafSplits::LaunchInitValuesKernal(
+void CUDALeafSplits::LaunchInitValuesKernel(
   const double lambda_l1, const double lambda_l2,
   const data_size_t* cuda_bagging_data_indices,
   const data_size_t* cuda_data_indices_in_leaf,
   const data_size_t num_used_indices,
   hist_t* cuda_hist_in_leaf) {
   if (cuda_bagging_data_indices == nullptr) {
-    CUDAInitValuesKernel1<false><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel1<false><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       cuda_gradients_, cuda_hessians_, num_used_indices, nullptr, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData());
   } else {
-    CUDAInitValuesKernel1<true><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel1<true><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       cuda_gradients_, cuda_hessians_, num_used_indices, cuda_bagging_data_indices, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData());
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
-  CUDAInitValuesKernel2<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+  CUDAInitValuesKernel2<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
     lambda_l1, lambda_l2,
     num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_.RawData(),
@@ -208,7 +210,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
-void CUDALeafSplits::LaunchInitValuesKernal(
+void CUDALeafSplits::LaunchInitValuesKernel(
   const double lambda_l1, const double lambda_l2,
   const data_size_t* cuda_bagging_data_indices,
   const data_size_t* cuda_data_indices_in_leaf,
@@ -217,17 +219,17 @@ void CUDALeafSplits::LaunchInitValuesKernal(
   const score_t* grad_scale,
   const score_t* hess_scale) {
   if (cuda_bagging_data_indices == nullptr) {
-    CUDAInitValuesKernel3<false><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel3<false><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       reinterpret_cast<const int16_t*>(cuda_gradients_), num_used_indices, nullptr, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(), grad_scale, hess_scale);
   } else {
-    CUDAInitValuesKernel3<true><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel3<true><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       reinterpret_cast<const int16_t*>(cuda_gradients_), num_used_indices, cuda_bagging_data_indices, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(), grad_scale, hess_scale);
   }
 
   SynchronizeCUDADevice(__FILE__, __LINE__);
-  CUDAInitValuesKernel4<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+  CUDAInitValuesKernel4<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
     lambda_l1, lambda_l2,
     num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_.RawData(),

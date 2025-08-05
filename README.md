@@ -12,6 +12,7 @@ Light Gradient Boosting Machine
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![Link checks](https://github.com/microsoft/LightGBM/actions/workflows/linkchecker.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/linkchecker.yml)
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
+[![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![conda Version](https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda)](https://anaconda.org/conda-forge/lightgbm)
@@ -63,16 +64,6 @@ External (Unofficial) Repositories
 Projects listed here offer alternative ways to use LightGBM.
 They are not maintained or officially endorsed by the `LightGBM` development team.
 
-LightGBMLSS (An extension of LightGBM to probabilistic modelling from which prediction intervals and quantiles can be derived): https://github.com/StatMixedML/LightGBMLSS
-
-FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
-
-supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
-
-Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
-
-Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
-
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Nyoka (Python PMML converter): https://github.com/SoftwareAG/nyoka
@@ -82,6 +73,8 @@ Treelite (model compiler for efficient deployment): https://github.com/dmlc/tree
 lleaves (LLVM-based model compiler for efficient inference): https://github.com/siboehm/lleaves
 
 Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
+
+GBNet (use `LightGBM` as a [PyTorch Module](https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html)): https://github.com/mthorrell/gbnet
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
@@ -99,6 +92,8 @@ Shapash (model visualization and interpretation): https://github.com/MAIF/shapas
 
 dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
+supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
+
 SynapseML (LightGBM on Spark): https://github.com/microsoft/SynapseML
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
@@ -113,13 +108,31 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Ruby gem: https://github.com/ankane/lightgbm-ruby
+LightGBM Ruby (Ruby gem): https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
+LightGBM4J (JVM interface for LightGBM written in Scala): https://github.com/seek-oss/lightgbm4j
+
+Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
+
 lightgbm3 (Rust binding): https://github.com/Mottl/lightgbm3-rs
 
+MLServer (inference server for LightGBM): https://github.com/SeldonIO/MLServer
+
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
+
+FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
+
+MLJAR AutoML (AutoML on tabular data): https://github.com/mljar/mljar-supervised
+
+Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
+
+LightGBMLSS (probabilistic modelling with LightGBM): https://github.com/StatMixedML/LightGBMLSS
+
+mlforecast (time series forecasting with LightGBM): https://github.com/Nixtla/mlforecast
+
+skforecast (time series forecasting with LightGBM): https://github.com/JoaquinAmatRodrigo/skforecast
 
 `{bonsai}` (R `{parsnip}`-compliant interface): https://github.com/tidymodels/bonsai
 
@@ -128,6 +141,8 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
 
 `postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
+
+`pyodide` (run `lightgbm` Python-package in a web browser): https://github.com/pyodide/pyodide
 
 `vaex-ml` (Python DataFrame library with its own interface to LightGBM): https://github.com/vaexio/vaex
 
@@ -154,7 +169,7 @@ Yu Shi, Guolin Ke, Zhuoming Chen, Shuxin Zheng, Tie-Yan Liu. "Quantized Training
 
 Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye, Tie-Yan Liu. "[LightGBM: A Highly Efficient Gradient Boosting Decision Tree](https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree)". Advances in Neural Information Processing Systems 30 (NIPS 2017), pp. 3149-3157.
 
-Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6380-a-communication-efficient-parallel-algorithm-for-decision-tree)". Advances in Neural Information Processing Systems 29 (NIPS 2016), pp. 1279-1287.
+Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](https://proceedings.neurips.cc/paper/2016/hash/10a5ab2db37feedfdeaab192ead4ac0e-Abstract.html)". Advances in Neural Information Processing Systems 29 (NIPS 2016), pp. 1279-1287.
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
 

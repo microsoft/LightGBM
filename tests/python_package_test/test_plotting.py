@@ -154,7 +154,9 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     assert ax2.patches[2].get_facecolor() == (0, 0.5, 0, 1.0)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1.0, 1.0)  # b
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Cannot plot split value histogram, because feature 0 was not used in splitting"
+    ):
         lgb.plot_split_value_histogram(gbm0, 0)  # was not used in splitting
 
 
@@ -166,7 +168,7 @@ def test_plot_tree(breast_cancer_split):
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.plot_tree(gbm, tree_index=83)
 
     ax = lgb.plot_tree(gbm, tree_index=3, figsize=(15, 8), show_info=["split_gain"])
@@ -184,7 +186,7 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -229,7 +231,7 @@ def test_tree_with_categories_below_max_category_values(tmp_path):
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -274,7 +276,7 @@ def test_tree_with_categories_above_max_category_values(tmp_path):
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -329,7 +331,10 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
     node = bst.dump_model()["tree_info"][0]["tree_structure"]
     while "decision_type" in node:
         direction = lgb.plotting._determine_direction_for_numeric_split(
-            case_with_zero[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+            fval=case_with_zero[0][node["split_feature"]],
+            threshold=node["threshold"],
+            missing_type_str=node["missing_type"],
+            default_left=node["default_left"],
         )
         node = node["left_child"] if direction == "left" else node["right_child"]
     assert node["leaf_index"] == expected_leaf_zero
@@ -340,7 +345,10 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
         node = bst.dump_model()["tree_info"][0]["tree_structure"]
         while "decision_type" in node:
             direction = lgb.plotting._determine_direction_for_numeric_split(
-                case_with_nan[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+                fval=case_with_nan[0][node["split_feature"]],
+                threshold=node["threshold"],
+                missing_type_str=node["missing_type"],
+                default_left=node["default_left"],
             )
             node = node["left_child"] if direction == "left" else node["right_child"]
         assert node["leaf_index"] == expected_leaf_nan
@@ -377,10 +385,10 @@ def test_example_case_in_tree_digraph():
             edge_to_node = [e for e in gbody if f"-> split{split_index}" in e]
             if node["decision_type"] == "<=":
                 direction = lgb.plotting._determine_direction_for_numeric_split(
-                    example_case[0][node["split_feature"]],
-                    node["threshold"],
-                    node["missing_type"],
-                    node["default_left"],
+                    fval=example_case[0][node["split_feature"]],
+                    threshold=node["threshold"],
+                    missing_type_str=node["missing_type"],
+                    default_left=node["default_left"],
                 )
             else:
                 makes_categorical_splits = True

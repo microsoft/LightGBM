@@ -93,7 +93,7 @@ set to the iteration number of the best iteration.}
                    system, but be aware that getting the number of cores detected correctly requires package
                    \code{RhpcBLASctl} to be installed.
 
-                   This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+                   This parameter gets overridden by \code{num_threads} and its aliases under \code{params}
                    if passed there.
 
                    \emph{New in version 4.0.0}}
@@ -143,5 +143,8 @@ High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}
          in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
          a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
          or \code{objective} (passed into \code{params}).
+
+         \bold{NOTE:} if using \code{boosting_type="dart"}, any early stopping configuration will be ignored
+         and early stopping will not be performed.
 }
 

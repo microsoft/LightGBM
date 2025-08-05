@@ -13,19 +13,18 @@ exclude: |
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
     hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--settings-path", "python-package/pyproject.toml"]
+      - id: yamllint
+        args: ["--strict"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.5.7
+    rev: v0.12.5
     hooks:
       # Run the linter.
       - id: ruff
@@ -35,3 +34,18 @@ repos:
       - id: ruff-format
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.34.0
+    hooks:
+      - id: typos
+        args: ["--force-exclude"]
+        exclude: (\.gitignore$)|(^\.editorconfig$)
+  - repo: https://github.com/henryiii/validate-pyproject-schema-store
+    rev: 2025.07.14
+    hooks:
+      - id: validate-pyproject
+        files: python-package/pyproject.toml$

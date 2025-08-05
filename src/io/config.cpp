@@ -397,7 +397,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     }
   }
   if (device_type == std::string("gpu")) {
-    // force col-wise for gpu, and cuda version
+    // force col-wise for gpu version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
@@ -417,9 +417,9 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
   }
   // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
-    if (device_type != std::string("cpu")) {
+    if (device_type != std::string("cpu") && device_type != std::string("gpu")) {
       device_type = "cpu";
-      Log::Warning("Linear tree learner only works with CPU.");
+      Log::Warning("Linear tree learner only works with CPU and GPU. Falling back to CPU now.");
     }
     if (tree_learner != std::string("serial")) {
       tree_learner = "serial";
@@ -428,7 +428,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     if (zero_as_missing) {
       Log::Fatal("zero_as_missing must be false when fitting linear trees.");
     }
-    if (objective == std::string("regresson_l1")) {
+    if (objective == std::string("regression_l1")) {
       Log::Fatal("Cannot use regression_l1 objective when fitting linear trees.");
     }
   }
