@@ -104,7 +104,7 @@ def plot_importance(
         The plot with model's feature importances.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
     else:
         raise ImportError("You must install matplotlib and restart your session to plot importance.")
 
@@ -235,8 +235,8 @@ def plot_split_value_histogram(
         The plot with specified model's feature split value histogram.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import MaxNLocator
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+        from matplotlib.ticker import MaxNLocator  # noqa: PLC0415
     else:
         raise ImportError("You must install matplotlib and restart your session to plot split value histogram.")
 
@@ -342,7 +342,7 @@ def plot_metric(
         The plot with metric's history over the training.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
     else:
         raise ImportError("You must install matplotlib and restart your session to plot metric.")
 
@@ -468,7 +468,7 @@ def _to_graphviz(
       - https://graphviz.readthedocs.io/en/stable/api.html#digraph
     """
     if GRAPHVIZ_INSTALLED:
-        from graphviz import Digraph
+        from graphviz import Digraph  # noqa: PLC0415
     else:
         raise ImportError("You must install graphviz and restart your session to plot tree.")
 
@@ -812,8 +812,8 @@ def plot_tree(
         The plot with single tree.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.image
-        import matplotlib.pyplot as plt
+        import matplotlib.image  # noqa: PLC0415
+        import matplotlib.pyplot as plt  # noqa: PLC0415
     else:
         raise ImportError("You must install matplotlib and restart your session to plot tree.")
 
