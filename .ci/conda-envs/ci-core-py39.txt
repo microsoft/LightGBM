@@ -38,9 +38,7 @@ psutil=5.9.3
 pytest=7.4.*
 
 # https://github.com/microsoft/LightGBM/issues/6990
-graphite2=1.3.14=*_0
-#libglib=2.84.2
-#openjpeg=2.5.3=*_0
+#graphite2=1.3.14=*_0
 
 # other recursive dependencies, just
 # pinned here to help speed up solves
