@@ -173,6 +173,10 @@ conda create \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
 
+# print output of 'conda list', to help in submitting bug reports
+echo "conda list:"
+conda list -n ${CONDA_ENV}
+
 # shellcheck disable=SC1091
 source activate $CONDA_ENV
 

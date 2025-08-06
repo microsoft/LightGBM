@@ -86,6 +86,10 @@ $condaParams = @(
 )
 conda create @condaParams ; Assert-Output $?
 
+# print output of 'conda list', to help in submitting bug reports
+Write-Output "conda list:"
+conda list -n $env:CONDA_ENV
+
 if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
 }
