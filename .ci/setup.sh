@@ -154,8 +154,8 @@ if [[ "${TASK}" != "r-package" ]]; then
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda
-fi
 
-# print output of 'conda info', to help in submitting bug reports
-echo "conda info:"
-conda info
+    # print output of 'conda info', to help in submitting bug reports
+    echo "conda info:"
+    conda info
+fi
