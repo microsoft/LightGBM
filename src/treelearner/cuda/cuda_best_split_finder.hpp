@@ -182,6 +182,7 @@ class CUDABestSplitFinder {
   data_size_t min_data_in_leaf_;
   double min_sum_hessian_in_leaf_;
   double min_gain_to_split_;
+  int max_depth_;
   double cat_smooth_;
   double cat_l2_;
   int max_cat_threshold_;
