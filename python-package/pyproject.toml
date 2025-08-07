@@ -91,6 +91,15 @@ disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_directives = [
+    "autoclass",
+    "autofunction",
+    "autosummary",
+    "doxygenfile"
+]
+
 [tool.ruff]
 exclude = [
     "build",

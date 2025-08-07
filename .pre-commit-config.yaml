@@ -22,6 +22,15 @@ repos:
     hooks:
       - id: yamllint
         args: ["--strict"]
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v6.2.5
+    hooks:
+      - id: rstcheck
+        args: ["--config", "./python-package/pyproject.toml"]
+        additional_dependencies:
+          - breathe>=4.36.0
+          - sphinx>=8.1.3
+          - sphinx_rtd_theme>=3.0.1
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.12.5
