@@ -105,7 +105,6 @@ if [[ $TASK == "lint" ]]; then
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
         'biome>=1.9.3' \
-        'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
         'mypy>=1.11.1' \

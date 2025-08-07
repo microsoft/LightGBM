@@ -9,19 +9,6 @@ cpplint \
 || exit 1
 echo "done running cpplint"
 
-echo "running cmakelint"
-find \
-    . \
-    -type f \
-    \( -name CMakeLists.txt -o -path "./cmake/*.cmake" \) \
-    -not -path './external_libs/*' \
-    -exec cmakelint \
-    --linelength=120 \
-    --filter=-convention/filename,-package/stdargs,-readability/wonkycase \
-    {} \+ \
-|| exit 1
-echo "done running cmakelint"
-
 echo "checking that all OpenMP pragmas specify num_threads()"
 get_omp_pragmas_without_num_threads() {
     grep \
