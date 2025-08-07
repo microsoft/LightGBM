@@ -348,6 +348,21 @@ To check that a contribution to the package matches its style expectations, run 
 
     bash .ci/lint-python-bash.sh
 
+To run the tests locally and compute test coverage, run the following from the root of the repo.
+
+.. code:: sh
+
+    cmake -B build -S .
+    cmake --build build --target _lightgbm -j4
+    sh build-python.sh install --precompile
+    pytest \
+        --cov=lightgbm \
+        --cov-report="term" \
+        --cov-report="html:htmlcov" \
+        tests/python_package_test/
+
+Then open `htmlcov/index.html` to view a clickable coverage report.
+
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white
