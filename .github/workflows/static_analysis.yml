@@ -22,16 +22,27 @@ env:
   PYTHON_VERSION: '3.13'
 
 jobs:
-  test:
-    name: ${{ matrix.task }}
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - task: lint
-          - task: check-docs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          submodules: false
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.8.8
+        with:
+          environments: lint
+      - name: Run pre-commit
+        run: pixi run lint
+
+  python-check-docs:
+    name: python-check-docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,12 +52,13 @@ jobs:
       - name: Setup and run tests
         shell: bash
         run: |
-          export TASK="${{ matrix.task }}"
+          export TASK="check-docs"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
@@ -83,10 +95,11 @@ jobs:
               echo ""
               exit 1
           fi
+
   all-static-analysis-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, r-check-docs]
+    needs: [lint, python-check-docs, r-check-docs]
     steps:
       - name: Note that all tests succeeded
         uses: re-actors/alls-green@v1.2.2

@@ -14,6 +14,7 @@ FILES_TO_LINT <- list.files(
     , recursive = TRUE
     , include.dirs = FALSE
 )
+FILES_TO_LINT <- FILES_TO_LINT[!grepl(paste0("^", file.path(".", ".pixi", "")), FILES_TO_LINT)]
 
 # text to use for pipe operators from packages like 'magrittr'
 pipe_text <- paste0(
