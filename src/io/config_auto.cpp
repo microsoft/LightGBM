@@ -307,6 +307,20 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_norm",
   "label_gain",
   "lambdarank_position_bias_regularization",
+  "use_differential_feature_in_pairwise_ranking",
+  "pairwise_lambdarank_model_indirect_comparison",
+  "pairwise_lambdarank_model_conditional_rel",
+  "pairwise_lambdarank_indirect_comparison_above_only",
+  "pairwise_lambdarank_logarithmic_discounts",
+  "pairwise_lambdarank_hard_pairwise_preference",
+  "pairwise_lambdarank_train_pairing_approach",
+  "pairwise_lambdarank_valid_pairing_approach",
+  "pairwise_lambdarank_train_pairing_random_k",
+  "pairwise_lambdarank_valid_pairing_random_k",
+  "pairwise_lambdarank_train_pairing_top_n",
+  "pairwise_lambdarank_valid_pairing_top_n",
+  "pairwise_lambdarank_train_pairing_relevance_m",
+  "pairwise_lambdarank_valid_pairing_relevance_m",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -630,6 +644,34 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "lambdarank_position_bias_regularization", &lambdarank_position_bias_regularization);
   CHECK_GE(lambdarank_position_bias_regularization, 0.0);
 
+  GetBool(params, "use_differential_feature_in_pairwise_ranking", &use_differential_feature_in_pairwise_ranking);
+
+  GetBool(params, "pairwise_lambdarank_model_indirect_comparison", &pairwise_lambdarank_model_indirect_comparison);
+
+  GetBool(params, "pairwise_lambdarank_model_conditional_rel", &pairwise_lambdarank_model_conditional_rel);
+
+  GetBool(params, "pairwise_lambdarank_indirect_comparison_above_only", &pairwise_lambdarank_indirect_comparison_above_only);
+
+  GetBool(params, "pairwise_lambdarank_logarithmic_discounts", &pairwise_lambdarank_logarithmic_discounts);
+
+  GetBool(params, "pairwise_lambdarank_hard_pairwise_preference", &pairwise_lambdarank_hard_pairwise_preference);
+
+  GetString(params, "pairwise_lambdarank_train_pairing_approach", &pairwise_lambdarank_train_pairing_approach);
+
+  GetString(params, "pairwise_lambdarank_valid_pairing_approach", &pairwise_lambdarank_valid_pairing_approach);
+
+  GetInt(params, "pairwise_lambdarank_train_pairing_random_k", &pairwise_lambdarank_train_pairing_random_k);
+
+  GetInt(params, "pairwise_lambdarank_valid_pairing_random_k", &pairwise_lambdarank_valid_pairing_random_k);
+
+  GetInt(params, "pairwise_lambdarank_train_pairing_top_n", &pairwise_lambdarank_train_pairing_top_n);
+
+  GetInt(params, "pairwise_lambdarank_valid_pairing_top_n", &pairwise_lambdarank_valid_pairing_top_n);
+
+  GetInt(params, "pairwise_lambdarank_train_pairing_relevance_m", &pairwise_lambdarank_train_pairing_relevance_m);
+
+  GetInt(params, "pairwise_lambdarank_valid_pairing_relevance_m", &pairwise_lambdarank_valid_pairing_relevance_m);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -774,6 +816,20 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[lambdarank_position_bias_regularization: " << lambdarank_position_bias_regularization << "]\n";
+  str_buf << "[use_differential_feature_in_pairwise_ranking: " << use_differential_feature_in_pairwise_ranking << "]\n";
+  str_buf << "[pairwise_lambdarank_model_indirect_comparison: " << pairwise_lambdarank_model_indirect_comparison << "]\n";
+  str_buf << "[pairwise_lambdarank_model_conditional_rel: " << pairwise_lambdarank_model_conditional_rel << "]\n";
+  str_buf << "[pairwise_lambdarank_indirect_comparison_above_only: " << pairwise_lambdarank_indirect_comparison_above_only << "]\n";
+  str_buf << "[pairwise_lambdarank_logarithmic_discounts: " << pairwise_lambdarank_logarithmic_discounts << "]\n";
+  str_buf << "[pairwise_lambdarank_hard_pairwise_preference: " << pairwise_lambdarank_hard_pairwise_preference << "]\n";
+  str_buf << "[pairwise_lambdarank_train_pairing_approach: " << pairwise_lambdarank_train_pairing_approach << "]\n";
+  str_buf << "[pairwise_lambdarank_valid_pairing_approach: " << pairwise_lambdarank_valid_pairing_approach << "]\n";
+  str_buf << "[pairwise_lambdarank_train_pairing_random_k: " << pairwise_lambdarank_train_pairing_random_k << "]\n";
+  str_buf << "[pairwise_lambdarank_valid_pairing_random_k: " << pairwise_lambdarank_valid_pairing_random_k << "]\n";
+  str_buf << "[pairwise_lambdarank_train_pairing_top_n: " << pairwise_lambdarank_train_pairing_top_n << "]\n";
+  str_buf << "[pairwise_lambdarank_valid_pairing_top_n: " << pairwise_lambdarank_valid_pairing_top_n << "]\n";
+  str_buf << "[pairwise_lambdarank_train_pairing_relevance_m: " << pairwise_lambdarank_train_pairing_relevance_m << "]\n";
+  str_buf << "[pairwise_lambdarank_valid_pairing_relevance_m: " << pairwise_lambdarank_valid_pairing_relevance_m << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -916,6 +972,20 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"lambdarank_norm", {}},
     {"label_gain", {}},
     {"lambdarank_position_bias_regularization", {}},
+    {"use_differential_feature_in_pairwise_ranking", {}},
+    {"pairwise_lambdarank_model_indirect_comparison", {}},
+    {"pairwise_lambdarank_model_conditional_rel", {}},
+    {"pairwise_lambdarank_indirect_comparison_above_only", {}},
+    {"pairwise_lambdarank_logarithmic_discounts", {}},
+    {"pairwise_lambdarank_hard_pairwise_preference", {}},
+    {"pairwise_lambdarank_train_pairing_approach", {}},
+    {"pairwise_lambdarank_valid_pairing_approach", {}},
+    {"pairwise_lambdarank_train_pairing_random_k", {}},
+    {"pairwise_lambdarank_valid_pairing_random_k", {}},
+    {"pairwise_lambdarank_train_pairing_top_n", {}},
+    {"pairwise_lambdarank_valid_pairing_top_n", {}},
+    {"pairwise_lambdarank_train_pairing_relevance_m", {}},
+    {"pairwise_lambdarank_valid_pairing_relevance_m", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -1061,6 +1131,20 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"lambdarank_norm", "bool"},
     {"label_gain", "vector<double>"},
     {"lambdarank_position_bias_regularization", "double"},
+    {"use_differential_feature_in_pairwise_ranking", "bool"},
+    {"pairwise_lambdarank_model_indirect_comparison", "bool"},
+    {"pairwise_lambdarank_model_conditional_rel", "bool"},
+    {"pairwise_lambdarank_indirect_comparison_above_only", "bool"},
+    {"pairwise_lambdarank_logarithmic_discounts", "bool"},
+    {"pairwise_lambdarank_hard_pairwise_preference", "bool"},
+    {"pairwise_lambdarank_train_pairing_approach", "string"},
+    {"pairwise_lambdarank_valid_pairing_approach", "string"},
+    {"pairwise_lambdarank_train_pairing_random_k", "int"},
+    {"pairwise_lambdarank_valid_pairing_random_k", "int"},
+    {"pairwise_lambdarank_train_pairing_top_n", "int"},
+    {"pairwise_lambdarank_valid_pairing_top_n", "int"},
+    {"pairwise_lambdarank_train_pairing_relevance_m", "int"},
+    {"pairwise_lambdarank_valid_pairing_relevance_m", "int"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},
