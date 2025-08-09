@@ -1,7 +1,6 @@
 # coding: utf-8
 import copy
 import json
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -87,18 +86,6 @@ y_pred = bst.predict(X_test)
 auc_loaded_model = roc_auc_score(y_test, y_pred)
 print(f"The ROC AUC of loaded model's prediction is: {auc_loaded_model}")
 
-print("Dumping and loading model with pickle...")
-# dump model with pickle
-with open("model.pkl", "wb") as fout:
-    pickle.dump(gbm, fout)
-# load model with pickle to predict
-with open("model.pkl", "rb") as fin:
-    pkl_bst = pickle.load(fin)
-# can predict with any iteration when loaded in pickle way
-y_pred = pkl_bst.predict(X_test, num_iteration=7)
-# eval with loaded model
-auc_pickled_model = roc_auc_score(y_test, y_pred)
-print(f"The ROC AUC of pickled model's prediction is: {auc_pickled_model}")
 
 # continue training
 # init_model accepts:
