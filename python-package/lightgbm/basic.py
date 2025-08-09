@@ -3706,6 +3706,11 @@ class Booster:
         return this
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
+        _log_warning(
+            "Starting from version 4.0.0, LightGBM models saved as pickle files might contain "
+            "malicious code and lead to security risks. "
+            "Consider loading models from text files to avoid this issue."
+        )
         model_str = state.get("_handle", state.get("handle", None))
         if model_str is not None:
             handle = ctypes.c_void_p()
