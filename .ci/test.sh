@@ -116,7 +116,7 @@ if [[ $TASK == "lint" ]]; then
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
     echo "Linting Python and bash code"
-    bash ./.ci/lint-python-bash.sh || exit 1
+    bash ./.ci/run-pre-commit-mypy.sh || exit 1
     echo "Linting R code"
     Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
     echo "Linting C++ code"

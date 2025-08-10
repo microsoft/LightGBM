@@ -346,7 +346,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    bash .ci/lint-python-bash.sh
+    bash .ci/run-pre-commit-mypy.sh
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
