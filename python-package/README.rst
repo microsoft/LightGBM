@@ -348,13 +348,11 @@ To check that a contribution to the package matches its style expectations, run 
 
     bash .ci/lint-python-bash.sh
 
-To run the tests locally and compute test coverage, run the following from the root of the repo.
+To run the tests locally and compute test coverage, install the Python package using one of the options mentioned above.
+Then run the following from the root of the repo.
 
 .. code:: sh
 
-    cmake -B build -S .
-    cmake --build build --target _lightgbm -j4
-    sh build-python.sh install --precompile
     pytest \
         --cov=lightgbm \
         --cov-report="term" \
