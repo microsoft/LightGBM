@@ -68,6 +68,10 @@ conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
+# print output of 'conda info', to help in submitting bug reports
+Write-Output "conda info:"
+conda info
+
 if ($env:PYTHON_VERSION -eq "3.9") {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py39.txt"
 } else {
@@ -81,6 +85,10 @@ $condaParams = @(
     "python=$env:PYTHON_VERSION[build=*_cp*]"
 )
 conda create @condaParams ; Assert-Output $?
+
+# print output of 'conda list', to help in submitting bug reports
+Write-Output "conda list:"
+conda list -n $env:CONDA_ENV
 
 if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
