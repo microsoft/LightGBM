@@ -105,7 +105,6 @@ if [[ $TASK == "lint" ]]; then
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
         'biome>=1.9.3' \
-        'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
         'mypy>=1.11.1' \
@@ -160,10 +159,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
-elif [[ $PYTHON_VERSION == "3.8" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py38.txt"
+if [[ $PYTHON_VERSION == "3.9" ]]; then
+    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py39.txt"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
@@ -174,6 +171,10 @@ conda create \
     --file "${CONDA_REQUIREMENT_FILE}" \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
+
+# print output of 'conda list', to help in submitting bug reports
+echo "conda list:"
+conda list -n ${CONDA_ENV}
 
 # shellcheck disable=SC1091
 source activate $CONDA_ENV

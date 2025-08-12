@@ -668,6 +668,13 @@ def test_regressor_custom_objective(output, cluster):
         assert_eq(p2, y, **assert_precision)
 
 
+@pytest.mark.xfail(
+    platform.lower().startswith("darwin"),
+    reason=(
+        "learning-to-rank Dask tests are unreliable on macOS. "
+        "See https://github.com/microsoft/LightGBM/issues/4074#issuecomment-3124996317"
+    ),
+)
 @pytest.mark.parametrize("output", ["array", "dataframe", "dataframe-with-categorical"])
 @pytest.mark.parametrize("group", [None, group_sizes])
 @pytest.mark.parametrize("boosting_type", boosting_types)
