@@ -346,7 +346,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    bash .ci/lint-python-bash.sh
+    bash .ci/run-pre-commit-mypy.sh
 
 To run the tests locally and compute test coverage, install the Python package using one of the options mentioned above.
 Then run the following from the root of the repo.
