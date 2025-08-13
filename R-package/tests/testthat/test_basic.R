@@ -3861,3 +3861,38 @@ test_that("Evaluation metrics aren't printed as a single-element vector", {
   })
   expect_false(grepl("[1] \"[1]", log_txt, fixed = TRUE))
 })
+
+test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data", {
+  data("iris")
+
+  ds <- lgb.Dataset(
+    as.matrix(iris[, seq_len(3L)])
+    , label = iris[, 4L]
+  )
+
+  train <- lgb.slice.Dataset(ds, seq_len(100L))
+  test <- lgb.slice.Dataset(ds, seq_len(50L) + 100L)
+
+  test_mat <- as.matrix(iris[seq_len(50L) + 100L, seq_len(3L)])
+  test_label <- iris[seq_len(50L) + 100L, 4L]
+
+  params <- list(
+    metric = "l2"
+    , objective = "regression"
+    , num_threads = .LGB_MAX_THREADS
+  )
+
+  model <- lgb.train(
+    params = params
+    , data = train
+    , nrounds = 1L
+    , verbose = .LGB_VERBOSITY
+    , valids = list(test = test)
+  )
+
+  y_hat <- predict(model, newdata = test_mat)
+  model_l2 <- model$eval_valid()[[1L]]$value
+  independent_l2 <- mean((test_label - y_hat) ** 2.0)
+
+  expect_equal(model_l2, independent_l2, tolerance = 0.0001)
+})
