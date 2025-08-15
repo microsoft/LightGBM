@@ -119,7 +119,19 @@ class ObjectiveFunction {
   virtual bool NeedConvertOutputCUDA () const { return false; }
 
   #endif  // USE_CUDA
+
+  virtual void SetDataIndices(const data_size_t* used_data_indices) const { used_data_indices_ = used_data_indices; }
+
+ private:
+  mutable const data_size_t* used_data_indices_ = nullptr;
 };
+
+void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,
+  data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
+  const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
+  const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
+  int truncation_level, double sigma, const CommonC::SigmoidCache& sigmoid_cache, bool model_indirect_comparison, bool model_conditional_rel,
+  bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference);
 
 }  // namespace LightGBM
 
