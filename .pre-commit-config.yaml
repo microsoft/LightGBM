@@ -27,6 +27,15 @@ repos:
     hooks:
       - id: yamllint
         args: ["--strict"]
+  - repo: local
+    hooks:
+      - id: regenerate-parameters
+        name: regenerate-parameters
+        entry: python
+        args:
+          - ./.ci/parameter-generator.py
+        language: python
+        pass_filenames: false
   - repo: https://github.com/rstcheck/rstcheck
     rev: v6.2.5
     hooks:
