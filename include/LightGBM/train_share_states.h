@@ -287,6 +287,13 @@ class MultiValBinWrapper {
 };
 
 struct TrainingShareStates {
+  void SetBlindingContext(const std::vector<int>& median_bins_per_subfeature,
+                          const std::vector<std::vector<data_size_t>>& masked_rows_per_subfeature,
+                          data_size_t num_data) {
+    if (multi_val_bin_wrapper_) {
+      multi_val_bin_wrapper_->SetBlindingContext(median_bins_per_subfeature, masked_rows_per_subfeature, num_data);
+    }
+  }
   int num_threads = 0;
   bool is_col_wise = true;
   bool is_constant_hessian = true;

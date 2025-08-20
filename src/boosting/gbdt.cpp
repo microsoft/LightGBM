@@ -895,7 +895,7 @@ void GBDT::ResetGradientBuffers() {
   }
 }
 
-}  // namespace LightGBM
+
 
 
 void GBDT::InitBlinding() {
@@ -909,15 +909,13 @@ void GBDT::InitBlinding() {
     std::vector<unsigned long long> cnt(nbin, 0);
     std::unique_ptr<BinIterator> it(train_data_->FeatureIterator(f));
     const data_size_t n = train_data_->num_data();
-    unsigned long long total = 0;
     for (data_size_t i = 0; i < n; ++i) {
       uint32_t b = it->RawGet(i);
-      if (b < static_cast<uint32_t>(nbin)) { cnt[b]++; total++; }
+      if (b < static_cast<uint32_t>(nbin)) ++cnt[b];
     }
-    if (total == 0) { continue; }
-    unsigned long long half = (total + 1) / 2;
     unsigned long long acc = 0;
-    int med = -1;
+    const unsigned long long half = (n + 1) / 2;
+    int med = nbin - 1;
     for (int b = 0; b < nbin; ++b) { acc += cnt[b]; if (acc >= half) { med = b; break; } }
     blinding_state_.median_bin_per_feature[f] = med;
   }
@@ -934,18 +932,19 @@ void GBDT::PrepareBlindingForIteration() {
       if (f >= 0 && f < nfeat) gains[f] += t->split_gain(s);
     }
   }
-  double maxg = 0.0; for (double g : gains) if (g > maxg) maxg = g;
+  double max_gain = *std::max_element(gains.begin(), gains.end());
+  if (max_gain <= 0.0) return;
+  for (int f = 0; f < nfeat; ++f) gains[f] /= max_gain;
   Random rng(config_->seed + iter_ + 1337);
   const data_size_t n = train_data_->num_data();
   for (int f = 0; f < nfeat; ++f) {
     if (blinding_state_.median_bin_per_feature[f] < 0) continue;
-    double imp = (maxg > 0.0 ? gains[f] / maxg : 1.0);
-    double p = blinding_state_.blind_volume * imp;
+    double p = blinding_state_.blind_volume * gains[f];
     if (p <= 0.0) continue;
     auto& vec = blinding_state_.masked_rows_per_feature[f];
     vec.reserve(static_cast<size_t>(p * n * 1.1));
     for (data_size_t i = 0; i < n; ++i) {
-      if (rng.NextDouble() < p) vec.push_back(i);
+      if (rng.NextFloat() < p) vec.push_back(i);
     }
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
@@ -955,3 +954,8 @@ void GBDT::PrepareBlindingForIteration() {
 void GBDT::ClearBlindingForIteration() {
   for (auto& v : blinding_state_.masked_rows_per_feature) v.clear();
 }
+}  // namespace LightGBM
+
+
+
+

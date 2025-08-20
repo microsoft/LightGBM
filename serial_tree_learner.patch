@@ -1,0 +1,22 @@
+--- a/src/treelearner/serial_tree_learner.cpp
++++ b/src/treelearner/serial_tree_learner.cpp
+@@ -101,9 +101,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
+     if (bl_median_bin_ && bl_masked_rows_) {
+       // Only supported for dense multi-val at the moment
+       if (!share_state_->IsSparseRowwise()) {
+-        // The wrapper holds the MultiValBin; set context via virtual API
+-        // We need to include header to get method, but call through dataset's share state paths
++        share_state_->SetBlindingContext(*bl_median_bin_, *bl_masked_rows_, bl_num_data_);
+       }
+     }
+   }
+@@ -127,9 +125,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
+     if (bl_median_bin_ && bl_masked_rows_) {
+       // Only supported for dense multi-val at the moment
+       if (!share_state_->IsSparseRowwise()) {
+-        // The wrapper holds the MultiValBin; set context via virtual API
+-        // We need to include header to get method, but call through dataset's share state paths
++        share_state_->SetBlindingContext(*bl_median_bin_, *bl_masked_rows_, bl_num_data_);
+       }
+     }
+   }

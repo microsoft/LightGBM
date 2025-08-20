@@ -139,7 +139,7 @@ class GBDT : public GBDTBase {
   // Pass-through no-op: concrete TreeLearner implementations will own blinding application.
   void SetBlinding(const std::vector<int>& /*median_bin_per_feature*/,
                    const std::vector<std::vector<data_size_t>>& /*masked_rows_per_feature*/,
-                   data_size_t /*num_data*/) override {}
+                   data_size_t /*num_data*/) {}
 
 
   /*!
