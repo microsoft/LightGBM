@@ -218,6 +218,27 @@ class MultiValBinWrapper {
     is_subrow_copied_ = is_subrow_copied;
   }
 
+  // Training-only: forward blinding context to underlying multi-val bin
+  void SetBlindingContext(const std::vector<int>& median_bins_per_subfeature,
+                          const std::vector<std::vector<data_size_t>>& masked_rows_per_subfeature,
+                          data_size_t num_data) {
+    const auto cur_multi_val_bin = (is_use_subcol_ || is_use_subrow_)
+          ? multi_val_bin_subset_.get()
+          : multi_val_bin_.get();
+    if (cur_multi_val_bin != nullptr) {
+      cur_multi_val_bin->SetBlindingContext(median_bins_per_subfeature, masked_rows_per_subfeature, num_data);
+    }
+  }
+
+  void ClearBlindingContext() {
+    const auto cur_multi_val_bin = (is_use_subcol_ || is_use_subrow_)
+          ? multi_val_bin_subset_.get()
+          : multi_val_bin_.get();
+    if (cur_multi_val_bin != nullptr) {
+      cur_multi_val_bin->ClearBlindingContext();
+    }
+  }
+
 
   #ifdef USE_CUDA
   const void* GetRowWiseData(
