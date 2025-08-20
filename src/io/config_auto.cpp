@@ -348,6 +348,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "deterministic", &deterministic);
 
+  GetDouble(params, "blind_volume", &blind_volume);
+  CHECK_GE(blind_volume, 0.0);
+  CHECK_LE(blind_volume, 1.0);
+
   GetBool(params, "force_col_wise", &force_col_wise);
 
   GetBool(params, "force_row_wise", &force_row_wise);
@@ -949,6 +953,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"tree_learner", "string"},
     {"num_threads", "int"},
     {"device_type", "string"},
+    {"blind_volume", "double"},
     {"seed", "int"},
     {"deterministic", "bool"},
     {"force_col_wise", "bool"},
