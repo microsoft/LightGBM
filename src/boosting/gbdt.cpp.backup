@@ -899,12 +899,6 @@ void GBDT::ResetGradientBuffers() {
 
 
 void GBDT::InitBlinding() {
-  // If there are no meaningful bins, disable blinding
-  if (train_data_->NumTotalBin() == 0) {
-    Log::Warning("Blinding disabled: no meaningful features found (Total Bins = 0)");
-    blinding_state_.blind_volume = 0.0;
-    return;
-  }
   // Precompute median bin per numerical feature (skip categorical)
   const int nfeat = train_data_->num_features();
   blinding_state_.median_bin_per_feature.assign(nfeat, -1);
