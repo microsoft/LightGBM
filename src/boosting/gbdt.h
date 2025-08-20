@@ -631,6 +631,8 @@ class GBDT : public GBDTBase {
   Json forced_splits_json_;
   bool linear_tree_;
   std::unique_ptr<SampleStrategy> data_sample_strategy_;
+  BlindingState blinding_state_;
+
 };
 
 }  // namespace LightGBM

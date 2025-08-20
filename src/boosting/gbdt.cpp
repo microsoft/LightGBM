@@ -7,6 +7,8 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/bin.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -45,7 +47,11 @@ GBDT::GBDT()
   gradients_pointer_ = nullptr;
   hessians_pointer_ = nullptr;
   boosting_on_gpu_ = false;
+
+  // init blinding state defaults
+  blinding_state_.blind_volume = 0.0;
 }
+
 
 GBDT::~GBDT() {
 }
@@ -143,6 +149,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   // check that forced splits does not use feature indices larger than dataset size
   CheckForcedSplitFeatures();
+
+  // init blinding
+  blinding_state_.blind_volume = config_->blind_volume;
+  if (blinding_state_.blind_volume > 0.0) {
+    InitBlinding();
+  }
 
   // if need bagging, create buffer
   data_sample_strategy_->ResetSampleConfig(config_.get(), true);
@@ -342,6 +354,10 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+  if (blinding_state_.blind_volume > 0.0) {
+    PrepareBlindingForIteration();
+  }
+
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
@@ -448,6 +464,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
 
   ++iter_;
+  if (blinding_state_.blind_volume > 0.0) {
+    ClearBlindingForIteration();
+  }
   return false;
 }
 
@@ -873,3 +892,62 @@ void GBDT::ResetGradientBuffers() {
 }
 
 }  // namespace LightGBM
+
+
+void GBDT::InitBlinding() {
+  // Precompute median bin per numerical feature (skip categorical)
+  const int nfeat = train_data_->num_features();
+  blinding_state_.median_bin_per_feature.assign(nfeat, -1);
+  for (int f = 0; f < nfeat; ++f) {
+    const BinMapper* bm = train_data_->FeatureBinMapper(f);
+    if (bm->bin_type() == BinType::CategoricalBin) continue;
+    const int nbin = train_data_->FeatureNumBin(f);
+    std::vector<unsigned long long> cnt(nbin, 0);
+    std::unique_ptr<BinIterator> it(train_data_->FeatureIterator(f));
+    const data_size_t n = train_data_->num_data();
+    unsigned long long total = 0;
+    for (data_size_t i = 0; i < n; ++i) {
+      uint32_t b = it->RawGet(i);
+      if (b < static_cast<uint32_t>(nbin)) { cnt[b]++; total++; }
+    }
+    if (total == 0) { continue; }
+    unsigned long long half = (total + 1) / 2;
+    unsigned long long acc = 0;
+    int med = -1;
+    for (int b = 0; b < nbin; ++b) { acc += cnt[b]; if (acc >= half) { med = b; break; } }
+    blinding_state_.median_bin_per_feature[f] = med;
+  }
+}
+
+void GBDT::PrepareBlindingForIteration() {
+  const int nfeat = train_data_->num_features();
+  blinding_state_.masked_rows_per_feature.assign(nfeat, {});
+  std::vector<double> gains(nfeat, 0.0);
+  for (size_t ti = 0; ti < models_.size(); ++ti) {
+    const Tree* t = models_[ti].get();
+    for (int s = 0; s < t->num_leaves() - 1; ++s) {
+      int f = t->split_feature(s);
+      if (f >= 0 && f < nfeat) gains[f] += t->split_gain(s);
+    }
+  }
+  double maxg = 0.0; for (double g : gains) if (g > maxg) maxg = g;
+  Random rng(config_->seed + iter_ + 1337);
+  const data_size_t n = train_data_->num_data();
+  for (int f = 0; f < nfeat; ++f) {
+    if (blinding_state_.median_bin_per_feature[f] < 0) continue;
+    double imp = (maxg > 0.0 ? gains[f] / maxg : 1.0);
+    double p = blinding_state_.blind_volume * imp;
+    if (p <= 0.0) continue;
+    auto& vec = blinding_state_.masked_rows_per_feature[f];
+    vec.reserve(static_cast<size_t>(p * n * 1.1));
+    for (data_size_t i = 0; i < n; ++i) {
+      if (rng.NextDouble() < p) vec.push_back(i);
+    }
+    std::sort(vec.begin(), vec.end());
+    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+  }
+}
+
+void GBDT::ClearBlindingForIteration() {
+  for (auto& v : blinding_state_.masked_rows_per_feature) v.clear();
+}
