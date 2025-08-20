@@ -356,6 +356,10 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   if (blinding_state_.blind_volume > 0.0) {
     PrepareBlindingForIteration();
+    // provide blinding context to learner (training only)
+    tree_learner_->SetBlinding(blinding_state_.median_bin_per_feature,
+                               blinding_state_.masked_rows_per_feature,
+                               num_data_);
   }
 
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
