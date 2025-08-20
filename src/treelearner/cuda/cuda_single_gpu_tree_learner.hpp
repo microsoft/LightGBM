@@ -32,6 +32,10 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data,
+
+  void SetBlinding(const std::vector<int>& median_bin_per_feature,
+                   const std::vector<std::vector<data_size_t>>& masked_rows_per_feature,
+                   data_size_t num_data) override;
                          bool is_constant_hessian) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;

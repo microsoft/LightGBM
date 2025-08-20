@@ -71,6 +71,12 @@ class CUDAHistogramConstructor {
 
   const hist_t* cuda_hist() const { return cuda_hist_.RawData(); }
 
+  // Blinding context management
+  void SetBlindingContext(const std::vector<int>& median_bins_per_feature,
+                          const std::vector<std::vector<data_size_t>>& masked_rows_per_feature,
+                          data_size_t num_data);
+  void ClearBlindingContext();
+
   hist_t* cuda_hist_pointer() { return cuda_hist_.RawData(); }
 
  private:

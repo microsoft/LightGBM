@@ -183,6 +183,42 @@ void CUDAHistogramConstructor::ResetConfig(const Config* config) {
   cuda_hist_.SetValue(0);
 }
 
+void CUDAHistogramConstructor::SetBlindingContext(
+    const std::vector<int>& median_bins_per_feature,
+    const std::vector<std::vector<data_size_t>>& masked_rows_per_feature,
+    data_size_t num_data) {
+  // Set median bins per feature
+  cuda_median_bins_per_feature_.InitFromHostVector(median_bins_per_feature);
+  
+  // Flatten the masked rows data structure for efficient GPU access
+  std::vector<data_size_t> masked_rows_flattened;
+  std::vector<data_size_t> masked_rows_offsets;
+  std::vector<data_size_t> masked_rows_counts;
+  
+  data_size_t current_offset = 0;
+  for (size_t f = 0; f < masked_rows_per_feature.size(); ++f) {
+    masked_rows_offsets.push_back(current_offset);
+    masked_rows_counts.push_back(masked_rows_per_feature[f].size());
+    
+    for (data_size_t row : masked_rows_per_feature[f]) {
+      masked_rows_flattened.push_back(row);
+    }
+    current_offset += masked_rows_per_feature[f].size();
+  }
+  
+  // Transfer to GPU
+  cuda_masked_rows_flattened_.InitFromHostVector(masked_rows_flattened);
+  cuda_masked_rows_offsets_.InitFromHostVector(masked_rows_offsets);
+  cuda_masked_rows_counts_.InitFromHostVector(masked_rows_counts);
+  
+  blinding_context_set_ = true;
+}
+
+void CUDAHistogramConstructor::ClearBlindingContext() {
+  blinding_context_set_ = false;
+  // CUDA vectors will be automatically cleaned up
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

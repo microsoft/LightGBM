@@ -16,6 +16,56 @@
 
 namespace LightGBM {
 
+// Device functions for blinding logic
+__device__ inline bool ShouldBlindCUDA(
+    data_size_t row_idx,
+    int feature_idx,
+    const int* median_bins_per_feature,
+    const data_size_t* masked_rows_flattened,
+    const data_size_t* masked_rows_offsets,
+    const data_size_t* masked_rows_counts,
+    int num_features) {
+  // Check bounds and if feature has valid median bin
+  if (feature_idx >= num_features || median_bins_per_feature[feature_idx] < 0) {
+    return false;
+  }
+  
+  // Binary search in the sorted masked rows for this feature
+  const data_size_t offset = masked_rows_offsets[feature_idx];
+  const data_size_t count = masked_rows_counts[feature_idx];
+  
+  if (count == 0) return false;
+  
+  // Binary search
+  const data_size_t* arr = masked_rows_flattened + offset;
+  data_size_t left = 0, right = count;
+  while (left < right) {
+    data_size_t mid = (left + right) / 2;
+    if (arr[mid] < row_idx) {
+      left = mid + 1;
+    } else {
+      right = mid;
+    }
+  }
+  return (left < count && arr[left] == row_idx);
+}
+
+__device__ inline uint32_t GetBinValueCUDA(
+    const uint32_t original_bin,
+    data_size_t row_idx,
+    int feature_idx,
+    const int* median_bins_per_feature,
+    const data_size_t* masked_rows_flattened,
+    const data_size_t* masked_rows_offsets,
+    const data_size_t* masked_rows_counts,
+    int num_features) {
+  if (ShouldBlindCUDA(row_idx, feature_idx, median_bins_per_feature, 
+                     masked_rows_flattened, masked_rows_offsets, masked_rows_counts, num_features)) {
+    return static_cast<uint32_t>(median_bins_per_feature[feature_idx]);
+  }
+  return original_bin;
+}
+
 template <typename BIN_TYPE, typename HIST_TYPE, size_t SHARED_HIST_SIZE>
 __global__ void CUDAConstructHistogramDenseKernel(
   const CUDALeafSplitsStruct* smaller_leaf_splits,

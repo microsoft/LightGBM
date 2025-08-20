@@ -607,6 +607,19 @@ void CUDASingleGPUTreeLearner::RenewDiscretizedTreeLeaves(CUDATree* cuda_tree) {
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
+void CUDASingleGPUTreeLearner::SetBlinding(
+    const std::vector<int>& median_bin_per_feature,
+    const std::vector<std::vector<data_size_t>>& masked_rows_per_feature,
+    data_size_t num_data) {
+  // Call parent class method (for CPU fallback compatibility)
+  SerialTreeLearner::SetBlinding(median_bin_per_feature, masked_rows_per_feature, num_data);
+  
+  // Pass blinding context to CUDA histogram constructor
+  if (cuda_histogram_constructor_) {
+    cuda_histogram_constructor_->SetBlindingContext(median_bin_per_feature, masked_rows_per_feature, num_data);
+  }
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
