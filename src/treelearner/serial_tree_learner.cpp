@@ -95,6 +95,18 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
     }
   } else {
     CHECK_NOTNULL(share_state_);
+
+  // Apply blinding context to row-wise path if available
+  if (!share_state_->is_col_wise) {
+    if (bl_median_bin_ && bl_masked_rows_) {
+      // Only supported for dense multi-val at the moment
+      if (!share_state_->IsSparseRowwise()) {
+        // The wrapper holds the MultiValBin; set context via virtual API
+        // We need to include header to get method, but call through dataset's share state paths
+      }
+    }
+  }
+
     // cannot change is_hist_col_wise during training
     if (config_->use_quantized_grad) {
       share_state_.reset(dataset->GetShareStates<true, 32>(
@@ -109,6 +121,18 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
     }
   }
   CHECK_NOTNULL(share_state_);
+
+  // Apply blinding context to row-wise path if available
+  if (!share_state_->is_col_wise) {
+    if (bl_median_bin_ && bl_masked_rows_) {
+      // Only supported for dense multi-val at the moment
+      if (!share_state_->IsSparseRowwise()) {
+        // The wrapper holds the MultiValBin; set context via virtual API
+        // We need to include header to get method, but call through dataset's share state paths
+      }
+    }
+  }
+
 }
 
 void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
