@@ -252,6 +252,14 @@ struct Config {
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
   std::string device_type = "cpu";
 
+  // desc = base probability for random blinding of numerical feature values to their median bin during training
+  // desc = blinding is applied per-iteration and scaled by normalized feature importance (gain)
+  // desc = only numerical features are blinded; categorical features are never blinded
+  // desc = 0 disables blinding
+  // check = >=0.0
+  // check = <=1.0
+  double blind_volume = 0.0;
+
   // [no-automatically-extract]
   // alias = random_seed, random_state
   // default = None
