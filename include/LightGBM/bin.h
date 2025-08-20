@@ -588,6 +588,12 @@ class MultiValBin {
 
   virtual bool IsSparse() = 0;
 
+  // Optional training-only blinding context APIs (no-op by default)
+  virtual void SetBlindingContext(const std::vector<int>& /*median_bins_per_subfeature*/,
+                                  const std::vector<std::vector<data_size_t>>& /*masked_rows_per_subfeature*/,
+                                  data_size_t /*num_data*/) {}
+  virtual void ClearBlindingContext() {}
+
   static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
                                         int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets);
 

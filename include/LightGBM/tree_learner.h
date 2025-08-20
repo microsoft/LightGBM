@@ -58,6 +58,10 @@ class TreeLearner {
 
   virtual void SetForcedSplit(const Json* forced_split_json) = 0;
 
+  // Optional: set per-iteration blinding context (training only).
+  // Default no-op for learners that don't support it.
+  virtual void SetBlinding(const std::vector<int>& /*median_bin_per_feature*/, const std::vector<std::vector<data_size_t>>& /*masked_rows_per_feature*/, data_size_t /*num_data*/) {}
+
   /*!
   * \brief training tree model on dataset
   * \param gradients The first order gradients

@@ -69,6 +69,15 @@ class SerialTreeLearner: public TreeLearner {
 
   void ResetConfig(const Config* config) override;
 
+  void SetBlinding(const std::vector<int>& median_bin_per_feature,
+                   const std::vector<std::vector<data_size_t>>& masked_rows_per_feature,
+                   data_size_t num_data) override {
+    bl_median_bin_ = &median_bin_per_feature;
+    bl_masked_rows_ = &masked_rows_per_feature;
+    bl_num_data_ = num_data;
+  }
+
+
   inline void SetForcedSplit(const Json* forced_split_json) override {
     if (forced_split_json != nullptr && !forced_split_json->is_null()) {
       forced_split_json_ = forced_split_json;
@@ -236,6 +245,11 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
   std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
+
+  // Blinding view (non-owning, set per-iteration)
+  const std::vector<int>* bl_median_bin_ = nullptr;
+  const std::vector<std::vector<data_size_t>>* bl_masked_rows_ = nullptr;
+  data_size_t bl_num_data_ = 0;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

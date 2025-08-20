@@ -18,6 +18,12 @@ namespace LightGBM {
 
 template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
+ private:
+  // Optional blinding (training only). Non-owning views set per-iteration.
+  const std::vector<int>* bl_median_bins_ = nullptr;
+  const std::vector<std::vector<data_size_t>>* bl_masked_rows_ = nullptr;
+  data_size_t bl_num_data_ = 0;
+ public:
  public:
   explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature,
     const std::vector<uint32_t>& offsets)
@@ -51,6 +57,21 @@ class MultiValDenseBin : public MultiValBin {
   void FinishLoad() override {
   }
 
+
+
+  void SetBlindingContext(const std::vector<int>& median_bins_per_subfeature,
+                          const std::vector<std::vector<data_size_t>>& masked_rows_per_subfeature,
+                          data_size_t num_data) override {
+    bl_median_bins_ = &median_bins_per_subfeature;
+    bl_masked_rows_ = &masked_rows_per_subfeature;
+    bl_num_data_ = num_data;
+  }
+
+  void ClearBlindingContext() override {
+    bl_median_bins_ = nullptr;
+    bl_masked_rows_ = nullptr;
+    bl_num_data_ = 0;
+  }
   bool IsSparse() override {
     return false;
   }
@@ -79,7 +100,7 @@ class MultiValDenseBin : public MultiValBin {
         const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
         const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
         for (int j = 0; j < num_feature_; ++j) {
-          const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+          uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
           const auto ti = (bin + offsets_[j]) << 1;
           grad[ti] += gradient;
           hess[ti] += hessian;
@@ -93,7 +114,7 @@ class MultiValDenseBin : public MultiValBin {
       const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
       const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
       for (int j = 0; j < num_feature_; ++j) {
-        const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+        uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
         const auto ti = (bin + offsets_[j]) << 1;
         grad[ti] += gradient;
         hess[ti] += hessian;
@@ -150,7 +171,7 @@ class MultiValDenseBin : public MultiValBin {
           ((static_cast<PACKED_HIST_T>(static_cast<int8_t>(gradient_16 >> 8)) << HIST_BITS) |
           static_cast<PACKED_HIST_T>(gradient_16 & 0xff));
         for (int j = 0; j < num_feature_; ++j) {
-          const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+          uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
           const auto ti = (bin + offsets_[j]);
           out_ptr[ti] += gradient_packed;
         }
@@ -165,7 +186,7 @@ class MultiValDenseBin : public MultiValBin {
           ((static_cast<PACKED_HIST_T>(static_cast<int8_t>(gradient_16 >> 8)) << HIST_BITS) |
           static_cast<PACKED_HIST_T>(gradient_16 & 0xff));
       for (int j = 0; j < num_feature_; ++j) {
-        const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+        uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
         const auto ti = (bin + offsets_[j]);
         out_ptr[ti] += gradient_packed;
       }

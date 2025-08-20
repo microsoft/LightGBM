@@ -136,6 +136,12 @@ class GBDT : public GBDTBase {
   void AddValidDataset(const Dataset* valid_data,
                        const std::vector<const Metric*>& valid_metrics) override;
 
+  // Pass-through no-op: concrete TreeLearner implementations will own blinding application.
+  void SetBlinding(const std::vector<int>& /*median_bin_per_feature*/,
+                   const std::vector<std::vector<data_size_t>>& /*masked_rows_per_feature*/,
+                   data_size_t /*num_data*/) override {}
+
+
   /*!
   * \brief Perform a full training procedure
   * \param snapshot_freq frequency of snapshot
