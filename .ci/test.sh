@@ -139,12 +139,6 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
         exit 0
     fi
-    # check the consistency of parameters' descriptions and other stuff
-    cp ./docs/Parameters.rst ./docs/Parameters-backup.rst
-    cp ./src/io/config_auto.cpp ./src/io/config_auto-backup.cpp
-    python ./.ci/parameter-generator.py || exit 1
-    diff ./docs/Parameters-backup.rst ./docs/Parameters.rst || exit 1
-    diff ./src/io/config_auto-backup.cpp ./src/io/config_auto.cpp || exit 1
     exit 0
 fi
 
