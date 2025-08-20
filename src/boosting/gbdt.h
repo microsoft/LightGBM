@@ -482,6 +482,19 @@ class GBDT : public GBDTBase {
   */
   virtual bool EvalAndCheckEarlyStopping();
 
+  // --- Blinding state ---
+  struct BlindingState {
+    double blind_volume = 0.0;
+    // precomputed median/bin per feature (for numerical features only); -1 for categorical or unavailable
+    std::vector<int> median_bin_per_feature;
+    // per-iteration, per-feature masked row indices (sorted)
+    std::vector<std::vector<data_size_t>> masked_rows_per_feature;
+  };
+
+  void InitBlinding();
+  void PrepareBlindingForIteration();
+  void ClearBlindingForIteration();
+
   /*!
   * \brief reset config for bagging
   */
