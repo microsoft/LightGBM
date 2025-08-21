@@ -25,7 +25,7 @@ set +e
 PROBLEMATIC_LINES=$(
     get_omp_pragmas_without_num_threads
 )
-set -e -o pipefail
+set -e
 if test "${PROBLEMATIC_LINES}" != ""; then
     get_omp_pragmas_without_num_threads
     echo "Found '#pragma omp parallel' not using explicit num_threads() configuration. Fix those."
