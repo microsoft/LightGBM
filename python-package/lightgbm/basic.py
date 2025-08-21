@@ -911,8 +911,9 @@ class Sequence(abc.ABC):
 
         # Get total row number.
         >>> len(seq)
-        # Random access by row index. Used for data sampling.
+        # Random access by row index, or by list of indexes. Used for data sampling.
         >>> seq[10]
+        >>> seq[[0, 2, 5, 7, 12]]
         # Range data access. Used to read data in batch when constructing Dataset.
         >>> seq[0:100]
         # Optionally specify batch_size to control range data read size.
