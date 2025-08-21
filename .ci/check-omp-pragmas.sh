@@ -2,13 +2,6 @@
 
 set -e -E -u -o pipefail
 
-echo "running cpplint"
-cpplint \
-    --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length \
-    --recursive ./src ./include ./R-package ./swig ./tests \
-|| exit 1
-echo "done running cpplint"
-
 echo "checking that all OpenMP pragmas specify num_threads()"
 get_omp_pragmas_without_num_threads() {
     grep \

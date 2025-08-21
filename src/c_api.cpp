@@ -218,7 +218,9 @@ class Booster {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -394,7 +396,9 @@ class Booster {
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(valid_data->metadata(), valid_data->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
@@ -1603,7 +1607,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     int feature_idx = ret->InnerFeatureIndex(i);
-    if (feature_idx < 0) { continue; }
+    if (feature_idx < 0) {
+      continue;
+    }
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
@@ -1614,7 +1620,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         auto pair = col_it.NextNonZero();
         row_idx = pair.first;
         // no more data
-        if (row_idx < 0) { break; }
+        if (row_idx < 0) {
+          break;
+        }
         ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
@@ -1838,7 +1846,9 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { Log::Fatal("Input data type error or field not found"); }
+  if (!is_success) {
+    Log::Fatal("Input data type error or field not found");
+  }
   API_END();
 }
 
@@ -1875,8 +1885,12 @@ int LGBM_DatasetGetField(DatasetHandle handle,
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
   }
-  if (!is_success) { Log::Fatal("Field not found"); }
-  if (*out_ptr == nullptr) { *out_len = 0; }
+  if (!is_success) {
+    Log::Fatal("Field not found");
+  }
+  if (*out_ptr == nullptr) {
+    *out_len = 0;
+  }
   API_END();
 }
 
