@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -E -u -o pipefail
+set -e -u
 
 echo "checking that all OpenMP pragmas specify num_threads()"
 get_omp_pragmas_without_num_threads() {
