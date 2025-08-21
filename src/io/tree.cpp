@@ -415,6 +415,18 @@ std::string Tree::ToJSON() const {
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << '\n';
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
+
+  auto feats_used = tree_features();
+  size_t i = 0;
+  str_buf << "\"tree_features\":[";
+  for (int feat : feats_used) {
+    str_buf << feat;
+    if (i != feats_used.size() - 1) {
+      str_buf << ",";
+    }
+    ++i;
+  }
+  str_buf <<    "]," << '\n';
   if (num_leaves_ == 1) {
     str_buf << "\"tree_structure\":{";
     str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';

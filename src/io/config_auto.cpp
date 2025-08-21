@@ -248,6 +248,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_feature_coupled",
   "path_smooth",
   "interaction_constraints",
+  "tree_interaction_constraints",
   "verbosity",
   "input_model",
   "output_model",
@@ -495,6 +496,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "interaction_constraints", &interaction_constraints);
 
+  GetString(params, "tree_interaction_constraints", &tree_interaction_constraints);
+
   GetInt(params, "verbosity", &verbosity);
 
   GetString(params, "input_model", &input_model);
@@ -731,6 +734,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[path_smooth: " << path_smooth << "]\n";
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
+  str_buf << "[tree_interaction_constraints: " << tree_interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
   str_buf << "[use_quantized_grad: " << use_quantized_grad << "]\n";
@@ -857,6 +861,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"cegb_penalty_feature_coupled", {}},
     {"path_smooth", {}},
     {"interaction_constraints", {}},
+    {"tree_interaction_constraints", {}},
     {"verbosity", {"verbose"}},
     {"input_model", {"model_input", "model_in"}},
     {"output_model", {"model_output", "model_out"}},
@@ -1002,6 +1007,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"cegb_penalty_feature_coupled", "vector<double>"},
     {"path_smooth", "double"},
     {"interaction_constraints", "vector<vector<int>>"},
+    {"tree_interaction_constraints", "string"},
     {"verbosity", "int"},
     {"input_model", "string"},
     {"output_model", "string"},
