@@ -2205,15 +2205,29 @@ class Dataset:
         return self.set_feature_name(feature_name)
 
     @staticmethod
+    def _yield_all_rows_from_seqlist(seqs: List[Sequence]) -> Iterator[np.ndarray]:
+        for seq in seqs:
+            nrow = len(seq)
+            batch_size = getattr(seq, "batch_size", None) or Sequence.batch_size
+            for start in range(0, nrow, batch_size):
+                end = min(start + batch_size, nrow)
+                yield seq[start:end]
+
+    @staticmethod
     def _yield_rows_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
-        """Yield rows from a list of Sequence objects, by indexing them batch-wise with
-        indices derived from `indices`."""
+        indices = np.asarray(indices)
+        if len(indices) == sum(len(seq) for seq in seqs):
+            # Fast path to sample all rows.
+            for rows in Dataset._yield_all_rows_from_seqlist(seqs):
+                yield rows if rows.flags["OWNDATA"] else rows.copy()
+            return
+
+        # Identify the Sequence object corresponding to each element in `indices`.
         seq_starts = np.array([0, *(len(seq) for seq in seqs)], dtype=np.int64).cumsum()
         seq_ends = seq_starts[1:]
-        # Identify which seq object contains each element of `indices`.
         seq_ids = np.searchsorted(seq_ends, np.asarray(indices), side="right")
 
-        # Sample batch-wise from each indexed sequence.
+        # Sample batch-wise from each sequence.
         for id_of_seq, id_indices in itertools.groupby(zip(seq_ids, indices), key=lambda t: t[0]):
             seq = seqs[id_of_seq]
             batch_size = getattr(seq, "batch_size", None) or Sequence.batch_size
@@ -2275,12 +2289,9 @@ class Dataset:
             sample_data, col_indices = self.__sample(seqs, total_nrow)
             self._init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
 
-        for seq in seqs:
-            nrow = len(seq)
-            batch_size = getattr(seq, "batch_size", None) or Sequence.batch_size
-            for start in range(0, nrow, batch_size):
-                end = min(start + batch_size, nrow)
-                self._push_rows(seq[start:end])
+        for rows in self._yield_all_rows_from_seqlist(seqs):
+            self._push_rows(rows)
+
         return self
 
     def __init_from_np2d(
