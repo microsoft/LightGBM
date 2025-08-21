@@ -75,6 +75,13 @@ class SerialTreeLearner: public TreeLearner {
     bl_median_bin_ = &median_bin_per_feature;
     bl_masked_rows_ = &masked_rows_per_feature;
     bl_num_data_ = num_data;
+
+    // Apply blinding context to share_state immediately after SetBlinding
+    if (share_state_ && !share_state_->is_col_wise && bl_median_bin_ && bl_masked_rows_) {
+      if (!share_state_->IsSparseRowwise()) {
+        share_state_->SetBlindingContext(*bl_median_bin_, *bl_masked_rows_, bl_num_data_);
+      }
+    }
   }
 
 

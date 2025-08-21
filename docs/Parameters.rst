@@ -274,6 +274,16 @@ Core Parameters
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
 
+-  ``blind_volume`` :raw-html:`<a id="blind_volume" title="Permalink to this parameter" href="#blind_volume">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= blind_volume <= 1.0``
+
+   -  base probability for random blinding of numerical feature values to their median bin during training
+
+   -  blinding is applied per-iteration and scaled by normalized feature importance (gain)
+
+   -  only numerical features are blinded; categorical features are never blinded
+
+   -  0 disables blinding
+
 -  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
    -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.

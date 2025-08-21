@@ -195,6 +195,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "tree_learner",
   "num_threads",
   "device_type",
+  "blind_volume",
   "seed",
   "deterministic",
   "force_col_wise",
@@ -346,11 +347,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "num_threads", &num_threads);
 
-  GetBool(params, "deterministic", &deterministic);
-
   GetDouble(params, "blind_volume", &blind_volume);
   CHECK_GE(blind_volume, 0.0);
   CHECK_LE(blind_volume, 1.0);
+
+  GetBool(params, "deterministic", &deterministic);
 
   GetBool(params, "force_col_wise", &force_col_wise);
 
@@ -682,6 +683,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[blind_volume: " << blind_volume << "]\n";
   str_buf << "[seed: " << seed << "]\n";
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
@@ -808,6 +810,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"tree_learner", {"tree", "tree_type", "tree_learner_type"}},
     {"num_threads", {"num_thread", "nthread", "nthreads", "n_jobs"}},
     {"device_type", {"device"}},
+    {"blind_volume", {}},
     {"seed", {"random_seed", "random_state"}},
     {"deterministic", {}},
     {"force_col_wise", {}},
