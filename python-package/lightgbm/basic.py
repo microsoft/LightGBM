@@ -11,6 +11,7 @@ from .libpath import _LIB  # isort: skip
 import abc
 import ctypes
 import inspect
+import itertools
 import json
 import warnings
 from collections import OrderedDict
@@ -2204,19 +2205,22 @@ class Dataset:
         return self.set_feature_name(feature_name)
 
     @staticmethod
-    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
-        offset = 0
-        seq_id = 0
-        seq = seqs[seq_id]
-        for row_id in indices:
-            assert row_id >= offset, "sample indices are expected to be monotonic"
-            while row_id >= offset + len(seq):
-                offset += len(seq)
-                seq_id += 1
-                seq = seqs[seq_id]
-            id_in_seq = row_id - offset
-            row = seq[id_in_seq]
-            yield row if row.flags["OWNDATA"] else row.copy()
+    def _yield_rows_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
+        """Yield rows from a list of Sequence objects, by indexing them batch-wise with
+        indices derived from `indices`."""
+        seq_starts = np.array([0, *(len(seq) for seq in seqs)], dtype=np.int64).cumsum()
+        seq_ends = seq_starts[1:]
+        # Identify which seq object contains each element of `indices`.
+        seq_ids = np.searchsorted(seq_ends, np.asarray(indices), side="right")
+
+        # Sample batch-wise from each indexed sequence.
+        for id_of_seq, id_indices in itertools.groupby(zip(seq_ids, indices), key=lambda t: t[0]):
+            seq = seqs[id_of_seq]
+            batch_size = getattr(seq, "batch_size", None) or Sequence.batch_size
+            for batch in itertools.batched((i for _, i in id_indices), batch_size):
+                ids_in_seq = [i - seq_starts[id_of_seq] for i in batch]
+                rows = seq[ids_in_seq]
+                yield rows if rows.flags["OWNDATA"] else rows.copy()
 
     def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Sample data from seqs.
@@ -2230,7 +2234,7 @@ class Dataset:
         indices = self._create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = np.array(list(self._yield_row_from_seqlist(seqs, indices)))
+        sampled = np.vstack(list(self._yield_rows_from_seqlist(seqs, indices)))
         sampled = sampled.T
 
         filtered = []
@@ -3268,7 +3272,7 @@ class Dataset:
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
-                    self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
+                    self.data = np.vstack(list(self._yield_rows_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(
                         f"Cannot subset {type(self.data).__name__} type of raw data.\nReturning original raw data"
