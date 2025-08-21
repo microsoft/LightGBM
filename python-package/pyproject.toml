@@ -21,12 +21,12 @@ dependencies = [
     "numpy>=1.17.0",
     "scipy"
 ]
-description = "LightGBM Python-package"
+description = "LightGBM Python-package with blinding feature"
 license = {file = "LICENSE"}
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}
 ]
-name = "lightgbm"
+name = "lightgbm-blinder"
 readme = "README.rst"
 requires-python = ">=3.9"
 version = "4.6.0.99"
@@ -52,9 +52,9 @@ scikit-learn = [
 ]
 
 [project.urls]
-homepage = "https://github.com/microsoft/LightGBM"
+homepage = "https://github.com/vojta-kubin/LightGBM-Blinder"
 documentation = "https://lightgbm.readthedocs.io/en/latest/"
-repository = "https://github.com/microsoft/LightGBM.git"
+repository = "https://github.com/vojta-kubin/LightGBM-Blinder.git"
 changelog = "https://github.com/microsoft/LightGBM/releases"
 
 # start:build-system
@@ -78,6 +78,7 @@ strict-config = false
 minimum-version = "build-system.requires"
 
 [tool.scikit-build.cmake]
+source-dir = ".."
 version = "CMakeLists.txt"
 build-type = "Release"
 

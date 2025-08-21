@@ -28,7 +28,9 @@ except ImportError:
 
 _version_path = Path(__file__).resolve().parent / "VERSION.txt"
 if _version_path.is_file():
-    __version__ = _version_path.read_text(encoding="utf-8").strip()
+    __version__ = _version_path.read_text(encoding="utf-8").strip() + "-blinder"
+else:
+    __version__ = "4.5.0-blinder"
 
 __all__ = [
     "Dataset",
