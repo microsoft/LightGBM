@@ -21,7 +21,7 @@ get_omp_pragmas_without_num_threads() {
 # consider this a failure and stop execution of the script.
 #
 # ref: https://www.gnu.org/software/grep/manual/html_node/Exit-Status.html
-set +e +o pipefail
+set +e
 PROBLEMATIC_LINES=$(
     get_omp_pragmas_without_num_threads
 )
