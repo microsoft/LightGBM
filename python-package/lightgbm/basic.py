@@ -2228,13 +2228,14 @@ class Dataset:
         seq_ends = seq_starts[1:]
         seq_ids = np.searchsorted(seq_ends, np.asarray(indices), side="right")
 
-        # Sample batch-wise from each sequence.
+        # Sample from each identified sequence, in batch-wise fashion.
         for id_of_seq, id_indices in itertools.groupby(zip(seq_ids, indices), key=lambda t: t[0]):
             seq = seqs[id_of_seq]
             batch_size = getattr(seq, "batch_size", None) or Sequence.batch_size
-            for batch in itertools.batched((i for _, i in id_indices), batch_size):
-                ids_in_seq = [i - seq_starts[id_of_seq] for i in batch]
-                rows = seq[ids_in_seq]
+            id_indices = [int(index - seq_starts[id_of_seq]) for _, index in id_indices]
+            for begin in range(0, len(id_indices), batch_size):
+                batch_indices = id_indices[begin : min(begin + batch_size, len(id_indices))]
+                rows = seq[batch_indices]
                 yield rows if rows.flags["OWNDATA"] else rows.copy()
 
     def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
