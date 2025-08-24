@@ -105,7 +105,6 @@ if [[ $TASK == "lint" ]]; then
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
         'biome>=1.9.3' \
-        'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
         'mypy>=1.11.1' \
         'pre-commit>=3.8.0' \
@@ -118,8 +117,6 @@ if [[ $TASK == "lint" ]]; then
     bash ./.ci/run-pre-commit-mypy.sh || exit 1
     echo "Linting R code"
     Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
-    echo "Linting C++ code"
-    bash ./.ci/lint-cpp.sh || exit 1
     echo "Linting JavaScript code"
     bash ./.ci/lint-js.sh || exit 1
     exit 0

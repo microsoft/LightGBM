@@ -86,7 +86,9 @@ class MapMetric:public Metric {
     data_size_t cur_left = 0;
     for (size_t i = 0; i < ks.size(); ++i) {
       data_size_t cur_k = static_cast<data_size_t>(ks[i]);
-      if (cur_k > num_data) { cur_k = num_data; }
+      if (cur_k > num_data) {
+        cur_k = num_data;
+      }
       for (data_size_t j = cur_left; j < cur_k; ++j) {
         data_size_t idx = sorted_idx[j];
         if (label[idx] > 0.5f) {
