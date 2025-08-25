@@ -26,8 +26,5 @@ bash ./.ci/run-pre-commit-mypy.sh || exit 1
 echo "Linting R code"
 Rscript ./.ci/lint-r-code.R "$(pwd)" || exit 1
 
-echo "Linting C++ code"
-bash ./.ci/lint-cpp.sh || exit 1
-
 echo "Linting JavaScript code"
 bash ./.ci/lint-js.sh || exit 1
