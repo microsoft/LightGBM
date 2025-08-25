@@ -315,9 +315,18 @@ inline static const char* Atof(const char* p, double* out) {
       }
       if (expon > 308) expon = 308;
       // Calculate scaling factor.
-      while (expon >= 50) { scale *= 1E50; expon -= 50; }
-      while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-      while (expon > 0) { scale *= 10.0; expon -= 1; }
+      while (expon >= 50) {
+        scale *= 1E50;
+        expon -= 50;
+      }
+      while (expon >= 8) {
+        scale *= 1E8;
+        expon -= 8;
+      }
+      while (expon > 0) {
+        scale *= 10.0;
+        expon -= 1;
+      }
     }
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
@@ -713,7 +722,9 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
       size_t mid = left + s;
       size_t right = mid + s;
       right = std::min(len, right);
-      if (mid >= right) { continue; }
+      if (mid >= right) {
+        continue;
+      }
       std::copy(_First + left, _First + mid, buf + left);
       std::merge(buf + left, buf + mid, _First + mid, _First + right, _First + left, _Pred);
     }

@@ -131,7 +131,9 @@ namespace LightGBM {
           upper_bounds[bin_cnt] = distinct_values[i];
           ++bin_cnt;
           lower_bounds[bin_cnt] = distinct_values[i + 1];
-          if (bin_cnt >= max_bin - 1) { break; }
+          if (bin_cnt >= max_bin - 1) {
+            break;
+          }
           cur_cnt_inbin = 0;
           if (!is_big_count_value[i]) {
             --rest_bin_cnt;
