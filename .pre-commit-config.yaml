@@ -22,6 +22,22 @@ repos:
     hooks:
       - id: cmakelint
         args: ["--linelength=120", "--filter=-convention/filename,-package/stdargs,-readability/wonkycase"]
+  - repo: https://github.com/cpplint/cpplint
+    rev: '2.0.2'
+    hooks:
+      - id: cpplint
+        args:
+          - --recursive
+          - --filter=-build/c++11,-build/include_subdir,-build/include_what_you_use,-build/header_guard,-whitespace/indent_namespace,-whitespace/line_length
+  - repo: local
+    hooks:
+      - id: check-omp-pragmas
+        name: check-omp-pragmas
+        entry: sh
+        args:
+          - .ci/check-omp-pragmas.sh
+        language: system
+        pass_filenames: false
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:

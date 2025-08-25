@@ -30,7 +30,9 @@ class GOSSStrategy : public SampleStrategy {
   void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
-    if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
+    if (iter < static_cast<int>(1.0f / config_->learning_rate)) {
+      return;
+    }
     auto left_cnt = bagging_runner_.Run<true>(
         num_data_,
         [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
