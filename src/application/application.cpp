@@ -121,7 +121,9 @@ void Application::LoadData() {
   if (config_.is_provide_training_metric) {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -149,7 +151,9 @@ void Application::LoadData() {
       valid_metrics_.emplace_back();
       for (auto metric_type : config_.metric) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-        if (metric == nullptr) { continue; }
+        if (metric == nullptr) {
+          continue;
+        }
         metric->Init(valid_datas_.back()->metadata(),
                      valid_datas_.back()->num_data());
         valid_metrics_.back().push_back(std::move(metric));

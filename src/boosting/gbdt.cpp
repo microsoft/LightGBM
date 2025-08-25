@@ -210,7 +210,9 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 
   if (early_stopping_round_ > 0) {
     auto num_metrics = valid_metrics.size();
-    if (es_first_metric_only_) { num_metrics = 1; }
+    if (es_first_metric_only_) {
+      num_metrics = 1;
+    }
     best_iter_.emplace_back(num_metrics, 0);
     best_score_.emplace_back(num_metrics, kMinScore);
     best_msg_.emplace_back(num_metrics);
@@ -452,7 +454,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 }
 
 void GBDT::RollbackOneIter() {
-  if (iter_ <= 0) { return; }
+  if (iter_ <= 0) {
+    return;
+  }
   // reset score
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     auto curr_tree = models_.size() - num_tree_per_iteration_ + cur_tree_id;
@@ -588,7 +592,9 @@ std::string GBDT::OutputMetric(int iter) {
             msg_buf << tmp_buf.str() << '\n';
           }
         }
-        if (es_first_metric_only_ && j > 0) { continue; }
+        if (es_first_metric_only_ && j > 0) {
+          continue;
+        }
         if (ret.empty() && early_stopping_round_ > 0) {
           auto cur_score = valid_metrics_[i][j]->factor_to_bigger_better() * test_scores.back();
           if (cur_score - best_score_[i][j] > early_stopping_min_delta_) {
@@ -596,7 +602,9 @@ std::string GBDT::OutputMetric(int iter) {
             best_iter_[i][j] = iter;
             meet_early_stopping_pairs.emplace_back(i, j);
           } else {
-            if (iter - best_iter_[i][j] >= early_stopping_round_) { ret = best_msg_[i][j]; }
+            if (iter - best_iter_[i][j] >= early_stopping_round_) {
+              ret = best_msg_[i][j];
+            }
           }
         }
       }

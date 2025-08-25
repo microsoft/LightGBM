@@ -100,7 +100,9 @@ class ColSampler {
           allowed_features.insert(constraint.begin(), constraint.end());
         }
         for (int feat : branch_features) {
-          if (constraint.count(feat) == 0) { break; }
+          if (constraint.count(feat) == 0) {
+            break;
+          }
           ++num_feat_found;
           if (num_feat_found == static_cast<int>(branch_features.size())) {
             allowed_features.insert(constraint.begin(), constraint.end());

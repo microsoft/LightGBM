@@ -182,7 +182,9 @@ class RF : public GBDT {
   }
 
   void RollbackOneIter() override {
-    if (iter_ <= 0) { return; }
+    if (iter_ <= 0) {
+      return;
+    }
     int cur_iter = iter_ + num_init_iteration_ - 1;
     // reset score
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
