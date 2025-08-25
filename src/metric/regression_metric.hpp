@@ -343,29 +343,32 @@ class R2Metric: public Metric {
         sum_label += label_[i];
       }
     } else {
-      sum_weights_ = 0.0f;
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_weights_, sum_label)
+      double local_sum_weights = 0.0f;
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:local_sum_weights, sum_label)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        sum_weights_ += weights_[i];
+        local_sum_weights += weights_[i];
         sum_label += label_[i] * weights_[i];
       }
+      sum_weights_ = local_sum_weights;
     }
     label_mean_ = sum_label / sum_weights_;
 
     total_sum_squares_ = 0.0f;
+    double local_total_sum_squares = 0.0f;
     if (weights_ == nullptr) {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:total_sum_squares_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:local_total_sum_squares)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double diff = label_[i] - label_mean_;
-        total_sum_squares_ += diff * diff;
+        local_total_sum_squares += diff * diff;
       }
     } else {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:total_sum_squares_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:local_total_sum_squares)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double diff = label_[i] - label_mean_;
-        total_sum_squares_ += diff * diff * weights_[i];
+        local_total_sum_squares += diff * diff * weights_[i];
       }
     }
+    total_sum_squares_ = local_total_sum_squares;
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
