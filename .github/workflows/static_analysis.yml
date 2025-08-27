@@ -33,9 +33,8 @@ jobs:
           submodules: false
       - name: Setup and run tests
         shell: bash
-        env:
-          TASK: lint
         run: |
+          export TASK=lint
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
@@ -52,9 +51,8 @@ jobs:
           submodules: false
       - name: Setup and run tests
         shell: bash
-        env:
-          TASK: check-docs
         run: |
+          export TASK=check-docs
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
