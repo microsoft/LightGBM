@@ -19,7 +19,6 @@ conda create -q -y -n test-env \
 # shellcheck disable=SC1091
 source activate test-env
 
-echo "Linting Python and bash code"
 bash ./.ci/run-pre-commit-mypy.sh || exit 1
 
 echo "Linting R code"
