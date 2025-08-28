@@ -1071,6 +1071,10 @@ struct Config {
   // desc = pairwise ranking for validation dataset
   int pairwise_lambdarank_valid_pairing_relevance_m = 3;
 
+  // desc = number of iterations in pairwise ranking prediction
+  // desc = used only in ``pairwise_lambdarank`` application
+  int pairwise_lambdarank_prediction_num_iteration = 3;
+
   #ifndef __NVCC__
   #pragma endregion
 

@@ -773,7 +773,7 @@ class Booster {
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     if (config.objective == std::string("pairwise_lambdarank")) {
       predictor.PredictPairwise(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
-                        config.precise_float_parser);
+                        config.precise_float_parser, config.pairwise_lambdarank_prediction_num_iteration, config.use_differential_feature_in_pairwise_ranking);
     } else {
       predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
                         config.precise_float_parser);
