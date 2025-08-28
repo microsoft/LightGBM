@@ -15,8 +15,10 @@
 
 #include "dense_bin.hpp"
 #include "multi_val_dense_bin.hpp"
+#include "multi_val_pairwise_lambdarank_bin.hpp"
 #include "multi_val_sparse_bin.hpp"
 #include "sparse_bin.hpp"
+#include "pairwise_lambdarank_bin.hpp"
 
 namespace LightGBM {
 
@@ -634,21 +636,94 @@ namespace LightGBM {
     }
   }
 
+  Bin* Bin::CreateDensePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
+    if (num_bin <= 16) {
+      return new DensePairwiseRankingFirstBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data));
+    } else if (num_bin <= 256) {
+      return new DensePairwiseRankingFirstBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data));
+    } else if (num_bin <= 65536) {
+      return new DensePairwiseRankingFirstBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data));
+    } else {
+      return new DensePairwiseRankingFirstBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data));
+    }
+  }
+
+  Bin* Bin::CreateDensePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
+    if (num_bin <= 16) {
+      return new DensePairwiseRankingSecondBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data));
+    } else if (num_bin <= 256) {
+      return new DensePairwiseRankingSecondBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data));
+    } else if (num_bin <= 65536) {
+      return new DensePairwiseRankingSecondBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data));
+    } else {
+      return new DensePairwiseRankingSecondBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data));
+    }
+  }
+
+  Bin* Bin::CreateSparsePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
+    if (num_bin <= 256) {
+      return new SparsePairwiseRankingFirstBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data));
+    } else if (num_bin <= 65536) {
+      return new SparsePairwiseRankingFirstBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data));
+    } else {
+      return new SparsePairwiseRankingFirstBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data));
+    }
+  }
+
+  Bin* Bin::CreateSparsePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
+    if (num_bin <= 256) {
+      return new SparsePairwiseRankingSecondBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data));
+    } else if (num_bin <= 65536) {
+      return new SparsePairwiseRankingSecondBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data));
+    } else {
+      return new SparsePairwiseRankingSecondBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data));
+    }
+  }
+
+  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
+    if (num_bin <= 16) {
+      return new DensePairwiseRankingDiffBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    } else if (num_bin <= 256) {
+      return new DensePairwiseRankingDiffBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    } else if (num_bin <= 65536) {
+      return new DensePairwiseRankingDiffBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    } else {
+      return new DensePairwiseRankingDiffBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    }
+  }
+
+  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
+    if (num_bin <= 256) {
+      return new SparsePairwiseRankingDiffBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    } else if (num_bin <= 65536) {
+      return new SparsePairwiseRankingDiffBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    } else {
+      return new SparsePairwiseRankingDiffBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+    }
+  }
+
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
-    double sparse_rate, const std::vector<uint32_t>& offsets) {
+    double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
-      return CreateMultiValSparseBin(num_data, num_bin,
-                                     average_element_per_row);
+      // if (use_pairwise_ranking) {
+        Log::Warning("Pairwise ranking with sparse row-wse bins is not supported yet.");
+        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
+      // } else {
+      //   return CreateMultiValSparseBin(num_data, num_bin,
+      //                                  average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
+      // }
     } else {
-      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets);
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
     }
   }
 
   MultiValBin* MultiValBin::CreateMultiValDenseBin(data_size_t num_data,
                                                    int num_bin,
                                                    int num_feature,
-                                                   const std::vector<uint32_t>& offsets) {
+                                                   const std::vector<uint32_t>& offsets,
+                                                   const bool use_pairwise_ranking,
+                                                   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
     // calculate max bin of all features to select the int type in MultiValDenseBin
     int max_bin = 0;
     for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
@@ -658,17 +733,31 @@ namespace LightGBM {
       }
     }
     if (max_bin <= 256) {
-      return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
+      if (use_pairwise_ranking) {
+        return new MultiValDensePairwiseLambdarankBin<uint8_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+      } else {
+        return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
+      }
     } else if (max_bin <= 65536) {
-      return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
+      if (use_pairwise_ranking) {
+        return new MultiValDensePairwiseLambdarankBin<uint16_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+      } else {
+        return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
+      }
     } else {
-      return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
+      if (use_pairwise_ranking) {
+        return new MultiValDensePairwiseLambdarankBin<uint32_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+      } else {
+        return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
+      }
     }
   }
 
   MultiValBin* MultiValBin::CreateMultiValSparseBin(data_size_t num_data,
                                                     int num_bin,
-                                                    double estimate_element_per_row) {
+                                                    double estimate_element_per_row,
+                                                    const bool /*use_pairwise_ranking*/,
+                                                    const std::pair<data_size_t, data_size_t>* /*paired_ranking_item_global_index_map*/) {
     size_t estimate_total_entries =
         static_cast<size_t>(estimate_element_per_row * 1.1 * num_data);
     if (estimate_total_entries <= std::numeric_limits<uint16_t>::max()) {

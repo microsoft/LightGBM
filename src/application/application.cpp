@@ -118,6 +118,14 @@ void Application::LoadData() {
     train_data_->SaveBinaryFile(nullptr);
   }
   // create training metric
+  const Dataset* ref_train_data = nullptr;
+  if (config_.objective == std::string("pairwise_lambdarank")) {
+    ref_train_data = train_data_.release();
+    train_data_.reset(new Dataset());
+    train_data_->CreatePairWiseRankingData(ref_train_data, false, config_);
+  } else {
+    ref_train_data = train_data_.get();
+  }
   if (config_.is_provide_training_metric) {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
@@ -140,7 +148,12 @@ void Application::LoadData() {
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.valid[i].c_str(),
-          train_data_.get()));
+          ref_train_data));
+      if (config_.objective == std::string("pairwise_lambdarank")) {
+        const Dataset* original_dataset = new_dataset.release();
+        new_dataset.reset(new Dataset());
+        new_dataset->CreatePairWiseRankingData(original_dataset, true, config_);
+      }
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
       if (config_.save_binary) {
