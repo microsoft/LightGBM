@@ -63,3 +63,32 @@ def test_reset_parameter_callback_is_picklable(serializer):
     assert callback_from_disk.before_iteration is True
     assert callback.kwargs == callback_from_disk.kwargs
     assert callback.kwargs == params
+
+
+def test_reset_parameter_callback_with_sklearn():
+    """Test that reset_parameter callback works with LGBMClassifier."""
+    import numpy as np
+    from lightgbm import LGBMClassifier
+    from sklearn.datasets import make_classification
+
+    X, y = make_classification(n_samples=1000, n_features=10, random_state=42)
+    rng = np.random.default_rng(42)
+
+    model = LGBMClassifier(
+        n_estimators=10,
+        colsample_bytree=0.5,
+        callbacks=[lgb.reset_parameter(colsample_bytree=lambda i: rng.choice([0.3, 0.8]))],
+        random_state=42,
+    )
+    model.fit(X, y)
+
+    # Get the model's dataframe and analyze it
+    trees_df = model.booster_.trees_to_dataframe()
+    unique_feature_counts = trees_df.groupby('tree_index')['split_feature'].nunique()
+
+    # Assert: Not all trees should use the same number of features (proving parameter was dynamically changed)
+    # If the fix is successful, unique_feature_counts should have more than one unique value
+    assert unique_feature_counts.nunique() > 1, (
+        "reset_parameter callback did not work with LGBMClassifier. "
+        "All trees used the same number of features."
+    )
