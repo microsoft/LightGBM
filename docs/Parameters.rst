@@ -1371,13 +1371,17 @@ GPU Parameters
 
    -  ``-1`` means the default device in the selected platform
 
+   -  in multi-GPU case (``num_gpu>1``) means ID of the master GPU
+
    -  **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
 
 -  ``gpu_device_id_list`` :raw-html:`<a id="gpu_device_id_list" title="Permalink to this parameter" href="#gpu_device_id_list">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
-   -  List of CUDA device IDs used when device_type=cuda
+   -  list of CUDA device IDs
 
-   -  When empty, the devices with the smallest IDs will be used
+   -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``) and when ``num_gpu>1``
+
+   -  if empty, the devices with the smallest IDs will be used
 
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -1391,7 +1395,7 @@ GPU Parameters
 
    -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
 
-   -  When <= 0, only 1 GPU will be used
+   -  if ``0``, only 1 GPU will be used
 
 .. end params list
 
