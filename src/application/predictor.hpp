@@ -392,7 +392,6 @@ class Predictor {
             oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
           }
           if (use_differential_feature_in_pairwise_ranking) {
-            // TODO: calculate differential features
             std::set<int> feature_set;
             for (const auto& pair : oneline_features_in_query[pair_indices[i].first]) {
               feature_set.insert(pair.first);
@@ -404,6 +403,7 @@ class Predictor {
             std::vector<std::pair<int, double>>::iterator second_feature_iterator = oneline_features_in_query[pair_indices[i].second].begin();
             const std::vector<std::pair<int, double>>::iterator first_feature_iterator_end = oneline_features_in_query[pair_indices[i].first].end();
             const std::vector<std::pair<int, double>>::iterator second_feature_iterator_end = oneline_features_in_query[pair_indices[i].second].end();
+            // elements are sorted in order in feature_set, which is an ordered set
             for (const int feature : feature_set) {
               double val1 = 0.0f, val2 = 0.0f;
               while (first_feature_iterator != first_feature_iterator_end && first_feature_iterator->first < feature) {
