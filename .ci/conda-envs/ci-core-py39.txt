@@ -37,6 +37,9 @@ pluggy=1.0.*
 psutil=5.9.3
 pytest=7.4.*
 
+# https://github.com/microsoft/LightGBM/issues/6990
+graphite2=1.3.14=*_0
+
 # other recursive dependencies, just
 # pinned here to help speed up solves
 bokeh=2.4.*
