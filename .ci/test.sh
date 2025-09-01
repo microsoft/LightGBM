@@ -98,67 +98,6 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "lint" ]]; then
-    pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
-    echo "Linting PowerShell code"
-    pwsh -file ./.ci/lint-powershell.ps1 || exit 1
-    conda create -q -y -n "${CONDA_ENV}" \
-        "${CONDA_PYTHON_REQUIREMENT}" \
-        'biome>=1.9.3' \
-        'cpplint>=1.6.0' \
-        'matplotlib-base>=3.9.1' \
-        'mypy>=1.11.1' \
-        'pre-commit>=3.8.0' \
-        'pyarrow-core>=17.0' \
-        'scikit-learn>=1.5.2' \
-        'r-lintr>=3.1.2'
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    echo "Linting Python and bash code"
-    bash ./.ci/lint-python-bash.sh || exit 1
-    echo "Linting R code"
-    Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
-    echo "Linting C++ code"
-    bash ./.ci/lint-cpp.sh || exit 1
-    echo "Linting JavaScript code"
-    bash ./.ci/lint-js.sh || exit 1
-    exit 0
-fi
-
-if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
-    conda env create \
-        -n "${CONDA_ENV}" \
-        --file ./docs/env.yml || exit 1
-    conda install \
-        -q \
-        -y \
-        -n "${CONDA_ENV}" \
-            'doxygen>=1.10.0' \
-            'rstcheck>=6.2.4' || exit 1
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    # check reStructuredText formatting
-    find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
-        -exec rstcheck --report-level warning {} \+ || exit 1
-    find "${BUILD_DIRECTORY}/docs" -type f -name "*.rst" \
-        -exec rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} \+ || exit 1
-    # build docs
-    make -C docs html || exit 1
-    if [[ $TASK == "check-links" ]]; then
-        # check docs for broken links
-        pip install 'linkchecker>=10.5.0'
-        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
-        exit 0
-    fi
-    # check the consistency of parameters' descriptions and other stuff
-    cp ./docs/Parameters.rst ./docs/Parameters-backup.rst
-    cp ./src/io/config_auto.cpp ./src/io/config_auto-backup.cpp
-    python ./.ci/parameter-generator.py || exit 1
-    diff ./docs/Parameters-backup.rst ./docs/Parameters.rst || exit 1
-    diff ./src/io/config_auto-backup.cpp ./src/io/config_auto.cpp || exit 1
-    exit 0
-fi
-
 if [[ $PYTHON_VERSION == "3.9" ]]; then
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py39.txt"
 else

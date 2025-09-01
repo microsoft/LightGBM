@@ -245,7 +245,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
   device_features_.reset();
-  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>((uint64_t)num_dense_feature4_ * num_data_, ctx_));
+  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(static_cast<uint64_t>(num_dense_feature4_) * num_data_, ctx_));
   // unpin old buffer if necessary before destructing them
   if (ptr_pinned_gradients_) {
     queue_.enqueue_unmap_buffer(pinned_gradients_, ptr_pinned_gradients_);
@@ -427,7 +427,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     #pragma omp critical
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
-                        (uint64_t)i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
+                        static_cast<uint64_t>(i) * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
     printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s[0], host4[0].s[1], host4[0].s[2], host4[0].s[3]);
     printf("Feature-groups copied to device with multipliers ");
@@ -503,7 +503,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     // copying the last 1 to (dword_features - 1) feature-groups in the last tuple
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
-                        (num_dense_feature4_ - 1) * (uint64_t)num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
+                        (num_dense_feature4_ - 1) * static_cast<uint64_t>(num_data_) * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
     printf("Last features copied to device\n");
     #endif
@@ -1089,7 +1089,9 @@ void GPUTreeLearner::FindBestSplits(const Tree* tree) {
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1;
     printf("Feature %d smaller leaf:\n", feature_index);
     PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
-    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
+    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) {
+      continue;
+    }
     printf("Feature %d larger leaf:\n", feature_index);
     PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
   }
