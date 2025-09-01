@@ -460,8 +460,8 @@ def safe_array_equal_with_nulls(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) ->
     if len(arr1) != len(arr2):
         return False
 
-    np1 = arr1.to_numpy(zero_copy_only=False)
-    np2 = arr2.to_numpy(zero_copy_only=False)
+    np1 = arr1.to_numpy()
+    np2 = arr2.to_numpy()
     return np.array_equal(np1, np2, equal_nan=True)
 
 
