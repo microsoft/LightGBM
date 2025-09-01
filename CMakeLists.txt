@@ -36,13 +36,7 @@ endif()
 
 project(lightgbm LANGUAGES C CXX)
 
-if(USE_CUDA)
-  set(CMAKE_CXX_STANDARD 17)
-elseif(BUILD_CPP_TEST)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 11)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
