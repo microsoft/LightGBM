@@ -913,6 +913,17 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
 
 
+@pytest.mark.parametrize("max_depth", [4, 8, 12, 16])
+def test_max_depth_is_enforced(capsys, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    model = lgb.LGBMRegressor(objective="binary", max_depth=max_depth, device=getenv("TASK"), verbose=0)
+    model.fit(X, y)
+    assert (
+        model.booster_.trees_to_dataframe().groupby("tree_index")["node_depth"].max().value_counts().index.max()
+        <= max_depth
+    ), f"Trained model contains trees deeper than max_depth = {max_depth}"
+
+
 # NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
 @pytest.mark.parametrize(("max_depth", "num_leaves"), [(-1, 3), (-1, 50), (5, 3), (5, 31), (5, 32), (8, 3), (8, 31)])
 def test_max_depth_warning_is_not_raised_if_num_leaves_is_also_provided(capsys, num_leaves, max_depth):
