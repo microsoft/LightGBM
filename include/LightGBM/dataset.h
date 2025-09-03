@@ -76,8 +76,9 @@ class Metadata {
   * \param num_data Number of training data
   * \param weight_idx Index of weight column, < 0 means doesn't exists
   * \param query_idx Index of query id column, < 0 means doesn't exists
+  * \param position_idx Index of position id column, < 0 means doesn't exists
   */
-  void Init(data_size_t num_data, int weight_idx, int query_idx);
+  void Init(data_size_t num_data, int weight_idx, int query_idx, int position_idx);
 
   /*!
   * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
@@ -92,9 +93,10 @@ class Metadata {
   * \param has_weights Whether the metadata has weights
   * \param has_init_scores Whether the metadata has initial scores
   * \param has_queries Whether the metadata has queries
+  * \param has_positions Whether the metadata has positions
   * \param nclasses Number of classes for initial scores
   */
-  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t nclasses);
+  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t has_positions, int32_t nclasses);
 
   /*!
   * \brief Partition label by used indices
@@ -120,6 +122,7 @@ class Metadata {
   void SetQuery(const ArrowChunkedArray& array);
 
   void SetPosition(const data_size_t* position, data_size_t len);
+  void SetPosition(const ArrowChunkedArray& array);
 
   /*!
   * \brief Set initial scores
@@ -186,6 +189,15 @@ class Metadata {
     queries_[idx] = static_cast<data_size_t>(value);
   }
 
+  /*!
+  * \brief Set Position Id for one record
+  * \param idx Index of this record
+  * \param value Position Id value of this record
+  */
+  inline void SetPositionAt(data_size_t idx, data_size_t value) {
+    positions_[idx] = static_cast<data_size_t>(value);
+  }
+
   /*! \brief Load initial scores from file */
   void LoadInitialScore(const std::string& data_filename);
 
@@ -197,13 +209,15 @@ class Metadata {
   * \param weights Pointer to weight data, or null
   * \param init_scores Pointer to init-score data, or null
   * \param queries Pointer to query data, or null
+  * \param positions Pointer to position data, or null
   */
   void InsertAt(data_size_t start_index,
     data_size_t count,
     const float* labels,
     const float* weights,
     const double* init_scores,
-    const int32_t* queries);
+    const int32_t* queries,
+    const int32_t* positions);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
@@ -234,23 +248,16 @@ class Metadata {
   }
 
   /*!
-  * \brief Get position IDs, if does not exist then return nullptr
-  * \return Pointer of position IDs
-  */
-  inline const std::string* position_ids() const {
-    if (!position_ids_.empty()) {
-      return position_ids_.data();
-    } else {
-      return nullptr;
-    }
-  }
-
-  /*!
   * \brief Get Number of different position IDs
   * \return number of different position IDs
   */
   inline size_t num_position_ids() const {
-      return position_ids_.size();
+      if (!positions_.empty()) {
+        size_t max = *std::max_element(positions_.begin(), positions_.end());
+        return max + 1;
+      } else {
+        return 0;
+      }
   }
 
   /*!
@@ -354,6 +361,11 @@ class Metadata {
   void SetInitScoresFromIterator(It first, It last);
   /*! \brief Insert queries at the given index */
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
+  /*! \brief Set positions from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetPositionsFromIterator(It first, It last);
+  /*! \brief Insert positions at the given index */
+  void InsertPositions(const data_size_t* positions, data_size_t start_index, data_size_t len);
   /*! \brief Set queries from pointers to the first element and the end of an iterator. */
   template <typename It>
   void SetQueriesFromIterator(It first, It last);
@@ -371,8 +383,6 @@ class Metadata {
   std::vector<label_t> weights_;
   /*! \brief Positions data */
   std::vector<data_size_t> positions_;
-  /*! \brief Position identifiers */
-  std::vector<std::string> position_ids_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
@@ -519,6 +529,7 @@ class Dataset {
                                      int32_t has_weights,
                                      int32_t has_init_scores,
                                      int32_t has_queries,
+                                     int32_t has_positions,
                                      int32_t nclasses,
                                      int32_t nthreads,
                                      int32_t omp_max_threads) {
@@ -529,7 +540,7 @@ class Dataset {
       omp_max_threads_ = OMP_NUM_THREADS();
     }
 
-    metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
+    metadata_.Init(num_data, has_weights, has_init_scores, has_queries, has_positions, nclasses);
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->InitStreaming(nthreads, omp_max_threads_);
     }
@@ -631,8 +642,9 @@ class Dataset {
     const label_t* labels,
     const label_t* weights,
     const double* init_scores,
-    const data_size_t* queries) {
-    metadata_.InsertAt(start_index, count, labels, weights, init_scores, queries);
+    const data_size_t* queries,
+    const data_size_t* positions) {
+    metadata_.InsertAt(start_index, count, labels, weights, init_scores, queries, positions);
   }
 
   inline int RealFeatureIndex(int fidx) const {
