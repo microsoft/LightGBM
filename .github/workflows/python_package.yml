@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
@@ -103,7 +103,7 @@ jobs:
             python_version: '3.10'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
@@ -137,7 +137,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
@@ -165,13 +165,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # end-of-life Python versions
+        # This should always include at least the oldest
+        # not-yet-end-of-life Python version
         python_version:
-          - '3.7'
-          - '3.8'
+          - '3.9'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true

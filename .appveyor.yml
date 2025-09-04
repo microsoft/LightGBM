@@ -3,7 +3,7 @@ version: 4.6.0.99.{build}
 image: Visual Studio 2015
 platform: x64
 configuration:
-  - '3.8'
+  - '3.9'
 
 # only build on 'master' and pull requests targeting it
 branches:

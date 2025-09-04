@@ -1730,12 +1730,13 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     y_col_array = y.reshape(-1, 1)
     params = {"n_estimators": 1, "num_leaves": 3, "random_state": 0}
     model_factory = task_to_model_factory[task]
-    with pytest.warns(UserWarning, match="column-vector"):
-        if task == "ranking":
-            model_1d = model_factory(**params).fit(X, y, group=g)
+    if task == "ranking":
+        model_1d = model_factory(**params).fit(X, y, group=g)
+        with pytest.warns(UserWarning, match="column-vector"):
             model_2d = model_factory(**params).fit(X, y_col_array, group=g)
-        else:
-            model_1d = model_factory(**params).fit(X, y)
+    else:
+        model_1d = model_factory(**params).fit(X, y)
+        with pytest.warns(UserWarning, match="column-vector"):
             model_2d = model_factory(**params).fit(X, y_col_array)
 
     preds_1d = model_1d.predict(X)

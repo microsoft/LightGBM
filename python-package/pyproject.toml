@@ -10,8 +10,6 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -30,7 +28,7 @@ maintainers = [
 ]
 name = "lightgbm"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 version = "4.6.0.99"
 
 [project.optional-dependencies]
@@ -93,6 +91,15 @@ disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_directives = [
+    "autoclass",
+    "autofunction",
+    "autosummary",
+    "doxygenfile"
+]
+
 [tool.ruff]
 exclude = [
     "build",
@@ -103,7 +110,7 @@ exclude = [
 line-length = 120
 
 # this should be set to the oldest version of python LightGBM supports
-target-version = "py37"
+target-version = "py39"
 
 [tool.ruff.format]
 docstring-code-format = false
