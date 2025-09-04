@@ -489,12 +489,15 @@ Example
 Ray
 ^^^
 
-`Ray`_ is a Python-based framework for distributed computing. The `lightgbm_ray`_ project, maintained within the official Ray GitHub organization, can be used to perform distributed LightGBM training using ``ray``.
+`Ray`_ is a Python-based framework for distributed computing. Ray provides LightGBM support through the Ray Train API with ``LightGBMTrainer``, in addition to the `lightgbm_ray`_ project maintained within the official Ray GitHub organization.
 
-See `the lightgbm_ray documentation`_ for usage examples.
+For the Ray Train API, see `the Ray documentation`_ for usage examples.
+
+For the lightgbm_ray project, see `the lightgbm_ray documentation`_ for usage examples.
 
 .. note::
 
+  ``ray`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/ray-project/ray/issues.
   ``lightgbm_ray`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/ray-project/lightgbm_ray/issues.
 
 Mars
@@ -539,6 +542,8 @@ See `the mars documentation`_ for usage examples.
 .. _Ray: https://www.ray.io/
 
 .. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/tune/api_docs/integration.html#lightgbm-tune-integration-lightgbm
+
+.. _the Ray documentation: https://docs.ray.io/en/latest/train/api/api.html#lightgbm
 
 .. _Mars: https://mars-project.readthedocs.io/en/latest/
 
