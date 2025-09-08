@@ -916,7 +916,7 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
 @pytest.mark.parametrize("max_depth", [4, 8, 12, 16])
 def test_max_depth_is_enforced(capsys, max_depth):
     X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
-    model = lgb.LGBMRegressor(objective="binary", max_depth=max_depth, device=getenv("TASK"), verbose=0)
+    model = lgb.LGBMRegressor(objective="binary", max_depth=max_depth, verbose=0)
     model.fit(X, y)
     assert (
         model.booster_.trees_to_dataframe().groupby("tree_index")["node_depth"].max().value_counts().index.max()
