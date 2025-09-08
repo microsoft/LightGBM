@@ -112,8 +112,6 @@ jobs:
         gpu_source:
           TASK: gpu
           METHOD: source
-        swig:
-          TASK: swig
     steps:
       - script: |
           echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -140,7 +138,7 @@ jobs:
         condition: >
           and(
           succeeded(),
-          in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig'),
+          in(variables['TASK'], 'regular', 'sdist', 'bdist'),
           not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
           )
         inputs:
@@ -243,8 +241,6 @@ jobs:
           PYTHON_VERSION: '3.10'
         bdist:
           TASK: bdist
-        swig:
-          TASK: swig
         cpp_tests:
           TASK: cpp-tests
           METHOD: with-sanitizers
@@ -255,7 +251,6 @@ jobs:
           CONDA=$AGENT_HOMEDIRECTORY/miniforge
           echo "##vso[task.setvariable variable=CONDA]$CONDA"
           echo "##vso[task.prependpath]$CONDA/bin"
-          echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
         displayName: 'Set variables'
       - script: |
           git clean -d -f -x
@@ -274,7 +269,7 @@ jobs:
         condition: >
           and(
           succeeded(),
-          in(variables['TASK'], 'regular', 'bdist', 'swig'),
+          in(variables['TASK'], 'regular', 'bdist'),
           not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
           )
         inputs:
@@ -297,8 +292,6 @@ jobs:
           PYTHON_VERSION: '3.10'
         bdist:
           TASK: bdist
-        swig:
-          TASK: swig
         cpp_tests:
           TASK: cpp-tests
     steps:
@@ -324,7 +317,7 @@ jobs:
         condition: >
           and(
           succeeded(),
-          in(variables['TASK'], 'regular', 'bdist', 'swig'),
+          in(variables['TASK'], 'regular', 'bdist'),
           not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
           )
         inputs:

@@ -56,7 +56,7 @@ if ($env:TASK -eq "swig") {
         Assert-Output $False
     }
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
-    if ($env:AZURE -eq "true") {
+    if ($env:PRODUCES_ARTIFACTS -eq "true") {
         cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Assert-Output $?
     }
     exit 0
