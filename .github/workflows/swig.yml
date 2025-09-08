@@ -40,7 +40,7 @@ jobs:
             container: null
           # Visual Studio 2022
           - os: windows-2022
-            compiler: null
+            compiler: msvc
             container: null
     steps:
       - name: Checkout repository
