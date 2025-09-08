@@ -932,7 +932,8 @@ def test_max_depth_is_enforced(capsys):
         model.booster_.trees_to_dataframe().groupby("tree_index")["node_depth"].max().value_counts().index.max()
     )
     assert fitted_max_depth == 9, (
-        "This data generation and model fitting procedure should be deterministic within backends. Both cpu and cuda should result in models with maximal tree depth 9."
+        "This data generation and model fitting procedure should be deterministic within backends. "
+        "Both cpu and cuda should result in models with maximal tree depth 9."
     )
     # set a constraining value of max_depth, i.e. lower than 9
     constrained_model = lgb.LGBMRegressor(max_depth=6, **params)
