@@ -15,6 +15,6 @@ make -C docs html || exit 1
 
 if [[ $TASK == "check-links" ]]; then
     # check docs for broken links
-    pip install 'linkchecker>=10.5.0'
-    linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
+    conda install -y -n test-env 'lychee>=0.20.1'
+    lychee --config=./docs/.lychee.toml ./docs/_build/html/*.html || exit 1
 fi
