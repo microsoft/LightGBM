@@ -13,6 +13,7 @@ Light Gradient Boosting Machine
 [![Link checks](https://github.com/microsoft/LightGBM/actions/workflows/linkchecker.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/linkchecker.yml)
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
+[![StackOverflow questions](https://img.shields.io/stackexchange/stackoverflow/t/lightgbm?logo=stackoverflow&logoColor=white&label=StackOverflow%20questions)](https://stackoverflow.com/questions/tagged/lightgbm?sort=votes)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![conda Version](https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda)](https://anaconda.org/conda-forge/lightgbm)
