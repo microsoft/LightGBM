@@ -17,6 +17,13 @@ if [[ $TASK == "check-links" ]]; then
     # check docs for broken links
     conda install -y -n test-env 'lychee>=0.20.1'
     # to see all gained files add "--dump-inputs" flag
-    lychee_cmd="--config=./docs/.lychee.toml --exclude-path='(^|/)docs/.*\.rst' '**/*.rst' '**/*.md' './R-package/**/*.Rd' './docs/_build/html/*.html'"
-    lychee "${lychee_cmd}" || exit 1
+    lychee_args=(
+    "--config=./docs/.lychee.toml"
+    "--exclude-path=(^|/)docs/.*\.rst"
+    "**/*.rst"
+    "**/*.md"
+    "./R-package/**/*.Rd"
+    "./docs/_build/html/*.html"
+    )
+    lychee "${lychee_args[@]}" || exit 1
 fi
