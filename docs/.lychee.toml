@@ -1,12 +1,14 @@
 verbose = "info"
-no-progress = false
+no_progress = false
 cache = false
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
-insecure = true
 scheme = ["http", "https", "file"]
-accept = ["100..=103", "200..=299"]
 include_fragments = true
-#recursionlevel=1
+no_ignore = true
+insecure = true
+require_https = true
+accept = ["100..=103", "200..=299"]
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+retry_wait_time = 5
 
 #[filtering]
 #ignore=
@@ -14,5 +16,3 @@ include_fragments = true
 #  http.*amd.com/.*
 #  https.*dl.acm.org/doi/.*
 #  https.*tandfonline.com/.*
-#ignorewarnings=http-redirected,http-robots-denied,https-certificate-error
-#checkextern=1
