@@ -34,3 +34,21 @@ data.table::setDTthreads(1L)
 .LGB_VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
+
+
+# [description]
+#    test that every element of 'x' is in 'y'
+#
+#    testthat::expect_in() was added in {testthat} v3.1.19
+#    This is here to support a similar interface on older {testthat} versions.
+.expect_in <- function(x, y) {
+  if (exists("expect_in")) {
+    expect_in(x, y)
+  } else {
+    missing_items <- x[!(x %in% y)]
+    if (length(missing_items) != 0L) {
+      error_msg <- paste0("Some expected items not found: ", toString(missing_items))
+      stop(error_msg)
+    }
+  }
+}

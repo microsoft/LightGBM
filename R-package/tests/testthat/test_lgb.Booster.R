@@ -1114,7 +1114,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     # parameters should match what was passed from the R-package
     model_str <- bst$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
-    expect_in(all_param_entries, params_in_file)
+    .expect_in(all_param_entries, params_in_file)
 
     # early stopping should be off by default
     expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
@@ -1127,7 +1127,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     bst_rds <- readRDS(rds_file)
     model_str <- bst_rds$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
-    expect_in(all_param_entries, params_in_file)
+    .expect_in(all_param_entries, params_in_file)
 })
 
 test_that("early_stopping, num_iterations are stored correctly in model string even with aliases", {
