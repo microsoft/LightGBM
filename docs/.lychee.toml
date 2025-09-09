@@ -5,8 +5,8 @@ user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 insecure = true
 scheme = ["http", "https", "file"]
 accept = ["100..=103", "200..=299"]
+include_fragments = true
 #recursionlevel=1
-#anchors=1
 
 #[filtering]
 #ignore=
@@ -16,5 +16,3 @@ accept = ["100..=103", "200..=299"]
 #  https.*tandfonline.com/.*
 #ignorewarnings=http-redirected,http-robots-denied,https-certificate-error
 #checkextern=1
-
-#[AnchorCheck]
