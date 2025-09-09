@@ -7,9 +7,9 @@ no_ignore = true
 insecure = true
 require_https = true
 accept = ["100..=103", "200..=299"]
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+#user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+user_agent = "curl/7.54.1"
 retry_wait_time = 5
-exclude = [
-  '^https://www\.linkedin\.com',
-  '^https://www\.swig\.org/download\.html',
-]
+#exclude = [
+#  '^https://www\.swig\.org/download\.html',
+#]
