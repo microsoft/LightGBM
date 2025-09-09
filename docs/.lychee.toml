@@ -1,4 +1,5 @@
 verbose = "info"
+no-progress = false
 #maxrequestspersecond=0.1
 #recursionlevel=1
 #anchors=1
