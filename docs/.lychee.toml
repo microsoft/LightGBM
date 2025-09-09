@@ -1,10 +1,10 @@
 verbose = "info"
 no-progress = false
-#maxrequestspersecond=0.1
+cache = false
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+insecure = true
 #recursionlevel=1
 #anchors=1
-#sslverify=0
-#threads=4
 
 #[filtering]
 #ignore=
@@ -14,9 +14,5 @@ no-progress = false
 #  https.*tandfonline.com/.*
 #ignorewarnings=http-redirected,http-robots-denied,https-certificate-error
 #checkextern=1
-
-#[output]
-# Set to 1 if you want see the full output, not only warnings and errors
-#verbose=0
 
 #[AnchorCheck]
