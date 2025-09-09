@@ -61,6 +61,8 @@ Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
 Remove-From-Path ".*rtools42.*"
 Remove-From-Path ".*rtools43.*"
+Remove-From-Path ".*rtools44.*"
+Remove-From-Path ".*rtools45.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
@@ -68,30 +70,29 @@ Remove-From-Path ".*tools.*"
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools43 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools44 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools45 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
 # NOTES:
 #    * some paths and file names are different on R4.0
-$env:R_MAJOR_VERSION = $env:R_VERSION.split('.')[0]
-if ($env:R_MAJOR_VERSION -eq "3") {
-    # Rtools 3.x has to be installed at C:\Rtools\
-    #     * https://stackoverflow.com/a/46619260/3986677
-    $RTOOLS_INSTALL_PATH = "C:\Rtools"
-    $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\bin"
-    $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw_64\bin"
-    $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
-    $env:R_WINDOWS_VERSION = "3.6.3"
-} elseif ($env:R_MAJOR_VERSION -eq "4") {
-    $RTOOLS_INSTALL_PATH = "C:\rtools43"
-    $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
-    $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
-    $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
-    $env:R_WINDOWS_VERSION = "4.3.1"
+if ($env:R_VERSION -eq "oldest") {
+    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools40.html
+    $RTOOLS_INSTALL_PATH = "C:\rtools40"
+    $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
+    $env:R_WINDOWS_VERSION = "4.0.5"
+} elseif ($env:R_VERSION -eq "latest") {
+    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
+    $RTOOLS_INSTALL_PATH = "C:\rtools45"
+    $env:RTOOLS_EXE_FILE = "rtools45-6608-6492.exe"
+    $env:R_WINDOWS_VERSION = "4.5.1"
 } else {
     Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
     Assert-Output $false
 }
+$env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
+$env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
 $env:CMAKE_VERSION = "3.30.0"
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
@@ -104,11 +105,7 @@ $env:PATH = @(
     "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin",
     "$env:PATH"
 ) -join ";"
-if ([version]$env:R_VERSION -lt [version]"4.0") {
-    $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
-} else {
-    $env:CRAN_MIRROR = "https://cran.rstudio.com"
-}
+$env:CRAN_MIRROR = "https://cran.rstudio.com"
 $env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
@@ -202,13 +199,6 @@ if ($env:COMPILER -ne "MSVC") {
         Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"
         Assert-Output $?
     } elseif ($env:R_BUILD_TYPE -eq "cran") {
-        # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
-        # some flavors of tar.exe can fail in some settings on Windows.
-        # Putting the msys64 utilities at the beginning of PATH temporarily to be
-        # sure they're used for that purpose.
-        if ($env:R_MAJOR_VERSION -eq "3") {
-            $env:PATH = @("C:\msys64\usr\bin", "$env:PATH") -join ";"
-        }
         $params = -join @(
             "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', ",
             "echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)"
