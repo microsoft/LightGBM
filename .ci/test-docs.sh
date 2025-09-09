@@ -25,5 +25,6 @@ if [[ $TASK == "check-links" ]]; then
     "./R-package/**/*.Rd"
     "./docs/_build/html/*.html"
     )
-    lychee "${lychee_args[@]}" || exit 1
+    # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
+    lychee --exclude="^https://github\.com" "${lychee_args[@]}" || exit 1
 fi
