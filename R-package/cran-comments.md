@@ -706,7 +706,7 @@ All authors from the original LightGBM paper have been added to Authors@R as `"a
 
 lightgbm's code does use `<<-`, but it does not modify the global environment. The uses of `<<-` in R/lgb.interprete.R and R/callback.R are in functions which are called in an environment created by the lightgbm functions that call them, and this operator is used to reach one level up into the calling function's environment.
 
-We chose to wrap our examples in `\donttest{}` because we found, through testing on https://builder.r-hub.io/ and in our own continuous integration environments, that their run time varies a lot between platforms, and we cannot guarantee that all examples will run in under 5 seconds. We intentionally chose `\donttest{}` over `\donttest{}` because this item in the R 4.0.0 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) seems to indicate that \donttest will be ignored by CRAN's automated checks:
+We chose to wrap our examples in `\donttest{}` because we found, through testing on https://r-hub.github.io/rhub/ and in our own continuous integration environments, that their run time varies a lot between platforms, and we cannot guarantee that all examples will run in under 5 seconds. We intentionally chose `\donttest{}` over `\donttest{}` because this item in the R 4.0.0 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) seems to indicate that \donttest will be ignored by CRAN's automated checks:
 
 > "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
 
