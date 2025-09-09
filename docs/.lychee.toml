@@ -4,6 +4,7 @@ cache = false
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 insecure = true
 scheme = ["http", "https", "file"]
+accept = ["100..=103", "200..=299"]
 #recursionlevel=1
 #anchors=1
 
