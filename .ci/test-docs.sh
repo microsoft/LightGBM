@@ -16,5 +16,5 @@ make -C docs html || exit 1
 if [[ $TASK == "check-links" ]]; then
     # check docs for broken links
     conda install -y -n test-env 'lychee>=0.20.1'
-    lychee --config=./docs/.lychee.toml ./*.md ./*.rst --exclude-path=./docs/*.rst ./docs/_build/html/*.html || exit 1
+    lychee --config=./docs/.lychee.toml --exclude-path=./docs/*.rst ./*.rst ./*.md ./docs/_build/html/*.html || exit 1
 fi
