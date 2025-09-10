@@ -26,7 +26,7 @@ if [[ $TASK == "check-links" ]]; then
         "./R-package/**/*.Rd"
         "./docs/_build/html/*.html"
     )
-    lychee_github_site="^https://github.com\.*"
+    lychee_github_site="^https://github\.com.*"
     lychee_exclude_list=( 
         "^https://www\.swig\.org/download\.html"
         "${lychee_github_site}"
