@@ -21,6 +21,7 @@ if [[ $TASK == "check-links" ]]; then
     lychee_args=(
         "--config=./docs/.lychee.toml"
         "--exclude-path=(^|/)docs/.*\.rst"
+        "--github-token=${SECRETS_WORKFLOW}"
         "--"
         "**/*.rst"
         "**/*.md"
@@ -29,12 +30,10 @@ if [[ $TASK == "check-links" ]]; then
     )
     github_site="^https://github\.com.*"
     lychee_exclude_list=( 
-        "--exclude"
-        "^https://www\.swig\.org/download\.html"
-        "--exclude"
-        "${github_site}"
+        "--exclude=^https://www\.swig\.org/download\.html"
+        "--exclude=${github_site}"
     )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    lychee --include "${github_site}" --github-token "${SECRETS_WORKFLOW}" "${lychee_args[@]}"
-    lychee "${lychee_exclude_list[@]}" --include-fragments "${lychee_args[@]}"
+    lychee --include="${github_site}" "${lychee_args[@]}" | exit 1
+    lychee "${lychee_exclude_list[@]}" --include-fragments "${lychee_args[@]}" | exit 1
 fi
