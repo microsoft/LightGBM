@@ -3,11 +3,19 @@ no_progress = false
 cache = false
 scheme = ["http", "https", "file"]
 include_mail = false
+include_fragments = true
 no_ignore = true
 insecure = false
 require_https = true
 accept = ["100..=103", "200..=299"]
 user_agent = "curl/7.88.1"
-timeout = 60
+timeout = 30
 retry_wait_time = 10
 max_concurrency = 10
+# remove anchors from GitHub URLs to overcome https://github.com/lycheeverse/lychee/issues/1791
+remap = [
+    '(?P<host>^https://github\.com)/(?P<path>.*)#(?P<anchor>.*)$ $host/$path/',
+]
+exclude = [
+    '^https://www\.swig\.org/download\.html',
+]
