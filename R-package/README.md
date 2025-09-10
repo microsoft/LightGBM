@@ -20,7 +20,6 @@
     - [Code Coverage](#code-coverage)
 * [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
-* [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
 Installation
