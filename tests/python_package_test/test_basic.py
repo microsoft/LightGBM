@@ -17,6 +17,15 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
+if getenv("ALLOW_SKIP_ARROW_TESTS") == "1":
+    pa = pytest.importorskip("pyarrow")
+else:
+    import pyarrow as pa  # type: ignore
+
+    assert lgb.compat.PYARROW_INSTALLED is True, (
+        "'pyarrow' and its dependencies must be installed to run the arrow tests"
+    )
+
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(
@@ -348,7 +357,18 @@ def test_add_features_from_different_sources(rng):
     n_row = 100
     n_col = 5
     X = rng.uniform(size=(n_row, n_col))
-    xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
+    xxs = [
+        X,
+        sparse.csr_matrix(X),
+        pd.DataFrame(X),
+    ]
+    if getenv("ALLOW_SKIP_ARROW_TESTS") != "1":
+        xxs.append(
+            pa.Table.from_arrays(
+                [pa.array(X[:, i]) for i in range(X.shape[1])], names=[f"D{i}" for i in range(X.shape[1])]
+            )
+        )
+
     names = [f"col_{i}" for i in range(n_col)]
     seq = _create_sequence_from_ndarray(X, 1, 30)
     seq_ds = lgb.Dataset(seq, feature_name=names, free_raw_data=False).construct()
