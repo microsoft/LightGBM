@@ -76,7 +76,7 @@ CXX=g++-8
 CXX11=g++-8
 ```
 
-### Installing from Source with CMake <a name="install"></a>
+### Installing from Source with CMake <a id="install"></a>
 
 You need to install git and [CMake](https://cmake.org/) first.
 
@@ -218,7 +218,7 @@ These packages do not require compilation, so they will be faster and easier to 
 
 CRAN does not prepare precompiled binaries for Linux, and as of this writing neither does this project.
 
-### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
+### Installing from a Pre-compiled lib_lightgbm <a id="lib_lightgbm"></a>
 
 Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R-package that wraps it.
 
