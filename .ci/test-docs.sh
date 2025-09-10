@@ -28,12 +28,5 @@ if [[ $TASK == "check-links" ]]; then
         "./R-package/**/*.Rd"
         "./docs/_build/html/*.html"
     )
-    github_site="^https://github\.com.*"
-    lychee_exclude_list=( 
-        "--exclude=^https://www\.swig\.org/download\.html"
-        "--exclude=${github_site}"
-    )
-    # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    lychee --include="${github_site}" "${lychee_args[@]}" || exit 1
-    lychee "${lychee_exclude_list[@]}" --include-fragments "${lychee_args[@]}" || exit 1
+    lychee "${lychee_args[@]}" || exit 1
 fi
