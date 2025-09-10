@@ -1265,7 +1265,7 @@ Metric Parameters
 
       -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
-      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
+      -  ``auc_mu``, `AUC-mu <https://proceedings.mlr.press/v97/kleiman19a.html>`__
 
       -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
