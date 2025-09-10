@@ -29,27 +29,10 @@ if [[ $TASK == "check-links" ]]; then
     )
     lychee_github_site="^https://github\.com.*"
     lychee_exclude_list=( 
-        "^https://www\.swig\.org/download\.html"
-        "^https://github\.com.*"
-    )
-    lychee_options=(
-        "--config=./docs/.lychee.toml"
-        "--exclude-path=(^|/)docs/.*\.rst"
-        "--include-fragments"
-        "--dump"
-    )
-    lychee_inputs=(
-        "**/*.rst"
-        "**/*.md"
-        "./R-package/**/*.Rd"
-        "./docs/_build/html/*.html"
+        "--exclude ^https://www\.swig\.org/download\.html"
+        "--exclude ^https://github\.com.*"
     )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    # lychee --include "${lychee_github_site}" --github-token "${SECRETS_WORKFLOW}" --dump "${lychee_args[@]}"
-    # lychee --exclude "${lychee_exclude_list[@]}" --include-fragments --dump "${lychee_args[@]}"
-    lychee \
-    --exclude "${lychee_exclude_list[@]}" \
-    "${lychee_options[@]}" \
-    -- \
-    "${lychee_inputs[@]}"
+    lychee --include "${lychee_github_site}" --github-token "${SECRETS_WORKFLOW}" --dump "${lychee_args[@]}"
+    lychee "${lychee_exclude_list[@]}" --include-fragments --dump "${lychee_args[@]}"
 fi
