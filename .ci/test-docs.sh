@@ -29,8 +29,10 @@ if [[ $TASK == "check-links" ]]; then
     )
     lychee_github_site="^https://github\.com.*"
     lychee_exclude_list=( 
-        "--exclude ^https://www\.swig\.org/download\.html"
-        "--exclude ^https://github\.com.*"
+        "--exclude"
+        "^https://www\.swig\.org/download\.html"
+        "--exclude"
+        "${lychee_github_site}"
     )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
     lychee --include "${lychee_github_site}" --github-token "${SECRETS_WORKFLOW}" --dump "${lychee_args[@]}"
