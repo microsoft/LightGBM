@@ -21,6 +21,7 @@ if [[ $TASK == "check-links" ]]; then
     lychee_args=(
         "--config=./docs/.lychee.toml"
         "--exclude-path=(^|/)docs/.*\.rst"
+        "--"
         "**/*.rst"
         "**/*.md"
         "./R-package/**/*.Rd"
