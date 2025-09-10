@@ -34,6 +34,6 @@ if [[ $TASK == "check-links" ]]; then
 #        "^https://github\.com"
 #    )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    lychee --include="github" --dump "${lychee_args[@]}"
+    lychee --include=".*github.*" --dump "${lychee_args[@]}"
     # lychee --exclude="${lychee_github_site}" --include-fragments "${lychee_args[@]}"
 fi
