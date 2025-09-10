@@ -17,6 +17,7 @@ if [[ $TASK == "check-links" ]]; then
     # check docs for broken links
     conda install -y -n test-env 'lychee>=0.20.1'
     # to see all gained files add "--dump-inputs" flag
+    # to see all gained links add "--dump" flag
     lychee_args=(
     "--config=./docs/.lychee.toml"
     "--exclude-path=(^|/)docs/.*\.rst"
@@ -26,14 +27,11 @@ if [[ $TASK == "check-links" ]]; then
     "./docs/_build/html/*.html"
     )
     lychee_github_site="^https://github.com\.*"
-#    lychee_exclude_common=( 
-#        "^https://www\.swig\.org/download\.html"
-#    )
-#    lychee_exclude_github=(
-#        "${lychee_exclude_common[@]}"
-#        "^https://github\.com"
-#    )
+    lychee_exclude_list=( 
+        "^https://www\.swig\.org/download\.html"
+        "${lychee_github_site}"
+    )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    lychee --include "${lychee_github_site}" --dump "${lychee_args[@]}"
-    # lychee --exclude="${lychee_github_site}" --include-fragments "${lychee_args[@]}"
+    lychee --include "${lychee_github_site}" "${lychee_args[@]}"
+    lychee --exclude "${lychee_exclude_list[@]}" --include-fragments "${lychee_args[@]}"
 fi
