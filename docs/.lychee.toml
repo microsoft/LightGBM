@@ -9,6 +9,6 @@ require_https = true
 accept = ["100..=103", "200..=299"]
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/135.0.0.0 Safari/537.36"
 retry_wait_time = 5
-exclude = [
-  '^https://www\.swig\.org/download\.html',
-]
+#exclude = [
+#  '^https://www\.swig\.org/download\.html',
+#]
