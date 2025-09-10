@@ -25,14 +25,15 @@ if [[ $TASK == "check-links" ]]; then
     "./R-package/**/*.Rd"
     "./docs/_build/html/*.html"
     )
-    lychee_exclude_common=(
-        "^https://www\.swig\.org/download\.html"
-    )
-    lychee_exclude_github=(
-        "${lychee_exclude_common[@]}"
-        "^https://github\.com"
-    )
+    lychee_github_site="^https://github\.com"
+#    lychee_exclude_common=(
+#        "^https://www\.swig\.org/download\.html"
+#    )
+#    lychee_exclude_github=(
+#        "${lychee_exclude_common[@]}"
+#        "^https://github\.com"
+#    )
     # run twice to overcome https://github.com/lycheeverse/lychee/issues/1791
-    lychee --exclude="${lychee_exclude_github[@]}" "${lychee_args[@]}"
-    lychee --exclude="${lychee_exclude_common[@]}" --include="^https://github\.com" --include_fragments=false "${lychee_args[@]}" || exit 1
+    lychee --exclude="${lychee_github_site}" "${lychee_args[@]}"
+    lychee --include="${lychee_github_site}" --include_fragments=false "${lychee_args[@]}" || exit 1
 fi
