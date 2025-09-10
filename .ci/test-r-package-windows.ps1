@@ -78,10 +78,10 @@ Remove-Item C:\rtools45 -Force -Recurse -ErrorAction Ignore
 # NOTES:
 #    * some paths and file names are different on R4.0
 if ($env:R_VERSION -eq "oldest") {
-    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools40.html
-    $RTOOLS_INSTALL_PATH = "C:\rtools40"
-    $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-    $env:R_WINDOWS_VERSION = "4.0.5"
+    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools43.html
+    $RTOOLS_INSTALL_PATH = "C:\rtools43"
+    $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
+    $env:R_WINDOWS_VERSION = "4.3.1"
 } elseif ($env:R_VERSION -eq "latest") {
     # ref: https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
     $RTOOLS_INSTALL_PATH = "C:\rtools45"
