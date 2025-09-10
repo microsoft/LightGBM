@@ -3,7 +3,6 @@ no_progress = false
 cache = false
 scheme = ["http", "https", "file"]
 include_mail = false
-include_fragments = true
 no_ignore = true
 insecure = true
 require_https = true
