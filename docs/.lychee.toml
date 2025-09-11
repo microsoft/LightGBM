@@ -9,6 +9,7 @@ insecure = false
 require_https = true
 accept = ["100..=103", "200..=299"]
 user_agent = "curl/7.88.1"
+header = {"User-Agent" = "curl/7.88.1"}
 timeout = 30
 retry_wait_time = 10
 max_concurrency = 10
@@ -18,4 +19,5 @@ remap = [
 ]
 exclude = [
     '^https://www\.swig\.org/download\.html',
+    '^https://.*\.n[eur]*ips\.cc/.*',
 ]
