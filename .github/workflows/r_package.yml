@@ -62,39 +62,39 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: 'ubuntu:22.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: 'ubuntu:22.04'
           - os: macos-13
             task: r-package
             compiler: gcc
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: null
           - os: macos-13
             task: r-package
             compiler: clang
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MINGW
-            r_version: 3.6
+            r_version: oldest
             build_type: cmake
             container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: null
           # Visual Studio 2022
@@ -102,14 +102,14 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 3.6
+            r_version: oldest
             build_type: cmake
             container: null
           - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.3
+            r_version: latest
             build_type: cmake
             container: null
           ###############
@@ -119,33 +119,33 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MINGW
-            r_version: 3.6
+            r_version: oldest
             build_type: cran
             container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.3
+            r_version: latest
             build_type: cran
             container: null
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.3
+            r_version: latest
             build_type: cran
             container: 'ubuntu:22.04'
           - os: macos-13
             task: r-package
             compiler: clang
-            r_version: 4.3
+            r_version: latest
             build_type: cran
             container: null
           # macos-14 = arm64
           - os: macos-14
             task: r-package
             compiler: clang
-            r_version: 4.3
+            r_version: latest
             build_type: cran
             container: null
     steps:

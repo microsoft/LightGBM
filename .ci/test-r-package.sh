@@ -19,15 +19,26 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION="${R_VERSION%.*}"
-if [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.3.1
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
-    export R_LINUX_VERSION="4.3.1-1.2204.0"
+if [[ "${R_VERSION}" == "oldest" ]]; then
+    export R_MACOS_VERSION=4.0.5
+    # oldest available at https://cloud.r-project.org/bin/linux/ubuntu/jammy-cran40/
+    export R_LINUX_VERSION="4.2.0-1.2204.0"
+    export R_APT_REPO="jammy-cran40/"
+elif [[ "${R_VERSION}" == "latest" ]]; then
+    export R_MACOS_VERSION=4.5.1
+    # newest available at https://cloud.r-project.org/bin/linux/ubuntu/jammy-cran40/
+    export R_LINUX_VERSION="4.5.1-1.2204.0"
     export R_APT_REPO="jammy-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
     exit 1
+fi
+export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MACOS_VERSION}-${ARCH}.pkg
+
+if [[ "${OS_NAME}" == "linux" ]]; then
+    export R_MAJOR_MINOR="${R_LINUX_VERSION:0:3}"
+else
+    export R_MAJOR_MINOR="${R_MACOS_VERSION:0:3}"
 fi
 
 # installing precompiled R for Ubuntu
@@ -163,20 +174,20 @@ set +e
 
 used_correct_r_version=$(
     cat $LOG_FILE_NAME \
-    | grep --count "using R version ${R_VERSION}"
+    | grep --count "using R version ${R_MAJOR_MINOR}"
 )
 if [[ $used_correct_r_version -ne 1 ]]; then
-    echo "Unexpected R version was used. Expected '${R_VERSION}'."
+    echo "Unexpected R version was used. Expected '${R_MAJOR_MINOR}'."
     exit 1
 fi
 
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     passed_correct_r_version_to_cmake=$(
         cat $BUILD_LOG_FILE \
-        | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
+        | grep --count "R version passed into FindLibR.cmake: ${R_MAJOR_MINOR}"
     )
     if [[ $passed_correct_r_version_to_cmake -ne 1 ]]; then
-        echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
+        echo "Unexpected R version was passed into cmake. Expected '${R_MAJOR_MINOR}'."
         exit 1
     fi
 fi
