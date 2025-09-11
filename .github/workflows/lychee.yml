@@ -6,9 +6,6 @@ on:
   # Run once a day at 8:00am UTC
   schedule:
     - cron: '0 8 * * *'
-  push:
-    branches:
-      - ci/lychee
 
 env:
   COMPILER: gcc
