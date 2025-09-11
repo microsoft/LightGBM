@@ -21,4 +21,6 @@ exclude = [
     '^https://www\.swig\.org/download\.html$',
     '^https://.*\.n[eur]*ips\.cc/.*',
     '^https://www\.amd\.com/en/support\.html$',
+    '^https://www\.jstor\.org/stable/2281952$',
+    '^https://dl\.acm\.org/doi/10\.1145/3298689\.3347033$',
 ]
