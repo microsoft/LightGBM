@@ -13,11 +13,12 @@ header = {"User-Agent" = "curl/7.88.1"}
 timeout = 30
 retry_wait_time = 10
 max_concurrency = 10
-# remove anchors from GitHub URLs to overcome https://github.com/lycheeverse/lychee/issues/1791
+# remove anchors from GitHub URLs to overcome https://github.com/lycheeverse/lychee/issues/1729
 remap = [
     '(?P<host>^https://github\.com)/(?P<path>.*)#(?P<anchor>.*)$ $host/$path/',
 ]
 exclude = [
-    '^https://www\.swig\.org/download\.html',
+    '^https://www\.swig\.org/download\.html$',
     '^https://.*\.n[eur]*ips\.cc/.*',
+    '^https://www\.amd\.com/en/support\.html$',
 ]
