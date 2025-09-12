@@ -16,6 +16,11 @@ $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
+# create the artifact upload directory if it doesn't exist yet
+if ($env:BUILD_ARTIFACTSTAGINGDIRECTORY -ne "") {
+    [Void][System.IO.Directory]::CreateDirectory($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
+}
+
 if ($env:TASK -eq "r-package") {
     & .\.ci\test-r-package-windows.ps1 ; Assert-Output $?
     exit 0
