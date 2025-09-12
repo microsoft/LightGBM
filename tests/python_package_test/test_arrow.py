@@ -456,7 +456,12 @@ def test_arrow_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
-def safe_array_equal_with_nulls(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) -> bool:
+def pyarrow_array_equal(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) -> bool:
+    """Similar to ``np.array_equal()``, but for ``pyarrow.Array`` objects.
+    
+    ``pyarrow.Array`` objects with identical values do not compare equal if any of those
+    values are nulls. This function treats them as equal.
+    """
     if len(arr1) != len(arr2):
         return False
 
