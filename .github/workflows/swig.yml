@@ -21,8 +21,6 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # all SWIG jobs produce artifacts
   PRODUCES_ARTIFACTS: 'true'
-  # these jobs do not rely on conda
-  SETUP_CONDA: 'false'
   # all jobs here have the same ''
   TASK: swig
 
@@ -40,13 +38,16 @@ jobs:
           - os: ubuntu-latest
             compiler: gcc
             container: 'lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64'
+            artifact-name: swig-linux-x86_64-jar
           - os: macos-13
             compiler: clang
             container: null
+            artifact-name: swig-macos-x86_64-jar
           # Visual Studio 2022
           - os: windows-2022
             compiler: msvc
             container: null
+            artifact-name: swig-windows-x86_64-jar
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -76,7 +77,7 @@ jobs:
       - name: upload jar
         uses: actions/upload-artifact@v4
         with:
-          name: linux-aarch64-wheel
+          name: ${{ matrix.artifact-name }}
           path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}/*.jar
           if-no-files-found: error
   all-swig-jobs-successful:
