@@ -458,7 +458,7 @@ def test_arrow_feature_name_manual():
 
 def pyarrow_array_equal(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) -> bool:
     """Similar to ``np.array_equal()``, but for ``pyarrow.Array`` objects.
-    
+
     ``pyarrow.Array`` objects with identical values do not compare equal if any of those
     values are nulls. This function treats them as equal.
     """
@@ -486,12 +486,12 @@ def test_get_data_arrow_table():
 
         assert original_column.type == returned_column.type
         assert original_column.num_chunks == returned_column.num_chunks
-        assert safe_array_equal_with_nulls(original_column, returned_column)
+        assert pyarrow_array_equal(original_column, returned_column)
 
         for i in range(original_column.num_chunks):
             original_chunk_array = pa.chunked_array([original_column.chunk(i)])
             returned_chunk_array = pa.chunked_array([returned_column.chunk(i)])
-            assert safe_array_equal_with_nulls(original_chunk_array, returned_chunk_array)
+            assert pyarrow_array_equal(original_chunk_array, returned_chunk_array)
 
 
 def test_get_data_arrow_table_subset(rng):
@@ -517,7 +517,7 @@ def test_get_data_arrow_table_subset(rng):
         expected_col = expected_subset[column_name]
         returned_col = subset_data[column_name]
         assert expected_col.type == returned_col.type
-        assert safe_array_equal_with_nulls(expected_col, returned_col)
+        assert pyarrow_array_equal(expected_col, returned_col)
 
 
 def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
