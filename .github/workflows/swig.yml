@@ -60,6 +60,7 @@ jobs:
         run: |
           export BUILD_DIRECTORY="${GITHUB_WORKSPACE}"
           export COMPILER="${{ matrix.compiler }}"
+          export CONDA="${HOME}/miniforge"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
