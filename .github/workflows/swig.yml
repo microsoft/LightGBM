@@ -19,6 +19,8 @@ env:
   BUILD_ARTIFACTSTAGINGDIRECTORY: 'artifacts'
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # all SWIG jobs produce artifacts
+  PRODUCES_ARTIFACTS: 'true'
   # these jobs do not rely on conda
   SETUP_CONDA: 'false'
   # all jobs here have the same ''
@@ -76,6 +78,7 @@ jobs:
         with:
           name: linux-aarch64-wheel
           path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}/*.jar
+          if-no-files-found: error
   all-swig-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
