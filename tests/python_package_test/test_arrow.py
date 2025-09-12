@@ -481,13 +481,12 @@ def test_get_data_arrow_table():
 
         assert original_column.type == returned_column.type
         assert original_column.num_chunks == returned_column.num_chunks
+        assert safe_array_equal_with_nulls(original_column, returned_column)
 
         for i in range(original_column.num_chunks):
             original_chunk_array = pa.chunked_array([original_column.chunk(i)])
             returned_chunk_array = pa.chunked_array([returned_column.chunk(i)])
             assert safe_array_equal_with_nulls(original_chunk_array, returned_chunk_array)
-
-        assert safe_array_equal_with_nulls(original_column, returned_column)
 
 
 def test_get_data_arrow_table_subset(rng):
