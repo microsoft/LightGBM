@@ -597,8 +597,6 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
    **Note**: Match your Visual C++ version:
 
-   Visual Studio 2015 -> ``msvc-14.0-64.exe``,
-
    Visual Studio 2017 -> ``msvc-14.1-64.exe``,
 
    Visual Studio 2019 -> ``msvc-14.2-64.exe``,
@@ -611,12 +609,12 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -A x64 -DUSE_GPU=ON -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0
+     cmake -B build -S . -A x64 -DUSE_GPU=ON -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.3
      # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-     # cmake -B build -S . -A x64 -DUSE_GPU=ON -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0 -DOpenCL_LIBRARY="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/lib/x64/OpenCL.lib" -DOpenCL_INCLUDE_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/include"
+     # cmake -B build -S . -A x64 -DUSE_GPU=ON -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.3 -DOpenCL_LIBRARY="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/lib/x64/OpenCL.lib" -DOpenCL_INCLUDE_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/include"
      cmake --build build --target ALL_BUILD --config Release
 
-   **Note**: ``C:/local/boost_1_63_0`` and ``C:/local/boost_1_63_0/lib64-msvc-14.0`` are locations of your **Boost** binaries (assuming you've downloaded 1.63.0 version for Visual Studio 2015).
+   **Note**: ``C:/local/boost_1_63_0`` and ``C:/local/boost_1_63_0/lib64-msvc-14.3`` are locations of your **Boost** binaries (assuming you've downloaded 1.63.0 version for Visual Studio 2022).
 
 The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 
