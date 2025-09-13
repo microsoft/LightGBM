@@ -49,6 +49,11 @@ class CUDAObjectiveInterface: public HOST_OBJECTIVE {
     SynchronizeCUDADevice(__FILE__, __LINE__);
   }
 
+  void GetGradients(const double* scores, const data_size_t /*num_sampled_queries*/, const data_size_t* /*sampled_query_indices*/, score_t* gradients, score_t* hessians) const override {
+    LaunchGetGradientsKernel(scores, gradients, hessians);
+    SynchronizeCUDADevice(__FILE__, __LINE__);
+  }
+
   void RenewTreeOutputCUDA(const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
     const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override {
     global_timer.Start("CUDAObjectiveInterface::LaunchRenewTreeOutputCUDAKernel");

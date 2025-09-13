@@ -143,7 +143,7 @@ class GBDT : public GBDTBase {
   */
   void Train(int snapshot_freq, const std::string& model_output_path) override;
 
-  void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) override;
+  void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) override;
 
   /*!
   * \brief Training logic
@@ -433,11 +433,18 @@ class GBDT : public GBDTBase {
       num_iteration_for_pred_ = num_iteration_for_pred_ - start_iteration;
     }
     start_iteration_for_pred_ = start_iteration;
-    if (is_pred_contrib) {
+
+    if (is_pred_contrib && !models_initialized_) {
+      std::lock_guard<std::mutex> lock(instance_mutex_);
+      if (models_initialized_)
+        return;
+
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
         models_[i]->RecomputeMaxDepth();
       }
+
+      models_initialized_ = true;
     }
   }
 
@@ -532,6 +539,8 @@ class GBDT : public GBDTBase {
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
+  /*! \brief Minimum improvement for early stopping */
+  double early_stopping_min_delta_;
   /*! \brief Only use first metric for early stopping */
   bool es_first_metric_only_;
   /*! \brief Best iteration(s) for early stopping */
@@ -546,6 +555,10 @@ class GBDT : public GBDTBase {
   int max_feature_idx_;
   /*! \brief Parser config file content */
   std::string parser_config_str_ = "";
+  /*! \brief Are the models initialized (passed RecomputeMaxDepth phase) */
+  bool models_initialized_ = false;
+  /*! \brief Mutex for exclusive models initialization */
+  std::mutex instance_mutex_;
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */

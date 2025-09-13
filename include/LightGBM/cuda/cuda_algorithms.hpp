@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifndef LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
@@ -14,6 +15,7 @@
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/cuda_utils.hu>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/utils/log.h>
 
 #include <algorithm>
@@ -115,7 +117,7 @@ __device__ __forceinline__ T ShuffleReduceSumWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -145,7 +147,7 @@ __device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMax(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -174,7 +176,7 @@ __device__ __forceinline__ void GlobalMemoryPrefixSum(T* array, const size_t len
   for (size_t index = start; index < end; ++index) {
     thread_sum += array[index];
   }
-  __shared__ T shared_mem[32];
+  __shared__ T shared_mem[WARPSIZE];
   const T thread_base = ShufflePrefixSumExclusive<T>(thread_sum, shared_mem);
   if (start < end) {
     array[start] += thread_base;
@@ -196,7 +198,7 @@ __device__ __forceinline__ T ShuffleReduceMinWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMin(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -483,7 +485,7 @@ __device__ void ShuffleSortedPrefixSumDevice(const VAL_T* in_values,
                                 const INDEX_T* sorted_indices,
                                 REDUCE_VAL_T* out_values,
                                 const INDEX_T num_data) {
-  __shared__ REDUCE_VAL_T shared_buffer[32];
+  __shared__ REDUCE_VAL_T shared_buffer[WARPSIZE];
   const INDEX_T num_data_per_thread = (num_data + static_cast<INDEX_T>(blockDim.x) - 1) / static_cast<INDEX_T>(blockDim.x);
   const INDEX_T start = num_data_per_thread * static_cast<INDEX_T>(threadIdx.x);
   const INDEX_T end = min(start + num_data_per_thread, num_data);
@@ -572,8 +574,48 @@ __device__ VAL_T PercentileDevice(const VAL_T* values,
                                   INDEX_T* indices,
                                   REDUCE_WEIGHT_T* weights_prefix_sum,
                                   const double alpha,
-                                  const INDEX_T len);
-
+                                  const INDEX_T len) {
+  if (len <= 1) {
+    return values[0];
+  }
+  if (!USE_WEIGHT) {
+    BitonicArgSortDevice<VAL_T, INDEX_T, ASCENDING, BITONIC_SORT_NUM_ELEMENTS / 2, 10>(values, indices, len);
+    const double float_pos = (1.0f - alpha) * len;
+    const INDEX_T pos = static_cast<INDEX_T>(float_pos);
+    if (pos < 1) {
+      return values[indices[0]];
+    } else if (pos >= len) {
+      return values[indices[len - 1]];
+    } else {
+      const double bias = float_pos - pos;
+      const VAL_T v1 = values[indices[pos - 1]];
+      const VAL_T v2 = values[indices[pos]];
+      return static_cast<VAL_T>(v1 - (v1 - v2) * bias);
+    }
+  } else {
+    BitonicArgSortDevice<VAL_T, INDEX_T, ASCENDING, BITONIC_SORT_NUM_ELEMENTS / 4, 9>(values, indices, len);
+    ShuffleSortedPrefixSumDevice<WEIGHT_T, REDUCE_WEIGHT_T, INDEX_T>(weights, indices, weights_prefix_sum, len);
+    const REDUCE_WEIGHT_T threshold = weights_prefix_sum[len - 1] * (1.0f - alpha);
+    __shared__ INDEX_T pos;
+    if (threadIdx.x == 0) {
+      pos = len;
+    }
+    __syncthreads();
+    for (INDEX_T index = static_cast<INDEX_T>(threadIdx.x); index < len; index += static_cast<INDEX_T>(blockDim.x)) {
+      if (weights_prefix_sum[index] > threshold && (index == 0 || weights_prefix_sum[index - 1] <= threshold)) {
+        pos = index;
+      }
+    }
+    __syncthreads();
+    pos = min(pos, len - 1);
+    if (pos == 0 || pos == len - 1) {
+      return values[pos];
+    }
+    const VAL_T v1 = values[indices[pos - 1]];
+    const VAL_T v2 = values[indices[pos]];
+    return static_cast<VAL_T>(v1 - (v1 - v2) * (threshold - weights_prefix_sum[pos - 1]) / (weights_prefix_sum[pos] - weights_prefix_sum[pos - 1]));
+  }
+}
 
 }  // namespace LightGBM
 

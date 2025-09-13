@@ -6,10 +6,6 @@
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
-#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
@@ -43,6 +39,7 @@
 #'   , early_stopping_rounds = 3L
 #' )
 #' }
+#'
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -54,8 +51,6 @@ lgb.train <- function(params = list(),
                       record = TRUE,
                       eval_freq = 1L,
                       init_model = NULL,
-                      colnames = NULL,
-                      categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
                       reset_data = FALSE,
@@ -156,21 +151,12 @@ lgb.train <- function(params = list(),
 
   # Construct datasets, if needed
   data$update_params(params = params)
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
-  }
   data$construct()
 
   # Check interaction constraints
-  cnames <- NULL
-  if (!is.null(colnames)) {
-    cnames <- colnames
-  } else if (!is.null(data$get_colnames())) {
-    cnames <- data$get_colnames()
-  }
   params[["interaction_constraints"]] <- .check_interaction_constraints(
     interaction_constraints = interaction_constraints
-    , column_names = cnames
+    , column_names = data$get_colnames()
   )
 
   # Update parameters with parsed parameters
@@ -178,11 +164,6 @@ lgb.train <- function(params = list(),
 
   # Create the predictor set
   data$.__enclos_env__$private$set_predictor(predictor)
-
-  # Write column names
-  if (!is.null(colnames)) {
-    data$set_colnames(colnames)
-  }
 
   valid_contain_train <- FALSE
   train_data_name <- "train"
@@ -243,7 +224,9 @@ lgb.train <- function(params = list(),
 
   # Cannot use early stopping with 'dart' boosting
   if (using_dart) {
-    warning("Early stopping is not available in 'dart' mode.")
+    if (using_early_stopping) {
+      warning("Early stopping is not available in 'dart' mode.")
+    }
     using_early_stopping <- FALSE
 
     # Remove the cb_early_stop() function if it was passed in to callbacks

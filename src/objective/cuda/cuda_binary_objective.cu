@@ -2,20 +2,23 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
 
-#include <algorithm>
-
 #include "cuda_binary_objective.hpp"
+
+#include <LightGBM/cuda/cuda_rocm_interop.h>
+
+#include <algorithm>
 
 namespace LightGBM {
 
 template <bool USE_WEIGHT>
 __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_sum_labels,
                                                      double* out_cuda_sum_weights, const label_t* cuda_weights) {
-  __shared__ double shared_buffer[32];
+  __shared__ double shared_buffer[WARPSIZE];
   const uint32_t mask = 0xffffffff;
   const uint32_t warpLane = threadIdx.x % warpSize;
   const uint32_t warpID = threadIdx.x / warpSize;

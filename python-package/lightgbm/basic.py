@@ -1,5 +1,13 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+
+# This import causes lib_lightgbm.{dll,dylib,so} to be loaded.
+# It's intentionally done here, as early as possible, to avoid issues like
+# "libgomp.so.1: cannot allocate memory in static TLS block" on aarch64 Linux.
+#
+# For details, see the "cannot allocate memory in static TLS block" entry in docs/FAQ.rst.
+from .libpath import _LIB  # isort: skip
+
 import abc
 import ctypes
 import inspect
@@ -19,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (
+    CFFI_INSTALLED,
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
@@ -26,7 +35,6 @@ from .compat import (
     arrow_is_floating,
     arrow_is_integer,
     concat,
-    dt_DataTable,
     pa_Array,
     pa_chunked_array,
     pa_ChunkedArray,
@@ -36,7 +44,6 @@ from .compat import (
     pd_DataFrame,
     pd_Series,
 )
-from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -108,7 +115,6 @@ _LGBM_TrainDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
@@ -129,7 +135,6 @@ _LGBM_PredictDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     pa_Table,
 ]
@@ -156,6 +161,14 @@ _LGBM_SetFieldType = Union[
 
 ZERO_THRESHOLD = 1e-35
 
+_MULTICLASS_OBJECTIVES = {"multiclass", "multiclassova", "multiclass_ova", "ova", "ovr", "softmax"}
+
+
+class LightGBMError(Exception):
+    """Error thrown by LightGBM."""
+
+    pass
+
 
 def _is_zero(x: float) -> bool:
     return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
@@ -171,6 +184,23 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
         )
     )
     return sample_cnt.value
+
+
+def _np2d_to_np1d(mat: np.ndarray) -> Tuple[np.ndarray, int]:
+    if mat.dtype in (np.float32, np.float64):
+        dtype = mat.dtype
+    else:
+        dtype = np.float32
+    if mat.flags["F_CONTIGUOUS"]:
+        order = "F"
+        layout = _C_API_IS_COL_MAJOR
+    else:
+        order = "C"
+        layout = _C_API_IS_ROW_MAJOR
+    # ensure dtype and order, copies if either do not match
+    data = np.asarray(mat, dtype=dtype, order=order)
+    # flatten array without copying
+    return data.ravel(order=order), layout
 
 
 class _MissingType(Enum):
@@ -256,26 +286,13 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode("utf-8")))
 
 
-def _load_lib() -> ctypes.CDLL:
-    """Load LightGBM library."""
-    lib_path = find_lib_path()
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
-    lib.LGBM_GetLastError.restype = ctypes.c_char_p
+# connect the Python logger to logging in lib_lightgbm
+if environ.get("LIGHTGBM_BUILD_DOC", "False") != "True":
+    _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
-    lib.callback = callback(_log_callback)  # type: ignore[attr-defined]
-    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(lib.LGBM_GetLastError().decode("utf-8"))
-    return lib
-
-
-# we don't need lib_lightgbm while building docs
-_LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", False):
-    from unittest.mock import Mock  # isort: skip
-
-    _LIB = Mock(ctypes.CDLL)  # type: ignore
-else:
-    _LIB = _load_lib()
+    _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
+    if _LIB.LGBM_RegisterLogCallback(_LIB.callback) != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
 
 
 _NUMERIC_TYPES = (int, float, bool)
@@ -355,13 +372,13 @@ def _list_to_1d_numpy(
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
     elif _is_1d_list(data):
-        return np.array(data, dtype=dtype, copy=False)
+        return np.asarray(data, dtype=dtype)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+        return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
         )
 
 
@@ -549,14 +566,9 @@ class _TempFile:
             self.path.unlink()
 
 
-class LightGBMError(Exception):
-    """Error thrown by LightGBM."""
-
-    pass
-
-
 # DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
+# ref: https://peps.python.org/pep-0565/#additional-use-case-for-futurewarning
+class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
@@ -678,7 +690,8 @@ _C_API_DTYPE_FLOAT64 = 1
 _C_API_DTYPE_INT32 = 2
 _C_API_DTYPE_INT64 = 3
 
-"""Matrix is row major in Python"""
+"""Macro definition of data order in matrix"""
+_C_API_IS_COL_MAJOR = 0
 _C_API_IS_ROW_MAJOR = 1
 
 """Macro definition of prediction type in C API of LightGBM"""
@@ -726,7 +739,7 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
 def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -747,7 +760,7 @@ def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray
 def _c_int_array(data: np.ndarray) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -778,8 +791,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
     ]
     if bad_pandas_dtypes:
         raise ValueError(
-            'pandas dtypes must be int, float or bool.\n'
-            f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}'
+            f"pandas dtypes must be int, float or bool.\nFields with bad pandas dtypes: {', '.join(bad_pandas_dtypes)}"
         )
 
 
@@ -828,7 +840,7 @@ def _data_from_pandas(
         for col, category in zip(cat_cols, pandas_categorical):
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
-    if len(cat_cols):  # cat_cols is list
+    if cat_cols:  # cat_cols is list
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
 
     # use cat cols from DataFrame
@@ -870,8 +882,7 @@ def _load_pandas_categorical(
         max_offset = -getsize(file_name)
         with open(file_name, "rb") as f:
             while True:
-                if offset < max_offset:
-                    offset = max_offset
+                offset = max(offset, max_offset)
                 f.seek(offset, SEEK_END)
                 lines = f.readlines()
                 if len(lines) >= 2:
@@ -1089,7 +1100,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1119,7 +1130,7 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        elif isinstance(data, pd_DataFrame) and validate_features:
+        if isinstance(data, pd_DataFrame) and validate_features:
             data_names = [str(x) for x in data.columns]
             ptr_names = (ctypes.c_char_p * len(data_names))()
             ptr_names[:] = [x.encode("utf-8") for x in data_names]
@@ -1208,13 +1219,6 @@ class _InnerPredictor:
                 num_iteration=num_iteration,
                 predict_type=predict_type,
             )
-        elif isinstance(data, dt_DataTable):
-            preds, nrow = self.__pred_for_np2d(
-                mat=data.to_numpy(),
-                start_iteration=start_iteration,
-                num_iteration=num_iteration,
-                predict_type=predict_type,
-            )
         else:
             try:
                 _log_warning("Converting data to scipy sparse matrix.")
@@ -1230,7 +1234,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
-        if not is_sparse and preds.size != nrow:
+        if not is_sparse and (preds.size != nrow or pred_leaf or pred_contrib):
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -1273,10 +1277,7 @@ class _InnerPredictor:
         predict_type: int,
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-        else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+        data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         n_preds = self.__get_num_preds(
             start_iteration=start_iteration,
@@ -1296,7 +1297,7 @@ class _InnerPredictor:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
@@ -1691,8 +1692,8 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[np.ndarray, int]:
         """Predict for a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -1747,7 +1748,15 @@ class _InnerPredictor:
 
 
 class Dataset:
-    """Dataset in LightGBM."""
+    """
+    Dataset in LightGBM.
+
+    LightGBM does not train on raw data.
+    It discretizes continuous features into histogram bins, tries to combine categorical features,
+    and automatically handles missing and infinite values.
+
+    This class handles that preprocessing, and holds that alternative representation of the input data.
+    """
 
     def __init__(
         self,
@@ -1767,7 +1776,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2103,6 +2112,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+        elif _is_pyarrow_table(data) and feature_name == "auto":
+            feature_name = data.column_names
 
         # process for args
         params = {} if params is None else params
@@ -2162,7 +2173,6 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
-            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
@@ -2172,8 +2182,6 @@ class Dataset:
                 raise TypeError("Data list can only be of ndarray or Sequence")
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
-        elif isinstance(data, dt_DataTable):
-            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -2288,11 +2296,7 @@ class Dataset:
             raise ValueError("Input numpy.ndarray must be 2 dimensional")
 
         self._handle = ctypes.c_void_p()
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-        else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
-
+        data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
             _LIB.LGBM_DatasetCreateFromMat(
@@ -2300,7 +2304,7 @@ class Dataset:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
@@ -2322,6 +2326,7 @@ class Dataset:
             ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
         else:
             ptr_data = (ctypes.POINTER(ctypes.c_float) * len(mats))()
+        layouts = (ctypes.c_int * len(mats))()
 
         holders = []
         type_ptr_data = -1
@@ -2335,15 +2340,13 @@ class Dataset:
 
             nrow[i] = mat.shape[0]
 
-            if mat.dtype == np.float32 or mat.dtype == np.float64:
-                mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-            else:  # change non-float data to float data, need to copy
-                mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
+            mat, layout = _np2d_to_np1d(mat)
 
-            chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mats[i])
+            chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mat)
             if type_ptr_data != -1 and chunk_type_ptr_data != type_ptr_data:
                 raise ValueError("Input chunks must have same type")
             ptr_data[i] = chunk_ptr_data
+            layouts[i] = layout
             type_ptr_data = chunk_type_ptr_data
             holders.append(holder)
 
@@ -2355,7 +2358,7 @@ class Dataset:
                 ctypes.c_int(type_ptr_data),
                 nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ctypes.c_int32(ncol),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                layouts,
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
@@ -2438,8 +2441,8 @@ class Dataset:
         ref_dataset: Optional[_DatasetHandle],
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -2484,13 +2487,13 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        for k in other_params:
+        for k, v in other_params.items():
             if k not in ignore_keys:
-                if k not in params or params[k] != other_params[k]:
+                if k not in params or params[k] != v:
                     return False
-        for k in params:
+        for k, v in params.items():
             if k not in ignore_keys:
-                if k not in other_params or params[k] != other_params[k]:
+                if k not in other_params or v != other_params[k]:
                     return False
         return True
 
@@ -2599,7 +2602,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2744,7 +2747,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             The data to be set.
 
         Returns
@@ -3217,7 +3220,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3230,7 +3233,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3243,7 +3246,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3256,7 +3259,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3268,15 +3271,15 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, dt_DataTable):
-                    self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
+                elif isinstance(self.data, pa_Table):
+                    self.data = self.data.take(self.used_indices)
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(
-                        f"Cannot subset {type(self.data).__name__} type of raw data.\n" "Returning original raw data"
+                        f"Cannot subset {type(self.data).__name__} type of raw data.\nReturning original raw data"
                     )
             self._need_slice = False
         if self.data is None:
@@ -3291,7 +3294,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -3456,8 +3459,6 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3466,8 +3467,6 @@ class Dataset:
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3483,19 +3482,6 @@ class Dataset:
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
-                else:
-                    self.data = None
-            elif isinstance(self.data, dt_DataTable):
-                if isinstance(other.data, np.ndarray):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif isinstance(other.data, scipy.sparse.spmatrix):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -3511,7 +3497,7 @@ class Dataset:
             _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
         _log_warning(
-            "Reseting categorical features.\n"
+            "Resetting categorical features.\n"
             "You can set new categorical features via ``set_categorical_feature`` method"
         )
         self.categorical_feature = "auto"
@@ -3690,9 +3676,12 @@ class Booster:
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
+            if params:
+                _log_warning("Ignoring params argument, using parameters from model string.")
+            params = self._get_loaded_param()
         else:
             raise TypeError(
-                "Need at least one training dataset or model file or model string " "to create Booster instance"
+                "Need at least one training dataset or model file or model string to create Booster instance"
             )
         self.params = params
 
@@ -3907,7 +3896,7 @@ class Booster:
                 return feature_name
 
             def _is_single_node_tree(tree: Dict[str, Any]) -> bool:
-                return set(tree.keys()) == {"leaf_value"}
+                return set(tree.keys()) == {"leaf_value", "leaf_count"}
 
             # Create the node record, and populate universal data members
             node: Dict[str, Union[int, str, None]] = OrderedDict()
@@ -4026,7 +4015,7 @@ class Booster:
         if not isinstance(data, Dataset):
             raise TypeError(f"Validation data should be Dataset instance, met {type(data).__name__}")
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, " "you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(
             _LIB.LGBM_BoosterAddValidData(
                 self._handle,
@@ -4099,8 +4088,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the update was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``update()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``update()`` would produce a non-empty tree.
         """
         # need reset training data
         if train_set is None and self.train_set_version != self.train_set.version:
@@ -4112,7 +4106,7 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError(f"Training data should be Dataset instance, met {type(train_set).__name__}")
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, " "you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(
                 _LIB.LGBM_BoosterResetTrainingData(
@@ -4122,18 +4116,18 @@ class Booster:
             )
             self.__inner_predict_buffer[0] = None
             self.train_set_version = self.train_set.version
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
                 raise LightGBMError("Cannot update due to null objective function.")
             _safe_call(
                 _LIB.LGBM_BoosterUpdateOneIter(
                     self._handle,
-                    ctypes.byref(is_finished),
+                    ctypes.byref(produced_empty_tree),
                 )
             )
             self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-            return is_finished.value == 1
+            return produced_empty_tree.value == 1
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
@@ -4165,8 +4159,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the boost was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``__boost()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``__boost()`` would produce a non-empty tree.
         """
         if self.__num_class > 1:
             grad = grad.ravel(order="F")
@@ -4184,17 +4183,17 @@ class Booster:
                 f"don't match training data length ({num_train_data}) * "
                 f"number of models per one iteration ({self.__num_class})"
             )
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         _safe_call(
             _LIB.LGBM_BoosterUpdateOneIterCustom(
                 self._handle,
                 grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                 hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                ctypes.byref(is_finished),
+                ctypes.byref(produced_empty_tree),
             )
         )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-        return is_finished.value == 1
+        return produced_empty_tree.value == 1
 
     def rollback_one_iter(self) -> "Booster":
         """Rollback one iteration.
@@ -4346,7 +4345,7 @@ class Booster:
             self.add_valid(data, name)
             data_idx = self.__num_dataset - 1
 
-        return self.__inner_eval(name, data_idx, feval)
+        return self.__inner_eval(data_name=name, data_idx=data_idx, feval=feval)
 
     def eval_train(
         self,
@@ -4380,7 +4379,7 @@ class Booster:
         result : list
             List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
-        return self.__inner_eval(self._train_data_name, 0, feval)
+        return self.__inner_eval(data_name=self._train_data_name, data_idx=0, feval=feval)
 
     def eval_valid(
         self,
@@ -4417,7 +4416,7 @@ class Booster:
         return [
             item
             for i in range(1, self.__num_dataset)
-            for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)
+            for item in self.__inner_eval(data_name=self.name_valid_sets[i - 1], data_idx=i, feval=feval)
         ]
 
     def save_model(
@@ -4689,7 +4688,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4770,7 +4769,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
@@ -5116,8 +5115,7 @@ class Booster:
                 if split_feature == feature:
                     if isinstance(root["threshold"], str):
                         raise LightGBMError("Cannot compute split value histogram for the categorical feature")
-                    else:
-                        values.append(root["threshold"])
+                    values.append(root["threshold"])
                 add(root["left_child"])
                 add(root["right_child"])
 
@@ -5144,6 +5142,7 @@ class Booster:
 
     def __inner_eval(
         self,
+        *,
         data_name: str,
         data_idx: int,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]],

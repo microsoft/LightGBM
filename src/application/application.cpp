@@ -121,7 +121,9 @@ void Application::LoadData() {
   if (config_.is_provide_training_metric) {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -149,7 +151,9 @@ void Application::LoadData() {
       valid_metrics_.emplace_back();
       for (auto metric_type : config_.metric) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-        if (metric == nullptr) { continue; }
+        if (metric == nullptr) {
+          continue;
+        }
         metric->Init(valid_datas_.back()->metadata(),
                      valid_datas_.back()->num_data());
         valid_metrics_.back().push_back(std::move(metric));
@@ -226,12 +230,24 @@ void Application::Predict() {
                       config_.precise_float_parser);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
-    std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
+
+    size_t nrow = result_reader.Lines().size();
+    size_t ncol = 0;
+    if (nrow > 0) {
+      ncol = Common::StringToArray<int>(result_reader.Lines()[0], '\t').size();
+    }
+    std::vector<int> pred_leaf;
+    pred_leaf.resize(nrow * ncol);
+
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
-      pred_leaf[i] = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
+    for (int irow = 0; irow < static_cast<int>(nrow); ++irow) {
+      auto line_vec = Common::StringToArray<int>(result_reader.Lines()[irow], '\t');
+      CHECK_EQ(line_vec.size(), ncol);
+      for (int i_row_item = 0; i_row_item < static_cast<int>(ncol); ++i_row_item) {
+        pred_leaf[irow * ncol + i_row_item] = line_vec[i_row_item];
+      }
       // Free memory
-      result_reader.Lines()[i].clear();
+      result_reader.Lines()[irow].clear();
     }
     DatasetLoader dataset_loader(config_, nullptr,
                                  config_.num_class, config_.data.c_str());
@@ -242,7 +258,8 @@ void Application::Predict() {
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-    boosting_->RefitTree(pred_leaf);
+
+    boosting_->RefitTree(pred_leaf.data(), nrow, ncol);
     boosting_->SaveModelToFile(0, -1, config_.saved_feature_importance_type,
                                config_.output_model.c_str());
     Log::Info("Finished RefitTree");

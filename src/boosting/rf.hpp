@@ -168,7 +168,7 @@ class RF : public GBDT {
               output = init_scores_[cur_tree_id];
             }
           }
-          new_tree->AsConstantTree(output);
+          new_tree->AsConstantTree(output, num_data_);
           MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
           UpdateScore(new_tree.get(), cur_tree_id);
           MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
@@ -182,7 +182,9 @@ class RF : public GBDT {
   }
 
   void RollbackOneIter() override {
-    if (iter_ <= 0) { return; }
+    if (iter_ <= 0) {
+      return;
+    }
     int cur_iter = iter_ + num_init_iteration_ - 1;
     // reset score
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {

@@ -156,3 +156,29 @@ for (model_name in names(models)) {
     expect_true(all(counts > 1L & counts <= N))
   })
 }
+
+test_that("num_iteration and start_iteration work as expected", {
+  set.seed(1L)
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  bst <- lightgbm(
+    data = as.matrix(train$data)
+    , label = train$label
+    , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
+    , nrounds = 5L
+    , verbose = .LGB_VERBOSITY
+  )
+
+  first2 <- lgb.model.dt.tree(bst, num_iteration = 2L)
+  last3 <- lgb.model.dt.tree(bst, num_iteration = 3L, start_iteration = 3L)
+  all5 <- lgb.model.dt.tree(bst)
+  too_many <- lgb.model.dt.tree(bst, num_iteration = 10L)
+
+  expect_equal(data.table::rbindlist(list(first2, last3)), all5)
+  expect_equal(too_many, all5)
+
+  # Check tree indices
+  expect_equal(unique(first2[["tree_index"]]), 0L:1L)
+  expect_equal(unique(last3[["tree_index"]]), 2L:4L)
+  expect_equal(unique(all5[["tree_index"]]), 0L:4L)
+})

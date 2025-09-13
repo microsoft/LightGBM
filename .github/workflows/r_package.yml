@@ -3,11 +3,10 @@ name: R-package
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
-    - release/*
+      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -15,6 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # in CMake-driven builds, parallelize compilation
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # on Debian-based images, avoid interactive prompts
+  DEBIAN_FRONTEND: noninteractive
+  # Fix issues like the following that can show up running 'R CMD check' on
+  # specific clang versions:
+  #
+  #   * checking for detritus in the temp directory ... NOTE
+  #   Found the following files/directories:
+  #     ‘dsymutil-63923a’ ‘dsymutil-9aa721’ ‘dsymutil-b7e1bb’
+  #
+  # These are unlikely to show up in CRAN's checks. They come from
+  # 'dsymutil ---gen-reproducer' being run (not something LightGBM explicitly does).
+  #
+  # ref:
+  #   - https://github.com/llvm/llvm-project/issues/61920
+  #   - https://github.com/golang/go/issues/59026#issuecomment-1520487072
+  DSYMUTIL_REPRODUCER_PATH: /dev/null
+  # parallelize compilation (extra important for Linux, where CRAN doesn't supply pre-compiled binaries)
+  MAKEFLAGS: "-j4"
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
   _R_CHECK_SYSTEM_CLOCK_: 0
@@ -28,6 +47,7 @@ env:
 
 jobs:
   test:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -42,34 +62,22 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-            container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 3.6
-            build_type: cmake
-            container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: gcc
             r_version: 4.3
             build_type: cmake
             container: null
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: clang
             r_version: 4.3
@@ -89,15 +97,14 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: null
-          # Visual Studio 2019
-          - os: windows-2019
+          # Visual Studio 2022
+          - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
             r_version: 3.6
             build_type: cmake
             container: null
-          # Visual Studio 2022
           - os: windows-2022
             task: r-package
             compiler: MSVC
@@ -128,21 +135,19 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: 'ubuntu:22.04'
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: clang
             r_version: 4.3
             build_type: cran
             container: null
-          ################
-          # Other checks #
-          ################
-          - os: ubuntu-latest
-            task: r-rchk
-            compiler: gcc
+          # macos-14 = arm64
+          - os: macos-14
+            task: r-package
+            compiler: clang
             r_version: 4.3
             build_type: cran
-            container: 'ubuntu:22.04'
+            container: null
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -173,42 +178,29 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
-        if: matrix.container != 'ubuntu:18.04'
-      # R 3.6 binary isn't easily available on buntu 18.04,
-      # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
-      # ref: https://github.com/microsoft/LightGBM/issues/6298
-      - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v2.6.0
-        if: matrix.container == 'ubuntu:18.04'
-      - name: install tinytex
+      - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
         env:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
-          export GITHUB_ACTIONS="true"
-          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+          if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
               export IN_UBUNTU_BASE_CONTAINER="true"
-              # the default version of cmake provided on Ubuntu 18.04 (v3.10.2), is not supported by LightGBM
-              # see https://github.com/microsoft/LightGBM/issues/5642
-              if [[ "${{ matrix.container }}" == "ubuntu:18.04" ]]; then
-                export INSTALL_CMAKE_FROM_RELEASES="true"
-              fi
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
@@ -225,9 +217,8 @@ jobs:
           $env:R_VERSION = "${{ matrix.r_version }}"
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
-          $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
@@ -246,14 +237,14 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} ./.ci/install-r-deps.R --build --test
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
@@ -264,60 +255,111 @@ jobs:
           RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
           cat ./tests.log
           exit ${exit_code}
-  test-r-debian-clang:
-    name: r-package (debian, R-devel, clang-${{ matrix.clang-version }})
+  test-r-extra-checks:
+    name: r-package (${{ matrix.image }}, R-devel)
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        # list of versions tested in CRAN "Additional Checks":
-        # https://cran.r-project.org/web/checks/check_issue_kinds.html
-        clang-version:
-          - 16
-          - 17
+        # references:
+        #   * CRAN "additional checks": https://cran.r-project.org/web/checks/check_issue_kinds.html
+        #   * images: https://r-hub.github.io/containers/containers.html
+        image:
+          - clang16
+          - clang17
+          - clang18
+          - clang19
+          - clang20
+          - gcc14
+          - intel
+          - rchk
     runs-on: ubuntu-latest
-    container: rhub/debian-clang-devel
-    env:
-      DEBIAN_FRONTEND: noninteractive
+    container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
-      - name: Install Git before checkout
-        shell: bash
-        run: |
-          apt-get update --allow-releaseinfo-change
-          apt-get install --no-install-recommends -y git
-      - name: Trust git cloning LightGBM
-        run: |
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
-      - name: install clang
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+      - name: Install LaTeX
+        shell: bash
         run: |
-          ./.ci/install-clang-devel.sh ${{ matrix.clang-version }}
+          if type -f apt 2>&1 > /dev/null; then
+            apt-get update
+            apt-get install --no-install-recommends -y \
+                devscripts \
+                texinfo \
+                texlive-latex-extra \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                tidy \
+                qpdf
+          else
+            yum update -y
+            yum install -y \
+                devscripts \
+                qpdf \
+                texinfo \
+                texinfo-tex \
+                texlive-latex \
+                tidy
+          fi
       - name: Install packages and run tests
         shell: bash
         run: |
-          export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript ./.ci/install-r-deps.R --build --test --exclude=testthat
           sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit 1
-          echo ""
-          echo "install logs:"
-          echo ""
-          cat lightgbm.Rcheck/00install.out
-          echo ""
-          if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
-              echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-              exit 1
+
+          # 'rchk' isn't run through 'R CMD check', use the approach documented at
+          # https://r-hub.github.io/containers/local.html
+          if [[ "${{ matrix.image }}" =~ "rchk" ]]; then
+            r-check "$(pwd)" \
+            | tee ./rchk-logs.txt 2>&1
+
+            # the '-v' exceptions below are from R/rchk itself and not LightGBM:
+            # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+            if grep -E '\[PB\]|ERROR' ./rchk-logs.txt \
+               | grep -v 'too many states' \
+               > /dev/null; \
+            then
+                echo "rchk found issues"
+                exit 1
+            else
+                echo "rchk did not find any issues"
+                exit 0
+            fi
           fi
+
+          # 'testthat' is not needed by 'rchk', so avoid installing it until here
+          Rscript -e "install.packages('testthat', repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+
+          if [[ "${{ matrix.image }}" =~ "clang" ]]; then
+            # allowing the following NOTEs (produced by default in the clang images):
+            #
+            #   * checking compilation flags used ... NOTE
+            #       Compilation used the following non-portable flag(s):
+            #       ‘-Wp,-D_FORTIFY_SOURCE=3’
+            #
+            # even though CRAN itself sets that:
+            # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
+            #
+            declare -i allowed_notes=1
+          else
+            declare -i allowed_notes=0
+          fi
+
+          bash .ci/run-r-cmd-check.sh \
+            "$(echo lightgbm_$(head -1 VERSION.txt).tar.gz)" \
+            "${allowed_notes}"
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, test-r-sanitizers, test-r-debian-clang]
+    needs: [test, test-r-sanitizers, test-r-extra-checks]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

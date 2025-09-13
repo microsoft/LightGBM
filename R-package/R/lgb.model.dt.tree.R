@@ -1,11 +1,16 @@
 #' @name lgb.model.dt.tree
 #' @title Parse a LightGBM model json dump
 #' @description Parse a LightGBM model json dump into a \code{data.table} structure.
-#' @param model object of class \code{lgb.Booster}
-#' @param num_iteration number of iterations you want to predict with. NULL or
-#'                      <= 0 means use best iteration
+#' @param model object of class \code{lgb.Booster}.
+#' @param num_iteration Number of iterations to include. NULL or <= 0 means use best iteration.
+#' @param start_iteration Index (1-based) of the first boosting round to include in the output.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "return information about the fifth, sixth, and seventh trees".
+#'
+#'        \emph{New in version 4.4.0}
+#'
 #' @return
-#' A \code{data.table} with detailed information about model trees' nodes and leafs.
+#' A \code{data.table} with detailed information about model trees' nodes and leaves.
 #'
 #' The columns of the \code{data.table} are:
 #'
@@ -51,9 +56,15 @@
 #' @importFrom data.table := rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
-lgb.model.dt.tree <- function(model, num_iteration = NULL) {
+lgb.model.dt.tree <- function(
+    model, num_iteration = NULL, start_iteration = 1L
+  ) {
 
-  json_model <- lgb.dump(booster = model, num_iteration = num_iteration)
+  json_model <- lgb.dump(
+    booster = model
+    , num_iteration = num_iteration
+    , start_iteration = start_iteration
+  )
 
   parsed_json_model <- jsonlite::fromJSON(
     txt = json_model
@@ -84,7 +95,6 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   tree_dt[, split_feature := feature_names]
 
   return(tree_dt)
-
 }
 
 

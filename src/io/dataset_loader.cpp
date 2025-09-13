@@ -274,7 +274,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
 
     // checks whether there's a initial score file when loaded from binary data files
-    // the intial score file should with suffix ".bin.init"
+    // the initial score file should with suffix ".bin.init"
     dataset->metadata_.LoadInitialScore(bin_filename);
 
     dataset->device_type_ = config_.device_type;
@@ -344,7 +344,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     // load data from binary file
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
     // checks whether there's a initial score file when loaded from binary data files
-    // the intial score file should with suffix ".bin.init"
+    // the initial score file should with suffix ".bin.init"
     dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // not need to check validation data
@@ -665,7 +665,9 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
     std::vector<int> start(num_machines);
     std::vector<int> len(num_machines);
     int step = (num_total_features + num_machines - 1) / num_machines;
-    if (step < 1) { step = 1; }
+    if (step < 1) {
+      step = 1;
+    }
 
     start[0] = 0;
     for (int i = 0; i < num_machines - 1; ++i) {
@@ -1168,7 +1170,9 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     std::vector<int> start(num_machines);
     std::vector<int> len(num_machines);
     int step = (dataset->num_total_features_ + num_machines - 1) / num_machines;
-    if (step < 1) { step = 1; }
+    if (step < 1) {
+      step = 1;
+    }
 
     start[0] = 0;
     for (int i = 0; i < num_machines - 1; ++i) {
@@ -1284,7 +1288,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
-        if (inner_data.first >= dataset->num_total_features_) { continue; }
+        if (inner_data.first >= dataset->num_total_features_) {
+          continue;
+        }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           is_feature_added[feature_idx] = true;
@@ -1341,7 +1347,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // push data
       std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
-        if (inner_data.first >= dataset->num_total_features_) { continue; }
+        if (inner_data.first >= dataset->num_total_features_) {
+          continue;
+        }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           is_feature_added[feature_idx] = true;
@@ -1414,7 +1422,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
-        if (inner_data.first >= dataset->num_total_features_) { continue; }
+        if (inner_data.first >= dataset->num_total_features_) {
+          continue;
+        }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           is_feature_added[feature_idx] = true;

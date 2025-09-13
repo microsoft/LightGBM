@@ -25,8 +25,6 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
@@ -36,10 +34,6 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
@@ -70,14 +64,13 @@ CVBooster <- R6::R6Class(
 #'   , nfold = 3L
 #' )
 #' }
+#'
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
                    , data
                    , nrounds = 100L
                    , nfold = 3L
-                   , label = NULL
-                   , weight = NULL
                    , obj = NULL
                    , eval = NULL
                    , verbose = 1L
@@ -87,8 +80,6 @@ lgb.cv <- function(params = list()
                    , stratified = TRUE
                    , folds = NULL
                    , init_model = NULL
-                   , colnames = NULL
-                   , categorical_feature = NULL
                    , early_stopping_rounds = NULL
                    , callbacks = list()
                    , reset_data = FALSE
@@ -99,13 +90,8 @@ lgb.cv <- function(params = list()
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
-
-  # If 'data' is not an lgb.Dataset, try to construct one using 'label'
   if (!.is_Dataset(x = data)) {
-    if (is.null(label)) {
-      stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
-    }
-    data <- lgb.Dataset(data = data, label = label)
+    stop("lgb.cv: data must be an lgb.Dataset instance")
   }
 
   # set some parameters, resolving the way they were passed in with other parameters
@@ -189,36 +175,16 @@ lgb.cv <- function(params = list()
   data$construct()
 
   # Check interaction constraints
-  cnames <- NULL
-  if (!is.null(colnames)) {
-    cnames <- colnames
-  } else if (!is.null(data$get_colnames())) {
-    cnames <- data$get_colnames()
-  }
   params[["interaction_constraints"]] <- .check_interaction_constraints(
     interaction_constraints = interaction_constraints
-    , column_names = cnames
+    , column_names = data$get_colnames()
   )
-
-  if (!is.null(weight)) {
-    data$set_field(field_name = "weight", data = weight)
-  }
 
   # Update parameters with parsed parameters
   data$update_params(params = params)
 
   # Create the predictor set
   data$.__enclos_env__$private$set_predictor(predictor = predictor)
-
-  # Write column names
-  if (!is.null(colnames)) {
-    data$set_colnames(colnames = colnames)
-  }
-
-  # Write categorical features
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature = categorical_feature)
-  }
 
   if (!is.null(folds)) {
 
@@ -270,7 +236,9 @@ lgb.cv <- function(params = list()
 
   # Cannot use early stopping with 'dart' boosting
   if (using_dart) {
-    warning("Early stopping is not available in 'dart' mode.")
+    if (using_early_stopping) {
+      warning("Early stopping is not available in 'dart' mode.")
+    }
     using_early_stopping <- FALSE
 
     # Remove the cb_early_stop() function if it was passed in to callbacks

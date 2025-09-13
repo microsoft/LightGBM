@@ -22,6 +22,7 @@
 
 #include <string>
 #include <cstdio>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -217,7 +218,9 @@ class Booster {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -393,7 +396,9 @@ class Booster {
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(valid_data->metadata(), valid_data->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
@@ -409,13 +414,7 @@ class Booster {
 
   void Refit(const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
     UNIQUE_LOCK(mutex_)
-    std::vector<std::vector<int32_t>> v_leaf_preds(nrow, std::vector<int32_t>(ncol, 0));
-    for (int i = 0; i < nrow; ++i) {
-      for (int j = 0; j < ncol; ++j) {
-        v_leaf_preds[i][j] = leaf_preds[static_cast<size_t>(i) * static_cast<size_t>(ncol) + static_cast<size_t>(j)];
-      }
-    }
-    boosting_->RefitTree(v_leaf_preds);
+    boosting_->RefitTree(leaf_preds, nrow, ncol);
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
@@ -465,7 +464,7 @@ class Booster {
     *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
-  Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
+  std::shared_ptr<Predictor> CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -483,7 +482,7 @@ class Booster {
       is_raw_score = false;
     }
 
-    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return std::make_shared<Predictor>(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
   }
 
@@ -501,7 +500,7 @@ class Booster {
       predict_contrib = true;
     }
     int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(start_iteration, num_iteration, is_predict_leaf, predict_contrib);
-    auto pred_fun = predictor.GetPredictFunction();
+    auto pred_fun = predictor->GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < nrow; ++i) {
@@ -522,7 +521,7 @@ class Booster {
                      int32_t** out_indices, void** out_data, int data_type,
                      bool* is_data_float32_ptr, int num_matrices) const {
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     std::vector<std::vector<std::unordered_map<int, double>>>& agg = *agg_ptr;
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
@@ -657,7 +656,7 @@ class Booster {
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     bool is_col_ptr_int32 = false;
     bool is_data_float32 = false;
     int num_output_cols = ncol + 1;
@@ -1314,7 +1313,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     data_type,
                                     &nrow,
                                     ncol,
-                                    is_row_major,
+                                    &is_row_major,
                                     parameters,
                                     reference,
                                     out);
@@ -1325,7 +1324,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int data_type,
                                int32_t* nrow,
                                int32_t ncol,
-                               int is_row_major,
+                               int* is_row_major,
                                const char* parameters,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
@@ -1342,7 +1341,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 
   std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
   for (int j = 0; j < nmat; ++j) {
-    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
+    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major[j]));
   }
 
   if (reference == nullptr) {
@@ -1464,7 +1463,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   }
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int i = 0; i < nindptr - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(nindptr - 1); ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
@@ -1604,11 +1603,13 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   }
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int i = 0; i < ncol_ptr - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(ncol_ptr - 1); ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     int feature_idx = ret->InnerFeatureIndex(i);
-    if (feature_idx < 0) { continue; }
+    if (feature_idx < 0) {
+      continue;
+    }
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
@@ -1619,7 +1620,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         auto pair = col_it.NextNonZero();
         row_idx = pair.first;
         // no more data
-        if (row_idx < 0) { break; }
+        if (row_idx < 0) {
+          break;
+        }
         ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
@@ -1843,7 +1846,9 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { Log::Fatal("Input data type error or field not found"); }
+  if (!is_success) {
+    Log::Fatal("Input data type error or field not found");
+  }
   API_END();
 }
 
@@ -1880,8 +1885,12 @@ int LGBM_DatasetGetField(DatasetHandle handle,
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
   }
-  if (!is_success) { Log::Fatal("Field not found"); }
-  if (*out_ptr == nullptr) { *out_len = 0; }
+  if (!is_success) {
+    Log::Fatal("Field not found");
+  }
+  if (*out_ptr == nullptr) {
+    *out_len = 0;
+  }
   API_END();
 }
 
@@ -2064,13 +2073,13 @@ int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t n
   API_END();
 }
 
-int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* produced_empty_tree) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter()) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   API_END();
 }
@@ -2078,20 +2087,20 @@ int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
 int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                     const float* grad,
                                     const float* hess,
-                                    int* is_finished) {
+                                    int* produced_empty_tree) {
   API_BEGIN();
   #ifdef SCORE_T_USE_DOUBLE
   (void) handle;       // UNUSED VARIABLE
   (void) grad;         // UNUSED VARIABLE
   (void) hess;         // UNUSED VARIABLE
-  (void) is_finished;  // UNUSED VARIABLE
+  (void) produced_empty_tree;  // UNUSED VARIABLE
   Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
   #else
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter(grad, hess)) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   #endif
   API_END();

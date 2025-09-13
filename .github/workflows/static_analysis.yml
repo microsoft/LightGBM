@@ -5,11 +5,10 @@ name: Static Analysis
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
-    - release/*
+      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -18,37 +17,46 @@ concurrency:
 
 env:
   COMPILER: 'gcc'
-  CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
+  MAKEFLAGS: '-j4'
   OS_NAME: 'linux'
-  PYTHON_VERSION: '3.11'
 
 jobs:
-  test:
-    name: ${{ matrix.task }}
-    runs-on: ubuntu-22.04
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - task: lint
-          - task: check-docs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: false
       - name: Setup and run tests
         shell: bash
         run: |
-          export TASK="${{ matrix.task }}"
-          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export TASK=lint
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/lint-all.sh || exit 1
+  check-docs:
+    name: check-docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 5
+          submodules: false
+      - name: Setup and run tests
+        shell: bash
+        run: |
+          export TASK=check-docs
+          export CONDA=${HOME}/miniforge
+          export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test-docs.sh || exit 1
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
@@ -59,14 +67,14 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: true
       - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'roxygen2', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript ./.ci/install-r-deps.R --build --include=roxygen2
           sh build-cran-package.sh || exit 1
           R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
       - name: Test documentation
@@ -88,9 +96,9 @@ jobs:
   all-static-analysis-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, r-check-docs]
+    needs: [lint, check-docs, r-check-docs]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

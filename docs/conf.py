@@ -17,6 +17,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute.
 """Sphinx configuration file."""
+
 import datetime
 import os
 import sys
@@ -38,6 +39,7 @@ LIB_PATH = CURR_PATH.parent / "python-package"
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
+RTD_R_REF_REGEX = compile(r"(?P<begin>https://.+/)(?P<rtd_version>latest)(?P<end>/R/reference/)")
 
 
 class InternalRefTransform(Transform):
@@ -65,9 +67,10 @@ class IgnoredDirective(Directive):
 
 # -- General configuration ------------------------------------------------
 
-os.environ["LIGHTGBM_BUILD_DOC"] = "1"
+os.environ["LIGHTGBM_BUILD_DOC"] = "True"
 C_API = os.environ.get("C_API", "").lower().strip() != "no"
 RTD = bool(os.environ.get("READTHEDOCS", ""))
+RTD_VERSION = os.environ.get("READTHEDOCS_VERSION", "stable")
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "2.1.0"  # Due to sphinx.ext.napoleon, autodoc_typehints
@@ -97,7 +100,6 @@ autodoc_default_options = {
 autodoc_mock_imports = [
     "dask",
     "dask.distributed",
-    "datatable",
     "graphviz",
     "matplotlib",
     "numpy",
@@ -252,8 +254,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
         output = "\n".join([i.decode("utf-8") for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
+        print(output)
     except BaseException as e:
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
@@ -301,11 +302,26 @@ def generate_r_docs(app: Sphinx) -> None:
         output = "\n".join([i for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
-            print("Done building R-package documentation")
+        print(output)
+        print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
+
+
+def replace_reference_to_r_docs(app: Sphinx) -> None:
+    """Make reference to R-package documentation point to the actual version.
+
+    Parameters
+    ----------
+    app : sphinx.application.Sphinx
+        The application object representing the Sphinx process.
+    """
+    index_doc_path = CURR_PATH / "index.rst"
+    with open(index_doc_path, "r+t", encoding="utf-8") as index_doc:
+        content = index_doc.read()
+        content = RTD_R_REF_REGEX.sub(rf"\g<begin>{RTD_VERSION}\g<end>", content)
+        index_doc.seek(0)
+        index_doc.write(content)
 
 
 def setup(app: Sphinx) -> None:
@@ -329,6 +345,7 @@ def setup(app: Sphinx) -> None:
         app.connect(
             "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
         )
+    app.connect("builder-inited", replace_reference_to_r_docs)
     app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, "add_js_file", False) or app.add_javascript
     add_js_file("js/script.js")
