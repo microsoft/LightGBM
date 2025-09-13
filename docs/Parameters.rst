@@ -168,6 +168,8 @@ Core Parameters
 
       -  ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
 
+      -  ``pairwise_lambdarank``, pairwise lambdarank algorithm
+
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
    -  custom objective function (gradients and hessians not computed directly by LightGBM)
@@ -1219,6 +1221,110 @@ Objective Parameters
    -  larger values reduce the inferred position bias factors
 
    -  *New in version 4.1.0*
+
+-  ``use_differential_feature_in_pairwise_ranking`` :raw-html:`<a id="use_differential_feature_in_pairwise_ranking" title="Permalink to this parameter" href="#use_differential_feature_in_pairwise_ranking">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use differential features in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_model_indirect_comparison`` :raw-html:`<a id="pairwise_lambdarank_model_indirect_comparison" title="Permalink to this parameter" href="#pairwise_lambdarank_model_indirect_comparison">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to additionaly perform indirect document comparison in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_model_conditional_rel`` :raw-html:`<a id="pairwise_lambdarank_model_conditional_rel" title="Permalink to this parameter" href="#pairwise_lambdarank_model_conditional_rel">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to model conditional document relevance (given documents ranked above) in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_indirect_comparison_above_only`` :raw-html:`<a id="pairwise_lambdarank_indirect_comparison_above_only" title="Permalink to this parameter" href="#pairwise_lambdarank_indirect_comparison_above_only">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  whether to limit the indirect document comparison to only auxilliary documents ranked above in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_logarithmic_discounts`` :raw-html:`<a id="pairwise_lambdarank_logarithmic_discounts" title="Permalink to this parameter" href="#pairwise_lambdarank_logarithmic_discounts">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  whether to use logarithmic discounts when converting pairwise scores into pointwise in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_hard_pairwise_preference`` :raw-html:`<a id="pairwise_lambdarank_hard_pairwise_preference" title="Permalink to this parameter" href="#pairwise_lambdarank_hard_pairwise_preference">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use hard pairwise preference when converting pairwise scores into pointwise in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_train_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
+
+   -  pairing appraoch for training dataset
+
+   -  used only in ``pairwise_lambdarank`` application
+
+   -  with ``different_relevance``, only consider pairs with difference relevance score
+
+   -  with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+
+   -  with ``random_k``, each document will randomly form pairs with k other documents
+
+   -  with ``top_n_random_k``, documents will form pairs with top n relevant documents, and with randomly selected k other documents
+
+   -  with ``relevance_m_top_n_random_k``, documents will form pairs with top m relevant documents with different relevance score, top n documents with highest relevance score and with randomly selected k other documents
+
+   -  with ``all``, all pairs will be used
+
+-  ``pairwise_lambdarank_valid_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
+
+   -  pairing appraoch for validation dataset
+
+   -  used only in ``pairwise_lambdarank`` application
+
+   -  with ``different_relevance``, only consider pairs with difference relevance score
+
+   -  with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+
+   -  with ``random_k``, each document will randomly form pairs with k other documents
+
+   -  with ``all``, all pairs will be used
+
+-  ``pairwise_lambdarank_train_pairing_random_k`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_random_k" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_random_k">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k``, ``top_n_random_k`` or ``relevance_m_top_n_random_k``
+
+   -  with pairwise ranking for training dataset
+
+-  ``pairwise_lambdarank_valid_pairing_random_k`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_random_k" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_random_k">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of randomly pairing when using pairwise_lambdarank_valid_pairing_approach = ``random_k``, ``top_n_random_k`` or ``relevance_m_top_n_random_k``
+
+   -  with pairwise ranking for validation dataset
+
+-  ``pairwise_lambdarank_train_pairing_top_n`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_top_n" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_top_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_train_pairing_approach = ``top_n_random_k`` or ``relevance_m_top_n_random_k``
+
+   -  with pairwise ranking for training dataset
+
+-  ``pairwise_lambdarank_valid_pairing_top_n`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_top_n" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_top_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``top_n_random_k`` or ``relevance_m_top_n_random_k``
+
+   -  pairwise ranking for validation dataset
+
+-  ``pairwise_lambdarank_train_pairing_relevance_m`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_relevance_m" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_relevance_m">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
+
+   -  pairwise ranking for training dataset
+
+-  ``pairwise_lambdarank_valid_pairing_relevance_m`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_relevance_m" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_relevance_m">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
+
+   -  pairwise ranking for validation dataset
 
 Metric Parameters
 -----------------
