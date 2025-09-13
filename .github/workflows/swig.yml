@@ -21,12 +21,11 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # all SWIG jobs produce artifacts
   PRODUCES_ARTIFACTS: 'true'
-  # all jobs here have the same ''
+  # all jobs here have the same 'TASK'
   TASK: swig
 
 jobs:
   test-swig:
-    # yamllint disable-line rule:line-length
     name: swig (${{ matrix.os }}, ${{ matrix.compiler }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
