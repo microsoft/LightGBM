@@ -17,7 +17,7 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
 # create the artifact upload directory if it doesn't exist yet
-if ($env:BUILD_ARTIFACTSTAGINGDIRECTORY -ne "") {
+if ($null -ne $env:BUILD_ARTIFACTSTAGINGDIRECTORY) {
     [Void][System.IO.Directory]::CreateDirectory($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
 }
 
