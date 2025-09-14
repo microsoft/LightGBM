@@ -154,9 +154,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
 fi
 
 if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-    # tarball with filename CRAN expects
-    cp "${PKG_TARBALL}" "${BUILD_ARTIFACTSTAGINGDIRECTORY}/"
-    # copy with artifact name LightGBM has been using for a few years
     cp "${PKG_TARBALL}" "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-${LGB_VER}-r-cran.tar.gz"
 fi
 
