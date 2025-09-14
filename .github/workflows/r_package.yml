@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # tell scripts where to put artifacts
+  # (this variable name is left over from when jobs ran on Azure DevOps)
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # on Debian-based images, avoid interactive prompts
@@ -135,6 +138,8 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: 'ubuntu:22.04'
+            produces-artifacts: 'true'
+            artifact-name: r-cran-package
           - os: macos-13
             task: r-package
             compiler: clang
@@ -203,6 +208,8 @@ jobs:
               export IN_UBUNTU_BASE_CONTAINER="true"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
+          export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
@@ -219,6 +226,13 @@ jobs:
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
+      - name: upload artifacts
+        if: ${{ matrix.produces-artifacts == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}/*.tar.gz
+          if-no-files-found: error
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
