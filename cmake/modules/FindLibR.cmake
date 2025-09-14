@@ -47,6 +47,7 @@ function(create_rlib_for_msvc)
   if(NOT DLLTOOL_EXE)
     message(FATAL_ERROR "dlltool.exe not found!\nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
+  message(STATUS "[debug] DLLTOOL_EXE: ${DLLTOOL_EXE}")
 
   set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
 
@@ -228,6 +229,11 @@ endif()
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
 if(WIN32 AND MSVC)
+
+  message(STATUS "[debug] LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
+  message(STATUS "[debug] LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+  message(STATUS "[debug] LIBR_LIBS_DIR: ${LIBR_LIBS_DIR}")
+  message(STATUS "[debug] LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
 
   # create a local R.lib import library for R.dll if it doesn't exist
   if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/R.lib")

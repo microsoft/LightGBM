@@ -185,12 +185,12 @@ Then navigate to `localhost:8787` in your local web browser, and log in with use
 
 To target a different R version, pass any [valid rocker/verse tag](https://hub.docker.com/r/rocker/verse/tags) to `docker build`.
 
-For example, to test LightGBM with R 3.5:
+For example, to test LightGBM with R 4.5:
 
 ```shell
 docker build \
-    -t lightgbm-r-35 \
+    -t lightgbm-r-45 \
     -f dockerfile-r \
-    --build-arg R_VERSION=3.5 \
+    --build-arg R_VERSION=4.5 \
     .
 ```
