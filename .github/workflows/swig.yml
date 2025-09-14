@@ -16,7 +16,7 @@ concurrency:
 env:
   # tell scripts where to put artifacts
   # (this variable name is left over from when jobs ran on Azure DevOps)
-  BUILD_ARTIFACTSTAGINGDIRECTORY: 'artifacts'
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # all SWIG jobs produce artifacts
