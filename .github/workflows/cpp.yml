@@ -78,7 +78,9 @@ jobs:
         run: |
           apt-get update -y
           apt-get install --no-install-recommends -y \
-            ca-certificates \
+            dirmngr \
+            gpg \
+            gpg-agent \
             software-properties-common
           # install newest version of git
           # ref:
