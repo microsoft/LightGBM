@@ -81,7 +81,8 @@ jobs:
             dirmngr \
             gpg \
             gpg-agent \
-            software-properties-common
+            software-properties-common \
+            sudo
           # install newest version of git
           # ref:
           #     - https://unix.stackexchange.com/a/170831/550004
