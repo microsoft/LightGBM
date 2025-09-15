@@ -425,6 +425,8 @@ set(
       src/io/parser.cpp
       src/io/train_share_states.cpp
       src/io/tree.cpp
+      src/io/pairwise_lambdarank_bin.cpp
+      src/io/pairwise_ranking_feature_group.cpp
       src/metric/dcg_calculator.cpp
       src/metric/metric.cpp
       src/network/linker_topo.cpp
