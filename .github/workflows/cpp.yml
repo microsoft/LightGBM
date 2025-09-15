@@ -19,7 +19,7 @@ env:
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}), ${{ matrix.compiler }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
@@ -62,7 +62,7 @@ jobs:
             task: if-else
             compiler: clang
             python_version: '3.12'
-            continer: null
+            container: null
           - os: ubuntu-latest
             task: if-else
             compiler: gcc
@@ -81,10 +81,12 @@ jobs:
           export BUILD_DIRECTORY="${GITHUB_WORKSPACE}"
           export COMPILER="${{ matrix.compiler }}"
           export CONDA="${HOME}/miniforge"
+          export METHOD="${{ matrix.method }}"
           export PATH=${CONDA}/bin:${PATH}
           export PYTHON_VERSION="${{ matrix.python_version }}"
           export SANITIZERS="${{ matrix.sanitizers }}"
           export SETUP_CONDA="${{ matrix.setup-conda }}"
+          export TASK="${{ matrix.task }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
