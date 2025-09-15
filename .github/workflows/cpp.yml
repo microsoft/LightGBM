@@ -120,7 +120,7 @@ jobs:
           fi
           if [[ "${{ matrix.container }}" == "ubuntu:22.04" ]]; then
             export DEBIAN_FRONTEND=noninteractive
-            export IN_UBUNTU_LATEST_CONTAINER="true"
+            export IN_UBUNTU_BASE_CONTAINER="true"
           fi
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
