@@ -73,7 +73,7 @@ jobs:
             os-display-name: 'manylinux_2_28'
     steps:
       - name: Install packages used by third-party actions
-        if: startsWith(matrix.os, 'ubuntu')
+        if: matrix.container == 'ubuntu:22.04'
         shell: bash
         run: |
           apt-get update -y
