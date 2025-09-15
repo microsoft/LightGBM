@@ -1,0 +1,115 @@
+name: C++
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # in CMake-driven builds, parallelize compilation
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+
+jobs:
+  test:
+    name: ${{ matrix.task }} (${{ matrix.os }}), ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          #############
+          # C++ tests #
+          #############
+          - os: ubuntu-latest
+            task: cpp-tests
+            compiler: clang-17
+            method: with-sanitizers
+            container: 'ubuntu:22.04'
+          - os: macos-13
+            task: cpp-tests
+            compiler: clang
+            method: with-sanitizers
+            sanitizers: "address;undefined"
+            container: null
+          - os: windows-2022
+            task: cpp-tests
+            compiler: msvc
+            container: null
+          ###########
+          # if-else #
+          ###########
+          # These test CLI-generated C++ inference code.
+          #
+          # They need Python because they're written with pytest, but they
+          # do not need the LightGBM Python package
+          - os: ubuntu-latest
+            task: if-else
+            compiler: clang-17
+            container: 'ubuntu:22.04'
+            python_version: '3.13'
+            setup-conda: 'true'
+          - os: macos-13
+            task: if-else
+            compiler: clang
+            python_version: '3.12'
+            continer: null
+          - os: ubuntu-latest
+            task: if-else
+            compiler: gcc
+            python_version: '3.11'
+            container: 'lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests on Linux and macOS
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          export BUILD_DIRECTORY="${GITHUB_WORKSPACE}"
+          export COMPILER="${{ matrix.compiler }}"
+          export CONDA="${HOME}/miniforge"
+          export PATH=${CONDA}/bin:${PATH}
+          export PYTHON_VERSION="${{ matrix.python_version }}"
+          export SANITIZERS="${{ matrix.sanitizers }}"
+          export SETUP_CONDA="${{ matrix.setup-conda }}"
+          if [[ "${{ matrix.os }}" =~ ^macos ]]; then
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+          fi
+          if [[ "${{ matrix.container }}" == "ubuntu:22.04" ]]; then
+            export DEBIAN_FRONTEND=noninteractive
+            export IN_UBUNTU_LATEST_CONTAINER="true"
+          fi
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
+      - name: Setup and run tests on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:BUILD_DIRECTORY = $env:GITHUB_WORKSPACE
+          $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
+  all-cpp-jobs-successful:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
