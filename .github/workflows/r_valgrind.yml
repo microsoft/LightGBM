@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:
-      SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Install essential software before checkout
         shell: bash

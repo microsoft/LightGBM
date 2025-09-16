@@ -31,7 +31,7 @@ dispatch_name=$3
 pr=$(
   curl -sL \
     -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token $SECRETS_WORKFLOW" \
+    -H "Authorization: token ${GITHUB_TOKEN}" \
     "$pr_url"
 )
 data=$(
@@ -46,6 +46,6 @@ data=$(
 curl -sL \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token $SECRETS_WORKFLOW" \
+  -H "Authorization: token ${GITHUB_TOKEN}" \
   -d "$data" \
   "${GITHUB_API_URL}/repos/microsoft/LightGBM/dispatches"

@@ -27,7 +27,7 @@ jobs:
           submodules: true
           repository: microsoft/LightGBM
           ref: "refs/heads/${{ fromJSON(github.event.client_payload.pr_branch) }}"
-          token: ${{ secrets.WORKFLOW }}
+          token: ${{ github.token }}
           persist-credentials: true
       - name: Update configure
         shell: bash

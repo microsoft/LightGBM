@@ -28,7 +28,7 @@ body=$2
 old_comment_body=$(
   curl -sL \
     -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token $SECRETS_WORKFLOW" \
+    -H "Authorization: token ${GITHUB_TOKEN}" \
     "${GITHUB_API_URL}/repos/microsoft/LightGBM/issues/comments/$comment_id" | \
   jq '.body'
 )
@@ -45,6 +45,6 @@ data=$(
 curl -sL \
   -X PATCH \
   -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token $SECRETS_WORKFLOW" \
+  -H "Authorization: token ${GITHUB_TOKEN}" \
   -d "$data" \
   "${GITHUB_API_URL}/repos/microsoft/LightGBM/issues/comments/$comment_id"
