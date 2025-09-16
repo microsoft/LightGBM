@@ -6,16 +6,6 @@ on:
       - fix/comment-triggered-jobs
   # issue_comment:
   #   types: [created]
-  # workflow_dispatch:
-  #   inputs:
-  #     comment-id:
-  #       description: "Integer ID of a comment on a pull request."
-  #       required: true
-  #       type: string
-  #     pr-url:
-  #       description: "Full URL to the pull request the comment is from."
-  #       required: true
-  #       type: string
 
 jobs:
   triggering-tests:
@@ -34,8 +24,8 @@ jobs:
       repository-projects: none
       security-events: none
       statuses: write
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
+    # env:
+    #   GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
