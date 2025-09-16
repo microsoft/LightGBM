@@ -24,8 +24,8 @@ jobs:
       repository-projects: none
       security-events: none
       statuses: write
-    # env:
-    #   GITHUB_TOKEN: ${{ github.token }}
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
