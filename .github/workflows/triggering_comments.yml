@@ -1,18 +1,21 @@
 name: Triggering comments
 
 on:
-  issue_comment:
-    types: [created]
-  workflow_dispatch:
-    inputs:
-      comment-id:
-        description: "Integer ID of a comment on a pull request."
-        required: true
-        type: string
-      pr-url:
-        description: "Full URL to the pull request the comment is from."
-        required: true
-        type: string
+  push:
+    branches:
+      - fix/comment-triggered-jobs
+  # issue_comment:
+  #   types: [created]
+  # workflow_dispatch:
+  #   inputs:
+  #     comment-id:
+  #       description: "Integer ID of a comment on a pull request."
+  #       required: true
+  #       type: string
+  #     pr-url:
+  #       description: "Full URL to the pull request the comment is from."
+  #       required: true
+  #       type: string
 
 jobs:
   triggering-tests:
@@ -30,14 +33,14 @@ jobs:
         #if: github.event.comment.body == '/gha run r-valgrind'
         run: |
           $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
-            "${{ inputs.pr-url }}" \
-            "${{ inputs.comment-id }}" \
+            "https://github.com/microsoft/LightGBM/pull/7035" \
+            "3294647110" \
             "gha_run_r_valgrind"
 
-      - name: Trigger update R configure
-        if: github.event.comment.body == '/gha run r-configure'
-        run: |
-          $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
-            "${{ github.event.issue.pull_request.url }}" \
-            "${{ github.event.comment.id }}" \
-            "gha_run_r_configure"
+      # - name: Trigger update R configure
+      #   if: github.event.comment.body == '/gha run r-configure'
+      #   run: |
+      #     $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
+      #       "${{ github.event.issue.pull_request.url }}" \
+      #       "${{ github.event.comment.id }}" \
+      #       "gha_run_r_configure"
