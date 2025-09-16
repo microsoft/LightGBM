@@ -35,11 +35,13 @@ jobs:
 
       - name: Trigger R valgrind tests
         #if: github.event.comment.body == '/gha run r-valgrind'
-        run: |
-          $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
-            "https://api.github.com/repos/microsoft/LightGBM/issues/7035" \
-            "3294647110" \
-            "gha_run_r_valgrind"
+        uses: ./.github/workflows/r_valgrind.yml
+        with:
+          # TODO: get these from GitHub context somehow
+          comment-number: '3294647110'
+          pr-branch: 'fix/comment-triggered-jobs'
+          pr-number: '7035'
+          pr-sha: ${{ github.sha }}
 
       # - name: Trigger update R configure
       #   if: github.event.comment.body == '/gha run r-configure'
