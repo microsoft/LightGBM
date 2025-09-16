@@ -37,7 +37,7 @@ jobs:
         #if: github.event.comment.body == '/gha run r-valgrind'
         run: |
           $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
-            "https://github.com/microsoft/LightGBM/pull/7035" \
+            "https://api.github.com/repos/microsoft/LightGBM/issues/7035" \
             "3294647110" \
             "gha_run_r_valgrind"
 
