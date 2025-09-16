@@ -20,6 +20,20 @@ on:
 jobs:
   triggering-tests:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      deployments: none
+      discussions: none
+      id-token: write
+      issues: write
+      packages: none
+      pages: none
+      pull-requests: write
+      repository-projects: none
+      security-events: none
+      statuses: write
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
