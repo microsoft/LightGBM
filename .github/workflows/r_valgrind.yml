@@ -31,8 +31,7 @@ jobs:
     name: r-package (ubuntu-latest, R-devel, valgrind)
     timeout-minutes: 360
     runs-on: ubuntu-latest
-    # container: wch1/r-debug
-    container: 'ubuntu:22.04'
+    container: wch1/r-debug
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
