@@ -18,10 +18,11 @@ permissions:
   deployments: none
   discussions: none
   id-token: write
+  # TODO: could this be 'none'?
   issues: write
   packages: none
   pages: none
-  pull-requests: read
+  pull-requests: write
   repository-projects: none
   security-events: none
   statuses: write
