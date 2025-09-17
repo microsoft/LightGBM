@@ -1,11 +1,11 @@
 name: Triggering comments
 
 on:
-  push:
-    branches:
-      - fix/comment-triggered-jobs
-  # issue_comment:
-  #   types: [created]
+  # push:
+  #   branches:
+  #     - fix/comment-triggered-jobs
+  # # issue_comment:
+  # #   types: [created]
 
 jobs:
   triggering-tests:
