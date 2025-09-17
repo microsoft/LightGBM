@@ -12,10 +12,10 @@
 
 set -e -E -u -o pipefail
 
-if [ -z "$GITHUB_ACTIONS" ]; then
-  echo "Must be run inside GitHub Actions CI"
-  exit 1
-fi
+# if [ -z "$GITHUB_ACTIONS" ]; then
+#   echo "Must be run inside GitHub Actions CI"
+#   exit 1
+# fi
 
 if [ $# -ne 2 ]; then
   echo "Usage: $0 <PULL_REQUEST_ID> <BODY>"
@@ -32,9 +32,10 @@ body=${body/timed_out/failure ❌}
 body=${body/success/success ✔️}
 data=$(
   jq -n \
-    --argjson body "$body" \
+    --arg body "$body" \
     '{"body":$body}'
 )
+echo $data
 curl -sL \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
