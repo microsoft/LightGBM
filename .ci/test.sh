@@ -98,47 +98,6 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "lint" ]]; then
-    pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
-    echo "Linting PowerShell code"
-    pwsh -file ./.ci/lint-powershell.ps1 || exit 1
-    conda create -q -y -n "${CONDA_ENV}" \
-        "${CONDA_PYTHON_REQUIREMENT}" \
-        'biome>=1.9.3' \
-        'matplotlib-base>=3.9.1' \
-        'mypy>=1.11.1' \
-        'pre-commit>=3.8.0' \
-        'pyarrow-core>=17.0' \
-        'scikit-learn>=1.5.2' \
-        'r-lintr>=3.1.2'
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    echo "Linting Python and bash code"
-    bash ./.ci/run-pre-commit-mypy.sh || exit 1
-    echo "Linting R code"
-    Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
-    echo "Linting JavaScript code"
-    bash ./.ci/lint-js.sh || exit 1
-    exit 0
-fi
-
-if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
-    conda env create \
-        -n "${CONDA_ENV}" \
-        --file ./docs/env.yml || exit 1
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    # build docs
-    make -C docs html || exit 1
-    if [[ $TASK == "check-links" ]]; then
-        # check docs for broken links
-        pip install 'linkchecker>=10.5.0'
-        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
-        exit 0
-    fi
-    exit 0
-fi
-
 if [[ $PYTHON_VERSION == "3.9" ]]; then
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py39.txt"
 else
