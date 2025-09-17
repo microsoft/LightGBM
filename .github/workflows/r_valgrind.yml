@@ -11,12 +11,28 @@ on:
       pr-number:
         type: string
 
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: write
+  packages: none
+  pages: none
+  pull-requests: write
+  repository-projects: none
+  security-events: none
+  statuses: write
+
 jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
     timeout-minutes: 360
     runs-on: ubuntu-latest
-    container: wch1/r-debug
+    # container: wch1/r-debug
+    container: 'ubuntu:22.04'
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
