@@ -77,7 +77,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("tweedie")) {
       return new CUDATweedieMetric(config);
     } else if (type == std::string("r2")) {
-      Log::Warning("Metric R-squared is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning("Metric r2 is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new R2Metric(config);
     }
   } else {
