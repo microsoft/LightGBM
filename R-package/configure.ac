@@ -28,7 +28,7 @@ CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX17FLAGS`
 LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 AC_LANG(C++)
 
-# LightGBM-specific flags
+# LightGBM-specific flags (test change)
 LGB_CPPFLAGS=""
 
 #########

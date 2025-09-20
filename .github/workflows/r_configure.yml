@@ -1,8 +1,15 @@
 name: R generate configure
 
 on:
-  repository_dispatch:
-    types: [gha_run_r_configure]
+  push:
+    branches:
+      - fix/comment-triggered-jobs
+  workflow_dispatch:
+    inputs:
+      pr-branch:
+        type: string
+        description: |
+          Branch in microsoft/LightGBM to update.
 
 jobs:
   r-configure:
@@ -26,7 +33,7 @@ jobs:
           fetch-depth: 5
           submodules: true
           repository: microsoft/LightGBM
-          ref: "refs/heads/${{ fromJSON(github.event.client_payload.pr_branch) }}"
+          ref: "refs/heads/${{ inputs.pr-branch || 'fix/comment-triggered-jobs' }}"
           token: ${{ github.token }}
           persist-credentials: true
       - name: Update configure

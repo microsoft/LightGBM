@@ -1,9 +1,9 @@
 name: R valgrind tests
 
 on:
-  push:
-    branches:
-      - fix/comment-triggered-jobs
+  # push:
+  #   branches:
+  #     - fix/comment-triggered-jobs
   workflow_dispatch:
     inputs:
       pr-branch:
