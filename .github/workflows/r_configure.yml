@@ -1,9 +1,6 @@
 name: R generate configure
 
 on:
-  push:
-    branches:
-      - fix/comment-triggered-jobs
   workflow_dispatch:
     inputs:
       pr-branch:
@@ -46,9 +43,9 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
-          submodules: true
+          submodules: false
           repository: microsoft/LightGBM
-          ref: "refs/heads/${{ inputs.pr-branch || 'fix/comment-triggered-jobs' }}"
+          ref: "refs/heads/${{ inputs.pr-branch }}"
           token: ${{ github.token }}
           persist-credentials: true
       - name: Update configure
