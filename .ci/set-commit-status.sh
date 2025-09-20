@@ -46,8 +46,9 @@ data=$(
 )
 
 curl -sL \
+  --fail \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token $SECRETS_WORKFLOW" \
+  -H "Authorization: token ${GITHUB_TOKEN}" \
   -d "$data" \
   "${GITHUB_API_URL}/repos/microsoft/LightGBM/statuses/$sha"
