@@ -1,9 +1,6 @@
 name: R valgrind tests
 
 on:
-  push:
-    branches:
-      - fix/comment-triggered-jobs
   workflow_dispatch:
     inputs:
       pr-branch:
@@ -56,14 +53,10 @@ jobs:
           fetch-depth: 5
           submodules: true
           repository: microsoft/LightGBM
-          # TODO: remove hard-coded PR number
-          ref: "refs/pull/${{ inputs.pr-number || '7035' }}/merge"
+          ref: "refs/pull/${{ inputs.pr-number }}/merge"
       - name: Run tests with valgrind
         shell: bash
-        #run: ./.ci/test-r-package-valgrind.sh
-        run: |
-          echo "running fake valgrind step"
-          exit 0
+        run: ./.ci/test-r-package-valgrind.sh
       - name: Send final status
         if: ${{ always() }}
         run: |
@@ -74,16 +67,14 @@ jobs:
           comment="Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n"
           comment="${comment}\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID} \r\n"
           comment="${comment}\r\nStatus: ${{ job.status }}"
-          # TODO: remove hard-coded PR number
           $GITHUB_WORKSPACE/.ci/append-comment.sh \
-            "${{ inputs.pr-number || '7035' }}" \
+            "${{ inputs.pr-number }}" \
             "${comment}"
       - name: Rerun workflow-indicator
         if: ${{ always() }}
         run: |
-          # TODO: remove hard-coded PR number and branch
           bash $GITHUB_WORKSPACE/.ci/rerun-workflow.sh \
             "optional_checks.yml" \
-            "${{ inputs.pr-number || '7035' }}" \
-            "${{ inputs.pr-branch || 'fix/comment-triggered-jobs' }}" \
+            "${{ inputs.pr-number }}" \
+            "${{ inputs.pr-branch }}" \
             || true
