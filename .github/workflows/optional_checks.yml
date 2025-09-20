@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 5
           submodules: false
-      - name: Check that all tests succeeded
+      - name: Check valgrind workflow
         shell: bash
         run: |
             # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
