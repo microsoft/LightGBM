@@ -23,6 +23,6 @@ jobs:
             # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
             PR_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
             echo "checking status for branch '${PR_BRANCH}'"
-            ./.ci/get-workflow-status.sh \
+            ./.ci/check-workflow-status.sh \
                 "${PR_BRANCH}" \
                 'r_valgrind.yml'

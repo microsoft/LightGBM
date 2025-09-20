@@ -1,7 +1,21 @@
 #!/bin/bash
 
+# [description]
 #
-# ./.ci/get-workflow-status.sh 'fix/comment-triggered-jobs' 'r_valgrind.yml'
+#   Look for the last run of a given GitHub Actions workflow on a given branch.
+#   If there's never been one (as might be the case with optional workflows like valgrind),
+#   exit with 0.
+#
+#   Otherwise, check the status of that latest run.
+#   If it wasn't successful, exit with a non-0 exit code.
+#
+# [usage]
+#
+#     check-workflow-status.sh <BRANCH> <WORKFLOW_FILE>
+#
+# BRANCH: name of a branch involved in a pull request.
+#
+# WORKFLOW_FILE: filename (e.g. 'r_valgrind.yml') defining the GitHub Actions workflow
 #
 
 set -e -u -o pipefail
