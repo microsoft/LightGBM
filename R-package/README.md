@@ -376,9 +376,12 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 
 3. Edit `src/Makevars.in`.
 
-Alternatively, GitHub Actions can re-generate this file for you. On a pull request (only on internal one, does not work for ones from forks), create a comment with this phrase:
+Alternatively, GitHub Actions can re-generate this file for you.
 
-> /gha run r-configure
+1. navigate to https://github.com/microsoft/LightGBM/actions/workflows/r_configure.yml
+2. click "Run workflow"
+3. enter the branch from the pull request for the `pr-branch` input
+4. click "run workflow"
 
 **Configuring for Windows**
 
