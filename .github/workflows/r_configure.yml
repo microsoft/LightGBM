@@ -56,8 +56,9 @@ jobs:
         run: ./R-package/recreate-configure.sh || exit 1
       - name: Push changes
         run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "githubactionsbot@users.noreply.github.com"
+          # source for this user and email: https://github.com/orgs/community/discussions/160496
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add "./R-package/configure"
           git commit --allow-empty -m "Auto-update configure"
           git push

@@ -1748,7 +1748,7 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-# LightGBM-specific flags
+# LightGBM-specific flags (test change)
 LGB_CPPFLAGS=""
 
 #########
