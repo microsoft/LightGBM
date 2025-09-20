@@ -1023,7 +1023,9 @@ def test_set_field_none_removes_field(rng):
     X1 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
     label = rng.uniform(size=10)
-    d1.set_field("weight", label)
+    out = d1.set_field("weight", label)
+    assert out is d1
+
     np.testing.assert_allclose(d1.get_field("weight"), label)
 
     d1.set_field("weight", None)
