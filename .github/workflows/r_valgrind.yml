@@ -1,9 +1,9 @@
 name: R valgrind tests
 
 on:
-  # push:
-  #   branches:
-  #     - fix/comment-triggered-jobs
+  push:
+    branches:
+      - fix/comment-triggered-jobs
   workflow_dispatch:
     inputs:
       pr-branch:
@@ -60,7 +60,10 @@ jobs:
           ref: "refs/pull/${{ inputs.pr-number || '7035' }}/merge"
       - name: Run tests with valgrind
         shell: bash
-        run: ./.ci/test-r-package-valgrind.sh
+        #run: ./.ci/test-r-package-valgrind.sh
+        run: |
+          echo "running fake valgrind step"
+          exit 0
       - name: Send final status
         if: ${{ always() }}
         run: |

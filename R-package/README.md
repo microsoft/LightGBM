@@ -379,9 +379,9 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 Alternatively, GitHub Actions can re-generate this file for you.
 
 1. navigate to https://github.com/microsoft/LightGBM/actions/workflows/r_configure.yml
-2. click "Run workflow"
+2. click "Run workflow" (drop-down)
 3. enter the branch from the pull request for the `pr-branch` input
-4. click "run workflow"
+4. click "Run workflow" (button)
 
 **Configuring for Windows**
 
@@ -484,9 +484,13 @@ RDvalgrind \
 | cat
 ```
 
-These tests can also be triggered on any pull request by leaving a comment in a pull request:
+These tests can also be triggered on a pull request branch, using GitHub Actions.
 
-> /gha run r-valgrind
+1. navigate to https://github.com/microsoft/LightGBM/actions/workflows/r_valgrind.yml
+2. click "Run workflow" (drop-down)
+3. enter the branch from the pull request for the `pr-branch` input
+4. enter the pull request ID for the `pr-number` input
+5. click "Run workflow" (button)
 
 Known Issues
 ------------
