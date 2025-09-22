@@ -51,15 +51,15 @@
 static inline constexpr int WARP_SIZE_INTERNAL() {
 #if defined(__GFX9__)
   return 64;
-#else // __GFX9__
+#else  // __GFX9__
   return 32;
-#endif // __GFX9__
+#endif  // __GFX9__
 }
 #define WARPSIZE (WARP_SIZE_INTERNAL())
 
-#else // __HIP_PLATFORM_AMD__
+#else  // __HIP_PLATFORM_AMD__
 // CUDA warpSize is not a constexpr, but always 32
 #define WARPSIZE 32
 #endif
 
-#endif // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA || USE_ROCM
