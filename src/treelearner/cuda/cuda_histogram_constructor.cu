@@ -5,7 +5,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include "cuda_histogram_constructor.hpp"
 
@@ -959,4 +959,4 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

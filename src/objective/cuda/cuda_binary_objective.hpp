@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_BINARY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_CUDA_CUDA_BINARY_OBJECTIVE_HPP_
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #define GET_GRADIENTS_BLOCK_SIZE_BINARY (1024)
 #define CALC_INIT_SCORE_BLOCK_SIZE_BINARY (1024)
@@ -58,6 +58,6 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface<BinaryLogloss> {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
 
 #endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_BINARY_OBJECTIVE_HPP_

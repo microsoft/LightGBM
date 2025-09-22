@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include "cuda_single_gpu_tree_learner.hpp"
 
@@ -609,4 +609,4 @@ void CUDASingleGPUTreeLearner::RenewDiscretizedTreeLeaves(CUDATree* cuda_tree) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

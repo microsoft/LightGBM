@@ -5,7 +5,7 @@
 
 #include "cuda_score_updater.hpp"
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 namespace LightGBM {
 
@@ -42,4 +42,4 @@ void CUDAScoreUpdater::LaunchMultiplyScoreConstantKernel(const double val, const
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

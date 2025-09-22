@@ -451,14 +451,14 @@ void Dataset::FinishLoad() {
   }
   metadata_.FinishLoad();
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
   is_finish_load_ = true;
 }
 
@@ -886,7 +886,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (device_type_ == std::string("cuda")) {
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
@@ -894,7 +894,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
     }
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray &ca) {
@@ -1735,13 +1735,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 const void* Dataset::GetColWiseData(
@@ -1763,7 +1763,7 @@ const void* Dataset::GetColWiseData(
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
 }
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 void Dataset::CreateCUDAColumnData() {
   cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
@@ -1898,6 +1898,6 @@ void Dataset::CreateCUDAColumnData() {
                           feature_to_column);
 }
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
 
 }  // namespace LightGBM

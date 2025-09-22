@@ -5,7 +5,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #ifndef LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 #define LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
@@ -105,4 +105,4 @@ class CUDASplitInfo {
 
 #endif  // LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

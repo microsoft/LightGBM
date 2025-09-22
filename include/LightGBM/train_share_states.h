@@ -219,7 +219,7 @@ class MultiValBinWrapper {
   }
 
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   const void* GetRowWiseData(
     uint8_t* bit_type,
     size_t* total_size,
@@ -235,7 +235,7 @@ class MultiValBinWrapper {
       return multi_val_bin_->GetRowWiseData(bit_type, total_size, is_sparse, out_data_ptr, data_ptr_bit_type);
     }
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
  private:
   bool is_use_subcol_ = false;
@@ -280,9 +280,9 @@ struct TrainingShareStates {
 
   const std::vector<uint32_t>& feature_hist_offsets() const { return feature_hist_offsets_; }
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   const std::vector<uint32_t>& column_hist_offsets() const { return column_hist_offsets_; }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
   bool IsSparseRowwise() {
     return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());
@@ -332,7 +332,7 @@ struct TrainingShareStates {
   }
 
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
@@ -347,13 +347,13 @@ struct TrainingShareStates {
       return nullptr;
     }
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
  private:
   std::vector<uint32_t> feature_hist_offsets_;
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   std::vector<uint32_t> column_hist_offsets_;
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
   int num_hist_total_bin_ = 0;
   std::unique_ptr<MultiValBinWrapper> multi_val_bin_wrapper_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;

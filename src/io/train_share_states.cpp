@@ -503,9 +503,9 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
     }
     num_hist_total_bin_ = static_cast<int>(feature_hist_offsets_.back());
   }
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   column_hist_offsets_ = *offsets;
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,

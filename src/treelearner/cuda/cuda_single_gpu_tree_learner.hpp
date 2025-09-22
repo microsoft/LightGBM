@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include "cuda_leaf_splits.hpp"
 #include "cuda_histogram_constructor.hpp"
@@ -144,7 +144,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
 }  // namespace LightGBM
 
-#else  // USE_CUDA
+#else  // USE_CUDA || USE_ROCM
 
 // When GPU support is not compiled in, quit with an error message
 
@@ -155,11 +155,11 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
     #pragma warning(disable : 4702)
     explicit CUDASingleGPUTreeLearner(const Config* tree_config, const bool /*boosting_on_cuda*/) : SerialTreeLearner(tree_config) {
       Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"
-                 "Please recompile with CMake option -DUSE_CUDA=1");
+                 "Please recompile with CMake option -DUSE_CUDA=1 or -DUSE_ROCM=1");
     }
 };
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_

@@ -279,14 +279,14 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
     dataset->device_type_ = config_.device_type;
     dataset->gpu_device_id_ = config_.gpu_device_id;
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     if (config_.device_type == std::string("cuda")) {
       dataset->CreateCUDAColumnData();
       dataset->metadata_.CreateCUDAMetadata(dataset->gpu_device_id_);
     } else {
       dataset->cuda_column_data_ = nullptr;
     }
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);

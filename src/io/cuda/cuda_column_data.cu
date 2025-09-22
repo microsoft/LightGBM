@@ -4,7 +4,7 @@
  */
 
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
@@ -58,4 +58,4 @@ void CUDAColumnData::LaunchCopySubrowKernel(void* const* in_cuda_data_by_column)
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

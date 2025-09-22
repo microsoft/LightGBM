@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_
 #define LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include <LightGBM/cuda/cuda_metric.hpp>
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -210,6 +210,6 @@ class CUDATweedieMetric : public CUDARegressionMetricInterface<TweedieMetric, CU
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
 
 #endif  // LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_

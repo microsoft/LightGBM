@@ -21,9 +21,9 @@ Metadata::Metadata() {
   position_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   cuda_metadata_ = nullptr;
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void Metadata::Init(const char* data_filename) {
@@ -380,11 +380,11 @@ void Metadata::SetInitScoresFromIterator(It first, It last) {
   }
   init_score_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetInitScore(init_score_.data(), init_score_.size());
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void Metadata::SetInitScore(const double* init_score, data_size_t len) {
@@ -434,11 +434,11 @@ void Metadata::SetLabelsFromIterator(It first, It last) {
     label_[i] = Common::AvoidInf(first[i]);
   }
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetLabel(label_.data(), label_.size());
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void Metadata::SetLabel(const label_t* label, data_size_t len) {
@@ -492,11 +492,11 @@ void Metadata::SetWeightsFromIterator(It first, It last) {
   CalculateQueryWeights();
   weight_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetWeights(weights_.data(), weights_.size());
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void Metadata::SetWeights(const label_t* weights, data_size_t len) {
@@ -555,7 +555,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
   CalculateQueryWeights();
   query_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (cuda_metadata_ != nullptr) {
     if (query_weights_.size() > 0) {
       CHECK_EQ(query_weights_.size(), static_cast<size_t>(num_queries_));
@@ -564,7 +564,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
       cuda_metadata_->SetQuery(query_boundaries_.data(), nullptr, num_queries_);
     }
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
@@ -583,9 +583,9 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
     num_positions_ = 0;
     return;
   }
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
   if (num_data_ != len) {
     Log::Fatal("Positions size (%i) doesn't match data size (%i)", len, num_data_);
   }
@@ -788,12 +788,12 @@ void Metadata::FinishLoad() {
   CalculateQueryBoundaries();
 }
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 void Metadata::CreateCUDAMetadata(const int gpu_device_id) {
   cuda_metadata_.reset(new CUDAMetadata(gpu_device_id));
   cuda_metadata_->Init(label_, weights_, query_boundaries_, query_weights_, init_score_);
 }
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
 
 void Metadata::LoadFromMemory(const void* memory) {
   const char* mem_ptr = reinterpret_cast<const char*>(memory);

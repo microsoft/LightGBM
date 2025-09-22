@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 
 #include "cuda_regression_objective.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
@@ -478,4 +478,4 @@ void CUDARegressionQuantileloss::LaunchGetGradientsKernel(const double* score, s
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA || USE_ROCM

@@ -72,12 +72,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   if (config_->device_type == std::string("cuda")) {
     LGBM_config_::current_learner = use_cuda_learner;
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     if (config_->device_type == std::string("cuda")) {
       const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
       CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
     }
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
   }
 
   // load forced_splits file
@@ -118,15 +118,15 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   }
   training_metrics_.shrink_to_fit();
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (config_->device_type == std::string("cuda")) {
     train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu_));
   } else {
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
     train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
   num_data_ = train_data_->num_data();
 
@@ -188,11 +188,11 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   }
   // for a validation dataset, we need its score and metric
   auto new_score_updater =
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     config_->device_type == std::string("cuda") ?
     std::unique_ptr<CUDAScoreUpdater>(new CUDAScoreUpdater(valid_data, num_tree_per_iteration_,
       objective_function_ != nullptr && objective_function_->IsCUDAObjective())) :
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
     std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
   // update score
   for (int i = 0; i < iter_; ++i) {
@@ -501,15 +501,15 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
     // we need to predict out-of-bag scores of data for boosting
     if (num_data_ - bag_data_cnt > 0) {
-      #ifdef USE_CUDA
+      #if defined(USE_CUDA) || defined(USE_ROCM)
       if (config_->device_type == std::string("cuda")) {
         train_score_updater_->AddScore(tree, data_sample_strategy_->cuda_bag_data_indices().RawData() + bag_data_cnt, num_data_ - bag_data_cnt, cur_tree_id);
       } else {
-      #endif  // USE_CUDA
+      #endif  // USE_CUDA || USE_ROCM
         train_score_updater_->AddScore(tree, data_sample_strategy_->bag_data_indices().data() + bag_data_cnt, num_data_ - bag_data_cnt, cur_tree_id);
-      #ifdef USE_CUDA
+      #if defined(USE_CUDA) || defined(USE_ROCM)
       }
-      #endif  // USE_CUDA
+      #endif  // USE_CUDA || USE_ROCM
     }
 
   } else {
@@ -523,17 +523,17 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   }
 }
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
 #else
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t /*num_data*/) const {
-#endif  // USE_CUDA
-  #ifdef USE_CUDA
+#endif  // USE_CUDA || USE_ROCM
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   const bool evaluation_on_cuda = metric->IsCUDAMetric();
   if ((boosting_on_gpu_ && evaluation_on_cuda) || (!boosting_on_gpu_ && !evaluation_on_cuda)) {
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
     return metric->Eval(score, objective_function_);
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   } else if (boosting_on_gpu_ && !evaluation_on_cuda) {
     const size_t total_size = static_cast<size_t>(num_data) * static_cast<size_t>(num_tree_per_iteration_);
     if (total_size > host_score_.size()) {
@@ -549,7 +549,7 @@ std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* scor
     CopyFromHostToCUDADevice<double>(cuda_score_.RawData(), score, total_size, __FILE__, __LINE__);
     return metric->Eval(cuda_score_.RawData(), objective_function_);
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 }
 
 std::string GBDT::OutputMetric(int iter) {
@@ -684,14 +684,14 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   std::vector<double> host_raw_scores;
   if (boosting_on_gpu_) {
     host_raw_scores.resize(static_cast<size_t>(*out_len), 0.0);
     CopyFromCUDADeviceToHost<double>(host_raw_scores.data(), raw_scores, static_cast<size_t>(*out_len), __FILE__, __LINE__);
     raw_scores = host_raw_scores.data();
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
   if (objective_function_ != nullptr) {
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
@@ -754,26 +754,26 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   }
   training_metrics_.shrink_to_fit();
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
                     !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
   tree_learner_->ResetBoostingOnGPU(boosting_on_gpu_);
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
   if (train_data != train_data_) {
     train_data_ = train_data;
     data_sample_strategy_->UpdateTrainingData(train_data);
     // not same training data, need reset score and others
     // create score tracker
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     if (config_->device_type == std::string("cuda")) {
       train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu_));
     } else {
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
       train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     }
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
 
     // update score
     for (int i = 0; i < iter_; ++i) {
@@ -851,7 +851,7 @@ void GBDT::ResetGradientBuffers() {
   const bool is_use_subset = data_sample_strategy_->is_use_subset();
   const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
   if (objective_function_ != nullptr) {
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     if (config_->device_type == std::string("cuda") && boosting_on_gpu_) {
       if (cuda_gradients_.Size() < total_size) {
         cuda_gradients_.Resize(total_size);
@@ -860,16 +860,16 @@ void GBDT::ResetGradientBuffers() {
       gradients_pointer_ = cuda_gradients_.RawData();
       hessians_pointer_ = cuda_hessians_.RawData();
     } else {
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
       if (gradients_.size() < total_size) {
         gradients_.resize(total_size);
         hessians_.resize(total_size);
       }
       gradients_pointer_ = gradients_.data();
       hessians_pointer_ = hessians_.data();
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
     }
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA || USE_ROCM
   } else if (data_sample_strategy_->IsHessianChange() || (is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_)) {
     if (gradients_.size() < total_size) {
       gradients_.resize(total_size);

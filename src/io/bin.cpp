@@ -874,7 +874,7 @@ namespace LightGBM {
     return nullptr;
   }
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   template <>
   const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
       size_t* total_size,
@@ -1069,6 +1069,6 @@ namespace LightGBM {
     return to_return;
   }
 
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 
 }  // namespace LightGBM

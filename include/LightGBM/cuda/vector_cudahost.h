@@ -8,10 +8,13 @@
 
 #include <LightGBM/utils/common.h>
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_ROCM)
+#if defined(USE_CUDA)
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
+#endif  // USE_CUDA
+#include <LightGBM/cuda/cuda_utils.hu>
+#endif  // USE_CUDA || USE_ROCM
 #include <stdio.h>
 
 enum LGBM_Device {
@@ -44,7 +47,7 @@ struct CHAllocator {
     T* ptr;
     if (n == 0) return NULL;
     n = SIZE_ALIGNED(n);
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(reinterpret_cast<void**>(&ptr), n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
@@ -63,17 +66,17 @@ struct CHAllocator {
   void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
     if (p == NULL) return;
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_ROCM)
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
-        cudaPointerGetAttributes(&attributes, p);
-        #if CUDA_VERSION >= 10000
+        CUDASUCCESS_OR_FATAL(cudaPointerGetAttributes(&attributes, p));
+        #if CUDA_VERSION >= 10000 || defined(USE_ROCM)
           if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
-            cudaFreeHost(p);
+            CUDASUCCESS_OR_FATAL(cudaFreeHost(p));
           }
         #else
           if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
-            cudaFreeHost(p);
+            CUDASUCCESS_OR_FATAL(cudaFreeHost(p));
           }
         #endif
       } else {

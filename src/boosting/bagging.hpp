@@ -105,33 +105,33 @@ class BaggingSampleStrategy : public SampleStrategy {
       Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
       // set bagging data to tree learner
       if (!is_use_subset_) {
-        #ifdef USE_CUDA
+        #if defined(USE_CUDA) || defined(USE_ROCM)
         if (config_->device_type == std::string("cuda")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
           tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
         } else {
-        #endif  // USE_CUDA
+        #endif  // USE_CUDA || USE_ROCM
           tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-        #ifdef USE_CUDA
+        #if defined(USE_CUDA) || defined(USE_ROCM)
         }
-        #endif  // USE_CUDA
+        #endif  // USE_CUDA || USE_ROCM
       } else {
         // get subset
         tmp_subset_->ReSize(bag_data_cnt_);
         tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                                 bag_data_cnt_, false);
-        #ifdef USE_CUDA
+        #if defined(USE_CUDA) || defined(USE_ROCM)
         if (config_->device_type == std::string("cuda")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
           tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
                                        bag_data_cnt_);
         } else {
-        #endif  // USE_CUDA
+        #endif  // USE_CUDA || USE_ROCM
           tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                        bag_data_cnt_);
-        #ifdef USE_CUDA
+        #if defined(USE_CUDA) || defined(USE_ROCM)
         }
-        #endif  // USE_CUDA
+        #endif  // USE_CUDA || USE_ROCM
       }
     }
   }
@@ -161,11 +161,11 @@ class BaggingSampleStrategy : public SampleStrategy {
         bag_data_cnt_ = static_cast<data_size_t>(config_->bagging_fraction * num_data_);
       }
       bag_data_indices_.resize(num_data_);
-      #ifdef USE_CUDA
+      #if defined(USE_CUDA) || defined(USE_ROCM)
       if (config_->device_type == std::string("cuda")) {
         cuda_bag_data_indices_.Resize(num_data_);
       }
-      #endif  // USE_CUDA
+      #endif  // USE_CUDA || USE_ROCM
       if (!config_->bagging_by_query) {
         bagging_runner_.ReSize(num_data_);
       } else {
@@ -206,9 +206,9 @@ class BaggingSampleStrategy : public SampleStrategy {
     } else {
       bag_data_cnt_ = num_data_;
       bag_data_indices_.clear();
-      #ifdef USE_CUDA
+      #if defined(USE_CUDA) || defined(USE_ROCM)
       cuda_bag_data_indices_.Clear();
-      #endif  // USE_CUDA
+      #endif  // USE_CUDA || USE_ROCM
       bagging_runner_.ReSize(0);
       is_use_subset_ = false;
     }

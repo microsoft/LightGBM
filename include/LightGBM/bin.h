@@ -600,13 +600,13 @@ class MultiValBin {
 
   virtual MultiValBin* Clone() = 0;
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   virtual const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
     const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const = 0;
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

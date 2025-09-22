@@ -108,7 +108,7 @@ class ObjectiveFunction {
   */
   virtual bool IsCUDAObjective() const { return false; }
 
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   /*!
   * \brief Convert output for CUDA version
   */
@@ -118,7 +118,7 @@ class ObjectiveFunction {
 
   virtual bool NeedConvertOutputCUDA () const { return false; }
 
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
 };
 
 }  // namespace LightGBM

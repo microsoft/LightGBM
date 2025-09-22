@@ -17,7 +17,7 @@
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   if (config.device_type == std::string("cuda") && config.boosting == std::string("gbdt")) {
     if (type == std::string("l2")) {
       return new CUDAL2Metric(config);
@@ -78,7 +78,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDATweedieMetric(config);
     }
   } else {
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
     if (type == std::string("l2")) {
       return new L2Metric(config);
     } else if (type == std::string("rmse")) {
@@ -126,9 +126,9 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("tweedie")) {
       return new TweedieMetric(config);
     }
-  #ifdef USE_CUDA
+  #if defined(USE_CUDA) || defined(USE_ROCM)
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA || USE_ROCM
   return nullptr;
 }
 
