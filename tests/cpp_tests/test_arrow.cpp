@@ -148,66 +148,65 @@ class ArrowChunkedArrayTest : public testing::Test {
     arr.private_data = nullptr;
     return arr;
   }
-};
 
+  /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
 
-/* ------------------------------------- SCHEMA CREATION ------------------------------------- */
-
-template <typename T>
-ArrowSchema create_primitive_schema() {
-  std::logic_error("not implemented");
-}
-
-template <>
-ArrowSchema create_primitive_schema<float>() {
-  ArrowSchema schema;
-  schema.format = "f";
-  schema.name = nullptr;
-  schema.metadata = nullptr;
-  schema.flags = 0;
-  schema.n_children = 0;
-  schema.children = nullptr;
-  schema.dictionary = nullptr;
-  schema.release = nullptr;
-  schema.private_data = nullptr;
-  return schema;
-}
-
-template <>
-ArrowSchema create_primitive_schema<bool>() {
-  ArrowSchema schema;
-  schema.format = "b";
-  schema.name = nullptr;
-  schema.metadata = nullptr;
-  schema.flags = 0;
-  schema.n_children = 0;
-  schema.children = nullptr;
-  schema.dictionary = nullptr;
-  schema.release = nullptr;
-  schema.private_data = nullptr;
-  return schema;
-}
-
-ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
-  auto children = static_cast<ArrowSchema**>(malloc(sizeof(ArrowSchema*) * arrays.size()));
-  for (size_t i = 0; i < arrays.size(); ++i) {
-    auto child = static_cast<ArrowSchema*>(malloc(sizeof(ArrowSchema)));
-    *child = *arrays[i];
-    children[i] = child;
+  template <typename T>
+  ArrowSchema create_primitive_schema() {
+    std::logic_error("not implemented");
   }
 
-  ArrowSchema schema;
-  schema.format = "+s";
-  schema.name = nullptr;
-  schema.metadata = nullptr;
-  schema.flags = 0;
-  schema.n_children = static_cast<int64_t>(arrays.size());
-  schema.children = children;
-  schema.dictionary = nullptr;
-  schema.release = &release_schema;
-  schema.private_data = nullptr;
-  return schema;
-}
+  template <>
+  ArrowSchema create_primitive_schema<float>() {
+    ArrowSchema schema;
+    schema.format = "f";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = 0;
+    schema.children = nullptr;
+    schema.dictionary = nullptr;
+    schema.release = nullptr;
+    schema.private_data = nullptr;
+    return schema;
+  }
+
+  template <>
+  ArrowSchema create_primitive_schema<bool>() {
+    ArrowSchema schema;
+    schema.format = "b";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = 0;
+    schema.children = nullptr;
+    schema.dictionary = nullptr;
+    schema.release = nullptr;
+    schema.private_data = nullptr;
+    return schema;
+  }
+
+  ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
+    auto children = static_cast<ArrowSchema**>(malloc(sizeof(ArrowSchema*) * arrays.size()));
+    for (size_t i = 0; i < arrays.size(); ++i) {
+      auto child = static_cast<ArrowSchema*>(malloc(sizeof(ArrowSchema)));
+      *child = *arrays[i];
+      children[i] = child;
+    }
+
+    ArrowSchema schema;
+    schema.format = "+s";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = static_cast<int64_t>(arrays.size());
+    schema.children = children;
+    schema.dictionary = nullptr;
+    schema.release = &release_schema;
+    schema.private_data = nullptr;
+    return schema;
+  }
+};
 
 /* --------------------------------------------------------------------------------------------- */
 /*                                             TESTS                                             */
