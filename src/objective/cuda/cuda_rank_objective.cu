@@ -5,7 +5,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_rank_objective.hpp"
 
@@ -662,4 +662,4 @@ void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* grad
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

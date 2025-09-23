@@ -318,13 +318,13 @@ class Metadata {
   /*! \brief Disable copy */
   Metadata(const Metadata&) = delete;
 
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
 
   CUDAMetadata* cuda_metadata() const { return cuda_metadata_.get(); }
 
   void CreateCUDAMetadata(const int gpu_device_id);
 
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
  private:
   /*! \brief Load wights from file */
@@ -391,9 +391,9 @@ class Metadata {
   bool position_load_from_file_;
   bool query_load_from_file_;
   bool init_score_load_from_file_;
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   std::unique_ptr<CUDAMetadata> cuda_metadata_;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 };
 
 
@@ -997,13 +997,13 @@ class Dataset {
     return feature_groups_[feature_group_index]->feature_min_bin(sub_feature_index);
   }
 
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
 
   const CUDAColumnData* cuda_column_data() const {
     return cuda_column_data_.get();
   }
 
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
  private:
   void SerializeHeader(BinaryWriter* serializer);
@@ -1062,9 +1062,9 @@ class Dataset {
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
 
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
   std::string parser_config_str_;
 };

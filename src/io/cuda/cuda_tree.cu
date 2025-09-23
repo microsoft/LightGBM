@@ -4,7 +4,7 @@
  */
 
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_tree.hpp>
 
@@ -456,4 +456,4 @@ void CUDATree::LaunchAddPredictionToScoreKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

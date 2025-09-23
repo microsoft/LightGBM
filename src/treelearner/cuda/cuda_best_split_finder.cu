@@ -5,7 +5,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_best_split_finder.hpp"
 
@@ -933,10 +933,10 @@ __global__ void FindBestSplitsDiscretizedForLeafKernel(
   if (is_feature_used_bytree[inner_feature_index]) {
     if (task->is_categorical) {
       __threadfence();  // ensure store issued before trap
-#if defined(USE_CUDA)
-      asm("trap;");
-#elif defined(USE_ROCM)
+#if defined(USE_ROCM)
       __builtin_trap();
+#else
+      asm("trap;");
 #endif
     } else {
       if (!task->reverse) {
@@ -2243,4 +2243,4 @@ void CUDABestSplitFinder::LaunchInitCUDARandomKernel() {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

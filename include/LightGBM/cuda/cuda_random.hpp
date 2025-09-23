@@ -5,9 +5,9 @@
 #ifndef LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
 #define LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
-#if defined(USE_CUDA)
+#ifndef USE_ROCM
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
@@ -71,6 +71,6 @@ class CUDARandom {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 
 #endif  // LIGHTGBM_CUDA_CUDA_RANDOM_HPP_

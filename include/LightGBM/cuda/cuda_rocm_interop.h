@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #if defined(__HIP_PLATFORM_AMD__)
 
@@ -62,4 +62,4 @@ static inline constexpr int WARP_SIZE_INTERNAL() {
 #define WARPSIZE 32
 #endif
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

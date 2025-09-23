@@ -4,7 +4,7 @@
  * license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -396,4 +396,4 @@ void CUDABestSplitFinder::SetUsedFeatureByNode(const std::vector<int8_t>& is_fea
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_METRIC_CUDA_CUDA_BINARY_METRIC_HPP_
 #define LIGHTGBM_METRIC_CUDA_CUDA_BINARY_METRIC_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_metric.hpp>
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -52,6 +52,6 @@ class CUDABinaryLoglossMetric: public CUDABinaryMetricInterface<BinaryLoglossMet
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 
 #endif  // LIGHTGBM_METRIC_CUDA_CUDA_BINARY_METRIC_HPP_

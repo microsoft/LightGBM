@@ -4,7 +4,7 @@
  * license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -168,4 +168,4 @@ void CUDAGradientDiscretizer::DiscretizeGradients(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

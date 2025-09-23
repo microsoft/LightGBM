@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #ifndef LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 #define LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
@@ -177,4 +177,4 @@ class CUDARowData {
 }  // namespace LightGBM
 #endif  // LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

@@ -5,7 +5,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_binary_objective.hpp"
 
@@ -209,4 +209,4 @@ void CUDABinaryLogloss::LaunchResetOVACUDALabelKernel() const {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -35,4 +35,4 @@ int GetCUDADevice(const char* file, int line) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_binary_metric.hpp"
 #include "cuda_pointwise_metric.hpp"
@@ -44,4 +44,4 @@ template void CUDAPointwiseMetricInterface<TweedieMetric, CUDATweedieMetric>::In
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

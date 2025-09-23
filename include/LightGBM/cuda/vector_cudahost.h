@@ -8,13 +8,14 @@
 
 #include <LightGBM/utils/common.h>
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
-#if defined(USE_CUDA)
+#ifdef USE_CUDA
+#if defined(USE_ROCM)
+#include <LightGBM/cuda/cuda_utils.hu>
+#else  // USE_ROCM
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif  // USE_ROCM
 #endif  // USE_CUDA
-#include <LightGBM/cuda/cuda_utils.hu>
-#endif  // USE_CUDA || USE_ROCM
 #include <stdio.h>
 
 enum LGBM_Device {
@@ -47,7 +48,7 @@ struct CHAllocator {
     T* ptr;
     if (n == 0) return NULL;
     n = SIZE_ALIGNED(n);
-    #if defined(USE_CUDA) || defined(USE_ROCM)
+    #ifdef USE_CUDA
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(reinterpret_cast<void**>(&ptr), n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
@@ -66,7 +67,7 @@ struct CHAllocator {
   void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
     if (p == NULL) return;
-    #if defined(USE_CUDA) || defined(USE_ROCM)
+    #ifdef USE_CUDA
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         CUDASUCCESS_OR_FATAL(cudaPointerGetAttributes(&attributes, p));

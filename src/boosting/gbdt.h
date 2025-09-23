@@ -560,7 +560,7 @@ class GBDT : public GBDTBase {
   /*! \brief Mutex for exclusive models initialization */
   std::mutex instance_mutex_;
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
   /*! \brief First order derivative of training data */
   std::vector<score_t, CHAllocator<score_t>> gradients_;
   /*! \brief Second order derivative of training data */
@@ -577,7 +577,7 @@ class GBDT : public GBDTBase {
   score_t* hessians_pointer_;
   /*! \brief Whether boosting is done on GPU, used for device_type=cuda */
   bool boosting_on_gpu_;
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   /*! \brief Gradient vector on GPU */
   CUDAVector<score_t> cuda_gradients_;
   /*! \brief Hessian vector on GPU */
@@ -586,7 +586,7 @@ class GBDT : public GBDTBase {
   mutable std::vector<double> host_score_;
   /*! \brief Buffer for scores when boosting is not on GPU but evaluation is, used only with device_type=cuda */
   mutable CUDAVector<double> cuda_score_;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
   /*! \brief Number of training data */
   data_size_t num_data_;

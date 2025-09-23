@@ -6,7 +6,7 @@
  */
 
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
@@ -244,4 +244,4 @@ void CUDALeafSplits::LaunchInitValuesKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

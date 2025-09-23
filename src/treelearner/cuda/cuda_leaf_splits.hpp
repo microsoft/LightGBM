@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/bin.h>
@@ -175,5 +175,5 @@ class CUDALeafSplits {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_

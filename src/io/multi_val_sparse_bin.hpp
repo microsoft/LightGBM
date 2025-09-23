@@ -410,13 +410,13 @@ class MultiValSparseBin : public MultiValBin {
   MultiValSparseBin<INDEX_T, VAL_T>* Clone() override;
 
 
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
     const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const override;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
  private:
   data_size_t num_data_;

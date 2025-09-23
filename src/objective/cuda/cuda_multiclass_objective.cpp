@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_multiclass_objective.hpp"
 
@@ -59,4 +59,4 @@ const double* CUDAMulticlassOVA::ConvertOutputCUDA(const data_size_t num_data, c
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

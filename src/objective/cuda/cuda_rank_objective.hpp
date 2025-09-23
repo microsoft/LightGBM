@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_CUDA_CUDA_RANK_OBJECTIVE_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #define NUM_QUERY_PER_BLOCK (10)
 
@@ -118,5 +118,5 @@ class CUDARankXENDCG : public CUDALambdaRankObjectiveInterface<RankXENDCG> {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_RANK_OBJECTIVE_HPP_

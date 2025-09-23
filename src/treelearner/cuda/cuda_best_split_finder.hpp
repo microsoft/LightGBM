@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -240,5 +240,5 @@ class CUDABestSplitFinder {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_

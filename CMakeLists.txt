@@ -294,6 +294,9 @@ if(USE_ROCM)
     endif()
     message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
 
+    # Building for ROCm almost always means USE_CUDA.
+    # Exceptions to this will be guarded by USE_ROCM.
+    add_definitions(-DUSE_CUDA)
     add_definitions(-DUSE_ROCM)
 endif()
 

@@ -4,7 +4,7 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_rocm_interop.h>
@@ -445,4 +445,4 @@ void BitonicArgSortGlobal<data_size_t, int, true>(const data_size_t* values, int
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

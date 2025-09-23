@@ -4,7 +4,7 @@
  * license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include "cuda_binary_metric.hpp"
 
@@ -28,4 +28,4 @@ std::vector<double> CUDABinaryMetricInterface<HOST_METRIC, CUDA_METRIC>::Eval(co
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

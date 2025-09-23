@@ -53,9 +53,9 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
   }
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   is_cuda_tree_ = false;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
@@ -740,9 +740,9 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_count_.resize(num_leaves_);
   }
 
-  #if defined(USE_CUDA) || defined(USE_ROCM)
+  #ifdef USE_CUDA
   is_cuda_tree_ = false;
-  #endif  // USE_CUDA || USE_ROCM
+  #endif  // USE_CUDA
 
   if ((num_leaves_ <= 1) && !is_linear_) {
     return;

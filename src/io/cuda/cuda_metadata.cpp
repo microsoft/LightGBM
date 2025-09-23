@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_metadata.hpp>
 
@@ -89,4 +89,4 @@ void CUDAMetadata::SetInitScore(const double* init_score, data_size_t len) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA

@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -192,5 +192,5 @@ class CUDAHistogramConstructor {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_

@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_CUDA_CUDA_METRIC_HPP_
 #define LIGHTGBM_CUDA_CUDA_METRIC_HPP_
 
-#if defined(USE_CUDA) || defined(USE_ROCM)
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/metric.h>
@@ -39,6 +39,6 @@ class CUDAMetricInterface: public HOST_METRIC {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA || USE_ROCM
+#endif  // USE_CUDA
 
 #endif  // LIGHTGBM_CUDA_CUDA_METRIC_HPP_

@@ -45,33 +45,33 @@ class GOSSStrategy : public SampleStrategy {
     bag_data_cnt_ = left_cnt;
     // set bagging data to tree learner
     if (!is_use_subset_) {
-      #if defined(USE_CUDA) || defined(USE_ROCM)
+      #ifdef USE_CUDA
       if (config_->device_type == std::string("cuda")) {
         CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
         tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
       } else {
-      #endif  // USE_CUDA || USE_ROCM
+      #endif  // USE_CUDA
         tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-      #if defined(USE_CUDA) || defined(USE_ROCM)
+      #ifdef USE_CUDA
       }
-      #endif  // USE_CUDA || USE_ROCM
+      #endif  // USE_CUDA
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
-      #if defined(USE_CUDA) || defined(USE_ROCM)
+      #ifdef USE_CUDA
       if (config_->device_type == std::string("cuda")) {
         CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
         tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
                                       bag_data_cnt_);
       } else {
-      #endif  // USE_CUDA || USE_ROCM
+      #endif  // USE_CUDA
         tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                      bag_data_cnt_);
-      #if defined(USE_CUDA) || defined(USE_ROCM)
+      #ifdef USE_CUDA
       }
-      #endif  // USE_CUDA || USE_ROCM
+      #endif  // USE_CUDA
     }
   }
 
