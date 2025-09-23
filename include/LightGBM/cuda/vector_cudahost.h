@@ -9,12 +9,11 @@
 #include <LightGBM/utils/common.h>
 
 #ifdef USE_CUDA
-#if defined(USE_ROCM)
-#include <LightGBM/cuda/cuda_utils.hu>
-#else  // USE_ROCM
+#ifndef USE_ROCM
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif  // USE_ROCM
+#include <LightGBM/cuda/cuda_utils.hu>
 #endif  // USE_CUDA
 #include <stdio.h>
 
