@@ -38,6 +38,8 @@
 #                                   Compile 32-bit version.
 #     --cuda
 #                                   Compile CUDA version.
+#     --rocm
+#                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
 #     --integrated-opencl
@@ -141,6 +143,9 @@ while [ $# -gt 0 ]; do
         ;;
     --cuda)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
+        ;;
+    --rocm)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_ROCM=ON"
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
