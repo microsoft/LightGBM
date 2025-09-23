@@ -1030,3 +1030,13 @@ def test_set_field_none_removes_field(rng):
 
     d1.set_field("weight", None)
     assert d1.get_field("weight") is None
+
+
+def test_getstate_handle_removal():
+    X, y = make_blobs(n_samples=100, n_features=2)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.Booster({"num_leaves": 2}, ds)
+    state_dict = bst.__getstate__()
+    assert "_handle" in state_dict
+    assert isinstance(state_dict["_handle"], str)
+    assert "handle" not in state_dict
