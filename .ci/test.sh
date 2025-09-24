@@ -13,6 +13,11 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
+# create the artifact upload directory if it doesn't exist yet
+if [[ -n "${BUILD_ARTIFACTSTAGINGDIRECTORY:-}" ]]; then
+    mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
+fi
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-14
     export CC=gcc-14
