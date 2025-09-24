@@ -86,25 +86,11 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cmake
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
             toolchain: MSYS
             r_version: 4.3
             build_type: cmake
             container: null
           # Visual Studio 2022
-          - os: windows-2022
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-            build_type: cmake
-            container: null
           - os: windows-2022
             task: r-package
             compiler: MSVC
@@ -115,13 +101,6 @@ jobs:
           ###############
           # CRAN builds #
           ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
-            container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
