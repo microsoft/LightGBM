@@ -82,9 +82,6 @@ jobs:
           - os: macos-13
             task: bdist
             python_version: '3.9'
-          - os: macos-13
-            task: if-else
-            python_version: '3.10'
           - os: macos-14
             task: bdist
             method: wheel
