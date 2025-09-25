@@ -1,7 +1,8 @@
 /*!
  * Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
-#pragma once
+#ifndef LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
+#define LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
 
 #ifdef USE_CUDA
 
@@ -63,3 +64,5 @@ static inline constexpr int WARP_SIZE_INTERNAL() {
 #endif
 
 #endif  // USE_CUDA
+
+#endif  // LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_

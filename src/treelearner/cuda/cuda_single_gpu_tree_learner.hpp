@@ -144,7 +144,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
 }  // namespace LightGBM
 
-#else  // USE_CUDA || USE_ROCM
+#else  // USE_CUDA
 
 // When GPU support is not compiled in, quit with an error message
 
@@ -155,7 +155,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
     #pragma warning(disable : 4702)
     explicit CUDASingleGPUTreeLearner(const Config* tree_config, const bool /*boosting_on_cuda*/) : SerialTreeLearner(tree_config) {
       Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"
-                 "Please recompile with CMake option -DUSE_CUDA=1 or -DUSE_ROCM=1");
+                 "Please recompile with CMake option -DUSE_CUDA=1 (NVIDIA GPUs) or -DUSE_ROCM=1 (AMD GPUs)");
     }
 };
 
