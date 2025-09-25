@@ -77,17 +77,22 @@ Remove-Item C:\rtools45 -Force -Recurse -ErrorAction Ignore
 #
 # NOTES:
 #    * some paths and file names are different on R4.0
-$env:R_MAJOR_VERSION = $env:R_VERSION.split('.')[0]
-if ($env:R_MAJOR_VERSION -eq "4") {
+if ($env:R_VERSION -eq "oldest") {
+    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools43.html
     $RTOOLS_INSTALL_PATH = "C:\rtools43"
-    $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
-    $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
     $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
     $env:R_WINDOWS_VERSION = "4.3.1"
+} elseif ($env:R_VERSION -eq "latest") {
+    # ref: https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
+    $RTOOLS_INSTALL_PATH = "C:\rtools45"
+    $env:RTOOLS_EXE_FILE = "rtools45-6608-6492.exe"
+    $env:R_WINDOWS_VERSION = "4.5.1"
 } else {
     Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
     Assert-Output $false
 }
+$env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
+$env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
 $env:CMAKE_VERSION = "3.30.0"
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
