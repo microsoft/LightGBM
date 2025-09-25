@@ -144,7 +144,7 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]]; then
+if [[ "${TASK}" != "cpp-tests" ]] && [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \

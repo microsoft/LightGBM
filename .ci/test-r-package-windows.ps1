@@ -61,8 +61,8 @@ Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
 Remove-From-Path ".*rtools42.*"
 Remove-From-Path ".*rtools43.*"
-# Remove-From-Path ".*rtools44.*"
-# Remove-From-Path ".*rtools45.*"
+Remove-From-Path ".*rtools44.*"
+Remove-From-Path ".*rtools45.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
@@ -70,8 +70,8 @@ Remove-From-Path ".*tools.*"
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools43 -Force -Recurse -ErrorAction Ignore
-# Remove-Item C:\rtools44 -Force -Recurse -ErrorAction Ignore
-# Remove-Item C:\rtools45 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools44 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools45 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
