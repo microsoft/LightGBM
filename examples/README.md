@@ -11,16 +11,27 @@ Machine Learning Challenge Winning Solutions
 **LightGBM is used in many winning solutions, but this table is updated very infrequently.**
 
 | Place         | Competition   | Solution  | Date |
-| ------------- |:------------- | --------- | -----|
-|1st      | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/163368) | 2020.7 |
-|3rd      | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/166875) | 2020.7 |
-|3rd      | [ALASKA2 Image Steganalysis](https://www.kaggle.com/c/alaska2-image-steganalysis) | [link](https://www.kaggle.com/c/alaska2-image-steganalysis/discussion/168870) | 2020.7 |
-|1st      | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
-|2nd      | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143893) | 2020.5 |
-|3rd      | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143029) | 2020.5 |
-|1st      | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/154804) | 2020.5 |
-|2nd      | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/144081) | 2020.5 |
-|2nd      | [2019 Data Science Bowl](https://www.kaggle.com/c/data-science-bowl-2019) | [link](https://www.kaggle.com/c/data-science-bowl-2019/discussion/127388) | 2020.1 |
+|---------|:------------- | --------- | -----|
+| 1st     | [Water Supply Forecast Rodeo: Forecast Stage](https://drivendata.co/blog/water-supply-forecast-and-final-winners#results-of-the-forecast-stage) |  [link](https://github.com/drivendataorg/water-supply-forecast-rodeo/blob/main/forecast/1st%20place/reports/competition_winner_solution_documentation.pdf) | 2024.3 |
+| 3rd     | [Water Supply Forecast Rodeo: Forecast Stage](https://drivendata.co/blog/water-supply-forecast-and-final-winners#results-of-the-forecast-stage) | [link](https://github.com/drivendataorg/water-supply-forecast-rodeo/blob/main/overall/3rd%20place/reports/report.pdf) | 2024.3 |
+| 1st     | [American Express - Default Prediction](https://www.drivendata.org/competitions/group/competition-nasa-airport-pushback/) |  [link](https://www.kaggle.com/competitions/amex-default-prediction/writeups/lucky-shake-1st-solution-update-github-code) | 2022.8 |
+| 2nd     | [American Express - Default Prediction](https://www.drivendata.org/competitions/group/competition-nasa-airport-pushback/) |  [link](https://www.kaggle.com/competitions/amex-default-prediction/writeups/bydefault-junehomes-2nd-place-solution-team-juneho) | 2022.8 |
+| 3rd     | [American Express - Default Prediction](https://www.drivendata.org/competitions/group/competition-nasa-airport-pushback/) |  [link](https://www.kaggle.com/competitions/amex-default-prediction/writeups/aibank-3rd-solution-simple-is-the-best) | 2022.8 |
+| 1st     | [Ubiquant Market Prediction](https://www.kaggle.com/competitions/ubiquant-market-prediction/) |  [link](https://www.kaggle.com/competitions/ubiquant-market-prediction/writeups/k-i-y-1st-place-solution-our-betting-strategy) | 2022.7 |
+| 2nd     | [Ubiquant Market Prediction](https://www.kaggle.com/competitions/ubiquant-market-prediction/) |  [link](https://www.kaggle.com/competitions/ubiquant-market-prediction/writeups/davide-stenner-2nd-place-solution-robust-cv-and-lg) | 2022.7 |
+| 2nd     | [G-Research Crypto Forecasting](https://www.kaggle.com/competitions/g-research-crypto-forecasting/) |  [link](https://www.kaggle.com/competitions/g-research-crypto-forecasting/writeups/nathaniel-maddux-2nd-place-solution) | 2022.5 |
+| 3rd     | [G-Research Crypto Forecasting](https://www.kaggle.com/competitions/g-research-crypto-forecasting/) |  [link](https://www.kaggle.com/competitions/g-research-crypto-forecasting/writeups/gaba-3rd-place-solution) | 2022.5 |
+| 1st     | [NASA Airathon: Predict Air Quality (Particulate Track)](https://www.drivendata.org/competitions/88/competition-air-quality-pm/) |  [link](https://github.com/drivendataorg/nasa-airathon/tree/main/pm25/1st%20Place) | 2022.3 |
+| 2nd     | [NASA Airathon: Predict Air Quality (Particulate Track)](https://www.drivendata.org/competitions/88/competition-air-quality-pm/) |  [link](https://github.com/drivendataorg/nasa-airathon/tree/main/pm25/2nd%20Place) | 2022.3 |
+| 1st     | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/163368) | 2020.7 |
+| 3rd     | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/166875) | 2020.7 |
+| 3rd     | [ALASKA2 Image Steganalysis](https://www.kaggle.com/c/alaska2-image-steganalysis) | [link](https://www.kaggle.com/c/alaska2-image-steganalysis/discussion/168870) | 2020.7 |
+| 1st     | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
+| 2nd     | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143893) | 2020.5 |
+| 3rd     | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143029) | 2020.5 |
+| 1st     | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/154804) | 2020.5 |
+| 2nd     | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/144081) | 2020.5 |
+| 2nd     | [2019 Data Science Bowl](https://www.kaggle.com/c/data-science-bowl-2019) | [link](https://www.kaggle.com/c/data-science-bowl-2019/discussion/127388) | 2020.1 |
 | 3rd     | [RSNA Intracranial Hemorrhage Detection](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection) | [link](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/discussion/117223#latest-673643) | 2019.11 |
 | 1st     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111308) | 2019.10 |
 | 2nd     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111321) | 2019.10 |
