@@ -38,8 +38,6 @@
 #                                   Compile 32-bit version.
 #     --cuda
 #                                   Compile CUDA version.
-#     --rocm
-#                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
 #     --integrated-opencl
@@ -56,6 +54,8 @@
 #     --precompile
 #                                   Use precompiled library.
 #                                   Only used with 'install' command.
+#     --rocm
+#                                   Compile ROCm version.
 #     --time-costs
 #                                   Compile version that outputs time costs for different internal routines.
 #     --user
