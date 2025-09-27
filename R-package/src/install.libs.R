@@ -31,7 +31,7 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint: undesirable_function
+        require("processx")  # nolint: undesirable_function, unused_import.
       })
     })
     if (has_processx && on_windows) {
@@ -51,7 +51,7 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
           , "make this faster."
         ))
       }
-      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      cmd <- paste0(cmd, " ", paste(args, collapse = " "))
       exit_code <- system(cmd)
     }
 

@@ -1,0 +1,22 @@
+# nightlies for: matplotlib, numpy, pandas, pyarrow, scipy, scikit-learn
+--extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple
+
+# runtime dependencies (using `.dev0` suffix to allow nightlies)
+#
+# pinning rules:
+#
+#   * latest versions of lightgbm's dependencies,
+#   * including pre-releases and nightlies
+#
+cffi>=1.17.1
+matplotlib>=3.11.0.dev0
+numpy>=2.4.0.dev0
+pandas>=3.0.0.dev0
+pyarrow>=21.0.0.dev0
+scikit-learn>=1.8.dev0
+scipy>=1.17.0.dev0
+
+# testing-only dependencies
+cloudpickle>=3.1.1
+psutil>=7.0
+pytest>=8.4.1

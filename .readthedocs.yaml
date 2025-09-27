@@ -1,8 +1,8 @@
 version: 2
 build:
-  os: "ubuntu-20.04"
+  os: "ubuntu-24.04"
   tools:
-    python: "miniconda3-4.7"
+    python: "mambaforge-23.11"
 conda:
   environment: docs/env.yml
 formats:

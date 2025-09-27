@@ -1,9 +1,9 @@
 [checking]
-maxrequestspersecond=1
+maxrequestspersecond=0.1
 recursionlevel=1
 anchors=1
 sslverify=0
-threads=1
+threads=4
 
 [filtering]
 ignore=

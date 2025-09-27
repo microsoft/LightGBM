@@ -1,6 +1,8 @@
 # coding: utf-8
 """Find the path to LightGBM dynamic library files."""
 
+import ctypes
+from os import environ
 from pathlib import Path
 from platform import system
 from typing import List
@@ -8,7 +10,7 @@ from typing import List
 __all__: List[str] = []
 
 
-def find_lib_path() -> List[str]:
+def _find_lib_path() -> List[str]:
     """Find the path to LightGBM library files.
 
     Returns
@@ -16,7 +18,7 @@ def find_lib_path() -> List[str]:
     lib_path: list of str
        List of all found library paths to LightGBM.
     """
-    curr_path = Path(__file__).absolute()
+    curr_path = Path(__file__).resolve()
     dll_path = [
         curr_path.parents[1],
         curr_path.parents[0] / "bin",
@@ -35,3 +37,13 @@ def find_lib_path() -> List[str]:
         dll_path_joined = "\n".join(map(str, dll_path))
         raise Exception(f"Cannot find lightgbm library file in following paths:\n{dll_path_joined}")
     return lib_path
+
+
+# we don't need lib_lightgbm while building docs
+_LIB: ctypes.CDLL
+if environ.get("LIGHTGBM_BUILD_DOC", "False") == "True":
+    from unittest.mock import Mock  # isort: skip
+
+    _LIB = Mock(ctypes.CDLL)  # type: ignore
+else:
+    _LIB = ctypes.cdll.LoadLibrary(_find_lib_path()[0])

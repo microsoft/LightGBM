@@ -422,7 +422,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
- * \param is_row_major 1 for row-major, 0 for column-major
+ * \param is_row_major Pointer to the data layouts. 1 for row-major, 0 for column-major
  * \param parameters Additional parameters
  * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
@@ -433,7 +433,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  int data_type,
                                                  int32_t* nrow,
                                                  int32_t ncol,
-                                                 int is_row_major,
+                                                 int* is_row_major,
                                                  const char* parameters,
                                                  const DatasetHandle reference,
                                                  DatasetHandle* out);
@@ -759,11 +759,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle,
 /*!
  * \brief Update the model for one iteration.
  * \param handle Handle of booster
- * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
+ *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
+ *                         However, that is not always the case.
+ *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
+ *                         it is possible that another call to this function would produce a non-empty tree.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle,
-                                                int* is_finished);
+                                                int* produced_empty_tree);
 
 /*!
  * \brief Refit the tree model using the new data (online learning).
@@ -787,13 +791,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
- * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
+ *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
+ *                         However, that is not always the case.
+ *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
+ *                         it is possible that another call to this function would produce a non-empty tree.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                                       const float* grad,
                                                       const float* hess,
-                                                      int* is_finished);
+                                                      int* produced_empty_tree);
 
 /*!
  * \brief Rollback one iteration.

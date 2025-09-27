@@ -128,7 +128,9 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   std::vector<int> num_bins_distributed(num_machines_, 0);
   for (int i = 0; i < this->train_data_->num_total_features(); ++i) {
     int inner_feature_index = this->train_data_->InnerFeatureIndex(i);
-    if (inner_feature_index == -1) { continue; }
+    if (inner_feature_index == -1) {
+      continue;
+    }
     if (this->col_sampler_.is_feature_used_bytree()[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(inner_feature_index);
@@ -260,12 +262,12 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
       if (smaller_leaf_num_bits <= 16) {
         std::memcpy(input_buffer_.data() + buffer_write_start_pos_int16_[feature_index],
                     this->smaller_leaf_histogram_array_[feature_index].RawDataInt16(),
-                    this->smaller_leaf_histogram_array_[feature_index].SizeOfInt16Histgram());
+                    this->smaller_leaf_histogram_array_[feature_index].SizeOfInt16Histogram());
       } else {
         if (local_smaller_leaf_num_bits == 32) {
           std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
                       this->smaller_leaf_histogram_array_[feature_index].RawDataInt32(),
-                      this->smaller_leaf_histogram_array_[feature_index].SizeOfInt32Histgram());
+                      this->smaller_leaf_histogram_array_[feature_index].SizeOfInt32Histogram());
         } else {
           this->smaller_leaf_histogram_array_[feature_index].CopyFromInt16ToInt32(
             input_buffer_.data() + buffer_write_start_pos_[feature_index]);
@@ -274,7 +276,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
     } else {
       std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
                 this->smaller_leaf_histogram_array_[feature_index].RawData(),
-                this->smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
+                this->smaller_leaf_histogram_array_[feature_index].SizeOfHistogram());
     }
   }
   global_timer.Stop("DataParallelTreeLearner::ReduceHistogram::Copy");

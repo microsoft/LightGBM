@@ -62,9 +62,13 @@ class ThreadExceptionHelper {
   }
   void CaptureException() {
     // only catch first exception.
-    if (ex_ptr_ != nullptr) { return; }
+    if (ex_ptr_ != nullptr) {
+      return;
+    }
     std::unique_lock<std::mutex> guard(lock_);
-    if (ex_ptr_ != nullptr) { return; }
+    if (ex_ptr_ != nullptr) {
+      return;
+    }
     ex_ptr_ = std::current_exception();
   }
 

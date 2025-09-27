@@ -271,24 +271,27 @@ def test_add_features_throws_if_num_data_unequal(rng):
     X2 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
     d2 = lgb.Dataset(X2).construct()
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot add features from other Dataset with a different number of rows"
+    ):
         d1.add_features_from(d2)
 
 
 def test_add_features_throws_if_datasets_unconstructed(rng):
     X1 = rng.uniform(size=(100, 1))
     X2 = rng.uniform(size=(100, 1))
-    with pytest.raises(ValueError):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2)
+    err_msg = "Both source and target Datasets must be constructed before adding features"
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2)
+    with pytest.raises(ValueError, match=err_msg):
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
-        d1 = lgb.Dataset(X1).construct()
-        d2 = lgb.Dataset(X2)
+    d1 = lgb.Dataset(X1).construct()
+    d2 = lgb.Dataset(X2)
+    with pytest.raises(ValueError, match=err_msg):
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2).construct()
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2).construct()
+    with pytest.raises(ValueError, match=err_msg):
         d1.add_features_from(d2)
 
 
@@ -672,24 +675,39 @@ def test_list_to_1d_numpy(collection, dtype, rng):
         "2d_list": [[1], [2]],
     }
     y = collection2y[collection]
+    custom_name = "my_custom_variable"
+
     if collection.startswith("pd"):
-        if not PANDAS_INSTALLED:
-            pytest.skip("pandas is not installed")
-        else:
-            y = pd_Series(y)
+        pd = pytest.importorskip("pandas")
+        y = pd_Series(y)
+        if pd.api.types.is_object_dtype(y):
+            with pytest.raises(
+                ValueError,
+                match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object",
+            ):
+                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            return
+        elif pd.api.types.is_string_dtype(y):
+            with pytest.raises(
+                ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: str"
+            ):
+                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            return
+
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match="column-vector"):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
+            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
-        with pytest.raises(TypeError):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
+        err_msg = (
+            rf"Wrong type\(list\) for {custom_name}.\n"
+            r"It should be list, numpy 1-D array or pandas Series"
+        )
+        with pytest.raises(TypeError, match=err_msg):
+            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
-    elif isinstance(y, pd_Series) and y.dtype == object:
-        with pytest.raises(ValueError):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
-        return
-    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name="list")
+
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name=custom_name)
     assert result.size == 10
     assert result.dtype == dtype
 
@@ -978,3 +996,68 @@ def test_booster_params_kwarg_overrides_params_from_model_string(boosting_type, 
 
     # passed-in params shouldn't have been modified outside of lightgbm
     assert orig_params == {"boosting": boosting_type, "feature_fraction": 0.708, "num_leaves": 5, "verbosity": -1}
+
+
+@pytest.mark.parametrize("order", ["C", "F"])
+@pytest.mark.parametrize("dtype", ["float32", "int64"])
+def test_no_copy_in_dataset_from_numpy_2d(rng, order, dtype):
+    X = rng.random(size=(100, 3))
+    X = np.require(X, dtype=dtype, requirements=order)
+    X1d, layout = lgb.basic._np2d_to_np1d(X)
+    if order == "F":
+        assert layout == lgb.basic._C_API_IS_COL_MAJOR
+    else:
+        assert layout == lgb.basic._C_API_IS_ROW_MAJOR
+    if dtype == "float32":
+        assert np.shares_memory(X, X1d)
+    else:
+        # makes a copy
+        assert not np.shares_memory(X, X1d)
+
+
+def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
+    # row-major dataset
+    X_row, y = make_blobs(n_samples=1_000, n_features=3, centers=2)
+    assert X_row.flags["C_CONTIGUOUS"]
+    assert not X_row.flags["F_CONTIGUOUS"]
+    ds_row = lgb.Dataset(X_row, y)
+    ds_row_path = tmp_path / "ds_row.txt"
+    ds_row._dump_text(ds_row_path)
+
+    # col-major dataset
+    X_col = np.asfortranarray(X_row)
+    assert X_col.flags["F_CONTIGUOUS"]
+    assert not X_col.flags["C_CONTIGUOUS"]
+    ds_col = lgb.Dataset(X_col, y)
+    ds_col_path = tmp_path / "ds_col.txt"
+    ds_col._dump_text(ds_col_path)
+
+    # check datasets are equal
+    assert filecmp.cmp(ds_row_path, ds_col_path)
+
+
+def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, tmp_path):
+    # several matrices
+    mats = [np.require(rng.random(size=(100, 2)), requirements=order) for order in ("C", "F", "F", "C")]
+    several_path = tmp_path / "several.txt"
+    lgb.Dataset(mats)._dump_text(several_path)
+
+    # one matrix
+    mat = np.vstack(mats)
+    one_path = tmp_path / "one.txt"
+    lgb.Dataset(mat)._dump_text(one_path)
+
+    assert filecmp.cmp(one_path, several_path)
+
+
+def test_set_field_none_removes_field(rng):
+    X1 = rng.uniform(size=(10, 1))
+    d1 = lgb.Dataset(X1).construct()
+    weight = rng.uniform(size=10)
+    out = d1.set_field("weight", weight)
+    assert out is d1
+
+    np.testing.assert_allclose(d1.get_field("weight"), weight)
+
+    d1.set_field("weight", None)
+    assert d1.get_field("weight") is None

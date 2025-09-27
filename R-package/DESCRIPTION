@@ -51,9 +51,9 @@ Suggests:
     RhpcBLASctl,
     testthat
 Depends:
-    R (>= 3.5)
+    R (>= 4.0)
 Imports:
-    R6 (>= 2.0),
+    R6 (>= 2.4.0),
     data.table (>= 1.9.6),
     graphics,
     jsonlite (>= 1.0),
@@ -62,5 +62,5 @@ Imports:
     parallel,
     utils
 SystemRequirements:
-    ~~CXXSTD~~
+    C++17
 RoxygenNote: 7.3.2

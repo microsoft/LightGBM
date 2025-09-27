@@ -10,7 +10,6 @@ on:
 env:
   COMPILER: gcc
   OS_NAME: 'linux'
-  PYTHON_VERSION: '3.12'
   TASK: 'check-links'
 
 jobs:
@@ -19,14 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
           submodules: false
       - name: Setup and run tests
         run: |
-          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${HOME}/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test-docs.sh || exit 1

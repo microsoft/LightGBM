@@ -2,6 +2,7 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
@@ -9,6 +10,7 @@
 #include "cuda_data_partition.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/tree.h>
 
 #include <algorithm>
@@ -262,7 +264,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
   }
 }
 
-#define GenDataToLeftBitVectorKernel_PARMS \
+#define GenDataToLeftBitVectorKernel_PARAMS \
   const BIN_TYPE* column_data, \
   const data_size_t num_data_in_leaf, \
   const data_size_t* data_indices_in_leaf, \
@@ -286,11 +288,11 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
 __global__ void GenDataToLeftBitVectorKernel(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer,
   data_size_t* block_to_right_offset_buffer) {
-  __shared__ uint16_t shared_mem_buffer[32];
+  __shared__ uint16_t shared_mem_buffer[WARPSIZE];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
@@ -335,7 +337,7 @@ __global__ void GenDataToLeftBitVectorKernel(
 
 template <typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_zero,
   const bool missing_is_na,
   const bool mfb_is_zero,
@@ -363,7 +365,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
@@ -380,7 +382,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_zero,
   const bool mfb_is_na,
   const bool max_bin_to_left,
@@ -396,7 +398,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_na,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
@@ -413,7 +415,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
   if (!max_bin_to_left) {
@@ -429,7 +431,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
     GenDataToLeftBitVectorKernel
@@ -548,7 +550,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
 
 #undef UpdateDataIndexToLeafIndexKernel_PARAMS
 #undef UpdateDataIndexToLeafIndex_ARGS
-#undef GenDataToLeftBitVectorKernel_PARMS
+#undef GenDataToLeftBitVectorKernel_PARAMS
 #undef GenBitVector_ARGS
 
 template <typename BIN_TYPE, bool USE_MIN_BIN>
@@ -585,7 +587,7 @@ __global__ void GenDataToLeftBitVectorKernel_Categorical(
   const uint8_t split_default_to_left,
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer) {
-  __shared__ uint16_t shared_mem_buffer[32];
+  __shared__ uint16_t shared_mem_buffer[WARPSIZE];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
@@ -683,7 +685,7 @@ __global__ void AggregateBlockOffsetKernel0(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks) {
-  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t shared_mem_buffer[WARPSIZE];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int blockDim_x = blockDim.x;
@@ -747,7 +749,7 @@ __global__ void AggregateBlockOffsetKernel1(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks) {
-  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t shared_mem_buffer[WARPSIZE];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int threadIdx_x = threadIdx.x;
@@ -1078,7 +1080,7 @@ __global__ void RenewDiscretizedTreeLeavesKernel(
   double* leaf_grad_stat_buffer,
   double* leaf_hess_stat_buffer,
   double* leaf_values) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const int leaf_index = static_cast<int>(blockIdx.x);
   const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
   const data_size_t num_data_in_leaf = leaf_num_data[leaf_index];
