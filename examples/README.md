@@ -12,7 +12,6 @@ Machine Learning Challenge Winning Solutions
 
 | Place         | Competition   | Solution  | Date |
 |---------|:------------- | --------- | -----|
-| 1st     | [Water Supply Forecast Rodeo: Forecast Stage](https://drivendata.co/blog/water-supply-forecast-and-final-winners) |  [link](https://github.com/drivendataorg/water-supply-forecast-rodeo/blob/main/forecast/1st%20place/) | 2024.3 |
 | 3rd     | [Water Supply Forecast Rodeo: Forecast Stage](https://drivendata.co/blog/water-supply-forecast-and-final-winners) | [link](https://github.com/drivendataorg/water-supply-forecast-rodeo/blob/main/overall/3rd%20place/) | 2024.3 |
 | 1st     | [American Express - Default Prediction](https://www.drivendata.org/competitions/group/competition-nasa-airport-pushback/) |  [link](https://www.kaggle.com/competitions/amex-default-prediction/writeups/lucky-shake-1st-solution-update-github-code) | 2022.8 |
 | 2nd     | [American Express - Default Prediction](https://www.drivendata.org/competitions/group/competition-nasa-airport-pushback/) |  [link](https://www.kaggle.com/competitions/amex-default-prediction/writeups/bydefault-junehomes-2nd-place-solution-team-juneho) | 2022.8 |
