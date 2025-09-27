@@ -463,3 +463,9 @@ dask-worker-space/
 *.pub
 *.rdp
 *_rsa
+
+# hipify-perl -inplace leaves behind *.prehip files
+*.prehip
+
+# pixi environments
+.pixi

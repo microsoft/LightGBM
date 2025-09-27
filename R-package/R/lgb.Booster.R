@@ -11,16 +11,6 @@ Booster <- R6::R6Class(
     record_evals = list(),
     data_processor = NULL,
 
-    # Finalize will free up the handles
-    finalize = function() {
-      .Call(
-        LGBM_BoosterFree_R
-        , private$handle
-      )
-      private$handle <- NULL
-      return(invisible(NULL))
-    },
-
     # Initialize will create a starter booster
     initialize = function(params = list(),
                           train_set = NULL,
@@ -711,6 +701,17 @@ Booster <- R6::R6Class(
     set_objective_to_none = FALSE,
     train_set_version = 0L,
     fast_predict_config = list(),
+
+    # finalize() will free up the handles
+    finalize = function() {
+      .Call(
+        LGBM_BoosterFree_R
+        , private$handle
+      )
+      private$handle <- NULL
+      return(invisible(NULL))
+    },
+
     # Predict data
     inner_predict = function(idx) {
 
@@ -1017,7 +1018,7 @@ predict.lgb.Booster <- function(object,
                                 ...) {
 
   if (!.is_Booster(x = object)) {
-    stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
+    stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   additional_params <- list(...)
@@ -1114,7 +1115,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          Requesting a different prediction type or passing parameters to \link{predict.lgb.Booster}
 #'          will cause it to ignore the fast-predict configuration and take the slow route instead
-#'          (but be aware that an existing configuration might not always be overriden by supplying
+#'          (but be aware that an existing configuration might not always be overridden by supplying
 #'          different parameters or prediction type, so make sure to check that the output is what
 #'          was expected when a prediction is to be made on a single row for something different than
 #'          what is configured).
@@ -1128,7 +1129,7 @@ predict.lgb.Booster <- function(object,
 #'          and as such, this function will produce an error if passing \code{csr=TRUE} and
 #'          \code{type = "contrib"} together.
 #' @inheritParams lgb_predict_shared_params
-#' @param model LighGBM model object (class \code{lgb.Booster}).
+#' @param model LightGBM model object (class \code{lgb.Booster}).
 #'
 #'              \bold{The object will be modified in-place}.
 #' @param csr Whether the prediction function is going to be called on sparse CSR inputs.
@@ -1174,7 +1175,7 @@ lgb.configure_fast_predict <- function(model,
                                        type = "response",
                                        params = list()) {
   if (!.is_Booster(x = model)) {
-    stop("lgb.configure_fast_predict: model should be an ", sQuote("lgb.Booster"))
+    stop("lgb.configure_fast_predict: model should be an ", sQuote("lgb.Booster", q = FALSE))
   }
   if (type == "class") {
     stop("type='class' is not supported for 'lgb.configure_fast_predict'. Use 'response' instead.")
@@ -1234,6 +1235,9 @@ print.lgb.Booster <- function(x, ...) {
 
   if (!handle_is_null) {
     obj <- x$params$objective
+    if (is.null(obj)) {
+      obj <- "(default)"
+    }
     if (obj == "none") {
       obj <- "custom"
     }
@@ -1387,7 +1391,7 @@ lgb.save <- function(
   ) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
+    stop("lgb.save: booster should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   if (!(is.character(filename) && length(filename) == 1L)) {
@@ -1451,7 +1455,7 @@ lgb.save <- function(
 lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
+    stop("lgb.dump: booster should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   # Return booster at requested iteration
@@ -1515,7 +1519,7 @@ lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.get.eval.result: Can only use ", sQuote("lgb.Booster"), " to get eval result")
+    stop("lgb.get.eval.result: Can only use ", sQuote("lgb.Booster", q = FALSE), " to get eval result")
   }
 
   if (!is.character(data_name) || !is.character(eval_name)) {

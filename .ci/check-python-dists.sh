@@ -8,7 +8,7 @@ DIST_DIR=${1}
 METHOD=${METHOD:-""}
 TASK=${TASK:-""}
 
-echo "checking Python package distributions in '${DIST_DIR}'"
+echo "checking Python-package distributions in '${DIST_DIR}'"
 
 pip install \
     -qq \
@@ -26,13 +26,13 @@ fi
 PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ "$PY_MINOR_VER" -gt 7 ]; then
     echo "pydistcheck..."
-    pip install 'pydistcheck>=0.7.0'
+    pip install 'pydistcheck>=0.9.1'
     if { test "${TASK}" = "cuda" || test "${METHOD}" = "wheel"; }; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols'\
             --ignore 'distro-too-large-compressed' \
-            --max-allowed-size-uncompressed '100M' \
+            --max-allowed-size-uncompressed '120M' \
             --max-allowed-files 800 \
             "$(echo "${DIST_DIR}"/*)" || exit 1
     elif { test "$(uname -m)" = "aarch64"; }; then
@@ -55,4 +55,4 @@ else
     echo "skipping pydistcheck (does not support Python 3.${PY_MINOR_VER})"
 fi
 
-echo "done checking Python package distributions"
+echo "done checking Python-package distributions"

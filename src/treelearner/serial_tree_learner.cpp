@@ -201,6 +201,12 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   auto tree_ptr = tree.get();
   constraints_->ShareTreePointer(tree_ptr);
 
+  // set the root value by hand, as it is not handled by splits
+  tree->SetLeafOutput(0, FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
+    smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
+    config_->lambda_l1, config_->lambda_l2, config_->max_delta_step,
+    BasicConstraint(), config_->path_smooth, static_cast<data_size_t>(num_data_), 0));
+
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -362,12 +368,16 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
     larger_leaf_histogram_array_ = nullptr;
   } else if (num_data_in_left_child < num_data_in_right_child) {
     // put parent(left) leaf's histograms into larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
+    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) {
+      parent_leaf_histogram_array_ = larger_leaf_histogram_array_;
+    }
     histogram_pool_.Move(left_leaf, right_leaf);
     histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
   } else {
     // put parent(left) leaf's histograms to larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
+    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) {
+      parent_leaf_histogram_array_ = larger_leaf_histogram_array_;
+    }
     histogram_pool_.Get(right_leaf, &smaller_leaf_histogram_array_);
   }
   return true;
@@ -729,24 +739,24 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
 
 std::set<int> SerialTreeLearner::FindAllForceFeatures(Json force_split_leaf_setting) {
   std::set<int> force_features;
-  std::queue<Json> force_split_leafs;
+  std::queue<Json> force_split_leaves;
 
-  force_split_leafs.push(force_split_leaf_setting);
+  force_split_leaves.push(force_split_leaf_setting);
 
-  while (!force_split_leafs.empty()) {
-    Json split_leaf = force_split_leafs.front();
-    force_split_leafs.pop();
+  while (!force_split_leaves.empty()) {
+    Json split_leaf = force_split_leaves.front();
+    force_split_leaves.pop();
 
     const int feature_index = split_leaf["feature"].int_value();
     const int feature_inner_index = train_data_->InnerFeatureIndex(feature_index);
     force_features.insert(feature_inner_index);
 
     if (split_leaf.object_items().count("left") > 0) {
-      force_split_leafs.push(split_leaf["left"]);
+      force_split_leaves.push(split_leaf["left"]);
     }
 
     if (split_leaf.object_items().count("right") > 0) {
-      force_split_leafs.push(split_leaf["right"]);
+      force_split_leaves.push(split_leaf["right"]);
     }
   }
 

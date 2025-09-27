@@ -187,7 +187,7 @@ You can find LightGBM's logo in different file formats and resolutions `here <ht
 
 **Possible Cause**: This behavior may indicate that you have multiple OpenMP libraries installed on your machine and they conflict with each other, similarly to the ``FAQ #10``.
 
-If you are using any Python package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
+If you are using any Python-package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
 
 .. code-block:: console
 
@@ -206,6 +206,49 @@ Detailed description of conflicts between multiple OpenMP instances is provided 
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
+17. Loading LightGBM fails like: ``cannot allocate memory in static TLS block``
+-------------------------------------------------------------------------------
+
+When loading LightGBM, you may encounter errors like the following.
+
+.. code-block:: console
+
+   lib/libgomp.so.1: cannot allocate memory in static TLS block
+
+This most commonly happens on aarch64 Linux systems.
+
+``gcc``'s OpenMP library (``libgomp.so``) tries to allocate a small amount of static thread-local storage ("TLS")
+when it's dynamically loaded.
+
+That error can happen when the loader isn't able to find a large enough block of memory.
+
+On aarch64 Linux, processes and loaded libraries share the same pool of static TLS,
+which makes such failures more likely. See these discussions:
+
+* https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
+* https://gcc.gcc.gnu.narkive.com/vOXMQqLA/failure-to-dlopen-libgomp-due-to-static-tls-data
+
+If you are experiencing this issue when using the ``lightgbm`` Python-package, try upgrading
+to at least ``v4.6.0``.
+
+For older versions of the Python-package, or for other LightGBM APIs, this issue can
+often be avoided by loading ``libgomp.so.1``. That can be done directly by setting environment
+variable ``LD_PRELOAD``, like this:
+
+.. code-block:: console
+
+    export LD_PRELOAD=/root/miniconda3/envs/test-env/lib/libgomp.so.1
+
+It can also be done indirectly by changing the order that other libraries are loaded
+into processes, which varies by programming language and application type.
+
+For more details, see these discussions:
+
+* https://github.com/microsoft/LightGBM/pull/6654#issuecomment-2352014275
+* https://github.com/microsoft/LightGBM/issues/6509
+* https://maskray.me/blog/2021-02-14-all-about-thread-local-storage
+* https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
+
 ------
 
 R-package
@@ -218,9 +261,9 @@ R-package
 1. Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
 ------------------------------------------------------------------------------------------------------------------------------
 
-In older versions of the R package (prior to ``v3.3.0``), this could happen occasionally and the solution was to run ``lgb.unloader(wipe = TRUE)`` to remove all LightGBM-related objects. Some conversation about this could be found in `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
+In older versions of the R-package (prior to ``v3.3.0``), this could happen occasionally and the solution was to run ``lgb.unloader(wipe = TRUE)`` to remove all LightGBM-related objects. Some conversation about this could be found in `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
-That is no longer necessary as of ``v3.3.0``, and function ``lgb.unloader()`` has since been removed from the R package.
+That is no longer necessary as of ``v3.3.0``, and function ``lgb.unloader()`` has since been removed from the R-package.
 
 2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
 ----------------------------------------------------------------------------------------
@@ -334,3 +377,42 @@ We strongly recommend installation from the ``conda-forge`` channel and not from
 For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
 
 In addition, as of ``lightgbm==4.4.0``, the ``conda-forge`` package automatically supports CUDA-based GPU acceleration.
+
+5. How do I subclass ``scikit-learn`` estimators?
+-------------------------------------------------
+
+For ``lightgbm <= 4.5.0``, copy all of the constructor arguments from the corresponding
+``lightgbm`` class into the constructor of your custom estimator.
+
+For later versions, just ensure that the constructor of your custom estimator calls ``super().__init__()``.
+
+Consider the example below, which implements a regressor that allows creation of truncated predictions.
+This pattern will work with ``lightgbm > 4.5.0``.
+
+.. code-block:: python
+
+    import numpy as np
+    from lightgbm import LGBMRegressor
+    from sklearn.datasets import make_regression
+
+    class TruncatedRegressor(LGBMRegressor):
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+        def predict(self, X, max_score: float = np.inf):
+            preds = super().predict(X)
+            np.clip(preds, a_min=None, a_max=max_score, out=preds)
+            return preds
+
+    X, y = make_regression(n_samples=1_000, n_features=4)
+
+    reg_trunc = TruncatedRegressor().fit(X, y)
+
+    preds = reg_trunc.predict(X)
+    print(f"mean: {preds.mean():.2f}, max: {preds.max():.2f}")
+    # mean: -6.81, max: 345.10
+
+    preds_trunc = reg_trunc.predict(X, max_score=preds.mean())
+    print(f"mean: {preds_trunc.mean():.2f}, max: {preds_trunc.max():.2f}")
+    # mean: -56.50, max: -6.81

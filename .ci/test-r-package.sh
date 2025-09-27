@@ -6,8 +6,8 @@ set -e -E -u -o pipefail
 ARCH=$(uname -m)
 
 # set up R environment
-CRAN_MIRROR="https://cran.rstudio.com"
-R_LIB_PATH=~/Rlib
+export CRAN_MIRROR="https://cran.rstudio.com"
+export R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
@@ -19,13 +19,8 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION=( ${R_VERSION//./ } )
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    export R_MAC_VERSION=3.6.3
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
-    export R_LINUX_VERSION="3.6.3-1bionic"
-    export R_APT_REPO="bionic-cran35/"
-elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+R_MAJOR_VERSION="${R_VERSION%.*}"
+if [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
@@ -69,7 +64,7 @@ if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
-                autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
+                "autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION)" \
                 automake \
                 || exit 1
     fi
@@ -90,9 +85,9 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self || exit 1
     sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
 
-    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit 1
+    curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
     sudo installer \
-        -pkg $(pwd)/R.pkg \
+        -pkg "$(pwd)/R.pkg" \
         -target / || exit 1
 
     # install tidy v5.8.0
@@ -100,7 +95,7 @@ if [[ $OS_NAME == "macos" ]]; then
     TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
     curl -sL ${TIDY_URL} -o tidy.pkg
     sudo installer \
-        -pkg $(pwd)/tidy.pkg \
+        -pkg "$(pwd)/tidy.pkg" \
         -target /
 
     # ensure that this newer version of 'tidy' is used by 'R CMD check'
@@ -108,35 +103,17 @@ if [[ $OS_NAME == "macos" ]]; then
     export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
-# fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
-# "Warning: dependency ‘lattice’ is not available"
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
-else
-    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
-    # This should be unnecessary on R >=4.4.0
-    # ref: https://github.com/microsoft/LightGBM/issues/6433
-    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
-fi
+# {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+# This should be unnecessary on R >=4.4.0
+# ref: https://github.com/microsoft/LightGBM/issues/6433
+Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 
 # manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
 # ref: https://github.com/microsoft/LightGBM/issues/6433
 Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
-# Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
-# to avoid a CI-time dependency on devtools (for devtools::install_deps())
-# NOTE: testthat is not required when running rchk
-if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl')"
-else
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
-fi
-compile_from_source="both"
-if [[ $OS_NAME == "macos" ]]; then
-    packages+=", type = 'binary'"
-    compile_from_source="never"
-fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
+# Manually install dependencies to avoid a CI-time dependency on devtools (for devtools::install_deps())
+Rscript --vanilla ./.ci/install-r-deps.R --build --test --exclude=Matrix || exit 1
 
 cd "${BUILD_DIRECTORY}"
 PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
@@ -155,7 +132,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             git diff --name-only | wc -l
         )
         if [[ ${num_files_changed} -gt 0 ]]; then
-            echo "'configure' in the R package has changed. Please recreate it and commit the changes."
+            echo "'configure' in the R-package has changed. Please recreate it and commit the changes."
             echo "Changed files:"
             git diff --compact-summary
             echo "See R-package/README.md for details on how to recreate this script."
@@ -166,37 +143,14 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     ./build-cran-package.sh || exit 1
 
-    if [[ "${TASK}" == "r-rchk" ]]; then
-        echo "Checking R package with rchk"
-        mkdir -p packages
-        cp ${PKG_TARBALL} packages
-        RCHK_LOG_FILE="rchk-logs.txt"
-        docker run \
-            -v $(pwd)/packages:/rchk/packages \
-            kalibera/rchk:latest \
-            "/rchk/packages/${PKG_TARBALL}" \
-        2>&1 > ${RCHK_LOG_FILE} \
-        || (cat ${RCHK_LOG_FILE} && exit 1)
-        cat ${RCHK_LOG_FILE}
-
-        # the exceptions below are from R itself and not LightGBM:
-        # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
-        exit $(
-            cat ${RCHK_LOG_FILE} \
-            | grep -v "in function strptime_internal" \
-            | grep -v "in function RunGenCollect" \
-            | grep --count -E '\[PB\]|ERROR'
-        )
-    fi
-
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repo
     R_CMD_CHECK_DIR="${HOME}/tmp-r-cmd-check/"
-    mkdir -p ${R_CMD_CHECK_DIR}
-    mv ${PKG_TARBALL} ${R_CMD_CHECK_DIR}
-    cd ${R_CMD_CHECK_DIR}
+    mkdir -p "${R_CMD_CHECK_DIR}"
+    mv "${PKG_TARBALL}" "${R_CMD_CHECK_DIR}"
+    cd "${R_CMD_CHECK_DIR}"
 fi
 
 declare -i allowed_notes=0

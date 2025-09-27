@@ -35,7 +35,7 @@ For example, in Python:
 
 .. code-block:: python
 
-   # use learning rate of 0.07, becase 'learning_rate'
+   # use learning rate of 0.07, because 'learning_rate'
    # is the primary parameter name
    lgb.train(
       params={
@@ -412,6 +412,12 @@ Learning Control Parameters
 -  ``bagging_seed`` :raw-html:`<a id="bagging_seed" title="Permalink to this parameter" href="#bagging_seed">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, aliases: ``bagging_fraction_seed``
 
    -  random seed for bagging
+
+-  ``bagging_by_query`` :raw-html:`<a id="bagging_by_query" title="Permalink to this parameter" href="#bagging_by_query">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to do bagging sample by query
+
+   -  *New in version 4.6.0*
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
@@ -791,7 +797,7 @@ Dataset Parameters
 
    -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
-   -  **Note**: works only with ``cpu`` device type and ``serial`` tree learner
+   -  **Note**: works only with ``cpu``, ``gpu`` device type and ``serial`` tree learner
 
    -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 

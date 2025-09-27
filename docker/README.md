@@ -55,9 +55,9 @@ After this runs, a LightGBM model can be found at `LightGBM-CLI-model.txt`.
 
 For more details on how to configure and use the LightGBM CLI, see https://lightgbm.readthedocs.io/en/latest/Quick-Start.html.
 
-## Running the Python-package Сontainer
+## Running the Python-package Container
 
-Build an image with the LightGBM Python package installed.
+Build an image with the LightGBM Python-package installed.
 
 ```shell
 mkdir lightgbm-docker
@@ -69,8 +69,8 @@ docker build \
     .
 ```
 
-Once that completes, the built image can be used to run LightGBM's Python package in a container.
-Run the following to produce a model using the Python package.
+Once that completes, the built image can be used to run LightGBM's Python-package in a container.
+Run the following to produce a model using the Python-package.
 
 ```shell
 # get training data
@@ -114,9 +114,9 @@ docker run \
     python
 ```
 
-## Running the R-package Сontainer
+## Running the R-package Container
 
-Build an image with the LightGBM R package installed.
+Build an image with the LightGBM R-package installed.
 
 ```shell
 mkdir lightgbm-docker
@@ -129,8 +129,8 @@ docker build \
     .
 ```
 
-Once that completes, the built image can be used to run LightGBM's R package in a container.
-Run the following to produce a model using the R package.
+Once that completes, the built image can be used to run LightGBM's R-package in a container.
+Run the following to produce a model using the R-package.
 
 ```shell
 # get training data
@@ -185,12 +185,12 @@ Then navigate to `localhost:8787` in your local web browser, and log in with use
 
 To target a different R version, pass any [valid rocker/verse tag](https://hub.docker.com/r/rocker/verse/tags) to `docker build`.
 
-For example, to test LightGBM with R 3.5:
+For example, to test LightGBM with R 4.5:
 
 ```shell
 docker build \
-    -t lightgbm-r-35 \
+    -t lightgbm-r-45 \
     -f dockerfile-r \
-    --build-arg R_VERSION=3.5 \
+    --build-arg R_VERSION=4.5 \
     .
 ```

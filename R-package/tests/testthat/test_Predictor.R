@@ -1,6 +1,6 @@
 library(Matrix)
 
-test_that("Predictor$finalize() should not fail", {
+test_that("Predictor's finalizer should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
     dtrain <- lgb.Dataset(X, label = y)
@@ -21,11 +21,11 @@ test_that("Predictor$finalize() should not fail", {
 
     expect_false(.is_null_handle(predictor$.__enclos_env__$private$handle))
 
-    predictor$finalize()
+    predictor$.__enclos_env__$private$finalize()
     expect_true(.is_null_handle(predictor$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
-    predictor$finalize()
+    predictor$.__enclos_env__$private$finalize()
     expect_true(.is_null_handle(predictor$.__enclos_env__$private$handle))
 })
 
@@ -187,8 +187,14 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
       , params = list(min_data_in_leaf = 5L, num_threads = .LGB_MAX_THREADS)
     )
 
-    expect_error(predict(bst, SmatC, type = "contrib"))
-    expect_error(predict(bst, SmatR, type = "contrib"))
+    expect_error(
+      predict(bst, SmatC, type = "contrib")
+      , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsCMatrix"  # nolint: line_length.
+    )
+    expect_error(
+      predict(bst, SmatR, type = "contrib")
+      , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsRMatrix" # nolint: line_length.
+    )
 })
 
 test_that("predict() params should override keyword argument for raw-score predictions", {
