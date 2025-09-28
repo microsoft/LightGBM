@@ -34,6 +34,7 @@ jobs:
 
           # --- test --- #
           docker run \
+            --entrypoint="" \
             --rm \
             lightgbm:cli \
             which lightgbm
