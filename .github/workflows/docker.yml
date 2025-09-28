@@ -28,7 +28,7 @@ jobs:
           # --- build --- #
           docker build \
             -t lightgbm:cli \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/dockerfile-cli
 
@@ -42,7 +42,7 @@ jobs:
           # --- build --- #
           docker build \
             -t lightgbm:r \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/dockerfile-r
           
@@ -56,7 +56,7 @@ jobs:
           # --- build --- #
           docker build \
             -t lightgbm:python \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/dockerfile-python
           
@@ -69,19 +69,19 @@ jobs:
         run: |
           docker build \
             -t lightgbm:gpu \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile.gpu
       - name: dockerfile-cli-only.gpu
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile-cli-only.gpu
       - name: dockerfile-cli-only-distroless.gpu
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.head_ref }} \
             --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile-cli-only-distroless.gpu
   all-docker-jobs-successful:
