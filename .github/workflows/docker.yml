@@ -20,38 +20,60 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: dockerfile-cli
         run: |
+          # --- build --- #
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
-            - < ./docker/dockerfile-python
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
+            -t lightgbm:cli \
+            - < ./docker/dockerfile-cli
+
+          # --- test --- #
+          docker run \
+            --rm \
+            -it lightgbm:cli \
+            which lightgbm
       - name: dockerfile-r
         run: |
+          # --- build --- #
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
+            - lightgbm:r \
             - < ./docker/dockerfile-r
+          
+          # --- test --- #
+          docker run \
+            --rm \
+            -it lightgbm:r \
+            Rscript -e "library(lightgbm); print(sessionInfo())"
       - name: dockerfile-python
         run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/dockerfile-python
       - name: dockerfile.gpu
         run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile.gpu
       - name: dockerfile-cli-only.gpu
         run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile-cli-only.gpu
       - name: dockerfile-cli-only-distroless.gpu
         run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
+            --build-arg LIGHTGBM_GIT_URL=https://github.com/${{ github.repository }} \
             - < ./docker/gpu/dockerfile-cli-only-distroless.gpu
   all-docker-jobs-successful:
     if: always()

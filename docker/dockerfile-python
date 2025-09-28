@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 ARG CONDA_DIR=/opt/miniforge
 ARG LIGHTGBM_GIT_REF=stable
+ARG LIGHTGBM_GIT_URL=https://github.com/Microsoft/LightGBM.git
 
 ENV \
     DEBIAN_FRONTEND=noninteractive \
@@ -25,7 +26,7 @@ RUN apt-get update && \
     conda install -q -y numpy scipy scikit-learn pandas && \
     git clone \
         --recursive \
-        https://github.com/Microsoft/LightGBM && \
+        "${LIGHTGBM_GIT_URL}" && \
     git -C ./LightGBM checkout ${LIGHTGBM_GIT_REF} && \
     cd ./LightGBM && \
     sh ./build-python.sh install && \

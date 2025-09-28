@@ -6,6 +6,7 @@ ENV \
     LC_ALL=C.UTF-8
 
 ARG LIGHTGBM_GIT_REF=stable
+ARG LIGHTGBM_GIT_URL=https://github.com/Microsoft/LightGBM.git
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
@@ -23,7 +24,7 @@ RUN curl -L -o cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29
 
 RUN git clone \
         --recursive \
-        https://github.com/Microsoft/LightGBM && \
+        "${LIGHTGBM_GIT_URL}" && \
     git -C ./LightGBM checkout ${LIGHTGBM_GIT_REF} && \
     cd ./LightGBM && \
     cmake -B build -S . && \
