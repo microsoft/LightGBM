@@ -1019,14 +1019,15 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-def test_set_field_none_removes_field(rng):
+@pytest.mark.parametrize("field_name", ["group", "init_score", "label", "position", "weight"])
+def test_set_field_none_removes_field(rng, field_name):
     X1 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
-    weight = rng.uniform(size=10)
-    out = d1.set_field("weight", weight)
+    field = rng.uniform(size=10)
+    out = d1.set_field(field_name, field)
     assert out is d1
 
-    np.testing.assert_allclose(d1.get_field("weight"), weight)
+    np.testing.assert_allclose(d1.get_field(field_name), field)
 
-    d1.set_field("weight", None)
-    assert d1.get_field("weight") is None
+    d1.set_field(field_name, None)
+    assert d1.get_field(field_name) is None
