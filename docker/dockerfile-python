@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG CONDA_DIR=/opt/miniforge
 ARG LIGHTGBM_GIT_REF=stable
@@ -12,9 +12,9 @@ ENV \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        build-essential \
         ca-certificates \
         cmake \
-        build-essential \
         curl \
         git \
         libomp-dev && \
@@ -23,7 +23,7 @@ RUN apt-get update && \
     /bin/bash miniforge.sh -f -b -p $CONDA_DIR && \
     conda config --set always_yes yes --set changeps1 no && \
     # lightgbm
-    conda install -q -y numpy scipy scikit-learn pandas && \
+    conda install -q -y numpy pandas scipy scikit-learn && \
     git clone \
         --recursive \
         "${LIGHTGBM_GIT_URL}" && \

@@ -1,26 +1,22 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
+
+ARG LIGHTGBM_GIT_REF=stable
+ARG LIGHTGBM_GIT_URL=https://github.com/Microsoft/LightGBM.git
 
 ENV \
     DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-ARG LIGHTGBM_GIT_REF=stable
-ARG LIGHTGBM_GIT_URL=https://github.com/Microsoft/LightGBM.git
-
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
         build-essential \
+        ca-certificates \
+        cmake \
+        curl \
         git \
         libomp-dev && \
     rm -rf /var/lib/apt/lists/*
-
-RUN curl -L -o cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29.2/cmake-3.29.2-linux-$(arch).sh && \
-    chmod +x cmake.sh && \
-    sh ./cmake.sh --prefix=/usr/local --skip-license && \
-    rm cmake.sh
 
 RUN git clone \
         --recursive \

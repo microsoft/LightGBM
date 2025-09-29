@@ -14,19 +14,19 @@ ARG LIGHTGBM_GIT_URL=https://github.com/Microsoft/LightGBM.git
 #           Global Path Setting
 #################################################################################################################
 
-ENV CUDA_HOME /usr/local/cuda
-ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${CUDA_HOME}/lib64
-ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/lib
+ENV CUDA_HOME=/usr/local/cuda
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_HOME}/lib64
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
-ENV OPENCL_LIBRARIES /usr/local/cuda/lib64
-ENV OPENCL_INCLUDE_DIR /usr/local/cuda/include
+ENV OPENCL_LIBRARIES=/usr/local/cuda/lib64
+ENV OPENCL_INCLUDE_DIR=/usr/local/cuda/include
 
 #################################################################################################################
 #           TINI
 #################################################################################################################
 
 # Install tini
-ENV TINI_VERSION v0.14.0
+ENV TINI_VERSION=v0.14.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 
@@ -68,7 +68,7 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 
 ARG CONDA_DIR=/opt/miniforge
 # add to path
-ENV PATH $CONDA_DIR/bin:$PATH
+ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Install miniforge
 RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
@@ -97,7 +97,7 @@ RUN cd /usr/local/src && mkdir lightgbm && cd lightgbm && \
     LIBOPENCL=/usr/local/cuda-8.0/targets/x86_64-linux/lib \
         cmake --build build
 
-ENV PATH /usr/local/src/lightgbm/LightGBM:${PATH}
+ENV PATH=/usr/local/src/lightgbm/LightGBM:${PATH}
 
 RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM && sh ./build-python.sh install --precompile && source deactivate"
 
@@ -129,5 +129,5 @@ WORKDIR /home
 # IPython
 EXPOSE 8888
 
-ENTRYPOINT [ "/tini", "--" ]
-CMD /bin/bash -c "source activate py3 && jupyter notebook --allow-root --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && source deactivate"
+ENTRYPOINT ["/tini", "--"]
+CMD ["/bin/bash -c", "source activate py3 && jupyter notebook --allow-root --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && source deactivate"]

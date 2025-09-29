@@ -73,8 +73,8 @@ COPY --from=build \
     /lib64/
 COPY --from=build /etc/OpenCL/vendors/nvidia.icd /etc/OpenCL/vendors/nvidia.icd
 
-ENV PATH /opt/LightGBM:${PATH}
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV PATH=/opt/LightGBM:${PATH}
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 ENTRYPOINT ["lightgbm"]

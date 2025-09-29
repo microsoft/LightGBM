@@ -65,8 +65,8 @@ COPY --from=build \
     /opt/LightGBM/lib_lightgbm.so \
     /opt/LightGBM/
 
-ENV PATH /opt/LightGBM:${PATH}
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV PATH=/opt/LightGBM:${PATH}
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 ENTRYPOINT ["lightgbm"]
