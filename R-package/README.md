@@ -128,6 +128,14 @@ If you want to force `LightGBM` to use MSYS2 (for any R version), pass `--use-ms
 Rscript build_r.R --use-msys2
 ```
 
+**MinGW**
+
+If you want to force `LightGBM` to use [MinGW](https://www.mingw-w64.org/) (for any R version), pass `--use-mingw` to the installation script.
+
+```shell
+Rscript build_r.R --use-mingw
+```
+
 #### Mac OS Preparation
 
 You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
