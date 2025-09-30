@@ -662,7 +662,7 @@ def test_ranking_prediction_early_stopping():
 
     pred_parameter["pred_early_stop_margin"] = 5.5
     ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
@@ -1828,18 +1828,18 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     gbm7 = lgb.train(params, lgb_train, num_boost_round=10)
     pred8 = gbm7.predict(X_test)
     assert lgb_train.categorical_feature == []
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred0, pred4)
     np.testing.assert_allclose(pred0, pred5)
     np.testing.assert_allclose(pred0, pred6)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values
@@ -2868,10 +2868,13 @@ def test_metrics():
         assert len(res) == 2
         assert "valid error-mean" in res
         # multiclass metric alias with custom one with invalid class_num
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_dummy_obj_class_1_verbose, metrics=obj_multi_alias, feval=constant_metric)
         # multiclass default metric without num_class
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(
+            lgb.basic.LightGBMError,
+            match="Number of classes should be specified and greater than 1 for multiclass training",
+        ):
             get_cv_result(params_obj_verbose)
         for metric_multi_alias in obj_multi_aliases + ["multi_logloss"]:
             # multiclass metric alias
@@ -2883,11 +2886,11 @@ def test_metrics():
         assert len(res) == 2
         assert "valid multi_error-mean" in res
         # non-valid metric for multiclass objective
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_obj_class_3_verbose, metrics="binary_logloss")
     params_class_3_verbose = {"num_class": 3, "verbose": -1}
     # non-default num_class for default objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Number of classes must be 1 for non-multiclass training"):
         get_cv_result(params_class_3_verbose)
     # no metric with non-default num_class for custom objective
     res = get_cv_result(params_dummy_obj_class_3_verbose)
@@ -2902,7 +2905,7 @@ def test_metrics():
     assert len(res) == 2
     assert "valid multi_error-mean" in res
     # binary metric with non-default num_class for custom objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
         get_cv_result(params_dummy_obj_class_3_verbose, metrics="binary_error")
 
 
@@ -3158,9 +3161,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
     hist, bins = gbm.get_split_value_histogram(0, bins=999)
     assert len(hist) == 999
     assert len(bins) == 1000
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=-1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=0)
     hist, bins = gbm.get_split_value_histogram(0, bins=1)
     assert len(hist) == 1
@@ -3194,7 +3197,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
         np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot compute split value histogram for the categorical feature"
+    ):
         gbm.get_split_value_histogram(2)
 
 
@@ -4789,14 +4794,16 @@ def test_bagging_by_query_in_lambdarank():
 
 def test_equal_predict_from_row_major_and_col_major_data():
     X_row, y = make_synthetic_regression()
-    assert X_row.flags["C_CONTIGUOUS"] and not X_row.flags["F_CONTIGUOUS"]
+    assert X_row.flags["C_CONTIGUOUS"]
+    assert not X_row.flags["F_CONTIGUOUS"]
     ds = lgb.Dataset(X_row, y)
     params = {"num_leaves": 8, "verbose": -1}
     bst = lgb.train(params, ds, num_boost_round=5)
     preds_row = bst.predict(X_row)
 
     X_col = np.asfortranarray(X_row)
-    assert X_col.flags["F_CONTIGUOUS"] and not X_col.flags["C_CONTIGUOUS"]
+    assert X_col.flags["F_CONTIGUOUS"]
+    assert not X_col.flags["C_CONTIGUOUS"]
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)

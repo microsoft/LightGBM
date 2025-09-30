@@ -25,7 +25,11 @@ import lightgbm as lgb
 from lightgbm.compat import (
     DASK_INSTALLED,
     PANDAS_INSTALLED,
+    PYARROW_INSTALLED,
     _sklearn_version,
+    pa_array,
+    pa_chunked_array,
+    pa_Table,
     pd_DataFrame,
     pd_Series,
 )
@@ -54,6 +58,9 @@ task_to_model_factory = {
     "regression": lgb.LGBMRegressor,
 }
 all_tasks = tuple(task_to_model_factory.keys())
+all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr")
+all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
+all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -499,7 +506,7 @@ def test_clone_and_property():
     assert isinstance(clf.feature_importances_, np.ndarray)
 
 
-@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))
+@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))  # noqa: PT007
 def test_estimators_all_have_the_same_kwargs_and_defaults(estimator):
     base_spec = inspect.getfullargspec(lgb.LGBMModel)
     subclass_spec = inspect.getfullargspec(estimator)
@@ -753,7 +760,7 @@ def test_random_state_object(rng_constructor):
     df3 = clf1.booster_.model_to_string(num_iteration=0)
     assert clf1.random_state is state1
     assert clf2.random_state is state2
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_pred1, y_pred1_refit)
     assert df1 != df3
 
@@ -825,16 +832,16 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pred5 = gbm5.predict(X_test, raw_score=True)
     gbm6 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=[])
     pred6 = gbm6.predict(X_test, raw_score=True)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred_prob, pred4)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred5)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred6)
     assert gbm0.booster_.pandas_categorical == cat_values
     assert gbm1.booster_.pandas_categorical == cat_values
@@ -909,7 +916,7 @@ def test_predict():
     # Tests other parameters for the prediction works
     res_engine = gbm.predict(X_test)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Tests start_iteration
@@ -941,7 +948,7 @@ def test_predict():
     # Tests other parameters for the prediction works, starting from iteration 10
     res_engine = gbm.predict(X_test, start_iteration=10)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0, start_iteration=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Test multiclass binary classification
@@ -975,7 +982,7 @@ def test_predict_with_params_from_init():
     y_preds_params_in_predict = (
         lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).predict(X_test, raw_score=True, **predict_params)
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_preds_no_params, y_preds_params_in_predict)
 
     y_preds_params_in_set_params_before_fit = (
@@ -1524,7 +1531,8 @@ def test_check_is_fitted():
     rnk = lgb.LGBMRanker(n_estimators=5)
     models = (est, clf, reg, rnk)
     for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
+        err_msg = f"This {type(model).__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+        with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
             check_is_fitted(model)
     est.fit(X, y)
     clf.fit(X, y)
@@ -1623,7 +1631,8 @@ def test_getting_feature_names_in_np_input(estimator_class):
         model = estimator_class(**{**params, "objective": "binary"})
     else:
         model = estimator_class(**params)
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
+    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
         check_is_fitted(model)
     if isinstance(model, lgb.LGBMRanker):
         model.fit(X, y, group=[X.shape[0]])
@@ -1636,7 +1645,8 @@ def test_getting_feature_names_in_np_input(estimator_class):
 def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     col_names = X.columns.to_list()
-    assert isinstance(col_names, list) and all(isinstance(c, str) for c in col_names), (
+    assert isinstance(col_names, list)
+    assert all(isinstance(c, str) for c in col_names), (
         "input data must have feature names for this test to cover the expected functionality"
     )
     params = {"n_estimators": 2, "num_leaves": 7}
@@ -1644,7 +1654,8 @@ def test_getting_feature_names_in_pd_input(estimator_class):
         model = estimator_class(**{**params, "objective": "binary"})
     else:
         model = estimator_class(**params)
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
+    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
         check_is_fitted(model)
     if isinstance(model, lgb.LGBMRanker):
         model.fit(X, y, group=[X.shape[0]])
@@ -1693,9 +1704,10 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
     # minimum supported scikit-learn version is at least 1.6
     try:
         sklearn_tags = est.__sklearn_tags__()
-    except AttributeError as err:
+    except AttributeError:
         # only the exact error we expected to be raised should be raised
-        assert bool(re.search(r"__sklearn_tags__.* should not be called", str(err)))
+        with pytest.raises(AttributeError, match=r"__sklearn_tags__.* should not be called"):
+            est.__sklearn_tags__()
     else:
         # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
         # and so the actual effects of __sklearn_tags__() should be tested
@@ -1718,12 +1730,13 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     y_col_array = y.reshape(-1, 1)
     params = {"n_estimators": 1, "num_leaves": 3, "random_state": 0}
     model_factory = task_to_model_factory[task]
-    with pytest.warns(UserWarning, match="column-vector"):
-        if task == "ranking":
-            model_1d = model_factory(**params).fit(X, y, group=g)
+    if task == "ranking":
+        model_1d = model_factory(**params).fit(X, y, group=g)
+        with pytest.warns(UserWarning, match="column-vector"):
             model_2d = model_factory(**params).fit(X, y_col_array, group=g)
-        else:
-            model_1d = model_factory(**params).fit(X, y)
+    else:
+        model_1d = model_factory(**params).fit(X, y)
+        with pytest.warns(UserWarning, match="column-vector"):
             model_2d = model_factory(**params).fit(X, y_col_array)
 
     preds_1d = model_1d.predict(X)
@@ -1881,16 +1894,11 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
         assert preds.shape[0] == y.shape[0]
 
 
-@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
-@pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame"])
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
-def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
-    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
-        pytest.skip("pandas is not installed")
+def run_minimal_test(X_type, y_type, g_type, task, rng):
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
-    if task == "binary-classification" or task == "regression":
+    if task in {"binary-classification", "regression", "ranking"}:
         init_score = np.full_like(y, np.mean(y))
     elif task == "multiclass-classification":
         init_score = np.outer(y, np.array([0.1, 0.2, 0.7]))
@@ -1906,6 +1914,8 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         X = scipy.sparse.csr_matrix(X)
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
+    elif X_type == "pa_Table":
+        X = pa_Table.from_pandas(pd_DataFrame(X))
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
@@ -1929,67 +1939,20 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
             init_score = pd_DataFrame(init_score)
         else:
             init_score = pd_Series(init_score)
-    elif y_type != "numpy":
-        raise ValueError(f"Unrecognized y_type: '{y_type}'")
-
-    model = task_to_model_factory[task](n_estimators=10, verbose=-1)
-    model.fit(
-        X=X,
-        y=y,
-        sample_weight=weights,
-        init_score=init_score,
-        eval_set=[(X_valid, y)],
-        eval_sample_weight=[weights],
-        eval_init_score=[init_score],
-    )
-
-    preds = model.predict(X)
-    if task == "binary-classification":
-        assert accuracy_score(y, preds) >= 0.99
-    elif task == "multiclass-classification":
-        assert accuracy_score(y, preds) >= 0.99
-    elif task == "regression":
-        assert r2_score(y, preds) > 0.86
-    else:
-        raise ValueError(f"Unrecognized task: '{task}'")
-
-
-@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
-@pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_DataFrame", "pd_Series"])
-@pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series"])
-def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type, rng):
-    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
-        pytest.skip("pandas is not installed")
-    X, y, g = _create_data(task="ranking", n_samples=1_000)
-    weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
-    init_score = np.full_like(y, np.mean(y))
-    X_valid = X * 2
-
-    if X_type == "list2d":
-        X = X.tolist()
-    elif X_type == "scipy_csc":
-        X = scipy.sparse.csc_matrix(X)
-    elif X_type == "scipy_csr":
-        X = scipy.sparse.csr_matrix(X)
-    elif X_type == "pd_DataFrame":
-        X = pd_DataFrame(X)
-    elif X_type != "numpy":
-        raise ValueError(f"Unrecognized X_type: '{X_type}'")
-
-    # make weights and init_score same types as y, just to avoid
-    # a huge number of combinations and therefore test cases
-    if y_type == "list1d":
-        y = y.tolist()
-        weights = weights.tolist()
-        init_score = init_score.tolist()
-    elif y_type == "pd_DataFrame":
-        y = pd_DataFrame(y)
-        weights = pd_Series(weights)
-        init_score = pd_Series(init_score)
-    elif y_type == "pd_Series":
-        y = pd_Series(y)
-        weights = pd_Series(weights)
-        init_score = pd_Series(init_score)
+    elif y_type == "pa_Array":
+        y = pa_array(y)
+        weights = pa_array(weights)
+        if task == "multiclass-classification":
+            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
+        else:
+            init_score = pa_array(init_score)
+    elif y_type == "pa_ChunkedArray":
+        y = pa_chunked_array([y])
+        weights = pa_chunked_array([weights])
+        if task == "multiclass-classification":
+            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
+        else:
+            init_score = pa_chunked_array([init_score])
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
@@ -1999,23 +1962,73 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
         g = g.astype("int").tolist()
     elif g_type == "pd_Series":
         g = pd_Series(g)
+    elif g_type == "pa_Array":
+        g = pa_array(g)
+    elif g_type == "pa_ChunkedArray":
+        g = pa_chunked_array([g])
     elif g_type != "numpy":
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
-    model = task_to_model_factory["ranking"](n_estimators=10, verbose=-1)
-    model.fit(
-        X=X,
-        y=y,
-        sample_weight=weights,
-        init_score=init_score,
-        group=g,
-        eval_set=[(X_valid, y)],
-        eval_sample_weight=[weights],
-        eval_init_score=[init_score],
-        eval_group=[g],
-    )
+    model = task_to_model_factory[task](n_estimators=10, verbose=-1)
+    params_fit = {
+        "X": X,
+        "y": y,
+        "sample_weight": weights,
+        "init_score": init_score,
+        "eval_set": [(X_valid, y)],
+        "eval_sample_weight": [weights],
+        "eval_init_score": [init_score],
+    }
+    if task == "ranking":
+        params_fit["group"] = g
+        params_fit["eval_group"] = [g]
+    model.fit(**params_fit)
+
     preds = model.predict(X)
-    assert spearmanr(preds, y).correlation >= 0.99
+    if task == "binary-classification":
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == "multiclass-classification":
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == "regression":
+        assert r2_score(y, preds) > 0.86
+    elif task == "ranking":
+        assert spearmanr(preds, y).correlation >= 0.99
+    else:
+        raise ValueError(f"Unrecognized task: '{task}'")
+
+
+@pytest.mark.parametrize("X_type", all_x_types)
+@pytest.mark.parametrize("y_type", all_y_types)
+@pytest.mark.parametrize("task", [t for t in all_tasks if t != "ranking"])
+def test_classification_and_regression_minimally_work_with_all_accepted_data_types(
+    X_type,
+    y_type,
+    task,
+    rng,
+):
+    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
+        pytest.skip("pandas is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow is not installed")
+
+    run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
+
+
+@pytest.mark.parametrize("X_type", all_x_types)
+@pytest.mark.parametrize("y_type", all_y_types)
+@pytest.mark.parametrize("g_type", all_group_types)
+def test_ranking_minimally_works_with_all_accepted_data_types(
+    X_type,
+    y_type,
+    g_type,
+    rng,
+):
+    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
+        pytest.skip("pandas is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow is not installed")
+
+    run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 
 
 def test_classifier_fit_detects_classes_every_time():

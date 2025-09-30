@@ -40,7 +40,7 @@
 #' @export
 lgb.restore_handle <- function(model) {
   if (!.is_Booster(x = model)) {
-    stop("lgb.restore_handle: model should be an ", sQuote("lgb.Booster"))
+    stop("lgb.restore_handle: model should be an ", sQuote("lgb.Booster", q = FALSE))
   }
   model$restore_handle()
   return(invisible(model))

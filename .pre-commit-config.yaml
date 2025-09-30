@@ -17,14 +17,53 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+  - repo: https://github.com/cmake-lint/cmake-lint
+    rev: '1.4.3'
+    hooks:
+      - id: cmakelint
+        args: ["--linelength=120", "--filter=-convention/filename,-package/stdargs,-readability/wonkycase"]
+  - repo: https://github.com/cpplint/cpplint
+    rev: '2.0.2'
+    hooks:
+      - id: cpplint
+        args:
+          - --recursive
+          - --filter=-build/c++11,-build/include_subdir,-build/include_what_you_use,-build/header_guard,-whitespace/indent_namespace,-whitespace/line_length
+  - repo: local
+    hooks:
+      - id: check-omp-pragmas
+        name: check-omp-pragmas
+        entry: sh
+        args:
+          - .ci/check-omp-pragmas.sh
+        language: system
+        pass_filenames: false
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: ["--strict"]
+  - repo: local
+    hooks:
+      - id: regenerate-parameters
+        name: regenerate-parameters
+        entry: python
+        args:
+          - ./.ci/parameter-generator.py
+        language: python
+        pass_filenames: false
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v6.2.5
+    hooks:
+      - id: rstcheck
+        args: ["--config", "./python-package/pyproject.toml"]
+        additional_dependencies:
+          - breathe>=4.36.0
+          - sphinx>=8.1.3
+          - sphinx_rtd_theme>=3.0.1
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.9.10
+    rev: v0.12.5
     hooks:
       # Run the linter.
       - id: ruff
@@ -39,13 +78,13 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/crate-ci/typos
-    rev: v1.30.2
+    rev: v1.34.0
     hooks:
       - id: typos
         args: ["--force-exclude"]
         exclude: (\.gitignore$)|(^\.editorconfig$)
   - repo: https://github.com/henryiii/validate-pyproject-schema-store
-    rev: 2025.03.10
+    rev: 2025.07.14
     hooks:
       - id: validate-pyproject
         files: python-package/pyproject.toml$

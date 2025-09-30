@@ -2,6 +2,7 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
+import re
 import socket
 from itertools import groupby
 from os import getenv
@@ -79,7 +80,7 @@ def cluster_three_workers():
     dask_cluster.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def listen_port():
     listen_port.port += 10
     return listen_port.port
@@ -295,10 +296,10 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert_eq(p1_local, y)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
@@ -550,7 +551,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
         assert_eq(p2, y, rtol=0.5, atol=50.0)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
         # be sure LightGBM actually used at least one categorical column,
@@ -667,6 +668,13 @@ def test_regressor_custom_objective(output, cluster):
         assert_eq(p2, y, **assert_precision)
 
 
+@pytest.mark.xfail(
+    platform.lower().startswith("darwin"),
+    reason=(
+        "learning-to-rank Dask tests are unreliable on macOS. "
+        "See https://github.com/microsoft/LightGBM/issues/4074#issuecomment-3124996317"
+    ),
+)
 @pytest.mark.parametrize("output", ["array", "dataframe", "dataframe-with-categorical"])
 @pytest.mark.parametrize("group", [None, group_sizes])
 @pytest.mark.parametrize("boosting_type", boosting_types)
@@ -730,10 +738,10 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         assert_eq(rnkvec_dask, rnkvec_dask_local)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
@@ -1016,8 +1024,13 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError):
+        no_client_attr_msg = re.compile(
+            f"{repr(type(local_model).__name__)} object has no attribute '(client|client_)'"
+        )
+
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client_
 
         # should be able to set client after construction
@@ -1040,8 +1053,9 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client_
 
 
@@ -1126,8 +1140,12 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             local_model = dask_model.to_local()
 
             assert "client" not in local_model.get_params()
-            with pytest.raises(AttributeError):
+            no_client_attr_msg = re.compile(
+                f"{repr(type(local_model).__name__)} object has no attribute '(client|client_)'"
+            )
+            with pytest.raises(AttributeError, match=no_client_attr_msg):
                 local_model.client
+            with pytest.raises(AttributeError, match=no_client_attr_msg):
                 local_model.client_
 
             tmp_file2 = tmp_path / "model-2.pkl"
@@ -1225,7 +1243,7 @@ def test_errors(cluster):
 
         df = dd.demo.make_timeseries()
         df = df.map_partitions(f, meta=df._meta)
-        with pytest.raises(Exception) as info:
+        with pytest.raises(Exception) as info:  # noqa: PT011, PT012 # error message needs to be coerced to a string
             lgb.dask._train(client=client, data=df, label=df.x, params={}, model_factory=lgb.LGBMClassifier)
             assert "foo" in str(info.value)
 
@@ -1354,7 +1372,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         # test that "machines" is actually respected by creating a socket that uses
         # one of the ports mentioned in "machines"
         error_msg = f"Binding port {open_ports[0]} failed"
-        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):  # noqa: PT012
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind((workers_hostname, open_ports[0]))
                 dask_model.fit(dX, dy, group=dg)
@@ -1370,7 +1388,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
 
 @pytest.mark.parametrize(
-    "dask_est,sklearn_est",
+    ("dask_est", "sklearn_est"),
     [
         (lgb.DaskLGBMClassifier, lgb.LGBMClassifier),
         (lgb.DaskLGBMRegressor, lgb.LGBMRegressor),
@@ -1445,7 +1463,8 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
         dy = dy.to_dask_array(lengths=True)
         dy_col_array = dy.reshape(-1, 1)
-        assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+        assert len(dy_col_array.shape) == 2
+        assert dy_col_array.shape[1] == 1
 
         params = {"n_estimators": 1, "num_leaves": 3, "random_state": 0, "time_out": 5}
         model = model_factory(**params)
@@ -1491,7 +1510,7 @@ def test_init_score(task, output, cluster, rng):
         pred_init_score = model_init_score.predict(dX, raw_score=True)
 
         # check if init score changes predictions
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(pred, pred_init_score)
 
 

@@ -554,9 +554,13 @@ class Dataset {
   }
 
   inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
-    if (is_finish_load_) { return; }
+    if (is_finish_load_) {
+      return;
+    }
     for (auto fidx : feature_need_push_zeros_) {
-      if (is_feature_added[fidx]) { continue; }
+      if (is_feature_added[fidx]) {
+        continue;
+      }
       const int group = feature2group_[fidx];
       const int sub_feature = feature2subfeature_[fidx];
       feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
@@ -587,10 +591,14 @@ class Dataset {
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
-    if (is_finish_load_) { return; }
+    if (is_finish_load_) {
+      return;
+    }
     std::vector<bool> is_feature_added(num_features_, false);
     for (auto& inner_data : feature_values) {
-      if (inner_data.first >= num_total_features_) { continue; }
+      if (inner_data.first >= num_total_features_) {
+        continue;
+      }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
         is_feature_added[feature_idx] = true;

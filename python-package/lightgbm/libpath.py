@@ -18,7 +18,7 @@ def _find_lib_path() -> List[str]:
     lib_path: list of str
        List of all found library paths to LightGBM.
     """
-    curr_path = Path(__file__).absolute()
+    curr_path = Path(__file__).resolve()
     dll_path = [
         curr_path.parents[1],
         curr_path.parents[0] / "bin",
@@ -41,7 +41,7 @@ def _find_lib_path() -> List[str]:
 
 # we don't need lib_lightgbm while building docs
 _LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", False):
+if environ.get("LIGHTGBM_BUILD_DOC", "False") == "True":
     from unittest.mock import Mock  # isort: skip
 
     _LIB = Mock(ctypes.CDLL)  # type: ignore
