@@ -15,8 +15,6 @@ if (.Machine$sizeof.pointer != 8L) {
   stop("LightGBM only supports 64-bit R, please check the version of R and Rtools.")
 }
 
-R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10.0
-
 # Get some paths
 source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
 build_dir <- file.path(source_dir, "build", fsep = "/")
@@ -161,11 +159,7 @@ if (use_mingw) {
   # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
   # Visual Studio install but that fails, fall back to the toolchain
   # supported in Rtools
-  if (R_ver >= 4.0) {
-    windows_toolchain <- "MSYS2"
-  } else {
-    windows_toolchain <- "MinGW"
-  }
+  windows_toolchain <- "MSYS2"
 }
 windows_build_tool <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["build_tool"]]
 windows_makefile_generator <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["makefile_generator"]]
