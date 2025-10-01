@@ -110,6 +110,8 @@ With GUI
 
    If you have errors about **Platform Toolset**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
+   If you have errors about **Windows SDK Version**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the SDK installed on your machine.
+
 The ``.exe`` file will be in ``LightGBM-complete_source_code_zip/windows/x64/Release`` folder.
 The ``.dll`` file will be in ``LightGBM-complete_source_code_zip/windows/x64/DLL`` folder.
 
@@ -304,6 +306,8 @@ With GUI
 
    If you have errors about **Platform Toolset**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
+   If you have errors about **Windows SDK Version**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the SDK installed on your machine.
+
 The ``.exe`` file will be in ``LightGBM-complete_source_code_zip/windows/x64/Release`` folder.
 The ``.dll`` file will be in ``LightGBM-complete_source_code_zip/windows/x64/DLL`` folder.
 
@@ -459,6 +463,8 @@ With GUI
 5. Open ``LightGBM.sln`` file with **Visual Studio**, choose ``Release_mpi`` configuration and click ``Build`` -> ``Build Solution (Ctrl+Shift+B)``.
 
    If you have errors about **Platform Toolset**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
+
+   If you have errors about **Windows SDK Version**, go to ``Project`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the SDK installed on your machine.
 
 The ``.exe`` file will be in ``LightGBM-complete_source_code_zip/windows/x64/Release_mpi`` folder.
 
