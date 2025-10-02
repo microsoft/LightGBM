@@ -11,7 +11,7 @@ env:
   COMPILER: gcc
   OS_NAME: 'linux'
   TASK: 'check-links'
-  SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+  GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
   check-links:

@@ -21,7 +21,6 @@ if [[ $TASK == "check-links" ]]; then
     lychee \
         "--config=./docs/.lychee.toml" \
         "--exclude-path=(^|/)docs/.*\.rst" \
-        "--github-token=${SECRETS_WORKFLOW}" \
         "--" \
         "**/*.rst" \
         "**/*.md" \
