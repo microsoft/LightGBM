@@ -26,5 +26,5 @@ exclude = [
     '^https://packages\.ubuntu\.com/search.*',
 ]
 exclude_path = [
-    "(^|/)docs/.*\.rst",
+    "(^|/)docs/.*\\.rst",
 ]
