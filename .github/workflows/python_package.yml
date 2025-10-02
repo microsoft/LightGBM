@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -109,6 +110,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -143,6 +145,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |
@@ -177,6 +180,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |

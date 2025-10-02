@@ -89,25 +89,11 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cmake
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
             toolchain: MSYS
             r_version: 4.3
             build_type: cmake
             container: null
           # Visual Studio 2022
-          - os: windows-2022
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-            build_type: cmake
-            container: null
           - os: windows-2022
             task: r-package
             compiler: MSVC
@@ -118,13 +104,6 @@ jobs:
           ###############
           # CRAN builds #
           ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
-            container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -186,6 +165,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
@@ -254,6 +234,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install packages
         shell: bash
@@ -294,6 +275,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
