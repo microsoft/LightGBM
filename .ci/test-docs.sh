@@ -20,7 +20,6 @@ if [[ $TASK == "check-links" ]]; then
     # to see all gained links add "--dump" flag
     lychee \
         "--config=./docs/.lychee.toml" \
-        "--exclude-path=(^|/)docs/.*\.rst" \
         "--" \
         "**/*.rst" \
         "**/*.md" \

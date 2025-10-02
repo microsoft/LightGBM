@@ -25,3 +25,6 @@ exclude = [
     '^https://dl\.acm\.org/doi/10\.1145/3298689\.3347033$',
     '^https://packages\.ubuntu\.com/search.*',
 ]
+exclude_path = [
+    "(^|/)docs/.*\.rst",
+]
