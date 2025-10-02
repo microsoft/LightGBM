@@ -206,7 +206,7 @@ jobs:
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
-      - name: upload artifacts
+      - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
         uses: actions/upload-artifact@v4
         with:
