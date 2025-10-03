@@ -7,8 +7,10 @@
 
 #ifdef USE_CUDA
 
+#ifndef USE_ROCM
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
 
 namespace LightGBM {
 
