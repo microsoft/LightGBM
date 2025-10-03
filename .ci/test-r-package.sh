@@ -153,6 +153,10 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd "${R_CMD_CHECK_DIR}"
 fi
 
+if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
+    cp "${PKG_TARBALL}" "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-${LGB_VER}-r-cran.tar.gz"
+fi
+
 declare -i allowed_notes=0
 bash "${BUILD_DIRECTORY}/.ci/run-r-cmd-check.sh" \
     "${PKG_TARBALL}" \

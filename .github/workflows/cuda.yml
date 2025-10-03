@@ -78,6 +78,7 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
+          export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export PATH=$CONDA/bin:$PATH
 
