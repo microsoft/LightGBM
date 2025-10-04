@@ -14,6 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # tell scripts where to put artifacts
+  # (this variable name is left over from when jobs ran on Azure DevOps)
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
+  # where repo sources are cloned to
+  BUILD_DIRECTORY: '${{ github.workspace }}'
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
 
@@ -104,7 +109,6 @@ jobs:
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
-          export BUILD_DIRECTORY="${GITHUB_WORKSPACE}"
           export COMPILER="${{ matrix.compiler }}"
           export CONDA="${HOME}/miniforge"
           export METHOD="${{ matrix.method }}"
@@ -128,7 +132,6 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
-          $env:BUILD_DIRECTORY = $env:GITHUB_WORKSPACE
           $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
