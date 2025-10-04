@@ -318,33 +318,6 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-  ##############
-  # R_artifact #
-  ##############
-  - job: R_artifact
-    condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
-    pool:
-      vmImage: 'ubuntu-22.04'
-    container: rbase
-    steps:
-      - script: |
-          git clean -d -f -x
-        displayName: 'Clean source directory'
-      - script: |
-          LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-          R_LIB_PATH=~/Rlib
-          export R_LIBS=${R_LIB_PATH}
-          mkdir -p ${R_LIB_PATH}
-          RDscript .ci/install-r-deps.R --build --include=RhpcBLASctl || exit 1
-          sh build-cran-package.sh --r-executable=RD || exit 1
-          mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
-        displayName: 'Build CRAN R-package'
-      - task: PublishBuildArtifacts@1
-        condition: succeeded()
-        inputs:
-          pathtoPublish: $(Build.ArtifactStagingDirectory)
-          artifactName: R-package
-          artifactType: container
 
   ###########
   # Package #
@@ -355,7 +328,6 @@ jobs:
       - Linux_latest
       - macOS
       - Windows
-      - R_artifact
     condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     pool:
       vmImage: 'ubuntu-22.04'
@@ -386,12 +358,6 @@ jobs:
         inputs:
           artifactName: PackageAssets
           downloadPath: $(Build.SourcesDirectory)/binaries
-      - task: DownloadBuildArtifacts@0
-        displayName: Download R-package
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          artifactName: R-package
-          downloadPath: $(Build.SourcesDirectory)/R
       - script: |
           python "$(Build.SourcesDirectory)/.ci/create-nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
         displayName: 'Create NuGet configuration files'
@@ -417,7 +383,6 @@ jobs:
           title: '$(Build.SourceBranchName)'
           assets: |
             $(Build.SourcesDirectory)/binaries/PackageAssets/*
-            $(Build.SourcesDirectory)/R/R-package/*
             $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
             $(Build.ArtifactStagingDirectory)/archives/*
           assetUploadMode: 'delete'
