@@ -90,27 +90,45 @@ class NDCGMetric:public Metric {
       num_data_pairwise_ = metadata.pairwise_query_boundaries()[metadata.num_queries()];
       query_boundaries_pairwise_ = metadata.pairwise_query_boundaries();
 
-      right2left_map_byquery_.resize(num_queries_);
-      left2right_map_byquery_.resize(num_queries_);
+      right2left2pair_map_byquery_.resize(num_queries_);
       left2right2pair_map_byquery_.resize(num_queries_);
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
       for (data_size_t q = 0; q < num_queries_; ++q) {
         const data_size_t start_pairwise = query_boundaries_pairwise_[q];
         const data_size_t cnt_pairwise = query_boundaries_pairwise_[q + 1] - query_boundaries_pairwise_[q];
-        std::multimap<data_size_t, data_size_t> right2left_map_;
-        std::multimap<data_size_t, data_size_t> left2right_map_;
-        std::map<data_size_t, std::map<data_size_t, data_size_t>> left2right2pair_map_;
+        const data_size_t cnt_pointwise = query_boundaries_[q + 1] - query_boundaries_[q];
+
+        std::vector<std::vector<std::pair<short, data_size_t>>> left2right2pair_map(cnt_pointwise);
+        std::vector<std::vector<std::pair<short, data_size_t>>> right2left2pair_map(cnt_pointwise);
+
         for (data_size_t i = 0; i < cnt_pairwise; ++i) {
-          //data_size_t current_pair = selected_pairs[i];
-          int index_left = paired_index_map_[i + start_pairwise].first;
-          int index_right = paired_index_map_[i + start_pairwise].second;
-          right2left_map_.insert(std::make_pair(index_right, index_left));
-          left2right_map_.insert(std::make_pair(index_left, index_right));
-          left2right2pair_map_[index_left][index_right] = i;
+          auto tmp = paired_index_map_[i + start_pairwise];
+          auto index_left_full = tmp.first;
+          auto index_right_full = tmp.second;
+
+          // Check range before narrowing
+          if (index_left_full >= 32768 || index_right_full >= 32768) {
+            Log::Fatal("Index exceeds 32768: index_left_full = %d, index_right_full = %d, cnt_pairwise = %d, query idx = %d", index_left_full, index_right_full, cnt_pairwise, q);
+          }
+
+          short index_left = static_cast<short>(index_left_full);
+          short index_right = static_cast<short>(index_right_full);
+
+          left2right2pair_map[index_left].emplace_back(index_right, i);
+          right2left2pair_map[index_right].emplace_back(index_left, i);
         }
-        right2left_map_byquery_[q] = right2left_map_;
-        left2right_map_byquery_[q] = left2right_map_;
-        left2right2pair_map_byquery_[q] = left2right2pair_map_;
+
+        for (auto& vec : left2right2pair_map) {
+          std::sort(vec.begin(), vec.end(), [](auto& a, auto& b) { return a.first < b.first; });
+          vec.shrink_to_fit();
+        }
+        for (auto& vec : right2left2pair_map) {
+          std::sort(vec.begin(), vec.end(), [](auto& a, auto& b) { return a.first < b.first; });
+          vec.shrink_to_fit();
+        }
+
+        left2right2pair_map_byquery_[q] = std::move(left2right2pair_map);
+        right2left2pair_map_byquery_[q] = std::move(right2left2pair_map);
       }
     }
     sigmoid_cache_.Init(sigmoid_);
@@ -149,8 +167,8 @@ class NDCGMetric:public Metric {
             const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
-            UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
+            UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
+              paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
               sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_);
           }
 
@@ -181,8 +199,8 @@ class NDCGMetric:public Metric {
             const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
-            UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
+            UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
+              paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
               sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_);
           }
           // calculate DCG
@@ -233,9 +251,8 @@ class NDCGMetric:public Metric {
   int truncation_level_;
   mutable std::vector<double> scores_pointwise_;
   const std::pair<data_size_t, data_size_t>* paired_index_map_;
-  std::vector<std::multimap<data_size_t, data_size_t>> right2left_map_byquery_;
-  std::vector<std::multimap < data_size_t, data_size_t>> left2right_map_byquery_;
-  std::vector<std::map<data_size_t, std::map<data_size_t, data_size_t>>> left2right2pair_map_byquery_;
+  std::vector<std::vector<std::vector<std::pair<short, data_size_t>>>> left2right2pair_map_byquery_;
+  std::vector<std::vector<std::vector<std::pair<short, data_size_t>>>> right2left2pair_map_byquery_;
   /*! \brief Number of data */
   data_size_t num_data_pairwise_;
   const data_size_t* query_boundaries_pairwise_;

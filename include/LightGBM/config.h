@@ -1079,6 +1079,23 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   int pairwise_lambdarank_prediction_num_iteration = 3;
 
+  // desc = number of top n documents to additionaly pair in each iteration of pairwise ranking prediction
+  // desc = used only in ``pairwise_lambdarank`` application
+  int pairwise_lambdarank_prediction_pairing_top_n = 5;
+
+  // desc = number of pairs to add for each document in the top in each iteration of pairwise ranking prediction
+  // desc = used only in ``pairwise_lambdarank`` application
+  int pairwise_lambdarank_prediction_pairing_top_pairs_k = 5;
+
+  // check = >0.0
+  // desc = parameter to add randomness when selecting pairwise preferences
+  // desc = used only in ``pairwise_lambdarank`` application
+  double pairwise_lambdarank_prediction_shuffle_sigma = 1.0;
+
+  // desc = number of pairs to add for each document in the top in each iteration of pairwise ranking prediction
+  // desc = used only in ``pairwise_lambdarank`` application
+  int pairwise_lambdarank_prediction_pointwise_updates_per_iteration = 3;
+
   #ifndef __NVCC__
   #pragma endregion
 
