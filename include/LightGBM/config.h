@@ -1029,6 +1029,10 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   bool pairwise_lambdarank_hard_pairwise_preference = false;
 
+  // desc = consider auxilliary documents up to this rank, for indirect comparison of documents within a pair
+  // desc = used only in ``pairwise_lambdarank`` application
+  int pairwise_lambdarank_indirect_comparison_max_rank = 10;
+
   // desc = pairing appraoch for training dataset
   // desc = used only in ``pairwise_lambdarank`` application
   // desc = with ``different_relevance``, only consider pairs with difference relevance score

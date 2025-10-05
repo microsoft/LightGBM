@@ -36,6 +36,7 @@ class NDCGMetric:public Metric {
     indirect_comparison_above_only_ = config.pairwise_lambdarank_indirect_comparison_above_only;
     logarithmic_discounts_ = config.pairwise_lambdarank_logarithmic_discounts;
     hard_pairwise_preference_ = config.pairwise_lambdarank_hard_pairwise_preference;
+    indirect_comparison_max_rank_ = config.pairwise_lambdarank_indirect_comparison_max_rank;
   }
 
   ~NDCGMetric() {
@@ -91,25 +92,25 @@ class NDCGMetric:public Metric {
 
       right2left_map_byquery_.resize(num_queries_);
       left2right_map_byquery_.resize(num_queries_);
-      left_right2pair_map_byquery_.resize(num_queries_);
+      left2right2pair_map_byquery_.resize(num_queries_);
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
       for (data_size_t q = 0; q < num_queries_; ++q) {
         const data_size_t start_pairwise = query_boundaries_pairwise_[q];
         const data_size_t cnt_pairwise = query_boundaries_pairwise_[q + 1] - query_boundaries_pairwise_[q];
         std::multimap<data_size_t, data_size_t> right2left_map_;
-        std::multimap < data_size_t, data_size_t> left2right_map_;
-        std::map<std::pair<data_size_t, data_size_t>, data_size_t> left_right2pair_map_;
+        std::multimap<data_size_t, data_size_t> left2right_map_;
+        std::map<data_size_t, std::map<data_size_t, data_size_t>> left2right2pair_map_;
         for (data_size_t i = 0; i < cnt_pairwise; ++i) {
           //data_size_t current_pair = selected_pairs[i];
           int index_left = paired_index_map_[i + start_pairwise].first;
           int index_right = paired_index_map_[i + start_pairwise].second;
           right2left_map_.insert(std::make_pair(index_right, index_left));
           left2right_map_.insert(std::make_pair(index_left, index_right));
-          left_right2pair_map_.insert(std::make_pair(std::make_pair(index_left, index_right), i));
+          left2right2pair_map_[index_left][index_right] = i;
         }
         right2left_map_byquery_[q] = right2left_map_;
         left2right_map_byquery_[q] = left2right_map_;
-        left_right2pair_map_byquery_[q] = left_right2pair_map_;
+        left2right2pair_map_byquery_[q] = left2right2pair_map_;
       }
     }
     sigmoid_cache_.Init(sigmoid_);
@@ -149,8 +150,8 @@ class NDCGMetric:public Metric {
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
             UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_,
-              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_);
+              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
+              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_);
           }
 
           // calculate DCG
@@ -181,8 +182,8 @@ class NDCGMetric:public Metric {
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
             UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_,
-              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_);
+              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
+              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_);
           }
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
@@ -234,7 +235,7 @@ class NDCGMetric:public Metric {
   const std::pair<data_size_t, data_size_t>* paired_index_map_;
   std::vector<std::multimap<data_size_t, data_size_t>> right2left_map_byquery_;
   std::vector<std::multimap < data_size_t, data_size_t>> left2right_map_byquery_;
-  std::vector<std::map<std::pair<data_size_t, data_size_t>, data_size_t>> left_right2pair_map_byquery_;
+  std::vector<std::map<data_size_t, std::map<data_size_t, data_size_t>>> left2right2pair_map_byquery_;
   /*! \brief Number of data */
   data_size_t num_data_pairwise_;
   const data_size_t* query_boundaries_pairwise_;
@@ -243,6 +244,7 @@ class NDCGMetric:public Metric {
   bool indirect_comparison_above_only_;
   bool logarithmic_discounts_;
   bool hard_pairwise_preference_;
+  int indirect_comparison_max_rank_;
 };
 
 }  // namespace LightGBM

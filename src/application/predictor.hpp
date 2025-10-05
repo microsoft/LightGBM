@@ -11,6 +11,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+#include <LightGBM/utils/common.h>
 
 #include <string>
 #include <cstdio>
@@ -21,6 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 namespace LightGBM {
 
@@ -255,13 +257,88 @@ class Predictor {
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
   }
 
-  void InitializeRandomPairs(data_size_t num_items_in_query, std::vector<std::pair<int, int>>* random_pairs) {
-    // TODO
+  void InitializeRandomPairs(data_size_t num_items_in_query, std::vector<std::pair<int, int>>& random_pairs, int top_n, std::mt19937& rng) {
+    std::vector<int> nums(num_items_in_query);
+    std::iota(nums.begin(), nums.end(), 0);
+    std::shuffle(nums.begin(), nums.end(), rng);
+    nums.resize(top_n);
+    for (int i : nums) {
+      for (int j = 0; j < num_items_in_query; ++j) {
+        if (i != j) {
+          random_pairs.push_back(std::make_pair(i, j));
+          random_pairs.push_back(std::make_pair(j, i));
+        }
+      }
+    }
   }
 
-  void ComputeNewPairs(data_size_t num_items_in_query, const std::vector<double>& score_of_pairs,
-                       std::vector<std::pair<int, int>>* new_pairs) {
-    // TODO(need to clear old pairs from new_pairs before return)
+  void UpdateMapsForNewPairs(data_size_t previous_pairs_count, std::vector<std::pair<int, int>>& pairs, std::vector<std::vector<std::pair<short, data_size_t>>>& right2left2pair_map,
+    std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map) {
+    for (data_size_t i = previous_pairs_count; i < pairs.size(); ++i) {
+      //data_size_t current_pair = selected_pairs[i];
+      short index_left = pairs[i].first;
+      short index_right = pairs[i].second;
+
+      left2right2pair_map[index_left].emplace_back(index_right, i);   // neighbor, pair index
+      right2left2pair_map[index_right].emplace_back(index_left, i);   // reverse mapping
+    }
+
+    // sort inner vectors by neighbor index for binary search
+    auto sort_by_neighbor = [](std::vector<std::pair<short, data_size_t>>& vec) {
+      std::sort(vec.begin(), vec.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; });
+      };
+
+    for (auto& vec : left2right2pair_map) sort_by_neighbor(vec);
+    for (auto& vec : right2left2pair_map) sort_by_neighbor(vec);
+  }
+
+  std::vector<int> sort_by_noisy_scores(const std::vector<double>& scores_pointwise, double sigma, std::mt19937& rng) {
+    const int n = scores_pointwise.size();
+    std::vector<int> indices(n);
+    for (int i = 0; i < n; ++i) indices[i] = i; // [0..n-1]
+
+    std::uniform_real_distribution<double> dist(0.0, sigma);
+
+    // Precompute noisy scores (O(n))
+    std::vector<double> noisy_scores(n);
+    for (int i = 0; i < n; ++i) {
+      noisy_scores[i] = scores_pointwise[i] + dist(rng);
+    }
+
+    // Sort indices by noisy score, descending
+    std::sort(indices.begin(), indices.end(), [&](int a, int b) { return noisy_scores[a] > noisy_scores[b]; });
+    return indices;
+  }
+
+  void ComputeNewPairs(const std::vector<double>& score_of_pairs, std::vector<std::pair<data_size_t, data_size_t>>& pairs,
+    const std::vector<double>& scores_pointwise, const std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map,
+    double sigma, std::mt19937& rng, int top_n, int top_pairs_k) {
+
+
+    // 1. Get indices sorted by score + noise
+    auto sorted_indices = sort_by_noisy_scores(scores_pointwise, sigma, rng);
+
+    // 2. Iterate over top_n left elements
+    for (int i = 0; i < top_n; ++i) {
+      data_size_t left = sorted_indices[i];
+
+      const auto& paired_rights = left2right2pair_map[left]; // sorted by right index
+      int collected = 0;
+
+      for (int idx = 0; idx < (int)sorted_indices.size() && collected < top_pairs_k; ++idx) {
+        data_size_t right = sorted_indices[idx];
+        if (right == left) continue; // skip self
+
+        // Binary search in paired_rights to check if 'right' is already paired
+        if (get_pair_index(paired_rights, right) != static_cast<data_size_t>(-1)) continue; // forbidden
+
+        // Accept this pair
+        pairs.emplace_back(left, right);
+        pairs.emplace_back(right, left);
+        ++collected;
+      }
+    }
   }
 
   /*!
@@ -270,7 +347,9 @@ class Predictor {
   * \param data_filename Filename of data
   * \param result_filename Filename of output result
   */
-  void PredictPairwise(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser, int num_iteration, bool use_differential_feature_in_pairwise_ranking) {
+  void PredictPairwise(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser, int num_iteration,
+    bool use_differential_feature_in_pairwise_ranking, double sigmoid, int truncation_level, bool model_indirect_comparison, bool model_conditional_rel, bool indirect_comparison_above_only,
+    bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, int top_n, int top_pairs_k, double shuffle_sigma, int pointwise_updates_per_iteration) {
     std::unique_ptr<Metadata> metadata(new Metadata());
     metadata->Init(data_filename);
     auto writer = VirtualFileWriter::Make(result_filename);
@@ -342,9 +421,14 @@ class Predictor {
     const data_size_t num_queries = metadata->num_queries();
     const int num_features = parser->NumFeatures();
 
+    CommonC::SigmoidCache sigmoid_cache;
+    sigmoid_cache.Init(sigmoid);
+
     // Use query-aware processing for ranking tasks
     std::function<void(data_size_t, data_size_t, const std::vector<std::string>&)>
-        process_fun_by_query = [use_differential_feature_in_pairwise_ranking, num_features, num_iteration, &parser_fun, &writer, this](
+        process_fun_by_query = [use_differential_feature_in_pairwise_ranking, top_n, top_pairs_k, shuffle_sigma, sigmoid, sigmoid_cache, model_indirect_comparison,
+        model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank, truncation_level,
+        pointwise_updates_per_iteration, num_features, num_iteration, &parser_fun, &writer, this](
                                   data_size_t query_idx, data_size_t query_start, const std::vector<std::string>& lines) {
 
       // Get num items in this query
@@ -370,10 +454,27 @@ class Predictor {
 
       // list of paired indices in this query, in range [0, lines.size() - 1]
       std::vector<std::pair<data_size_t, data_size_t>> pair_indices;
-
       data_size_t old_num_pairs = static_cast<data_size_t>(pair_indices.size()); // 0 at first iteration
-      //TODO(Pavel) Initialize with random pairing
-      InitializeRandomPairs(num_items_in_query, &pair_indices);
+
+      data_size_t num_data = lines.size();
+      std::vector<double> scores_pointwise(num_data, 0.0);     
+      std::vector<std::vector<std::pair<short, data_size_t>>> right2left2pair_map(num_items_in_query);
+      std::vector<std::vector<std::pair<short, data_size_t>>> left2right2pair_map(num_items_in_query);
+
+      // RNG setup
+      static thread_local std::mt19937 rng(std::random_device{}());
+
+      InitializeRandomPairs(num_items_in_query, pair_indices, top_n, rng);
+      UpdateMapsForNewPairs(0, pair_indices, right2left2pair_map, left2right2pair_map);
+
+      std::vector<data_size_t> all_pairs(pair_indices.size());
+      std::iota(all_pairs.begin(), all_pairs.end(), 0);
+      for (int i = 0; i < pointwise_updates_per_iteration; i++) {
+        UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(), result.size(), all_pairs.data(),
+          pair_indices.data(), right2left2pair_map, left2right2pair_map, truncation_level, sigmoid, sigmoid_cache, model_indirect_comparison,
+          model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank);
+      }
+      
 
       for (int k = 0; k < num_iteration; ++k) {
         // resize result vector
@@ -427,11 +528,23 @@ class Predictor {
         OMP_THROW_EX();
 
         old_num_pairs = static_cast<data_size_t>(pair_indices.size());
-        //TODO(@Pavel) Compute new pairs, by pushing back to pair_indices
-        ComputeNewPairs(num_items_in_query, result, &pair_indices);
+        ComputeNewPairs(result, pair_indices, scores_pointwise, left2right2pair_map, shuffle_sigma, rng, top_n, top_pairs_k);
+        UpdateMapsForNewPairs(old_num_pairs, pair_indices, right2left2pair_map, left2right2pair_map);
+
+        std::vector<data_size_t> all_pairs(pair_indices.size());
+        std::iota(all_pairs.begin(), all_pairs.end(), 0);
+        for (int i = 0; i < pointwise_updates_per_iteration; i++) {
+          UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(), result.size(), all_pairs.data(),
+            pair_indices.data(), right2left2pair_map, left2right2pair_map, truncation_level, sigmoid, sigmoid_cache, model_indirect_comparison,
+            model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank);
+        }
       }
-      // TODO(@Pavel): write final result to result_to_write (of size num items in current query)
-      
+
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+      for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {   
+        result_to_write[i] = std::to_string(scores_pointwise[i]);
+      }
+
       // Write results for this query
       for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
         writer->Write(result_to_write[i].c_str(), result_to_write[i].size());
