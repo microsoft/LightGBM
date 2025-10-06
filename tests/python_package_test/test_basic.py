@@ -1021,18 +1021,22 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
 
 @pytest.mark.parametrize("field_name", ["group", "init_score", "position", "weight"])
 def test_set_field_none_removes_field(rng, field_name):
-    X1 = rng.uniform(size=(10, 1))
-    d1 = lgb.Dataset(X1).construct()
+    X = rng.uniform(size=(10, 1))
+    d = lgb.Dataset(X).construct()
     if field_name == "group":
         field = [5, 5]
         expected = np.array([0, 5, 10], dtype=np.int32)
     else:
         field = rng.uniform(size=10)
         expected = field
-    out = d1.set_field(field_name, field)
-    assert out is d1
+        if field_name == "position":
+            field = np.rint(field)
+            expected = np.rint(expected)
 
-    np.testing.assert_allclose(d1.get_field(field_name), expected)
+    out = d.set_field(field_name, field)
+    assert out is d
 
-    d1.set_field(field_name, None)
-    assert d1.get_field(field_name) is None
+    np.testing.assert_allclose(d.get_field(field_name), expected)
+
+    d.set_field(field_name, None)
+    assert d.get_field(field_name) is None
