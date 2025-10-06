@@ -1137,9 +1137,11 @@ struct Config {
   bool gpu_use_dp = false;
 
   // check = >0
-  // desc = number of GPUs
+  // desc = number of GPUs used for training in this node
   // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
   // desc = if ``0``, only 1 GPU will be used
+  // desc = used in both single-machine and distributed learning applications
+  // desc = in distributed learning application, each machine can use different number of GPUs
   int num_gpu = 1;
 
   #ifndef __NVCC__
