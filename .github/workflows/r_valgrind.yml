@@ -28,6 +28,7 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+          persist-credentials: false
           repository: microsoft/LightGBM
           ref: "refs/pull/${{ github.event.client_payload.pr_number }}/merge"
       - name: Send init status
