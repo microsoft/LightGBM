@@ -1025,12 +1025,14 @@ def test_set_field_none_removes_field(rng, field_name):
     d1 = lgb.Dataset(X1).construct()
     if field_name == "group":
         field = [5, 5]
+        expected = 
     else:
         field = rng.uniform(size=10)
+        expected = field
     out = d1.set_field(field_name, field)
     assert out is d1
 
-    np.testing.assert_allclose(d1.get_field(field_name), field)
+    np.testing.assert_allclose(d1.get_field(field_name), expected)
 
     d1.set_field(field_name, None)
     assert d1.get_field(field_name) is None
