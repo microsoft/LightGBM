@@ -1031,7 +1031,7 @@ def test_set_field_none_removes_field(rng, field_name):
         expected = field
         if field_name == "position":
             field = np.rint(field)
-            expected = np.rint(expected)
+            expected = field
 
     out = d.set_field(field_name, field)
     assert out is d
