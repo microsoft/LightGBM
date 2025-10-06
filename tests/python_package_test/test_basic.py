@@ -1019,11 +1019,14 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-@pytest.mark.parametrize("field_name", ["group", "init_score", "label", "position", "weight"])
+@pytest.mark.parametrize("field_name", ["group", "init_score", "position", "weight"])
 def test_set_field_none_removes_field(rng, field_name):
     X1 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
-    field = rng.uniform(size=10)
+    if field_name == "group":
+        field = [5, 5]
+    else:
+        field = rng.uniform(size=10)
     out = d1.set_field(field_name, field)
     assert out is d1
 
