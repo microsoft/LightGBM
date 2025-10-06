@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - ci/conda
   pull_request:
     branches:
       - master
