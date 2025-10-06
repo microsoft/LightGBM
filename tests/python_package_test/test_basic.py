@@ -1025,7 +1025,7 @@ def test_set_field_none_removes_field(rng, field_name):
     d1 = lgb.Dataset(X1).construct()
     if field_name == "group":
         field = [5, 5]
-        expected = 
+        expected = np.array([0, 5, 10], dtype=np.int32)
     else:
         field = rng.uniform(size=10)
         expected = field
