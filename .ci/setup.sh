@@ -144,7 +144,7 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]]; then
+if [[ "${TASK}" != "cpp-tests" ]] && [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
@@ -153,7 +153,7 @@ if [[ "${TASK}" != "r-package" ]]; then
         sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
-    conda update -q -y conda
+    conda update -q -y conda conda-libmamba-solver
 
     # print output of 'conda info', to help in submitting bug reports
     echo "conda info:"

@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # tell scripts where to put artifacts
+  # (this variable name is left over from when jobs ran on Azure DevOps)
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
 
@@ -24,9 +27,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -103,9 +107,10 @@ jobs:
             python_version: '3.10'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -137,9 +142,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |
@@ -171,9 +177,10 @@ jobs:
           - '3.9'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |

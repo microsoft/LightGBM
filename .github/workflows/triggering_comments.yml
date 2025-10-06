@@ -15,9 +15,10 @@ jobs:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: false
 
       - name: Trigger R valgrind tests
