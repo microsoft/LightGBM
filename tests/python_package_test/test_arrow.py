@@ -14,7 +14,7 @@ from .utils import np_assert_array_equal
 if not lgb.compat.PYARROW_INSTALLED:
     pytest.skip("pyarrow is not installed", allow_module_level=True)
 
-import pyarrow as pa  # type: ignore
+import pyarrow as pa
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
