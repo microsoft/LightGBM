@@ -9,6 +9,7 @@ configuration:
 branches:
   only:
     - master
+    - ci/arrow
 
 environment:
   matrix:
