@@ -1026,12 +1026,12 @@ def test_set_field_none_removes_field(rng, field_name):
     if field_name == "group":
         field = [5, 5]
         expected = np.array([0, 5, 10], dtype=np.int32)
+    elif field_name == "position":
+        field = np.array([1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
+        expected = np.array([1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
     else:
         field = rng.uniform(size=10)
         expected = field
-        if field_name == "position":
-            field = np.rint(field)
-            expected = field
 
     out = d.set_field(field_name, field)
     assert out is d
