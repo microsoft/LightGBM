@@ -1028,11 +1028,11 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
             "position",
             marks=pytest.mark.skipif(
                 getenv("TASK", "") == "cuda",
-                reason="Positions in learning to rank is not supported in CUDA version yet"
+                reason="Positions in learning to rank is not supported in CUDA version yet",
             ),
         ),
         "weight",
-    ]
+    ],
 )
 def test_set_field_none_removes_field(rng, field_name):
     X = rng.uniform(size=(10, 1))
