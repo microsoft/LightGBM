@@ -39,7 +39,7 @@ data.table::setDTthreads(1L)
 # [description]
 #    test that every element of 'x' is in 'y'
 #
-#    testthat::expect_in() was added in {testthat} v3.1.19
+#    testthat::expect_in() was added in {testthat} v3.1.19.
 #    This is here to support a similar interface on older {testthat} versions.
 .expect_in <- function(x, y) {
   if (exists("expect_in")) {
