@@ -1048,7 +1048,7 @@ def test_set_field_none_removes_field(rng, field_name):
     out = d.set_field(field_name, field)
     assert out is d
 
-    np.testing.assert_allclose(d.get_field(field_name), expected)
+    np_assert_array_equal(d.get_field(field_name), expected, strict=True)
 
     d.set_field(field_name, None)
     assert d.get_field(field_name) is None
