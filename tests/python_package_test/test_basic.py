@@ -1021,8 +1021,12 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
 
 @pytest.mark.parametrize("field_name", ["group", "init_score", "position", "weight"])
 def test_set_field_none_removes_field(rng, field_name):
+    if field_name == "position" and getenv("TASK", "") == "cuda":
+        pytest.skip("Positions in learning to rank is not supported in CUDA version yet")
+
     X = rng.uniform(size=(10, 1))
     d = lgb.Dataset(X).construct()
+
     if field_name == "group":
         field = [5, 5]
         expected = np.array([0, 5, 10], dtype=np.int32)
