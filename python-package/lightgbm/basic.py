@@ -5128,9 +5128,7 @@ class Booster:
             ret = np.column_stack((bin_edges[1:], hist))
             ret = ret[ret[:, 1] > 0]
             if PANDAS_INSTALLED:
-                pd_ret = pd_DataFrame(ret, columns=["SplitValue", "Count"])
-                pd_ret["Count"] = pd_ret["Count"].astype(np.int64)
-                return pd_ret
+                return = pd_DataFrame(ret, columns=["SplitValue", "Count"])
             else:
                 return ret
         else:

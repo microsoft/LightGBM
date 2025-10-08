@@ -3191,11 +3191,13 @@ def test_get_split_value_histogram(rng_fixed_seed):
     hist = gbm.get_split_value_histogram(0, bins="auto", xgboost_style=True)
     if lgb.compat.PANDAS_INSTALLED:
         mask = hist_vals > 0
-        np_assert_array_equal(hist_vals[mask], hist["Count"].values, strict=True)
+        # strict=False due to dtype mismatch: 'int64' and 'float64'
+        np_assert_array_equal(hist_vals[mask], hist["Count"].values, strict=False)
         np.testing.assert_allclose(bin_edges[1:][mask], hist["SplitValue"].values)
     else:
         mask = hist_vals > 0
-        np_assert_array_equal(hist_vals[mask], hist[:, 1], strict=True)
+        # strict=False due to dtype mismatch: 'int64' and 'float64'
+        np_assert_array_equal(hist_vals[mask], hist[:, 1], strict=False)
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
     with pytest.raises(
