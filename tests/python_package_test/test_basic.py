@@ -1019,18 +1019,21 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-@pytest.mark.parametrize("field_name", [
-    "group",
-    "init_score",
-    pytest.param(
-        "position",
-        marks=pytest.mark.skipif(
-            getenv("TASK", "") == "cuda",
-            reason="Positions in learning to rank is not supported in CUDA version yet"
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "group",
+        "init_score",
+        pytest.param(
+            "position",
+            marks=pytest.mark.skipif(
+                getenv("TASK", "") == "cuda",
+                reason="Positions in learning to rank is not supported in CUDA version yet"
+            ),
         ),
-    ),
-    "weight",
-])
+        "weight",
+    ]
+)
 def test_set_field_none_removes_field(rng, field_name):
     X = rng.uniform(size=(10, 1))
     d = lgb.Dataset(X).construct()
