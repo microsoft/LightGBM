@@ -11,6 +11,7 @@ import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
@@ -1028,7 +1029,7 @@ def test_set_field_none_removes_field(rng, field_name):
         expected = np.array([0, 5, 10], dtype=np.int32)
     elif field_name == "position":
         field = np.array([100, 30, 100, 100, 30, 100, 30, 100, 30, 100])
-        expected = np.array([100, 30, 100, 100, 30, 100, 30, 100, 30, 100])
+        expected = LabelEncoder().fit_transform(field)
     else:
         field = rng.uniform(size=10)
         expected = field
