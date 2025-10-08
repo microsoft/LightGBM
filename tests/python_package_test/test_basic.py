@@ -1032,9 +1032,6 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     "weight",
 ])
 def test_set_field_none_removes_field(rng, field_name):
-    if field_name == "position" and :
-        pytest.skip("")
-
     X = rng.uniform(size=(10, 1))
     d = lgb.Dataset(X).construct()
 
