@@ -1046,7 +1046,7 @@ def test_set_field_none_removes_field(rng, field_name):
         expected = np.array([0, 1, 0, 2, 3, 2, 3, 2, 3, 3], dtype=np.int32)
     else:
         field = rng.uniform(size=10)
-        expected = field
+        expected = field.astype(np.float64 if field_name == "init_score" else np.float32)
 
     out = d.set_field(field_name, field)
     assert out is d

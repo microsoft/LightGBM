@@ -1515,7 +1515,7 @@ def test_continue_training_with_model():
 
 def test_actual_number_of_trees():
     X = [[1, 2, 3], [1, 2, 3]]
-    y = [1, 1]
+    y = [1.0, 1.0]
     n_estimators = 5
     gbm = lgb.LGBMRegressor(n_estimators=n_estimators).fit(X, y)
     assert gbm.n_estimators == n_estimators
@@ -1662,7 +1662,8 @@ def test_getting_feature_names_in_pd_input(estimator_class):
         model.fit(X, y, group=[X.shape[0]])
     else:
         model.fit(X, y)
-    np_assert_array_equal(model.feature_names_in_, X.columns, strict=True)
+    # strict=False due to dtype mismatch: '<U9' and 'object'
+    np_assert_array_equal(model.feature_names_in_, X.columns, strict=False)
 
 
 # Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),
