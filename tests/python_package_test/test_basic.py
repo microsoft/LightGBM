@@ -69,13 +69,13 @@ def test_basic(tmp_path):
     assert bst.feature_name() == feature_names
     pred_from_model_file = bst.predict(X_test)
     # we need to check the consistency of model file here, so test for exact equal
-    np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
+    np_assert_array_equal(pred_from_matr, pred_from_model_file, strict=True)
 
     # check early stopping is working. Make it stop very early, so the scores should be very close to zero
     pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
     pred_early_stopping = bst.predict(X_test, **pred_parameter)
     # scores likely to be different, but prediction should still be the same
-    np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
+    np_assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping), strict=True)
 
     # test that shape is checked during prediction
     bad_X_test = X_test[:, 1:]
@@ -213,7 +213,7 @@ def test_sequence_get_data(num_seq, rng):
 
     used_indices = rng.choice(a=np.arange(nrow), size=nrow // 3, replace=False)
     subset_data = seq_ds.subset(used_indices).construct()
-    np.testing.assert_array_equal(subset_data.get_data(), X[sorted(used_indices)])
+    np_assert_array_equal(subset_data.get_data(), X[sorted(used_indices)], strict=True)
 
 
 def test_chunked_dataset():
@@ -1019,10 +1019,21 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-@pytest.mark.parametrize("field_name", ["group", "init_score", "position", "weight"])
+@pytest.mark.parametrize("field_name", [
+    "group",
+    "init_score",
+    pytest.param(
+        "position",
+        marks=pytest.mark.skipif(
+            getenv("TASK", "") == "cuda",
+            reason="Positions in learning to rank is not supported in CUDA version yet"
+        ),
+    ),
+    "weight",
+])
 def test_set_field_none_removes_field(rng, field_name):
-    if field_name == "position" and getenv("TASK", "") == "cuda":
-        pytest.skip("Positions in learning to rank is not supported in CUDA version yet")
+    if field_name == "position" and :
+        pytest.skip("")
 
     X = rng.uniform(size=(10, 1))
     d = lgb.Dataset(X).construct()

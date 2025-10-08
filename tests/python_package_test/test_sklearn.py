@@ -42,6 +42,7 @@ from .utils import (
     load_linnerud,
     make_ranking,
     make_synthetic_regression,
+    np_assert_array_equal,
     sklearn_multiclass_custom_objective,
     softmax,
 )
@@ -423,7 +424,7 @@ def test_multioutput_classifier():
     score = clf.score(X_test, y_test)
     assert score >= 0.2
     assert score <= 1.0
-    np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs), np.concatenate(clf.classes_))
+    np_assert_array_equal(np.tile(np.unique(y_train), n_outputs), np.concatenate(clf.classes_), strict=True)
     for classifier in clf.estimators_:
         assert isinstance(classifier, lgb.LGBMClassifier)
         assert isinstance(classifier.booster_, lgb.Booster)
@@ -454,7 +455,7 @@ def test_classifier_chain():
     score = clf.score(X_test, y_test)
     assert score >= 0.2
     assert score <= 1.0
-    np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs), np.concatenate(clf.classes_))
+    np_assert_array_equal(np.tile(np.unique(y_train), n_outputs), np.concatenate(clf.classes_), strict=True)
     assert order == clf.order_
     for classifier in clf.estimators_:
         assert isinstance(classifier, lgb.LGBMClassifier)
@@ -709,7 +710,7 @@ def test_joblib(tmp_path):
     gbm_pickle = joblib.load(model_path_pkl)
     assert isinstance(gbm_pickle.booster_, lgb.Booster)
     assert gbm.get_params() == gbm_pickle.get_params()
-    np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
+    np_assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_, strict=True)
     assert gbm_pickle.learning_rate == pytest.approx(0.1)
     assert callable(gbm_pickle.objective)
 
@@ -750,7 +751,7 @@ def test_random_state_object(rng_constructor):
     y_pred1 = clf1.predict(X_test, raw_score=True)
     y_pred2 = clf2.predict(X_test, raw_score=True)
     np.testing.assert_allclose(y_pred1, y_pred2)
-    np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
+    np_assert_array_equal(clf1.feature_importances_, clf2.feature_importances_, strict=True)
     df1 = clf1.booster_.model_to_string(num_iteration=0)
     df2 = clf2.booster_.model_to_string(num_iteration=0)
     assert df1 == df2
@@ -1520,7 +1521,7 @@ def test_actual_number_of_trees():
     assert gbm.n_estimators == n_estimators
     assert gbm.n_estimators_ == 1
     assert gbm.n_iter_ == 1
-    np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
+    np_assert_array_equal(gbm.predict(np.array(X) * 10), y, strict=True)
 
 
 def test_check_is_fitted():
@@ -1638,7 +1639,7 @@ def test_getting_feature_names_in_np_input(estimator_class):
         model.fit(X, y, group=[X.shape[0]])
     else:
         model.fit(X, y)
-    np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
+    np_assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]), strict=True)
 
 
 @pytest.mark.parametrize("estimator_class", estimator_classes)
@@ -1661,7 +1662,7 @@ def test_getting_feature_names_in_pd_input(estimator_class):
         model.fit(X, y, group=[X.shape[0]])
     else:
         model.fit(X, y)
-    np.testing.assert_array_equal(model.feature_names_in_, X.columns)
+    np_assert_array_equal(model.feature_names_in_, X.columns, strict=True)
 
 
 # Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),
@@ -1741,7 +1742,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
-    np.testing.assert_array_equal(preds_1d, preds_2d)
+    np_assert_array_equal(preds_1d, preds_2d, strict=True)
 
 
 @pytest.mark.parametrize("use_weight", [True, False])

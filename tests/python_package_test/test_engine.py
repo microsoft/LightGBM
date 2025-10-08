@@ -33,6 +33,7 @@ from .utils import (
     logistic_sigmoid,
     make_synthetic_regression,
     mse_obj,
+    np_assert_array_equal,
     pickle_and_unpickle_object,
     sklearn_multiclass_custom_objective,
     softmax,
@@ -845,7 +846,7 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
 
     # test get_position works
     positions_from_get = lgb_train.get_position()
-    np.testing.assert_array_equal(positions_from_get, positions)
+    np_assert_array_equal(positions_from_get, positions, strict=True)
 
 
 def test_early_stopping():
@@ -1391,7 +1392,7 @@ def test_cvbooster_save_load(tmp_path):
     cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
     for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
         assert best_iteration == cvbooster_loaded.best_iteration
-        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
+        np_assert_array_equal(preds, cvbooster_loaded.predict(X_test), strict=True)
 
 
 @pytest.mark.parametrize("serializer", SERIALIZERS)
@@ -1424,7 +1425,7 @@ def test_cvbooster_picklable(serializer):
     assert best_iteration == cvbooster_from_disk.best_iteration
 
     preds_from_disk = cvbooster_from_disk.predict(X_test)
-    np.testing.assert_array_equal(preds, preds_from_disk)
+    np_assert_array_equal(preds, preds_from_disk, strict=True)
 
 
 def test_feature_name():
@@ -2304,7 +2305,7 @@ def test_monotone_penalty_max():
         constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
 
         # Check that a very high penalization is the same as not using the features at all
-        np.testing.assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions)
+        np_assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions, strict=True)
 
 
 def test_max_bin_by_feature():
@@ -3179,22 +3180,22 @@ def test_get_split_value_histogram(rng_fixed_seed):
     assert len(bins) == 8
     hist_idx, bins_idx = gbm.get_split_value_histogram(0)
     hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
-    np.testing.assert_array_equal(hist_idx, hist_name)
+    np_assert_array_equal(hist_idx, hist_name, strict=True)
     np.testing.assert_allclose(bins_idx, bins_name)
     hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
     hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
-    np.testing.assert_array_equal(hist_idx, hist_name)
+    np_assert_array_equal(hist_idx, hist_name, strict=True)
     np.testing.assert_allclose(bins_idx, bins_name)
     # test bins string type
     hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins="auto")
     hist = gbm.get_split_value_histogram(0, bins="auto", xgboost_style=True)
     if lgb.compat.PANDAS_INSTALLED:
         mask = hist_vals > 0
-        np.testing.assert_array_equal(hist_vals[mask], hist["Count"].values)
+        np_assert_array_equal(hist_vals[mask], hist["Count"].values, strict=True)
         np.testing.assert_allclose(bin_edges[1:][mask], hist["SplitValue"].values)
     else:
         mask = hist_vals > 0
-        np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
+        np_assert_array_equal(hist_vals[mask], hist[:, 1], strict=True)
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
     with pytest.raises(
