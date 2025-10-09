@@ -5,8 +5,8 @@
 
 #ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_CUDA_METADATA_HPP_
-#define LIGHTGBM_CUDA_CUDA_METADATA_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_METADATA_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 
 #include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/meta.h>
@@ -53,6 +53,6 @@ class CUDAMetadata {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_CUDA_METADATA_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 
 #endif  // USE_CUDA
