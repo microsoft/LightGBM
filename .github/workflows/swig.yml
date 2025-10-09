@@ -26,7 +26,7 @@ env:
 
 jobs:
   test-swig:
-    name: swig (${{ matrix.os }}, ${{ matrix.compiler }})
+    name: swig (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
@@ -38,6 +38,7 @@ jobs:
             compiler: gcc
             container: 'lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64'
             artifact-name: swig-linux-x86_64-jar
+            os-display-name: 'manylinux_2_28'
           - os: macos-13
             compiler: clang
             container: null
@@ -52,6 +53,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests on Linux and macOS
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
@@ -75,7 +77,7 @@ jobs:
           $env:BUILD_DIRECTORY = $env:GITHUB_WORKSPACE
           $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
-      - name: upload jar
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
