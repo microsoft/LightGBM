@@ -74,9 +74,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         run: |
+          export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export PATH=$CONDA/bin:$PATH
 
