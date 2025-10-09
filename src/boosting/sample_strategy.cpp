@@ -7,6 +7,8 @@
 #include "goss.hpp"
 #include "bagging.hpp"
 
+#include <string>
+
 namespace LightGBM {
 
 SampleStrategy* SampleStrategy::CreateSampleStrategy(

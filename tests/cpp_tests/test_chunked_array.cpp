@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include "../include/LightGBM/utils/chunked_array.hpp"
 
+#include <vector>
+
 using LightGBM::ChunkedArray;
 
 /*!

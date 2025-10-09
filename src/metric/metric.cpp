@@ -14,6 +14,8 @@
 #include "cuda/cuda_binary_metric.hpp"
 #include "cuda/cuda_regression_metric.hpp"
 
+#include <string>
+
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {

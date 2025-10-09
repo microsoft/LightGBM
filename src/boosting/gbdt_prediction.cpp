@@ -8,6 +8,8 @@
 
 #include "gbdt.h"
 
+#include <unordered_map>
+
 namespace LightGBM {
 
 void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {

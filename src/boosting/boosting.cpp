@@ -8,6 +8,9 @@
 #include "gbdt.h"
 #include "rf.hpp"
 
+#include <memory>
+#include <string>
+
 namespace LightGBM {
 
 std::string GetBoostingTypeFromModelFile(const char* filename) {

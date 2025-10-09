@@ -10,6 +10,8 @@
 #include "serial_tree_learner.h"
 #include "cuda/cuda_single_gpu_tree_learner.hpp"
 
+#include <string>
+
 namespace LightGBM {
 
 TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type,

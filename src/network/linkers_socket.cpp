@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <thread>
 #include <unordered_map>

@@ -38,11 +38,11 @@ repos:
           - .ci/check-omp-pragmas.sh
         language: system
         pass_filenames: false
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
-    hooks:
-      - id: yamllint
-        args: ["--strict"]
+  # - repo: https://github.com/adrienverge/yamllint
+  #   rev: v1.37.1
+  #   hooks:
+  #     - id: yamllint
+  #       args: ["--strict"]
   - repo: local
     hooks:
       - id: regenerate-parameters

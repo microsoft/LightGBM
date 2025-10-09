@@ -8,7 +8,10 @@
 #include <LightGBM/utils/log.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 
 namespace LightGBM {

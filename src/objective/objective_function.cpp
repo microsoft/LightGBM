@@ -15,6 +15,8 @@
 #include "cuda/cuda_rank_objective.hpp"
 #include "cuda/cuda_regression_objective.hpp"
 
+#include <string>
+
 namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
