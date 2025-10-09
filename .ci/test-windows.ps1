@@ -66,7 +66,7 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda conda-libmamba-solver "python=$env:PYTHON_VERSION[build=*_cp*]"
+conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
