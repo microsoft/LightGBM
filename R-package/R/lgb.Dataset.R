@@ -266,7 +266,7 @@ Dataset <- R6::R6Class(
         handle <- .Call(
           LGBM_DatasetGetSubset_R
           , ref_handle
-          , c(private$used_indices) # Adding c() fixes issue in R v3.5
+          , c(private$used_indices)
           , length(private$used_indices)
           , params_str
         )
