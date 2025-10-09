@@ -4,6 +4,8 @@
  */
 #include <LightGBM/objective_function.h>
 
+#include <string>
+
 #include "binary_objective.hpp"
 #include "multiclass_objective.hpp"
 #include "rank_objective.hpp"
@@ -14,8 +16,6 @@
 #include "cuda/cuda_multiclass_objective.hpp"
 #include "cuda/cuda_rank_objective.hpp"
 #include "cuda/cuda_regression_objective.hpp"
-
-#include <string>
 
 namespace LightGBM {
 

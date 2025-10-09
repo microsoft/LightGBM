@@ -4,10 +4,11 @@
  */
 
 #include <LightGBM/sample_strategy.h>
-#include "goss.hpp"
-#include "bagging.hpp"
 
 #include <string>
+
+#include "goss.hpp"
+#include "bagging.hpp"
 
 namespace LightGBM {
 

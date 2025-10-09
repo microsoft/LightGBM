@@ -6,9 +6,9 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include "gbdt.h"
-
 #include <unordered_map>
+
+#include "gbdt.h"
 
 namespace LightGBM {
 

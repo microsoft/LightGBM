@@ -4,13 +4,13 @@
  */
 #include <LightGBM/tree_learner.h>
 
+#include <string>
+
 #include "gpu_tree_learner.h"
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
 #include "cuda/cuda_single_gpu_tree_learner.hpp"
-
-#include <string>
 
 namespace LightGBM {
 
