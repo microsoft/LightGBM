@@ -8,11 +8,6 @@
 
 #if defined(__HIP_PLATFORM_AMD__)
 
-// ROCm doesn't have __shfl_down_sync, only __shfl_down without mask.
-// Since mask is full 0xffffffff, we can use __shfl_down instead.
-#define __shfl_down_sync(mask, val, offset) __shfl_down(val, offset)
-#define __shfl_up_sync(mask, val, offset) __shfl_up(val, offset)
-
 // ROCm doesn't have atomicAdd_block, but it should be semantically the same as atomicAdd
 #define atomicAdd_block atomicAdd
 
@@ -45,6 +40,11 @@
 #define cudaStreamDestroy hipStreamDestroy
 #define cudaStream_t hipStream_t
 #define cudaSuccess hipSuccess
+
+// ROCm 7.0 did add __shfl_down_sync et al, but the following hack still works.
+// Since mask is full 0xffffffff, we can use __shfl_down instead.
+#define __shfl_down_sync(mask, val, offset) __shfl_down(val, offset)
+#define __shfl_up_sync(mask, val, offset) __shfl_up(val, offset)
 
 // warpSize is only allowed for device code.
 // HIP header used to define warpSize as a constexpr that was either 32 or 64
