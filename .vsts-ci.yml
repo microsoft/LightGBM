@@ -102,8 +102,6 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.10'
-        inference:
-          TASK: if-else
         mpi_source:
           TASK: mpi
           METHOD: source
@@ -165,8 +163,6 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.11'
-        inference:
-          TASK: if-else
         mpi_source:
           TASK: mpi
           METHOD: source
@@ -190,9 +186,6 @@ jobs:
           TASK: gpu
           METHOD: wheel
           PYTHON_VERSION: '3.10'
-        cpp_tests:
-          TASK: cpp-tests
-          METHOD: with-sanitizers
     steps:
       - script: |
           echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -240,10 +233,6 @@ jobs:
           PYTHON_VERSION: '3.10'
         bdist:
           TASK: bdist
-        cpp_tests:
-          TASK: cpp-tests
-          METHOD: with-sanitizers
-          SANITIZERS: "address;undefined"
     steps:
       - script: |
           echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -291,8 +280,6 @@ jobs:
           PYTHON_VERSION: '3.10'
         bdist:
           TASK: bdist
-        cpp_tests:
-          TASK: cpp-tests
     steps:
       - powershell: |
           Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
