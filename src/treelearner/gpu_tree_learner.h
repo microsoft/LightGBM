@@ -2,8 +2,8 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
-#define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
+#ifndef SRC_TREELEARNER_GPU_TREE_LEARNER_H_
+#define SRC_TREELEARNER_GPU_TREE_LEARNER_H_
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/feature_group.h>
@@ -284,4 +284,4 @@ class GPUTreeLearner: public SerialTreeLearner {
 
 #endif   // USE_GPU
 
-#endif   // LightGBM_TREELEARNER_GPU_TREE_LEARNER_H_
+#endif   // SRC_TREELEARNER_GPU_TREE_LEARNER_H_

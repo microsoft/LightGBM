@@ -5,8 +5,8 @@
 
 #ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_CUDA_TREE_HPP_
-#define LIGHTGBM_CUDA_CUDA_TREE_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_TREE_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_TREE_HPP_
 
 #include <LightGBM/cuda/cuda_column_data.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
@@ -168,6 +168,6 @@ class CUDATree : public Tree {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_CUDA_TREE_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_TREE_HPP_
 
 #endif  // USE_CUDA

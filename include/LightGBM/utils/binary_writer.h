@@ -2,8 +2,8 @@
  * Copyright (c) 2022 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_BINARY_WRITER_H_
-#define LIGHTGBM_UTILS_BINARY_WRITER_H_
+#ifndef INCLUDE_LIGHTGBM_UTILS_BINARY_WRITER_H_
+#define INCLUDE_LIGHTGBM_UTILS_BINARY_WRITER_H_
 
 #include <cstdlib>
 #include <vector>
@@ -55,4 +55,4 @@ struct BinaryWriter {
 };
 }  // namespace LightGBM
 
-#endif   // LIGHTGBM_UTILS_BINARY_WRITER_H_
+#endif   // INCLUDE_LIGHTGBM_UTILS_BINARY_WRITER_H_

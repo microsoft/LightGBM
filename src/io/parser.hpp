@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_IO_PARSER_HPP_
-#define LIGHTGBM_IO_PARSER_HPP_
+#ifndef SRC_IO_PARSER_HPP_
+#define SRC_IO_PARSER_HPP_
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
@@ -132,4 +132,4 @@ class LibSVMParser: public Parser {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_IO_PARSER_HPP_
+#endif   // SRC_IO_PARSER_HPP_

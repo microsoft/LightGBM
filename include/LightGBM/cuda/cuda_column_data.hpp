@@ -5,8 +5,8 @@
 
 #ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
-#define LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
 
 #include <LightGBM/config.h>
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -137,6 +137,6 @@ class CUDAColumnData {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
 
 #endif  // USE_CUDA

@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_DATASET_H_
-#define LIGHTGBM_DATASET_H_
+#ifndef INCLUDE_LIGHTGBM_DATASET_H_
+#define INCLUDE_LIGHTGBM_DATASET_H_
 
 #include <LightGBM/arrow.h>
 #include <LightGBM/config.h>

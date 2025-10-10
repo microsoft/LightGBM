@@ -7,8 +7,8 @@
 
 #ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
-#define LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
@@ -103,6 +103,6 @@ class CUDASplitInfo {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #endif  // USE_CUDA

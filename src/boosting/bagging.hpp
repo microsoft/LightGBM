@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef LIGHTGBM_BOOSTING_BAGGING_HPP_
-#define LIGHTGBM_BOOSTING_BAGGING_HPP_
+#ifndef SRC_BOOSTING_BAGGING_HPP_
+#define SRC_BOOSTING_BAGGING_HPP_
 
 #include <string>
 #include <vector>
@@ -293,4 +293,4 @@ class BaggingSampleStrategy : public SampleStrategy {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_BOOSTING_BAGGING_HPP_
+#endif  // SRC_BOOSTING_BAGGING_HPP_
