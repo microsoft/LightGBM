@@ -4072,6 +4072,7 @@ def test_r2_metric():
     assert r2 != 0
     assert r2 != 1
     # test that R2 is 1 when y has no variance and the model predicts perfectly
+    y = y.copy()
     y[:] = 1
     lgb_X = lgb.Dataset(X, label=y)
     lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], callbacks=[lgb.record_evaluation(res)])
