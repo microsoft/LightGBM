@@ -29,6 +29,9 @@ install:
       $env:MINICONDA = "C:\Miniconda3-x64"
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
       $env:BUILD_SOURCESDIRECTORY = "$env:APPVEYOR_BUILD_FOLDER"
+      # tell scripts where to put artifacts
+      # (this variable name is left over from when jobs ran on Azure DevOps)
+      $env:BUILD_ARTIFACTSTAGINGDIRECTORY = "$env:APPVEYOR_BUILD_FOLDER/artifacts"
 
 build: false
 
