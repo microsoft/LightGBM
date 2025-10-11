@@ -245,11 +245,11 @@ struct Config {
   // alias = device
   // desc = device for the tree learning
   // desc = ``cpu`` supports all LightGBM functionality and is portable across the widest range of operating systems and hardware
-  // desc = ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA
+  // desc = ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA or ROCm
   // desc = ``gpu`` can be faster than ``cpu`` and works on a wider range of GPUs than CUDA
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
-  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
+  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU, CUDA, or ROCm support
   std::string device_type = "cpu";
 
   // [no-automatically-extract]
