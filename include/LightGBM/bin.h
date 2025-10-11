@@ -15,6 +15,7 @@
 #include <functional>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {
@@ -306,6 +307,10 @@ class Bin {
   */
   virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
 
+  virtual BinIterator* GetUnpairedIterator(uint32_t /* min_bin */, uint32_t /* max_bin */, uint32_t /* most_freq_bin */) const {
+    return nullptr;
+  }
+
   /*!
   * \brief Save binary data to file
   * \param file File want to write
@@ -468,6 +473,64 @@ class Bin {
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
 
   /*!
+  * \brief Create object for bin data of the first feature in pair, used for pairwise ranking, for an original dense bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateDensePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of the first feature in pair, used for pairwise ranking, for an original sparse bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateSparsePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of the second feature in pair, used for pairwise ranking, for an original dense bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateDensePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of the second feature in pair, used for pairwise ranking, for an original sparse bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateSparsePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of the differential feature in pair, used for pairwise ranking, for an original dense bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \param bin_offsets Bin offsets in feature group
+  * \return The bin data object
+  */
+  static Bin* CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets);
+
+  /*!
+  * \brief Create object for bin data of the differential feature in pair, used for pairwise ranking, for an original sparse bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \param bin_offsets Bin offsets in feature group
+  * \return The bin data object
+  */
+  static Bin* CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets);
+
+  /*!
   * \brief Deep copy the bin
   */
   virtual Bin* Clone() = 0;
@@ -475,6 +538,8 @@ class Bin {
   virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
 
   virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
+
+  int group_index_ = -1;
 };
 
 
@@ -495,6 +560,8 @@ class MultiValBin {
   virtual void CopySubrow(const MultiValBin* full_bin,
                           const data_size_t* used_indices,
                           data_size_t num_used_indices) = 0;
+
+  virtual void DumpContent() const {}
 
   virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
                                   int num_feature,
@@ -589,12 +656,14 @@ class MultiValBin {
   virtual bool IsSparse() = 0;
 
   static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
-                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets);
+                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking,
+                                        const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
   static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin,
-                                             int num_feature, const std::vector<uint32_t>& offsets);
+                                             int num_feature, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking,
+                                             const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
-  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row);
+  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 

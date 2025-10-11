@@ -20,6 +20,8 @@
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
+#include <fstream>
+
 namespace LightGBM {
 
 class FeatureMetainfo {
@@ -1501,6 +1503,7 @@ class HistogramPool {
       }
       OMP_THROW_EX();
     }
+    offsets_ = offsets;
   }
 
   void ResetConfig(const Dataset* train_data, const Config* config) {
@@ -1519,6 +1522,18 @@ class HistogramPool {
           pool_[i][j].ResetFunc();
         }
       }
+    }
+  }
+
+  void DumpContent() const {
+    std::ofstream fout("historam_wise.txt");
+    int cur_offsets_ptr = 0;
+    for (int i = 0; i < data_[0].size() / 2; ++i) {
+      if (i == offsets_[cur_offsets_ptr]) {
+        fout << "offset " << cur_offsets_ptr << " " << offsets_[cur_offsets_ptr] << " " << feature_metas_[cur_offsets_ptr].num_bin << " " << static_cast<int>(feature_metas_[cur_offsets_ptr].offset) << std::endl;
+        ++cur_offsets_ptr;
+      }
+      fout << i << " " << data_[0][2 * i] << " " << data_[0][2 * i + 1] << std::endl;
     }
   }
 
@@ -1591,6 +1606,7 @@ class HistogramPool {
   std::vector<int> inverse_mapper_;
   std::vector<int> last_used_time_;
   int cur_time_ = 0;
+  std::vector<uint32_t> offsets_;
 };
 
 }  // namespace LightGBM
