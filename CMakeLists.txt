@@ -78,10 +78,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   endif()
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
-    message(
-      FATAL_ERROR
-      message(FATAL_ERROR "Insufficient MSVC version (${MSVC_VERSION})")
-    )
+    message(FATAL_ERROR "Insufficient MSVC version (${MSVC_VERSION})")
   endif()
 endif()
 
