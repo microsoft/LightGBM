@@ -237,7 +237,7 @@ class AucMuMetric : public Metric {
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // the notation follows that used in the paper introducing the auc-mu metric:
-    // http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+    // https://proceedings.mlr.press/v97/kleiman19a.html
 
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;

@@ -171,4 +171,4 @@ Known issues:
 
 .. _GPUCapsViewer: https://www.ozone3d.net/gpu_caps_viewer/
 
-.. _PoCL: http://portablecl.org/
+.. _PoCL: https://portablecl.org/
