@@ -175,6 +175,7 @@ class CUDARowData {
 };
 
 }  // namespace LightGBM
+
 #endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
 #endif  // USE_CUDA
