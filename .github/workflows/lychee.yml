@@ -11,6 +11,7 @@ env:
   COMPILER: gcc
   OS_NAME: 'linux'
   TASK: 'check-links'
+  GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
   check-links:

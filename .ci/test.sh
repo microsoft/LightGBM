@@ -50,6 +50,22 @@ if [[ "${TASK}" == "r-package" ]]; then
     exit 0
 fi
 
+cd "${BUILD_DIRECTORY}"
+
+if [[ $TASK == "swig" ]]; then
+    cmake -B build -S . -DUSE_SWIG=ON
+    cmake --build build -j4 || exit 1
+    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+        objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
+        objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
+        python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
+    fi
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
+        cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbmlib_${OS_NAME}.jar"
+    fi
+    exit 0
+fi
+
 if [[ "$TASK" == "cpp-tests" ]]; then
     cmake_args=(
         -DBUILD_CPP_TEST=ON
@@ -82,22 +98,6 @@ if [[ $TASK == "if-else" ]]; then
     ../../lightgbm config=predict.conf output_result=origin.pred
     ../../lightgbm config=predict.conf output_result=ifelse.pred
     python test.py
-    exit 0
-fi
-
-cd "${BUILD_DIRECTORY}"
-
-if [[ $TASK == "swig" ]]; then
-    cmake -B build -S . -DUSE_SWIG=ON
-    cmake --build build -j4 || exit 1
-    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
-        objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
-        objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
-        python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
-    fi
-    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbmlib_${OS_NAME}.jar"
-    fi
     exit 0
 fi
 

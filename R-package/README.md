@@ -20,7 +20,6 @@
     - [Code Coverage](#code-coverage)
 * [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
-* [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
 Installation
@@ -68,16 +67,23 @@ The steps above should work on most systems, but users with highly-customized en
 
 To change the compiler used when installing the CRAN package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler).
 
-For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+For example, to use `gcc-14` instead of `clang` on macOS, you could use something like the following:
 
 ```make
 # ~/.R/Makevars
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
+CC=gcc-14
+CC17=gcc-14
+CXX=g++-14
+CXX17=g++-14
 ```
 
-### Installing from Source with CMake <a name="install"></a>
+To check the values R is using, run the following:
+
+```shell
+R CMD config --all
+```
+
+### Installing from Source with CMake <a id="install"></a>
 
 You need to install git and [CMake](https://cmake.org/) first.
 
@@ -215,7 +221,7 @@ These packages do not require compilation, so they will be faster and easier to 
 
 CRAN does not prepare precompiled binaries for Linux, and as of this writing neither does this project.
 
-### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
+### Installing from a Pre-compiled lib_lightgbm <a id="lib_lightgbm"></a>
 
 Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R-package that wraps it.
 

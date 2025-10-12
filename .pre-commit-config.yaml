@@ -28,7 +28,7 @@ repos:
       - id: cpplint
         args:
           - --recursive
-          - --filter=-build/c++11,-build/include_subdir,-build/include_what_you_use,-whitespace/indent_namespace,-whitespace/line_length
+          - --filter=-build/include_subdir,-build/include_what_you_use,-whitespace/indent_namespace,-whitespace/line_length
   - repo: local
     hooks:
       - id: check-omp-pragmas

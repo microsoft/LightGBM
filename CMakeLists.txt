@@ -36,13 +36,7 @@ endif()
 
 project(lightgbm LANGUAGES C CXX)
 
-if(USE_CUDA)
-  set(CMAKE_CXX_STANDARD 17)
-elseif(BUILD_CPP_TEST)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 11)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
@@ -72,22 +66,19 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
-    message(FATAL_ERROR "Insufficient gcc version")
+    message(FATAL_ERROR "Insufficient gcc version (${CMAKE_CXX_COMPILER_VERSION})")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.8")
-    message(FATAL_ERROR "Insufficient Clang version")
+    message(FATAL_ERROR "Insufficient Clang version (${CMAKE_CXX_COMPILER_VERSION})")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
-    message(FATAL_ERROR "Insufficient AppleClang version")
+    message(FATAL_ERROR "Insufficient AppleClang version (${CMAKE_CXX_COMPILER_VERSION})")
   endif()
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
-    message(
-      FATAL_ERROR
-      "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
-    )
+    message(FATAL_ERROR "Insufficient MSVC version (${MSVC_VERSION})")
   endif()
 endif()
 
