@@ -2,8 +2,8 @@
  * Copyright (c) 2022 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_BYTE_BUFFER_H_
-#define LIGHTGBM_UTILS_BYTE_BUFFER_H_
+#ifndef INCLUDE_LIGHTGBM_UTILS_BYTE_BUFFER_H_
+#define INCLUDE_LIGHTGBM_UTILS_BYTE_BUFFER_H_
 
 #include <LightGBM/export.h>
 #include <LightGBM/utils/binary_writer.h>
@@ -59,4 +59,4 @@ struct ByteBuffer final : public BinaryWriter {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_BYTE_BUFFER_H_
+#endif   // INCLUDE_LIGHTGBM_UTILS_BYTE_BUFFER_H_

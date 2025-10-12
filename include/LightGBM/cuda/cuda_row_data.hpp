@@ -5,8 +5,8 @@
 
 #ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
-#define LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/config.h>
@@ -175,6 +175,6 @@ class CUDARowData {
 };
 
 }  // namespace LightGBM
-#endif  // LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
 #endif  // USE_CUDA

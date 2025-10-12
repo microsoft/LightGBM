@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_PIPELINE_READER_H_
-#define LIGHTGBM_UTILS_PIPELINE_READER_H_
+#ifndef INCLUDE_LIGHTGBM_UTILS_PIPELINE_READER_H_
+#define INCLUDE_LIGHTGBM_UTILS_PIPELINE_READER_H_
 
 #include <LightGBM/utils/file_io.h>
 #include <LightGBM/utils/log.h>
@@ -68,4 +68,4 @@ class PipelineReader {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_PIPELINE_READER_H_
+#endif   // INCLUDE_LIGHTGBM_UTILS_PIPELINE_READER_H_

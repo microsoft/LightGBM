@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
-#define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
+#ifndef SRC_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
+#define SRC_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
@@ -276,4 +276,4 @@ class MulticlassOVA: public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
+#endif   // SRC_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_

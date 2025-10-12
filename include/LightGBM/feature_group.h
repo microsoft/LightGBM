@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_FEATURE_GROUP_H_
-#define LIGHTGBM_FEATURE_GROUP_H_
+#ifndef INCLUDE_LIGHTGBM_FEATURE_GROUP_H_
+#define INCLUDE_LIGHTGBM_FEATURE_GROUP_H_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
@@ -629,4 +629,4 @@ class FeatureGroup {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_FEATURE_GROUP_H_
+#endif  // INCLUDE_LIGHTGBM_FEATURE_GROUP_H_

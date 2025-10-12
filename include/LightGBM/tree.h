@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TREE_H_
-#define LIGHTGBM_TREE_H_
+#ifndef INCLUDE_LIGHTGBM_TREE_H_
+#define INCLUDE_LIGHTGBM_TREE_H_
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
@@ -728,4 +728,4 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_TREE_H_
+#endif   // INCLUDE_LIGHTGBM_TREE_H_

@@ -4,8 +4,8 @@
  * license information.
  */
 
-#ifndef LIGHTGBM_CUDA_CUDA_METRIC_HPP_
-#define LIGHTGBM_CUDA_CUDA_METRIC_HPP_
+#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_METRIC_HPP_
+#define INCLUDE_LIGHTGBM_CUDA_CUDA_METRIC_HPP_
 
 #ifdef USE_CUDA
 
@@ -41,4 +41,4 @@ class CUDAMetricInterface: public HOST_METRIC {
 
 #endif  // USE_CUDA
 
-#endif  // LIGHTGBM_CUDA_CUDA_METRIC_HPP_
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_METRIC_HPP_

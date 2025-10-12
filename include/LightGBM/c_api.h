@@ -10,8 +10,8 @@
  * .
  * The reason is that they are called frequently, and the type conversion on them may be time-cost.
  */
-#ifndef LIGHTGBM_C_API_H_
-#define LIGHTGBM_C_API_H_
+#ifndef INCLUDE_LIGHTGBM_C_API_H_
+#define INCLUDE_LIGHTGBM_C_API_H_
 
 #include <LightGBM/arrow.h>
 #include <LightGBM/export.h>
@@ -1663,4 +1663,4 @@ INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
 #endif
 }
 
-#endif  /* LIGHTGBM_C_API_H_ */
+#endif  /* INCLUDE_LIGHTGBM_C_API_H_ */

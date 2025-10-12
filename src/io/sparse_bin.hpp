@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_IO_SPARSE_BIN_HPP_
-#define LIGHTGBM_IO_SPARSE_BIN_HPP_
+#ifndef SRC_IO_SPARSE_BIN_HPP_
+#define SRC_IO_SPARSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/log.h>
@@ -854,4 +854,4 @@ BinIterator* SparseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin,
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_IO_SPARSE_BIN_HPP_
+#endif  // SRC_IO_SPARSE_BIN_HPP_

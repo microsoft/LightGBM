@@ -4,8 +4,8 @@
  *
  * Author: Alberto Ferreira
  */
-#ifndef LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
-#define LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
+#ifndef INCLUDE_LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
+#define INCLUDE_LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
 
 #include <LightGBM/utils/log.h>
 
@@ -257,4 +257,4 @@ class ChunkedArray {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
+#endif  // INCLUDE_LIGHTGBM_UTILS_CHUNKED_ARRAY_HPP_
