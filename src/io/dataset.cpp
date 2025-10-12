@@ -23,9 +23,9 @@ const int Dataset::kSerializedReferenceVersionLength = 2;
 const char* Dataset::serialized_reference_version = "v1";
 
 const char* Dataset::binary_file_token =
-    "______LightGBM_Binary_File_Token______\n";
+  "______LightGBM_Binary_File_Token______\n";
 const char* Dataset::binary_serialized_reference_token =
-    "______LightGBM_Binary_Serialized_Token______\n";
+  "______LightGBM_Binary_Serialized_Token______\n";
 
 Dataset::Dataset() {
   data_filename_ = "noname";
