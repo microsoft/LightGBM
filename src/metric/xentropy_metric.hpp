@@ -355,4 +355,4 @@ class KullbackLeiblerDivergence : public Metric {
 
 }  // end namespace LightGBM
 
-#endif  // end #ifndef SRC_METRIC_XENTROPY_METRIC_HPP_
+#endif  // SRC_METRIC_XENTROPY_METRIC_HPP_

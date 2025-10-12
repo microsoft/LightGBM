@@ -296,4 +296,4 @@ class ArrowTable {
 
 #include "arrow.tpp"
 
-#endif /* INCLUDE_LIGHTGBM_ARROW_H_ */
+#endif  // INCLUDE_LIGHTGBM_ARROW_H_
