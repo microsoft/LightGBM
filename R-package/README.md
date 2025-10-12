@@ -67,13 +67,20 @@ The steps above should work on most systems, but users with highly-customized en
 
 To change the compiler used when installing the CRAN package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler).
 
-For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+For example, to use `gcc-14` instead of `clang` on macOS, you could use something like the following:
 
 ```make
 # ~/.R/Makevars
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
+CC=gcc-14
+CC17=gcc-14
+CXX=g++-14
+CXX17=g++-14
+```
+
+To check the values R is using, run the following:
+
+```shell
+R CMD config --all
 ```
 
 ### Installing from Source with CMake <a id="install"></a>
