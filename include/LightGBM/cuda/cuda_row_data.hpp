@@ -3,10 +3,10 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA
-
 #ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 #define INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+
+#ifdef USE_CUDA
 
 #include <LightGBM/bin.h>
 #include <LightGBM/config.h>
@@ -176,6 +176,6 @@ class CUDARowData {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#endif  // USE_CUDA
 
-#endif  // USE_CUDA  NOLINT(build/header_guard)
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_

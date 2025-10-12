@@ -1071,4 +1071,4 @@ class Dataset {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_DATA_H_
+#endif   // INCLUDE_LIGHTGBM_DATASET_H_

@@ -313,4 +313,4 @@ class CrossEntropyLambda: public ObjectiveFunction {
 
 }  // end namespace LightGBM
 
-#endif   // end #ifndef SRC_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
+#endif  // SRC_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_

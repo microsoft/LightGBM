@@ -5,10 +5,10 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#ifdef USE_CUDA
-
 #ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 #define INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+
+#ifdef USE_CUDA
 
 #include <LightGBM/meta.h>
 
@@ -103,6 +103,6 @@ class CUDASplitInfo {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
-
 #endif  // USE_CUDA
+
+#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
