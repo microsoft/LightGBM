@@ -42,7 +42,8 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int32_t>* groups,
+    std::vector<int32_t>* positions) {
     Random rand(42);
     features->reserve(nrows * ncols);
 
@@ -52,7 +53,7 @@ namespace LightGBM {
       }
     }
 
-    CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
+    CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups, positions);
   }
 
   /*!
@@ -69,7 +70,8 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int32_t>* groups,
+    std::vector<int32_t>* positions) {
     Random rand(42);
     indptr->reserve(static_cast<int32_t>(nrows + 1));
     indices->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
@@ -87,7 +89,7 @@ namespace LightGBM {
       indptr->push_back(static_cast<int32_t>(indices->size() - 1));
     }
 
-    CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
+    CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups, positions);
   }
 
   /*!
@@ -98,7 +100,8 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int32_t>* groups,
+    std::vector<int32_t>* positions) {
     Random rand(42);
     labels->reserve(nrows);
     if (weights) {
@@ -110,8 +113,12 @@ namespace LightGBM {
     if (groups) {
       groups->reserve(nrows);
     }
+    if (positions) {
+      positions->reserve(nrows);
+    }
 
     int32_t group = 0;
+    int32_t position = 0;
 
     for (int32_t row = 0; row < nrows; row++) {
       labels->push_back(rand.NextFloat());
@@ -126,8 +133,13 @@ namespace LightGBM {
       if (groups) {
         if (rand.NextFloat() > 0.95) {
           group++;
+          position = 0;
         }
         groups->push_back(group);
+      }
+      if (positions) {
+        positions->push_back(position);
+        position++;
       }
     }
   }
@@ -141,7 +153,8 @@ namespace LightGBM {
     const std::vector<float>* labels,
     const std::vector<float>* weights,
     const std::vector<double>* init_scores,
-    const std::vector<int32_t>* groups) {
+    const std::vector<int32_t>* groups,
+    const std::vector<int32_t>* positions) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -170,6 +183,11 @@ namespace LightGBM {
       groups_ptr = groups->data();
     }
 
+    const int32_t* positions_ptr = nullptr;
+    if (positions) {
+      positions_ptr = positions->data();
+    }
+
     auto start_time = std::chrono::steady_clock::now();
 
     for (int32_t i = 0; i < nrows; i += batch_count) {
@@ -187,6 +205,7 @@ namespace LightGBM {
                                                 weights_ptr,
                                                 init_scores_ptr,
                                                 groups_ptr,
+                                                positions_ptr,
                                                 0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
       if (result != 0) {
@@ -200,6 +219,9 @@ namespace LightGBM {
       }
       if (groups_ptr) {
         groups_ptr += batch_count;
+      }
+      if (positions_ptr) {
+        positions_ptr += batch_count;
       }
     }
 
@@ -217,7 +239,8 @@ namespace LightGBM {
                                       const std::vector<float>* labels,
                                       const std::vector<float>* weights,
                                       const std::vector<double>* init_scores,
-                                      const std::vector<int32_t>* groups) {
+                                      const std::vector<int32_t>* groups,
+                                      const std::vector<int32_t>* positions) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -238,6 +261,11 @@ namespace LightGBM {
     const int32_t* groups_ptr = nullptr;
     if (groups) {
       groups_ptr = groups->data();
+    }
+
+    const int32_t* positions_ptr = nullptr;
+    if (positions) {
+      positions_ptr = positions->data();
     }
 
     auto start_time = std::chrono::steady_clock::now();
@@ -263,6 +291,7 @@ namespace LightGBM {
                      weights_ptr,
                      init_scores,
                      groups_ptr,
+                     positions_ptr,
                      thread_count,
                      t);
       threads.push_back(std::move(th));
@@ -291,6 +320,7 @@ namespace LightGBM {
                                   const float* weights_ptr,
                                   const std::vector<double>* init_scores,
                                   const int32_t* groups_ptr,
+                                  const int32_t* positions_ptr,
                                   int32_t thread_count,
                                   int32_t thread_id) {
     int32_t threadChunkSize = nrows / thread_count;
@@ -304,6 +334,9 @@ namespace LightGBM {
     }
     if (groups_ptr) {
       groups_ptr += threadChunkSize * thread_id;
+    }
+    if (positions_ptr) {
+      positions_ptr += threadChunkSize * thread_id;
     }
 
     for (int32_t i = startIndex; i < stopIndex; i += batch_count) {
@@ -330,6 +363,7 @@ namespace LightGBM {
                                                          weights_ptr,
                                                          init_scores_ptr,
                                                          groups_ptr,
+                                                         positions_ptr,
                                                          thread_id);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
       if (result != 0) {
@@ -344,6 +378,9 @@ namespace LightGBM {
       if (groups_ptr) {
         groups_ptr += batch_count;
       }
+      if (positions_ptr) {
+        positions_ptr += batch_count;
+      }
     }
   }
 
@@ -352,7 +389,8 @@ namespace LightGBM {
     const std::vector<float>* ref_labels,
     const std::vector<float>* ref_weights,
     const std::vector<double>* ref_init_scores,
-    const std::vector<int32_t>* ref_groups) {
+    const std::vector<int32_t>* ref_groups,
+    const std::vector<int32_t>* ref_positions) {
     const float* labels = metadata->label();
     auto nTotal = static_cast<int32_t>(ref_labels->size());
     for (auto i = 0; i < nTotal; i++) {
@@ -417,6 +455,21 @@ namespace LightGBM {
       }
     } else if (ref_groups) {
       FAIL() << "Expected non-null query_boundaries";
+    }
+
+    const int32_t* positions = metadata->positions();
+    if (positions) {
+      if (!ref_positions) {
+        FAIL() << "Expected null positions";
+      }
+      for (auto i = 0; i < nTotal; i++) {
+        EXPECT_EQ(ref_positions->at(i), positions[i]) << "Inserted data: " << ref_positions->at(i);
+        if (ref_positions->at(i) != positions[i]) {
+          FAIL() << "Mismatched positions";  // This forces an immediate failure, which EXPECT_EQ does not
+        }
+      }
+    } else if (ref_positions) {
+      FAIL() << "Expected non-null positions";
     }
   }
 
