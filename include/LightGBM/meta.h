@@ -83,7 +83,7 @@ const int kAlignedSize = 32;
 
 // Refer to https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4127?view=vs-2019
 #ifdef _MSC_VER
-  #pragma warning(disable : 4127)
+#pragma warning(disable : 4127)
 #endif
 
 }  // namespace LightGBM

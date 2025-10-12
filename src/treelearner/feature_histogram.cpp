@@ -382,7 +382,7 @@ void FeatureHistogram::FindBestThresholdCategoricalInner(double sum_gradient,
 }
 
 template <bool USE_RAND, bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT, bool USE_SMOOTHING, typename PACKED_HIST_BIN_T, typename PACKED_HIST_ACC_T,
-          typename HIST_BIN_T, typename HIST_ACC_T, int HIST_BITS_BIN, int HIST_BITS_ACC>
+  typename HIST_BIN_T, typename HIST_ACC_T, int HIST_BITS_BIN, int HIST_BITS_ACC>
 void FeatureHistogram::FindBestThresholdCategoricalIntInner(int64_t int_sum_gradient_and_hessian,
                                           const double grad_scale, const double hess_scale,
                                           data_size_t num_data,
