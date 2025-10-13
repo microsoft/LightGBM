@@ -75,7 +75,6 @@ repos:
     hooks:
       - id: biome-ci
         args:
-          - --config-path=./biome.json
           - --diagnostic-level=info
           - --error-on-warnings
   - repo: https://github.com/shellcheck-py/shellcheck-py
