@@ -6,7 +6,8 @@
     },
     "formatter": {
         "enabled": true,
-        "useEditorconfig": true
+        "useEditorconfig": true,
+        "lineWidth": 120
     },
     "assist": {
         "enabled": true,
