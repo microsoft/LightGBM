@@ -240,8 +240,9 @@ endif()
 include(FindPackageHandleStandardArgs)
 
 if(WIN32 AND MSVC)
-  # lint_cmake: -package/stdargs
+# lint_cmake: -package/stdargs
   find_package_handle_standard_args(
+    # lint_cmake: -package/stdargs
     LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
