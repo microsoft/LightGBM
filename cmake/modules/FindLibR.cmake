@@ -15,6 +15,8 @@
 #  LIBR_CORE_LIBRARY
 # and a CMake function to create R.lib for MSVC
 
+# lint_cmake: -convention/filename
+
 if(NOT R_ARCH)
   if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
     set(R_ARCH "i386")
@@ -252,7 +254,9 @@ if(WIN32 AND MSVC)
     LIBR_MSVC_CORE_LIBRARY
   )
 else()
+# lint_cmake: -package/stdargs
   find_package_handle_standard_args(
+# lint_cmake: +package/stdargs
     LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
