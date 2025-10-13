@@ -4,6 +4,9 @@
  */
 #include <LightGBM/boosting.h>
 
+#include <memory>
+#include <string>
+
 #include "dart.hpp"
 #include "gbdt.h"
 #include "rf.hpp"

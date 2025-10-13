@@ -8,6 +8,7 @@
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
 #include <cstdint>
+#include <vector>
 
 namespace LightGBM {
 
