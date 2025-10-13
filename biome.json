@@ -1,9 +1,7 @@
 {
-    "overrides": [
-        {
-            "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"]
-        }
-    ],
+    "root": false,
+    "extends": "//",
+    "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"],
     "formatter": {
         "enabled": true,
         "useEditorconfig": true
