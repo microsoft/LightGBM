@@ -71,7 +71,7 @@ repos:
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
   - repo: https://github.com/biomejs/pre-commit
-    rev: v1.9.3
+    rev: v2.2.5
     hooks:
       - id: biome-ci
         args:
