@@ -11,11 +11,17 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <limits>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 

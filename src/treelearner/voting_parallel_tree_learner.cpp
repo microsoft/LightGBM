@@ -4,7 +4,9 @@
  */
 #include <LightGBM/utils/common.h>
 
+#include <algorithm>
 #include <cstring>
+#include <functional>
 #include <tuple>
 #include <vector>
 

@@ -3,14 +3,15 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#include <gtest/gtest.h>
 #include <testutils.h>
 #include <LightGBM/c_api.h>
 #include <LightGBM/utils/random.h>
 
-#include <gtest/gtest.h>
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 using LightGBM::Log;
 using LightGBM::Random;

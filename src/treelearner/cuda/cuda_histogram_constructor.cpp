@@ -9,6 +9,7 @@
 #include "cuda_histogram_constructor.hpp"
 
 #include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 

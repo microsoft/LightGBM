@@ -6,6 +6,9 @@
 
 #include "feature_histogram.hpp"
 
+#include <algorithm>
+#include <vector>
+
 namespace LightGBM {
 
 void FeatureHistogram::FuncForCategorical() {

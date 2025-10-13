@@ -4,6 +4,9 @@
  */
 
 #include <LightGBM/sample_strategy.h>
+
+#include <string>
+
 #include "goss.hpp"
 #include "bagging.hpp"
 

@@ -12,6 +12,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
+#include <vector>
 
 #include "dense_bin.hpp"
 #include "multi_val_dense_bin.hpp"
