@@ -241,7 +241,7 @@ include(FindPackageHandleStandardArgs)
 
 if(WIN32 AND MSVC)
   find_package_handle_standard_args(
-    LibR DEFAULT_MSG  # cmake-lint: disable=C0103
+    LibR DEFAULT_MSG  # cmake-lint: disable=package/stdargs
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
@@ -251,7 +251,7 @@ if(WIN32 AND MSVC)
   )
 else()
   find_package_handle_standard_args(
-    LibR DEFAULT_MSG  # cmake-lint: disable=C0103
+    LibR DEFAULT_MSG  # cmake-lint: disable=package/stdargs
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
