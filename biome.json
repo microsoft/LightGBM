@@ -1,7 +1,9 @@
 {
     "root": false,
     "extends": "//",
-    "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"],
+    "files": {
+        "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"]
+    },
     "formatter": {
         "enabled": true,
         "useEditorconfig": true
