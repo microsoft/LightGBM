@@ -240,8 +240,8 @@ endif()
 include(FindPackageHandleStandardArgs)
 
 if(WIN32 AND MSVC)
-  find_package_handle_standard_args(
-    LibR DEFAULT_MSG  # cmake-lint: disable=W0105
+  find_package_handle_standard_args(  # cmake-lint: disable=C0103
+    LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
@@ -250,8 +250,8 @@ if(WIN32 AND MSVC)
     LIBR_MSVC_CORE_LIBRARY
   )
 else()
-  find_package_handle_standard_args(
-    LibR DEFAULT_MSG  # cmake-lint: disable=W0105
+  find_package_handle_standard_args(  # cmake-lint: disable=C0103
+    LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
