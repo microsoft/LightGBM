@@ -17,3 +17,6 @@ known_first_party = lightgbm
 # Tabs matter for Makefile and .gitmodules
 [{makefile*,Makefile*,*.mk,*.mak,*.makefile,*.Makefile,GNUmakefile,BSDmakefile,make.bat,Makevars*,*.gitmodules}]
 indent_style = tab
+
+[{*.gitkeep,__init__.py}]
+insert_final_newline = none
