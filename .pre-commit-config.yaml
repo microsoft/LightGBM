@@ -78,6 +78,7 @@ repos:
           - --config-path=./biome.json
           - --diagnostic-level=info
           - --error-on-warnings
+        additional_dependencies: ["@biomejs/biome@2.2.5"]
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
