@@ -469,3 +469,10 @@ dask-worker-space/
 
 # pixi environments
 .pixi
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pytest
