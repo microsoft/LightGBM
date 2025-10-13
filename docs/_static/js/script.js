@@ -56,7 +56,7 @@ $(() => {
             });
         }
         /* Initialize artifacts badge */
-        modifyBadge('./_static/images/artifacts-fetching.svg', "#");
+        modifyBadge("./_static/images/artifacts-fetching.svg", "#");
         /* Fetch latest buildId and construct artifacts badge */
         $.getJSON(
             "https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds?branchName=refs/heads/master&resultFilter=succeeded&queryOrder=finishTimeDescending&%24top=1&api-version=7.1-preview.7",
