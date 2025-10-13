@@ -28,7 +28,7 @@ $(() => {
             "#build-c-unit-tests",
         ];
         $.each(collapsible, (_, val) => {
-            const header = `${val} > :header:first`;
+            var header = `${val} > :header:first`;
             const content = `${val} :not(:header:first)`;
             $(header).addClass("closed");
             $(content).hide();
