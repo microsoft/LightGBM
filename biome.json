@@ -1,6 +1,11 @@
 {
     "root": false,
     "extends": "//",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
     "formatter": {
         "enabled": true,
         "useEditorconfig": true,
