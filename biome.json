@@ -1,11 +1,6 @@
 {
     "root": false,
     "extends": "//",
-    "vcs": {
-        "enabled": true,
-        "clientKind": "git",
-        "useIgnoreFile": true
-    },
     "formatter": {
         "enabled": true,
         "useEditorconfig": true,
@@ -20,7 +15,8 @@
     "linter": {
         "enabled": true,
         "rules": {
-            "recommended": true
+            "recommended": true,
+            "style": "warn"
         }
     }
 }
