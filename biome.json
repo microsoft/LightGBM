@@ -17,8 +17,5 @@
     },
     "linter": {
         "enabled": true
-    },
-    "javascript": {
-        "globals": ["$"]
     }
 }
