@@ -6,7 +6,16 @@
         "enabled": true,
         "useEditorconfig": true
     },
+    "assist": {
+        "enabled": true,
+        "actions": {
+            "recommended": true
+        }
+    },
     "linter": {
+        "enabled": true
+    },
+    "sortIncludes": {
         "enabled": true
     },
     "javascript": {
