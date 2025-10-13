@@ -8,6 +8,8 @@
 
 #include "cuda_binary_metric.hpp"
 
+#include <vector>
+
 namespace LightGBM {
 
 CUDABinaryLoglossMetric::CUDABinaryLoglossMetric(const Config& config):

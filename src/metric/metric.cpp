@@ -4,6 +4,8 @@
  */
 #include <LightGBM/metric.h>
 
+#include <string>
+
 #include "binary_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
