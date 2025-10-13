@@ -20,7 +20,6 @@
     - [Code Coverage](#code-coverage)
 * [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
-* [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
 Installation
@@ -68,16 +67,23 @@ The steps above should work on most systems, but users with highly-customized en
 
 To change the compiler used when installing the CRAN package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler).
 
-For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+For example, to use `gcc-14` instead of `clang` on macOS, you could use something like the following:
 
 ```make
 # ~/.R/Makevars
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
+CC=gcc-14
+CC17=gcc-14
+CXX=g++-14
+CXX17=g++-14
 ```
 
-### Installing from Source with CMake <a name="install"></a>
+To check the values R is using, run the following:
+
+```shell
+R CMD config --all
+```
+
+### Installing from Source with CMake <a id="install"></a>
 
 You need to install git and [CMake](https://cmake.org/) first.
 
@@ -92,8 +98,6 @@ Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/R
 After installing `Rtools` and `CMake`, be sure the following paths are added to the environment variable `PATH`. These may have been automatically added when installing other software.
 
 * `Rtools`
-    - If you have `Rtools` 3.x, example:
-        - `C:\Rtools\mingw_64\bin`
     - If you have `Rtools` 4.0, example:
         - `C:\rtools40\mingw64\bin`
         - `C:\rtools40\usr\bin`
@@ -104,7 +108,7 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
-    - example: `C:\Program Files\R\R-3.6.1\bin`
+    - example: `C:\Program Files\R\R-4.5.1\bin`
 
 NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
 
@@ -120,16 +124,6 @@ A "toolchain" refers to the collection of software used to build the library. Th
 
 By default, the package will be built with [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/).
 
-**MinGW (R 3.x)**
-
-If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](https://www.mingw-w64.org/) bundled with `Rtools`.
-
-If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-mingw` to the installation script.
-
-```shell
-Rscript build_r.R --use-mingw
-```
-
 **MSYS2 (R 4.x)**
 
 If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
@@ -138,6 +132,14 @@ If you want to force `LightGBM` to use MSYS2 (for any R version), pass `--use-ms
 
 ```shell
 Rscript build_r.R --use-msys2
+```
+
+**MinGW**
+
+If you want to force `LightGBM` to use [MinGW](https://www.mingw-w64.org/) (for any R version), pass `--use-mingw` to the installation script.
+
+```shell
+Rscript build_r.R --use-mingw
 ```
 
 #### Mac OS Preparation
@@ -219,7 +221,7 @@ These packages do not require compilation, so they will be faster and easier to 
 
 CRAN does not prepare precompiled binaries for Linux, and as of this writing neither does this project.
 
-### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
+### Installing from a Pre-compiled lib_lightgbm <a id="lib_lightgbm"></a>
 
 Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R-package that wraps it.
 

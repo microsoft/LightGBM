@@ -52,6 +52,7 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+          persist-credentials: false
           repository: microsoft/LightGBM
           ref: "refs/pull/${{ inputs.pr-number }}/merge"
       - name: Run tests with valgrind

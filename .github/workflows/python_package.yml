@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # tell scripts where to put artifacts
+  # (this variable name is left over from when jobs ran on Azure DevOps)
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
 
@@ -27,6 +30,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -82,9 +86,6 @@ jobs:
           - os: macos-13
             task: bdist
             python_version: '3.9'
-          - os: macos-13
-            task: if-else
-            python_version: '3.10'
           - os: macos-14
             task: bdist
             method: wheel
@@ -106,6 +107,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         shell: bash
@@ -140,6 +142,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |
@@ -174,6 +177,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Create wheel
         run: |

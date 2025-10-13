@@ -9,7 +9,12 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
 
+#include <algorithm>
 #include <limits>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace LightGBM {
 

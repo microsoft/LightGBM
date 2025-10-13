@@ -28,7 +28,7 @@ repos:
       - id: cpplint
         args:
           - --recursive
-          - --filter=-build/c++11,-build/include_subdir,-build/include_what_you_use,-build/header_guard,-whitespace/indent_namespace,-whitespace/line_length
+          - --filter=-build/include_subdir,-build/header_guard,-whitespace/indent_namespace,-whitespace/line_length
   - repo: local
     hooks:
       - id: check-omp-pragmas
@@ -63,10 +63,10 @@ repos:
           - sphinx_rtd_theme>=3.0.1
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.12.5
+    rev: v0.14.0
     hooks:
       # Run the linter.
-      - id: ruff
+      - id: ruff-check
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
       # Run the formatter.
