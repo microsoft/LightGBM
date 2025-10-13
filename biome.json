@@ -1,5 +1,5 @@
 {
-    "files": {
+    "overrides": {
         "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"]
     },
     "formatter": {
@@ -13,9 +13,6 @@
         }
     },
     "linter": {
-        "enabled": true
-    },
-    "sortIncludes": {
         "enabled": true
     },
     "javascript": {
