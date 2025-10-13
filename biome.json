@@ -1,19 +1,19 @@
 {
     "files": {
-        "includes": ["!.mypy_cache/", "!.pixi/"]
+        "includes": ["**", "!.mypy_cache/", "!.pixi/"]
     },
     "formatter": {
         "enabled": true,
         "useEditorconfig": true
     },
-    "organizeImports": {
-        "enabled": true
+    "assist": {
+        "enabled": true,
+        "actions": {
+            "recommended": true
+        }
     },
     "linter": {
-        "enabled": true,
-        "rules": {
-            "all": true
-        }
+        "enabled": true
     },
     "javascript": {
         "globals": ["$"]
