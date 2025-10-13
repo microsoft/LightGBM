@@ -647,14 +647,16 @@ if(BUILD_CPP_TEST)
   if(NOT GTEST_FOUND)
     message(STATUS "Did not find Google Test in the system root. Fetching Google Test now...")
     include(FetchContent)
-    # lint_cmake: -readability/wonkycase
+# lint_cmake: -readability/wonkycase
     FetchContent_Declare(
-    # lint_cmake: +readability/wonkycase
+# lint_cmake: +readability/wonkycase
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
       GIT_TAG        v1.14.0
     )
+# lint_cmake: -readability/wonkycase
     FetchContent_MakeAvailable(googletest)
+# lint_cmake: +readability/wonkycase
     add_library(GTest::GTest ALIAS gtest)
   endif()
 
