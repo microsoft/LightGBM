@@ -1,4 +1,6 @@
 {
+    "root": false,
+    "extends": "//",
     "overrides": [
         {
             "includes": ["**", "!**/.mypy_cache/", "!**/.pixi/"]
