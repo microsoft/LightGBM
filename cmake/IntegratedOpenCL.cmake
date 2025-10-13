@@ -15,8 +15,8 @@ set(BOOST_TAG "boost-${BOOST_VERSION_DOT}.0")
 include(FetchContent)
 # lint_cmake: -readability/wonkycase
 FetchContent_Declare(OpenCL-Headers GIT_REPOSITORY ${OPENCL_HEADER_REPOSITORY} GIT_TAG ${OPENCL_HEADER_TAG})
-# lint_cmake: +readability/wonkycase
 FetchContent_GetProperties(OpenCL-Headers)
+# lint_cmake: +readability/wonkycase
 if(NOT OpenCL-Headers_POPULATED)
 # lint_cmake: -readability/wonkycase
   FetchContent_MakeAvailable(OpenCL-Headers)
