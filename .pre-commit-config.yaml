@@ -21,7 +21,7 @@ repos:
     rev: '1.4.3'
     hooks:
       - id: cmakelint
-        args: ["--linelength=120", "--filter=-convention/filename,-package/stdargs,-readability/wonkycase"]
+        args: ["--linelength=120"]
   - repo: https://github.com/cpplint/cpplint
     rev: '2.0.2'
     hooks:
