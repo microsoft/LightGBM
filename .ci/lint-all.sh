@@ -19,7 +19,8 @@ conda create -q -y -n test-env \
 # shellcheck disable=SC1091
 source activate test-env
 
-bash ./.ci/run-pre-commit-mypy.sh || exit 1
+echo "Running pre-commit checks"
+bash ./.ci/run-pre-commit.sh || exit 1
 
 echo "Linting R code"
 Rscript ./.ci/lint-r-code.R "$(pwd)" || exit 1
