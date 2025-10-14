@@ -88,3 +88,10 @@ repos:
     hooks:
       - id: validate-pyproject
         files: python-package/pyproject.toml$
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+    - id: mypy
+      verbose: true
+      entry: bash -c 'mypy --config-file=./python-package/pyproject.toml ./python-package "$@" || true' --
+      args: []

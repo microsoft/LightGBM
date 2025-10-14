@@ -10,7 +10,6 @@ conda create -q -y -n test-env \
     "python=3.13[build=*_cp*]" \
     'biome>=1.9.3' \
     'matplotlib-base>=3.9.1' \
-    'mypy>=1.11.1' \
     'pre-commit>=3.8.0' \
     'pyarrow-core>=17.0' \
     'scikit-learn>=1.5.2' \
@@ -20,7 +19,7 @@ conda create -q -y -n test-env \
 source activate test-env
 
 echo "Running pre-commit checks"
-bash ./.ci/run-pre-commit.sh || exit 1
+pre-commit run --all-files || exit 1
 
 echo "Linting R code"
 Rscript ./.ci/lint-r-code.R "$(pwd)" || exit 1
