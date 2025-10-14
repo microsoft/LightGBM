@@ -12,8 +12,7 @@
 namespace LightGBM {
 
 template <typename TREELEARNER_T>
-DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* config)
-  :TREELEARNER_T(config) {
+DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* config):TREELEARNER_T(config) {
 }
 
 template <typename TREELEARNER_T>
