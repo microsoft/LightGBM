@@ -9,10 +9,7 @@ pwsh -file ./.ci/lint-powershell.ps1 || exit 1
 conda create -q -y -n test-env \
     "python=3.13[build=*_cp*]" \
     'biome>=1.9.3' \
-    'matplotlib-base>=3.9.1' \
     'pre-commit>=3.8.0' \
-    'pyarrow-core>=17.0' \
-    'scikit-learn>=1.5.2' \
     'r-lintr>=3.1.2'
 
 # shellcheck disable=SC1091
