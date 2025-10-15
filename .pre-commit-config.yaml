@@ -21,14 +21,14 @@ repos:
     rev: '1.4.3'
     hooks:
       - id: cmakelint
-        args: ["--linelength=120", "--filter=-convention/filename,-package/stdargs,-readability/wonkycase"]
+        args: ["--linelength=120"]
   - repo: https://github.com/cpplint/cpplint
     rev: '2.0.2'
     hooks:
       - id: cpplint
         args:
           - --recursive
-          - --filter=-build/include_subdir,-build/header_guard,-whitespace/indent_namespace,-whitespace/line_length
+          - --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length
   - repo: local
     hooks:
       - id: check-omp-pragmas
