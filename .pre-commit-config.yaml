@@ -93,7 +93,7 @@ repos:
     hooks:
       - id: mypy
         verbose: true
-        entry: bash -c 'mypy --config-file=./python-package/pyproject.toml ./python-package || true' --
+        entry: bash -c 'mypy --config-file=./python-package/pyproject.toml ./python-package || true'
         additional_dependencies:
           - matplotlib>=3.9.1
           - pyarrow>=17.0
