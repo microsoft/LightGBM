@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+#include <algorithm>
 #include <cstring>
 #include <tuple>
 #include <vector>
@@ -11,8 +12,7 @@
 namespace LightGBM {
 
 template <typename TREELEARNER_T>
-DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* config)
-  :TREELEARNER_T(config) {
+DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* config):TREELEARNER_T(config) {
 }
 
 template <typename TREELEARNER_T>

@@ -4,6 +4,8 @@
  */
 #include <LightGBM/tree_learner.h>
 
+#include <string>
+
 #include "gpu_tree_learner.h"
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"

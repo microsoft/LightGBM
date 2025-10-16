@@ -7,6 +7,8 @@
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 
+#include <vector>
+
 namespace LightGBM {
 
 CUDARowData::CUDARowData(const Dataset* train_data,

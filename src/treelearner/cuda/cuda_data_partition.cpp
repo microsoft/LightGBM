@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "cuda_data_partition.hpp"
 

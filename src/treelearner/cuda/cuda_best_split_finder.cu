@@ -13,6 +13,7 @@
 #include <LightGBM/cuda/cuda_rocm_interop.h>
 
 #include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 

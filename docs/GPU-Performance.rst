@@ -200,7 +200,7 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 
 .. _link3: https://www.kaggle.com/c/bosch-production-line-performance/data
 
-.. _link4: https://webscope.sandbox.yahoo.com/catalog.php?datatype=c
+.. _link4: https://proceedings.mlr.press/v14/chapelle11a.html
 
 .. _link5: https://www.microsoft.com/en-us/research/project/mslr/
 

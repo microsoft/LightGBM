@@ -8,8 +8,11 @@
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 
+#include <algorithm>
 #include <string>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "gbdt.h"

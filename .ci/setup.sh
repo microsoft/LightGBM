@@ -153,7 +153,7 @@ if [[ "${TASK}" != "cpp-tests" ]] && [[ "${TASK}" != "r-package" ]]; then
         sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
-    conda update -q -y conda conda-libmamba-solver
+    conda update -q -y conda
 
     # print output of 'conda info', to help in submitting bug reports
     echo "conda info:"

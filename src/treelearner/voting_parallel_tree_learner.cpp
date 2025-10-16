@@ -4,7 +4,9 @@
  */
 #include <LightGBM/utils/common.h>
 
+#include <algorithm>
 #include <cstring>
+#include <functional>
 #include <tuple>
 #include <vector>
 
@@ -13,8 +15,7 @@
 namespace LightGBM {
 
 template <typename TREELEARNER_T>
-VotingParallelTreeLearner<TREELEARNER_T>::VotingParallelTreeLearner(const Config* config)
-  :TREELEARNER_T(config) {
+VotingParallelTreeLearner<TREELEARNER_T>::VotingParallelTreeLearner(const Config* config):TREELEARNER_T(config) {
   top_k_ = this->config_->top_k;
 }
 

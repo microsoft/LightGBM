@@ -16,6 +16,9 @@ $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
+# create the artifact upload directory if it doesn't exist yet
+[Void][System.IO.Directory]::CreateDirectory($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
+
 if ($env:TASK -eq "r-package") {
     & .\.ci\test-r-package-windows.ps1 ; Assert-Output $?
     exit 0
@@ -56,7 +59,7 @@ if ($env:TASK -eq "swig") {
         Assert-Output $False
     }
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
-    if ($env:AZURE -eq "true") {
+    if ($env:PRODUCES_ARTIFACTS -eq "true") {
         cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Assert-Output $?
     }
     exit 0
@@ -66,7 +69,7 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda conda-libmamba-solver "python=$env:PYTHON_VERSION[build=*_cp*]"
+conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"

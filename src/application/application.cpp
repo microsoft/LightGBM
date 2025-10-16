@@ -16,13 +16,16 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <string>
 #include <chrono>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "predictor.hpp"
 

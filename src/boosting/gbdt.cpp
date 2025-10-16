@@ -12,10 +12,16 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/sample_strategy.h>
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <memory>
 #include <queue>
 #include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 

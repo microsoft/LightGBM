@@ -5,6 +5,8 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 
+#include <string>
+
 #include "binary_objective.hpp"
 #include "multiclass_objective.hpp"
 #include "rank_objective.hpp"

@@ -20,13 +20,16 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
 
-#include <string>
-#include <cstdio>
+#include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "application/predictor.hpp"
