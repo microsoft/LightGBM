@@ -88,3 +88,13 @@ repos:
     hooks:
       - id: validate-pyproject
         files: python-package/pyproject.toml$
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        verbose: true
+        entry: bash -c 'mypy --config-file=./python-package/pyproject.toml ./python-package || true'
+        additional_dependencies:
+          - matplotlib>=3.9.1
+          - pyarrow>=17.0
+          - scikit-learn>=1.5.2
