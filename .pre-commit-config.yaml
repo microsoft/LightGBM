@@ -27,6 +27,7 @@ repos:
     hooks:
       - id: cpplint
         args:
+          - --root=..  # workaround to get correct header guard pattern
           - --recursive
           - --filter=-build/include_subdir,-whitespace/line_length
   - repo: local
