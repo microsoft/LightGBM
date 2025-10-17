@@ -2,8 +2,8 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef SRC_METRIC_XENTROPY_METRIC_HPP_
-#define SRC_METRIC_XENTROPY_METRIC_HPP_
+#ifndef LIGHTGBM_SRC_METRIC_XENTROPY_METRIC_HPP_
+#define LIGHTGBM_SRC_METRIC_XENTROPY_METRIC_HPP_
 
 #include <LightGBM/meta.h>
 #include <LightGBM/metric.h>
@@ -355,4 +355,4 @@ class KullbackLeiblerDivergence : public Metric {
 
 }  // end namespace LightGBM
 
-#endif  // SRC_METRIC_XENTROPY_METRIC_HPP_
+#endif  // LIGHTGBM_SRC_METRIC_XENTROPY_METRIC_HPP_

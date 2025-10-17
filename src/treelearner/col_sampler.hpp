@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef SRC_TREELEARNER_COL_SAMPLER_HPP_
-#define SRC_TREELEARNER_COL_SAMPLER_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_COL_SAMPLER_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_COL_SAMPLER_HPP_
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
@@ -204,4 +204,4 @@ class ColSampler {
 };
 
 }  // namespace LightGBM
-#endif  // SRC_TREELEARNER_COL_SAMPLER_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_COL_SAMPLER_HPP_

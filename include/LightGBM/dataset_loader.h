@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef INCLUDE_LIGHTGBM_DATASET_LOADER_H_
-#define INCLUDE_LIGHTGBM_DATASET_LOADER_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_LOADER_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_LOADER_H_
 
 #include <LightGBM/dataset.h>
 
@@ -107,4 +107,4 @@ class DatasetLoader {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_DATASET_LOADER_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_LOADER_H_

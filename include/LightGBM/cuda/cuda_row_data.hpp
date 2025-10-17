@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
-#define INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
 #ifdef USE_CUDA
 
@@ -178,4 +178,4 @@ class CUDARowData {
 
 #endif  // USE_CUDA
 
-#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_

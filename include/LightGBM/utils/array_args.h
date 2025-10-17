@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_
-#define INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_
 
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
@@ -205,4 +205,4 @@ class ArrayArgs {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_ARRAY_ARGS_H_

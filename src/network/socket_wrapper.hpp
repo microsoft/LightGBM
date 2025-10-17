@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef SRC_NETWORK_SOCKET_WRAPPER_HPP_
-#define SRC_NETWORK_SOCKET_WRAPPER_HPP_
+#ifndef LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_
+#define LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
 #include <LightGBM/utils/log.h>
@@ -319,4 +319,4 @@ class TcpSocket {
 
 }  // namespace LightGBM
 #endif  // USE_SOCKET
-#endif   // SRC_NETWORK_SOCKET_WRAPPER_HPP_
+#endif   // LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_

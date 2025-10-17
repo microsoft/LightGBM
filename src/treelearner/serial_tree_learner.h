@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_
-#define SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#ifndef LIGHTGBM_SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#define LIGHTGBM_SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
@@ -247,4 +247,4 @@ inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) con
 }
 
 }  // namespace LightGBM
-#endif   // SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#endif   // LIGHTGBM_SRC_TREELEARNER_SERIAL_TREE_LEARNER_H_

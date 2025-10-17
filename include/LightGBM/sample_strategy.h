@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_
-#define INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_
 
 #include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/utils/random.h>
@@ -84,4 +84,4 @@ class SampleStrategy {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_SAMPLE_STRATEGY_H_

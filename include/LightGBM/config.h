@@ -13,8 +13,8 @@
  *           - param is only used by the CLI (especially the "predict" and "convert_model" tasks)
  *           - param is related to LightGBM writing files (e.g. "output_model", "save_binary")
  */
-#ifndef INCLUDE_LIGHTGBM_CONFIG_H_
-#define INCLUDE_LIGHTGBM_CONFIG_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_
 
 #include <LightGBM/export.h>
 #include <LightGBM/meta.h>
@@ -1320,4 +1320,4 @@ inline std::string ParseMetricAlias(const std::string& type) {
 
 }   // namespace LightGBM
 
-#endif   // INCLUDE_LIGHTGBM_CONFIG_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_

@@ -4,8 +4,8 @@
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#ifndef INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
-#define INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
 
 #ifdef USE_CUDA
 
@@ -620,4 +620,4 @@ __device__ VAL_T PercentileDevice(const VAL_T* values,
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_

@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
-#define SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
 
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
@@ -171,4 +171,4 @@ class CostEfficientGradientBoosting {
 
 }  // namespace LightGBM
 
-#endif  // SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_

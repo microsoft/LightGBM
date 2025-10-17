@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
-#define SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
 
 #ifdef USE_CUDA
 
@@ -176,4 +176,4 @@ class CUDALeafSplits {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_

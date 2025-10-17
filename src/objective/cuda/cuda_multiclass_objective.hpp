@@ -2,8 +2,8 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
-#define SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
+#define LIGHTGBM_SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
 
 #ifdef USE_CUDA
 
@@ -75,4 +75,4 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface<MulticlassOVA> {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_SRC_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_

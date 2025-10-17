@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef INCLUDE_LIGHTGBM_UTILS_THREADING_H_
-#define INCLUDE_LIGHTGBM_UTILS_THREADING_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_THREADING_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_THREADING_H_
 
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
@@ -197,4 +197,4 @@ class ParallelPartitionRunner {
 
 }  // namespace LightGBM
 
-#endif  // INCLUDE_LIGHTGBM_UTILS_THREADING_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_THREADING_H_

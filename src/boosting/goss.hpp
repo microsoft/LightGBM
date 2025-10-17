@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef SRC_BOOSTING_GOSS_HPP_
-#define SRC_BOOSTING_GOSS_HPP_
+#ifndef LIGHTGBM_SRC_BOOSTING_GOSS_HPP_
+#define LIGHTGBM_SRC_BOOSTING_GOSS_HPP_
 
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/sample_strategy.h>
@@ -169,4 +169,4 @@ class GOSSStrategy : public SampleStrategy {
 
 }  // namespace LightGBM
 
-#endif  // SRC_BOOSTING_GOSS_HPP_
+#endif  // LIGHTGBM_SRC_BOOSTING_GOSS_HPP_

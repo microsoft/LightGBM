@@ -2,8 +2,8 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_
-#define INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_
 
 #include <LightGBM/export.h>
 
@@ -132,4 +132,4 @@ class ThreadExceptionHelper {
 
 #endif
 
-#endif  // INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_OPENMP_WRAPPER_H_

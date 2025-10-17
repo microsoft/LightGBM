@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_
-#define INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_
 
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
@@ -123,4 +123,4 @@ class ObjectiveFunction {
 
 }  // namespace LightGBM
 
-#endif   // INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_OBJECTIVE_FUNCTION_H_

@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef SRC_BOOSTING_DART_HPP_
-#define SRC_BOOSTING_DART_HPP_
+#ifndef LIGHTGBM_SRC_BOOSTING_DART_HPP_
+#define LIGHTGBM_SRC_BOOSTING_DART_HPP_
 
 #include <LightGBM/boosting.h>
 
@@ -208,4 +208,4 @@ class DART: public GBDT {
 };
 
 }  // namespace LightGBM
-#endif  // SRC_BOOSTING_DART_HPP_
+#endif  // LIGHTGBM_SRC_BOOSTING_DART_HPP_
