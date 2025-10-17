@@ -21,14 +21,14 @@ repos:
     rev: '1.4.3'
     hooks:
       - id: cmakelint
-        args: ["--linelength=120", "--filter=-convention/filename,-package/stdargs,-readability/wonkycase"]
+        args: ["--linelength=120"]
   - repo: https://github.com/cpplint/cpplint
     rev: '2.0.2'
     hooks:
       - id: cpplint
         args:
           - --recursive
-          - --filter=-build/include_subdir,-whitespace/indent_namespace,-whitespace/line_length
+          - --filter=-build/include_subdir,-whitespace/line_length
   - repo: local
     hooks:
       - id: check-omp-pragmas
@@ -88,3 +88,13 @@ repos:
     hooks:
       - id: validate-pyproject
         files: python-package/pyproject.toml$
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        verbose: true
+        entry: bash -c 'mypy --config-file=./python-package/pyproject.toml ./python-package || true'
+        additional_dependencies:
+          - matplotlib>=3.9.1
+          - pyarrow>=17.0
+          - scikit-learn>=1.5.2
