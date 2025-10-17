@@ -27,8 +27,9 @@ repos:
     hooks:
       - id: cpplint
         args:
+          - --root=..  # workaround to get correct header guard pattern
           - --recursive
-          - --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length
+          - --filter=-build/include_subdir,-whitespace/line_length
   - repo: local
     hooks:
       - id: check-omp-pragmas

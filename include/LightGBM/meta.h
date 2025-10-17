@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_META_H_
-#define LIGHTGBM_META_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_META_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_META_H_
 
 #include <cstdint>
 #include <functional>
@@ -88,4 +88,4 @@ const int kAlignedSize = 32;
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_META_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_META_H_
