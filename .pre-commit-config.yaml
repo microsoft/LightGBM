@@ -63,17 +63,22 @@ repos:
           - sphinx>=8.1.3
           - sphinx_rtd_theme>=3.0.1
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
     rev: v0.14.0
     hooks:
-      # Run the linter.
       - id: ruff-check
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
-      # Run the formatter.
       - id: ruff-format
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.2.5
+    hooks:
+      - id: biome-ci
+        args:
+          - --config-path=./biome.json
+          - --diagnostic-level=info
+          - --error-on-warnings
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
