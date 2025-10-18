@@ -6,8 +6,11 @@
 
 #include <LightGBM/utils/common.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <vector>
 
 #include "linkers.h"
 

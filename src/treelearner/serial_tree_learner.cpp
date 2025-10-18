@@ -10,10 +10,13 @@
 #include <LightGBM/utils/common.h>
 
 #include <algorithm>
+#include <memory>
 #include <queue>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "cost_effective_gradient_boosting.hpp"
 

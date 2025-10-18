@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREE_LEARNER_GRADIENT_DISCRETIZER_HPP_
-#define LIGHTGBM_TREE_LEARNER_GRADIENT_DISCRETIZER_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_GRADIENT_DISCRETIZER_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_GRADIENT_DISCRETIZER_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
@@ -125,4 +125,4 @@ class GradientDiscretizer {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_TREE_LEARNER_GRADIENT_DISCRETIZER_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_GRADIENT_DISCRETIZER_HPP_

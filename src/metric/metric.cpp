@@ -4,6 +4,8 @@
  */
 #include <LightGBM/metric.h>
 
+#include <string>
+
 #include "binary_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
@@ -76,6 +78,9 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAGammaDevianceMetric(config);
     } else if (type == std::string("tweedie")) {
       return new CUDATweedieMetric(config);
+    } else if (type == std::string("r2")) {
+      Log::Warning("Metric r2 is not implemented in cuda version. Fall back to evaluation on CPU.");
+      return new R2Metric(config);
     }
   } else {
   #endif  // USE_CUDA
@@ -125,6 +130,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new GammaDevianceMetric(config);
     } else if (type == std::string("tweedie")) {
       return new TweedieMetric(config);
+    } else if (type == std::string("r2")) {
+      return new R2Metric(config);
     }
   #ifdef USE_CUDA
   }

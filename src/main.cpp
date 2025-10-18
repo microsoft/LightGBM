@@ -5,6 +5,7 @@
 #include <LightGBM/application.h>
 
 #include <iostream>
+#include <string>
 
 #ifdef USE_MPI
   #include "network/linkers.h"
