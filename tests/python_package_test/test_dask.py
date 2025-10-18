@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score, r2_score
 
 import lightgbm as lgb
 
-from .utils import sklearn_multiclass_custom_objective
+from .utils import np_assert_array_equal, sklearn_multiclass_custom_objective
 
 if platform in {"cygwin", "win32"}:
     pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
@@ -370,7 +370,7 @@ def test_classifier_pred_contrib(output, task, cluster):
                 # raw scores will probably be different, but at least check that all predicted classes are the same
                 pred_classes = np.argmax(computed_preds.toarray(), axis=1)
                 local_pred_classes = np.argmax(local_preds_with_contrib[i].toarray(), axis=1)
-                np.testing.assert_array_equal(pred_classes, local_pred_classes)
+                np_assert_array_equal(pred_classes, local_pred_classes, strict=True)
             return
 
         preds_with_contrib = preds_with_contrib.compute()
