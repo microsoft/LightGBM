@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_COMMON_H_
-#define LIGHTGBM_UTILS_COMMON_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_COMMON_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_COMMON_H_
 
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
@@ -1272,4 +1272,4 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_UTILS_COMMON_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_COMMON_H_

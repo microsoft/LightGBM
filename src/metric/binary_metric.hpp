@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_METRIC_BINARY_METRIC_HPP_
-#define LIGHTGBM_METRIC_BINARY_METRIC_HPP_
+#ifndef LIGHTGBM_SRC_METRIC_BINARY_METRIC_HPP_
+#define LIGHTGBM_SRC_METRIC_BINARY_METRIC_HPP_
 
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
@@ -385,4 +385,4 @@ class AveragePrecisionMetric: public Metric {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_METRIC_BINARY_METRIC_HPP_
+#endif   // LIGHTGBM_SRC_METRIC_BINARY_METRIC_HPP_
