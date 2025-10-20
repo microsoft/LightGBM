@@ -6,7 +6,7 @@ on:
       pr-branch:
         type: string
         description: |
-          branch the PR was submitted from.
+          Branch the PR was submitted from.
           Branches from forks should be prefixed with the user/org they originate from,
           like '{user}:{branch}'.
       pr-number:

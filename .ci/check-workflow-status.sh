@@ -15,7 +15,7 @@
 #
 # BRANCH: name of a branch involved in a pull request.
 #
-# WORKFLOW_FILE: filename (e.g. 'r_valgrind.yml') defining the GitHub Actions workflow
+# WORKFLOW_FILE: filename (e.g. 'r_valgrind.yml') defining the GitHub Actions workflow.
 #
 
 set -e -u -o pipefail
@@ -27,7 +27,7 @@ echo "Searching for latest run of '${WORKFLOW_FILE}' on branch '${BRANCH}'"
 
 LATEST_RUN_ID=$(
     gh run list  \
-        --repo "microsoft/LightGBM"   \
+        --repo "microsoft/LightGBM" \
         --branch "${BRANCH}" \
         --workflow "${WORKFLOW_FILE}" \
         --json 'createdAt,databaseId' \
