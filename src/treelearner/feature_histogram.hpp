@@ -283,7 +283,7 @@ class FeatureHistogram {
 
       if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
         if (meta_->missing_type == MissingType::Zero) {
-          int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+          int_find_best_threshold_fun_ = [=, this](LAMBDA_ARGUMENTS_INT) {
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -309,7 +309,7 @@ class FeatureHistogram {
             }
           };
         } else {
-          int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+          int_find_best_threshold_fun_ = [=, this](LAMBDA_ARGUMENTS_INT) {
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -337,7 +337,7 @@ class FeatureHistogram {
         }
       } else {
         if (meta_->missing_type != MissingType::NaN) {
-          int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+          int_find_best_threshold_fun_ = [=, this](LAMBDA_ARGUMENTS_INT) {
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -357,7 +357,7 @@ class FeatureHistogram {
             }
           };
         } else {
-          int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+          int_find_best_threshold_fun_ = [=, this](LAMBDA_ARGUMENTS_INT) {
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
