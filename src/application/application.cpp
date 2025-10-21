@@ -188,7 +188,7 @@ void Application::InitTrain() {
   // create boosting
   boosting_.reset(
     Boosting::CreateBoosting(config_.boosting,
-                             config_.input_model.c_str()));
+                             config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   // create objective function
   objective_fun_.reset(
     ObjectiveFunction::CreateObjectiveFunction(config_.objective,
@@ -281,13 +281,13 @@ void Application::Predict() {
 
 void Application::InitPredict() {
   boosting_.reset(
-    Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
+    Boosting::CreateBoosting("gbdt", config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   Log::Info("Finished initializing prediction, total used %d iterations", boosting_->GetCurrentIteration());
 }
 
 void Application::ConvertModel() {
   boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
+    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
 }
 
