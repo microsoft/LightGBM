@@ -69,13 +69,13 @@ def test_basic(tmp_path):
     assert bst.feature_name() == feature_names
     pred_from_model_file = bst.predict(X_test)
     # we need to check the consistency of model file here, so test for exact equal
-    np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
+    np_assert_array_equal(pred_from_matr, pred_from_model_file, strict=True)
 
     # check early stopping is working. Make it stop very early, so the scores should be very close to zero
     pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
     pred_early_stopping = bst.predict(X_test, **pred_parameter)
     # scores likely to be different, but prediction should still be the same
-    np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
+    np_assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping), strict=True)
 
     # test that shape is checked during prediction
     bad_X_test = X_test[:, 1:]
@@ -213,7 +213,7 @@ def test_sequence_get_data(num_seq, rng):
 
     used_indices = rng.choice(a=np.arange(nrow), size=nrow // 3, replace=False)
     subset_data = seq_ds.subset(used_indices).construct()
-    np.testing.assert_array_equal(subset_data.get_data(), X[sorted(used_indices)])
+    np_assert_array_equal(subset_data.get_data(), X[sorted(used_indices)], strict=True)
 
 
 def test_chunked_dataset():
@@ -1019,14 +1019,39 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-def test_set_field_none_removes_field(rng):
-    X1 = rng.uniform(size=(10, 1))
-    d1 = lgb.Dataset(X1).construct()
-    weight = rng.uniform(size=10)
-    out = d1.set_field("weight", weight)
-    assert out is d1
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "group",
+        "init_score",
+        pytest.param(
+            "position",
+            marks=pytest.mark.skipif(
+                getenv("TASK", "") == "cuda",
+                reason="Positions in learning to rank is not supported in CUDA version yet",
+            ),
+        ),
+        "weight",
+    ],
+)
+def test_set_field_none_removes_field(rng, field_name):
+    X = rng.uniform(size=(10, 1))
+    d = lgb.Dataset(X).construct()
 
-    np.testing.assert_allclose(d1.get_field("weight"), weight)
+    if field_name == "group":
+        field = [5, 5]
+        expected = np.array([0, 5, 10], dtype=np.int32)
+    elif field_name == "position":
+        field = [100, 20, 100, 10, 30, 10, 30, 10, 30, 30]
+        expected = np.array([0, 1, 0, 2, 3, 2, 3, 2, 3, 3], dtype=np.int32)
+    else:
+        field = rng.uniform(size=10)
+        expected = field.astype(np.float64 if field_name == "init_score" else np.float32)
 
-    d1.set_field("weight", None)
-    assert d1.get_field("weight") is None
+    out = d.set_field(field_name, field)
+    assert out is d
+
+    np_assert_array_equal(d.get_field(field_name), expected, strict=True)
+
+    d.set_field(field_name, None)
+    assert d.get_field(field_name) is None
