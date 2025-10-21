@@ -1,21 +1,28 @@
 {
-    "files": {
-        "ignore": [".mypy_cache/", ".pixi/"]
+    "root": false,
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
     },
     "formatter": {
         "enabled": true,
-        "useEditorconfig": true
+        "useEditorconfig": true,
+        "lineWidth": 120
     },
-    "organizeImports": {
-        "enabled": true
+    "assist": {
+        "enabled": true,
+        "actions": {
+            "recommended": true
+        }
     },
     "linter": {
         "enabled": true,
+        "domains": {
+            "project": "all"
+        },
         "rules": {
-            "all": true
+            "recommended": true
         }
-    },
-    "javascript": {
-        "globals": ["$"]
     }
 }

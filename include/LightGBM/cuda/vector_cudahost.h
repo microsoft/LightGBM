@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
-#ifndef LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
-#define LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 
 #include <LightGBM/utils/common.h>
 
@@ -94,4 +94,4 @@ bool operator!=(const CHAllocator<T>&, const CHAllocator<U>&);
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_

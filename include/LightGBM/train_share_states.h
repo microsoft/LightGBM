@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TRAIN_SHARE_STATES_H_
-#define LIGHTGBM_TRAIN_SHARE_STATES_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_TRAIN_SHARE_STATES_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_TRAIN_SHARE_STATES_H_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/feature_group.h>
@@ -363,4 +363,4 @@ struct TrainingShareStates {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_TRAIN_SHARE_STATES_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_TRAIN_SHARE_STATES_H_

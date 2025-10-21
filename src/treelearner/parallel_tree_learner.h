@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
-#define LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#ifndef LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#define LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
@@ -232,4 +232,4 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
 }
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#endif   // LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_

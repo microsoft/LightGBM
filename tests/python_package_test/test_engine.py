@@ -16,7 +16,14 @@ import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_blobs, make_classification, make_multilabel_classification
-from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    log_loss,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
@@ -4047,6 +4054,29 @@ def test_average_precision_metric():
     lgb_X = lgb.Dataset(X, label=y)
     lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], callbacks=[lgb.record_evaluation(res)])
     assert res["training"]["average_precision"][-1] == pytest.approx(1)
+
+
+def test_r2_metric():
+    # test against sklearn R2 metric
+    X, y = make_synthetic_regression()
+    params = {"objective": "regression", "metric": "r2", "verbose": -1}
+    res = {}
+    train_data = lgb.Dataset(X, label=y)
+    est = lgb.train(
+        params, train_data, num_boost_round=1, valid_sets=[train_data], callbacks=[lgb.record_evaluation(res)]
+    )
+    r2 = res["training"]["r2"][-1]
+    pred = est.predict(X)
+    sklearn_r2 = r2_score(y, pred)
+    assert r2 == pytest.approx(sklearn_r2)
+    assert r2 != 0
+    assert r2 != 1
+    # test that R2 is 1 when y has no variance and the model predicts perfectly
+    y = y.copy()
+    y[:] = 1
+    lgb_X = lgb.Dataset(X, label=y)
+    lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], callbacks=[lgb.record_evaluation(res)])
+    assert res["training"]["r2"][-1] == pytest.approx(1)
 
 
 def test_reset_params_works_with_metric_num_class_and_boosting():

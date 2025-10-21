@@ -1,8 +1,9 @@
 /*!
  * Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
-#ifndef LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
-#define LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
+
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
 
 #ifdef USE_CUDA
 
@@ -61,8 +62,8 @@ static inline constexpr int WARP_SIZE_INTERNAL() {
 #else  // __HIP_PLATFORM_AMD__
 // CUDA warpSize is not a constexpr, but always 32
 #define WARPSIZE 32
-#endif
+#endif  // defined(__HIP_PLATFORM_AMD__) || defined(__HIP__)
 
 #endif  // USE_CUDA
 
-#endif  // LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_ROCM_INTEROP_H_
