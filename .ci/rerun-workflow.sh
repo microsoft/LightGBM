@@ -31,7 +31,7 @@ pr_branch=$3
 runs=$(
   curl -sL \
     -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token $SECRETS_WORKFLOW" \
+    -H "Authorization: token ${GITHUB_TOKEN}" \
     "${GITHUB_API_URL}/repos/microsoft/LightGBM/actions/workflows/${workflow_id}/runs?event=pull_request&branch=${pr_branch}" | \
   jq '.workflow_runs'
 )
@@ -42,6 +42,6 @@ if [[ $(echo "${runs}" | jq 'length') -gt 0 ]]; then
   curl -sL \
     -X POST \
     -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token $SECRETS_WORKFLOW" \
+    -H "Authorization: token ${GITHUB_TOKEN}" \
     "${GITHUB_API_URL}/repos/microsoft/LightGBM/actions/runs/$(echo "${runs}" | jq '.[0].id')/rerun"
 fi
