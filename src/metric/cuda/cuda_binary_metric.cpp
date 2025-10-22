@@ -15,6 +15,8 @@ namespace LightGBM {
 CUDABinaryLoglossMetric::CUDABinaryLoglossMetric(
   const Config& config):CUDABinaryMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric>(config) {}
 
+CUDABinaryErrorMetric::CUDABinaryErrorMetric(const Config& config):CUDABinaryMetricInterface<BinaryErrorMetric, CUDABinaryErrorMetric>(config) {}
+
 template <typename HOST_METRIC, typename CUDA_METRIC>
 std::vector<double> CUDABinaryMetricInterface<HOST_METRIC, CUDA_METRIC>::Eval(const double* score, const ObjectiveFunction* objective) const {
   const double* score_convert = score;

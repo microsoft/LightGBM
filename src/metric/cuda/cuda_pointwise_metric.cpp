@@ -33,6 +33,7 @@ template void CUDAPointwiseMetricInterface<RMSEMetric, CUDARMSEMetric>::Init(con
 template void CUDAPointwiseMetricInterface<L2Metric, CUDAL2Metric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<QuantileMetric, CUDAQuantileMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<BinaryErrorMetric, CUDABinaryErrorMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<L1Metric, CUDAL1Metric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<HuberLossMetric, CUDAHuberLossMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<FairLossMetric, CUDAFairLossMetric>::Init(const Metadata& metadata, data_size_t num_data);
