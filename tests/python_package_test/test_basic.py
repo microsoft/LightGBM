@@ -1,4 +1,5 @@
 # coding: utf-8
+import ctypes
 import filecmp
 import numbers
 import re
@@ -13,6 +14,7 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
+from lightgbm.basic import _cint64_array_to_numpy
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
@@ -1030,3 +1032,31 @@ def test_set_field_none_removes_field(rng):
 
     d1.set_field("weight", None)
     assert d1.get_field("weight") is None
+
+
+def test_cint64_array_to_numpy_valid():
+    # valid conversion
+    original_values = [-42, 0, 3, 4, 5]
+    c_array = (ctypes.c_int64 * len(original_values))(*original_values)
+    cptr = ctypes.cast(c_array, ctypes.POINTER(ctypes.c_int64))
+    result = _cint64_array_to_numpy(cptr=cptr, length=len(original_values))
+    expected = np.array(original_values, dtype=np.int64)
+    np.testing.assert_array_equal(result, expected)
+
+    # different length
+    result = _cint64_array_to_numpy(cptr=cptr, length=len(original_values) - 1)
+    expected = np.array(original_values[:-1], dtype=np.int64)
+    np.testing.assert_array_equal(result, expected)
+
+    # empty array
+    c_array = (ctypes.c_int64 * 0)()
+    cptr = ctypes.cast(c_array, ctypes.POINTER(ctypes.c_int64))
+    result = _cint64_array_to_numpy(cptr=cptr, length=0)
+    expected = np.array([], dtype=np.int64)
+    np.testing.assert_array_equal(result, expected)
+
+    # invalid int type conversion
+    c_array = (ctypes.c_int32 * len(original_values))(*original_values)
+    cptr = ctypes.cast(c_array, ctypes.POINTER(ctypes.c_int32))
+    with pytest.raises(RuntimeError, match="Expected int64 pointer"):
+        _cint64_array_to_numpy(cptr=cptr, length=len(original_values))
