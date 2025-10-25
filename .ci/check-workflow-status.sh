@@ -28,6 +28,7 @@ echo "Searching for latest run of '${WORKFLOW_FILE}' on branch '${BRANCH}'"
 LATEST_RUN_ID=$(
     gh run list  \
         --repo "microsoft/LightGBM" \
+        --event workflow_dispatch \
         --branch "${BRANCH}" \
         --workflow "${WORKFLOW_FILE}" \
         --json 'createdAt,databaseId' \
@@ -36,7 +37,8 @@ LATEST_RUN_ID=$(
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
     echo "No runs of '${WORKFLOW_FILE}' found on branch '${BRANCH}'"
-    exit 0
+    echo "Checking for recent runs from forks"
+
 fi
 
 echo "Checking status of workflow run '${LATEST_RUN_ID}'"
