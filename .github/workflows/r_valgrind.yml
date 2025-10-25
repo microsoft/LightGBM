@@ -1,5 +1,13 @@
 name: R valgrind tests
 
+# 'run-name' is used here to distinguish in the API between different runs from forks.
+#
+# When this was added, it was the only way to feed workflow inputs into something that
+# would show up in the output of 'gh run list'.
+#
+# See https://github.com/orgs/community/discussions/73223#discussioncomment-11862624
+run-name: R valgrind test (pr-branch=${{ inputs.pr-branch }}, pr-number=${{ inputs.pr-number }})
+
 on:
   workflow_dispatch:
     inputs:
