@@ -14,34 +14,43 @@
 
 set -e -E -u -o pipefail
 
-if [ -z "$GITHUB_ACTIONS" ]; then
-  echo "Must be run inside GitHub Actions CI"
-  exit 1
-fi
+# if [ -z "$GITHUB_ACTIONS" ]; then
+#   echo "Must be run inside GitHub Actions CI"
+#   exit 1
+# fi
 
-if [ $# -ne 3 ]; then
-  echo "Usage: $0 <WORKFLOW_ID> <PR_NUMBER> <PR_BRANCH>"
+if [ $# -ne 2 ]; then
+  echo "Usage: $0 <WORKFLOW_ID> <PR_BRANCH>"
   exit 1
 fi
 
 workflow_id=$1
-pr_number=$2
-pr_branch=$3
+pr_branch=$2
 
-runs=$(
-  curl -sL \
-    -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token ${GITHUB_TOKEN}" \
-    "${GITHUB_API_URL}/repos/microsoft/LightGBM/actions/workflows/${workflow_id}/runs?event=pull_request&branch=${pr_branch}" | \
-  jq '.workflow_runs'
+# --branch for some GitHub GLI commands does not respect the difference between forks and branches
+# on the main repo. While some parts of the GitHub API refer to the branch of a workflow
+# as '{org}:{branch}' for branches from forks, others expect only '{branch}'.
+#
+# This expands trims a leading '{org}:' from 'pr_branch' if one is present.
+pr_branch_no_fork_prefix="${pr_branch/*:/}"
+
+RUN_ID=$(
+  gh run list                              \
+    --repo 'microsoft/LightGBM'            \
+    --workflow "${workflow_id}"            \
+    --event "pull_request"                 \
+    --branch "${pr_branch_no_fork_prefix}" \
+    --json 'createdAt,databaseId'          \
+    --jq 'sort_by(.createdAt) | reverse | .[0] | .databaseId'
 )
-runs=$(echo "${runs}" | jq --arg pr_number "${pr_number}" --arg pr_branch "${pr_branch}" 'map(select(.event == "pull_request" and ((.pull_requests | length) != 0 and (.pull_requests[0].number | tostring) == $pr_number or .head_branch == $pr_branch)))')
-runs=$(echo "${runs}" | jq 'sort_by(.run_number) | reverse')
 
-if [[ $(echo "${runs}" | jq 'length') -gt 0 ]]; then
-  curl -sL \
-    -X POST \
-    -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token ${GITHUB_TOKEN}" \
-    "${GITHUB_API_URL}/repos/microsoft/LightGBM/actions/runs/$(echo "${runs}" | jq '.[0].id')/rerun"
+if [[ -z "${RUN_ID}" ]]; then
+  echo "ERROR: failed to find a run of workflow '${workflow_id}' for branch '${branch}'"
+  exit 1
 fi
+
+echo "Re-running workflow '${workflow_id}' (run ID ${RUN_ID})"
+
+gh run rerun                  \
+  --repo 'microsoft/LightGBM' \
+  "${RUN_ID}"

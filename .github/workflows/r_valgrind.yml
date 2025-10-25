@@ -76,6 +76,5 @@ jobs:
         run: |
           bash $GITHUB_WORKSPACE/.ci/rerun-workflow.sh \
             "optional_checks.yml" \
-            "${{ inputs.pr-number }}" \
             "${{ inputs.pr-branch }}" \
             || true
