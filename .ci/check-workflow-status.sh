@@ -37,8 +37,9 @@ LATEST_RUN_ID=$(
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
     echo "No runs of '${WORKFLOW_FILE}' found on branch '${BRANCH}'"
-    echo "Checking for recent runs from forks"
-
+    echo "Checking for recent runs from forks."
+    # runs triggered to pull from forks have their '--branch' set to the LightGBM (non-fork) branch
+    # the workflow was sourced from.
 fi
 
 echo "Checking status of workflow run '${LATEST_RUN_ID}'"

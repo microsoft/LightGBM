@@ -34,6 +34,7 @@ pr_branch=$2
 # This expands trims a leading '{org}:' from 'pr_branch' if one is present.
 pr_branch_no_fork_prefix="${pr_branch/*:/}"
 
+EXPECTED_RUN_NAME="R valgrind tests (pr-number=7068)"
 RUN_ID=$(
   gh run list                              \
     --repo 'microsoft/LightGBM'            \
