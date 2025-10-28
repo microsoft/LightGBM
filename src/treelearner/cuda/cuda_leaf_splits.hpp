@@ -31,7 +31,7 @@ struct CUDALeafSplitsStruct {
   hist_t* hist_in_leaf;
 };
 
-class CUDALeafSplits {
+class CUDALeafSplits: public NCCLInfo {
  public:
   explicit CUDALeafSplits(const data_size_t num_data);
 
