@@ -95,6 +95,32 @@ def test_basic(tmp_path):
     np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname)
 
 
+@pytest.mark.parametrize("sparse_format", ["csr", "csc"])
+def test_predict_contrib_int64(sparse_format, rng):
+    n_samples = 100
+    n_features = 5
+
+    X = sparse.random(n_samples, n_features, density=0.01, format="csr", random_state=42)
+    y = rng.integers(0, 2, size=n_samples)
+
+    train_data = lgb.Dataset(X, label=y)
+    params = {"objective": "binary", "num_leaves": 7, "learning_rate": 0.1, "verbose": -1}
+    booster = lgb.Booster(params, train_data)
+
+    for _ in range(5):
+        booster.update()
+
+    X_test = sparse.random(10, n_features, density=0.01, format=sparse_format, random_state=43)
+    X_test.indptr = X_test.indptr.astype(np.int64)
+
+    preds = booster.predict(X_test, pred_contrib=True, num_iteration=booster.best_iteration)
+
+    assert preds is not None
+    assert preds.shape[0] == X_test.shape[0]
+    assert preds.shape[1] == X_test.shape[1] + 1
+    assert preds.format == sparse_format
+
+
 class NumpySequence(lgb.Sequence):
     def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
