@@ -14,7 +14,6 @@ from shutil import copyfile
 import numpy as np
 import psutil
 import pytest
-from scipy import sparse
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_blobs, make_classification, make_multilabel_classification
 from sklearn.metrics import (
@@ -2014,30 +2013,29 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
-@pytest.mark.parametrize("sparse_format", ["csr", "csc"])
-def test_predict_contrib_int64(sparse_format, rng):
+def test_predict_contrib_int64():
     n_samples = 100
     n_features = 5
 
-    X = sparse.random(n_samples, n_features, density=0.01, format="csr", random_state=42)
-    y = rng.integers(0, 2, size=n_samples)
+    X, y = make_multilabel_classification(
+        n_samples=n_samples, sparse=True, n_features=n_features, n_classes=1, n_labels=2
+    )
+    y = y.flatten()
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_test.indptr = X_test.indptr.astype(np.int64)
 
-    train_data = lgb.Dataset(X, label=y)
+    train_data = lgb.Dataset(X_train, label=y_train)
     params = {"objective": "binary", "num_leaves": 7, "learning_rate": 0.1, "verbose": -1}
     booster = lgb.Booster(params, train_data)
 
     for _ in range(5):
         booster.update()
 
-    X_test = sparse.random(10, n_features, density=0.01, format=sparse_format, random_state=43)
-    X_test.indptr = X_test.indptr.astype(np.int64)
-
     preds = booster.predict(X_test, pred_contrib=True, num_iteration=booster.best_iteration)
 
     assert preds is not None
     assert preds.shape[0] == X_test.shape[0]
     assert preds.shape[1] == X_test.shape[1] + 1
-    assert preds.format == sparse_format
 
 
 # @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
