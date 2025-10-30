@@ -66,14 +66,14 @@ class BaggingSampleStrategy : public SampleStrategy {
         sampled_query_boundaries_[0] = 0;
         OMP_INIT_EX();
         #pragma omp parallel for schedule(static) num_threads(num_threads_)
-        for (data_size_t i = 0; i < num_sampled_queries_; ++i) {
+        for (data_size_t i = 0; i < num_queries_; ++i) {
           OMP_LOOP_EX_BEGIN();
           sampled_query_boundaries_[i + 1] = query_boundaries_[bag_query_indices_[i] + 1] - query_boundaries_[bag_query_indices_[i]];
           OMP_LOOP_EX_END();
         }
         OMP_THROW_EX();
 
-        const int num_blocks = Threading::For<data_size_t>(0, num_sampled_queries_ + 1, 128, [this](int thread_index, data_size_t start_index, data_size_t end_index) {
+        const int num_blocks = Threading::For<data_size_t>(0, num_queries_ + 1, 128, [this](int thread_index, data_size_t start_index, data_size_t end_index) {
           for (data_size_t i = start_index + 1; i < end_index; ++i) {
             sampled_query_boundaries_[i] += sampled_query_boundaries_[i - 1];
           }
@@ -84,7 +84,7 @@ class BaggingSampleStrategy : public SampleStrategy {
           sampled_query_boundaries_thread_buffer_[thread_index] += sampled_query_boundaries_thread_buffer_[thread_index - 1];
         }
 
-        Threading::For<data_size_t>(0, num_sampled_queries_ + 1, 128, [this](int thread_index, data_size_t start_index, data_size_t end_index) {
+        Threading::For<data_size_t>(0, num_queries_ + 1, 128, [this](int thread_index, data_size_t start_index, data_size_t end_index) {
           if (thread_index > 0) {
             for (data_size_t i = start_index; i < end_index; ++i) {
               sampled_query_boundaries_[i] += sampled_query_boundaries_thread_buffer_[thread_index - 1];
@@ -94,7 +94,7 @@ class BaggingSampleStrategy : public SampleStrategy {
 
         bag_data_cnt_ = sampled_query_boundaries_[num_sampled_queries_];
 
-        Threading::For<data_size_t>(0, num_sampled_queries_, 1, [this](int /*thread_index*/, data_size_t start_index, data_size_t end_index) {
+        Threading::For<data_size_t>(0, num_queries_, 1, [this](int /*thread_index*/, data_size_t start_index, data_size_t end_index) {
           for (data_size_t sampled_query_id = start_index; sampled_query_id < end_index; ++sampled_query_id) {
             const data_size_t query_index = bag_query_indices_[sampled_query_id];
             const data_size_t data_index_start = query_boundaries_[query_index];
