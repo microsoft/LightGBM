@@ -23,23 +23,24 @@ set -e -u -o pipefail
 BRANCH="${1}"
 WORKFLOW_FILE="${2}"
 
-echo "Searching for latest run of '${WORKFLOW_FILE}' on branch '${BRANCH}'"
+# Limit how much data is pulled from the API and needs to be parsed locally.
+OLDEST_ALLOWED_RUN_DATE=$(date --date='7 days ago' '+%F')
+
+echo "Searching for latest run of '${WORKFLOW_FILE}' on branch '${BRANCH}' "
 
 LATEST_RUN_ID=$(
     gh run list  \
-        --repo "microsoft/LightGBM" \
-        --event workflow_dispatch \
-        --branch "${BRANCH}" \
+        --repo 'microsoft/LightGBM' \
+        --event 'workflow_dispatch' \
+        --created ">= ${OLDEST_ALLOWED_RUN_DATE}" \
         --workflow "${WORKFLOW_FILE}" \
-        --json 'createdAt,databaseId' \
-        --jq 'sort_by(.createdAt) | reverse | .[0] | .databaseId'
+        --json 'createdAt,databaseId,name' \
+        --jq "sort_by(.createdAt) | reverse | map(select(.name | contains (\"pr-number=7068\"))) | .[0] | .databaseId"
 )
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
-    echo "No runs of '${WORKFLOW_FILE}' found on branch '${BRANCH}'"
-    echo "Checking for recent runs from forks."
-    # runs triggered to pull from forks have their '--branch' set to the LightGBM (non-fork) branch
-    # the workflow was sourced from.
+    echo "No runs of '${WORKFLOW_FILE}' found on branch from pull request ${PR_NUMBER} (on or after ${OLDEST_ALLOWED_RUN_DATE})."
+    exit 1
 fi
 
 echo "Checking status of workflow run '${LATEST_RUN_ID}'"
