@@ -65,7 +65,7 @@ jobs:
             "${IMAGE_URI}" \
             /bin/bash ./docker-script.sh
       - name: upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
@@ -129,7 +129,7 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
       - name: upload wheels
         if: ${{ matrix.method == 'wheel' && matrix.os == 'macos-14' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macosx-arm64-wheel
           path: dist/*.whl
