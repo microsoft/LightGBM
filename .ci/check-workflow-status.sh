@@ -36,7 +36,7 @@ LATEST_RUN_ID=$(
         --created ">= ${OLDEST_ALLOWED_RUN_DATE}" \
         --workflow "${WORKFLOW_FILE}" \
         --json 'createdAt,databaseId,name' \
-        --jq "sort_by(.createdAt) | reverse | map(select(.name | contains (\"pr-number=${PR_NUMBER}\"))) | .[0] | .databaseId"
+        --jq "sort_by(.createdAt) | reverse | map(select(.name | contains (\"pr=${PR_NUMBER}\"))) | .[0] | .databaseId"
 )
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
