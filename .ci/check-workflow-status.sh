@@ -22,6 +22,7 @@ set -e -u -o pipefail
 
 BRANCH="${1}"
 WORKFLOW_FILE="${2}"
+PR_NUMBER="${3}"
 
 # Limit how much data is pulled from the API and needs to be parsed locally.
 OLDEST_ALLOWED_RUN_DATE=$(date --date='7 days ago' '+%F')
@@ -35,7 +36,7 @@ LATEST_RUN_ID=$(
         --created ">= ${OLDEST_ALLOWED_RUN_DATE}" \
         --workflow "${WORKFLOW_FILE}" \
         --json 'createdAt,databaseId,name' \
-        --jq "sort_by(.createdAt) | reverse | map(select(.name | contains (\"pr-number=7068\"))) | .[0] | .databaseId"
+        --jq "sort_by(.createdAt) | reverse | map(select(.name | contains (\"pr-number=${PR_NUMBER}\"))) | .[0] | .databaseId"
 )
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
