@@ -31,7 +31,7 @@ pr_branch=$2
 # on the main repo. While some parts of the GitHub API refer to the branch of a workflow
 # as '{org}:{branch}' for branches from forks, others expect only '{branch}'.
 #
-# This expands trims a leading '{org}:' from 'pr_branch' if one is present.
+# This expansion trims a leading '{org}:' from 'pr_branch' if one is present.
 pr_branch_no_fork_prefix="${pr_branch/*:/}"
 
 EXPECTED_RUN_NAME="R valgrind tests (pr-number=7068)"

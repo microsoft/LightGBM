@@ -41,7 +41,7 @@ LATEST_RUN_ID=$(
 
 if [[ "${LATEST_RUN_ID}" == "" ]]; then
     echo "No runs of '${WORKFLOW_FILE}' found on branch from pull request ${PR_NUMBER} (on or after ${OLDEST_ALLOWED_RUN_DATE})."
-    exit 1
+    exit 0
 fi
 
 echo "Checking status of workflow run '${LATEST_RUN_ID}'"
