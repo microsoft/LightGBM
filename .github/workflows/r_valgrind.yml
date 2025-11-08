@@ -52,6 +52,14 @@ jobs:
           apt-get install --no-install-recommends -y \
             curl \
             jq
+      - name: Install GitHub CLI
+        run:
+          GH_CLI_VERSION="2.83.0"
+          wget \
+            -O gh.tar.gz \
+            https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
+          tar -xvf ./gh.tar.gz
+          mv ./gh_${GH_CLI_VERSION}_linux_amd64/bin/gh /usr/local/bin/
       - name: Trust git cloning LightGBM
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
