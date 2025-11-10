@@ -26,4 +26,5 @@ jobs:
             echo "checking status for branch '${PR_BRANCH}'"
             ./.ci/check-workflow-status.sh \
                 "${PR_BRANCH}" \
-                'r_valgrind.yml'
+                'r_valgrind.yml' \
+                ${{ github.event.number }}
