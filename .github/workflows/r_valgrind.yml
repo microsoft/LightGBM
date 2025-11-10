@@ -53,7 +53,7 @@ jobs:
             curl \
             jq
       - name: Install GitHub CLI
-        run:
+        run: |
           GH_CLI_VERSION="2.83.0"
           wget \
             -O gh.tar.gz \
