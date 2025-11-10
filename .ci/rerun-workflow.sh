@@ -46,7 +46,7 @@ RUN_ID=$(
 )
 
 if [[ -z "${RUN_ID}" ]]; then
-  echo "ERROR: failed to find a run of workflow '${workflow_id}' for branch '${branch}'"
+  echo "ERROR: failed to find a run of workflow '${workflow_id}' for branch '${pr_branch}'"
   exit 1
 fi
 
