@@ -22,7 +22,7 @@ on:
         description: Pull request ID, found in the PR URL.
 
 permissions:
-  actions: none
+  actions: write
   checks: write
   contents: read
   deployments: none
