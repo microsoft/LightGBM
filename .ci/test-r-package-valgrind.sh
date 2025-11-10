@@ -2,10 +2,6 @@
 
 set -e -E -u -o pipefail
 
-# TODO: remove before merging
-echo "[DEBUG] exiting with status 1"
-exit 1
-
 RDscriptvalgrind ./.ci/install-r-deps.R --test || exit 1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
