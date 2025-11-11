@@ -4,11 +4,9 @@
 #     Rerun specified workflow for given pull request.
 #
 # [usage]
-#     rerun-workflow.sh <WORKFLOW_ID> <PR_NUMBER> <PR_BRANCH>
+#     rerun-workflow.sh <WORKFLOW_ID> <PR_BRANCH>
 #
 # WORKFLOW_ID: Identifier (config name of ID) of a workflow to be rerun.
-#
-# PR_NUMBER: Number of pull request for which workflow should be rerun.
 #
 # PR_BRANCH: Name of pull request's branch.
 
