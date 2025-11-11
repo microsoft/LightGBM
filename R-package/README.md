@@ -499,7 +499,6 @@ Or by using the GitHub CLI, using a command similar to this:
 ```shell
 gh workflow run \
     --repo microsoft/LightGBM \
-    --ref ci/fix-rerun-workflow \
     r_valgrind.yml \
     -f pr-branch=ci/fix-rerun-workflow \
     -f pr-number=7072
