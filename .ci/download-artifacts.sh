@@ -1,8 +1,34 @@
 #!/bin/bash
 
-set -e -u -o pipefail
+# [description]
+#     Collect and download artifacts from all workflow runs for a commit.
+#
+# [usage]
+#     ./download-artifacts.sh <COMMIT_ID>
+#
+# [TODO]
+#
+#     Based on the list from https://github.com/microsoft/LightGBM/releases/tag/v4.6.0.
+#     The following are not yet handled by this script.
+#
+#         - commit.txt
+#         - lib_lightgbm.dll
+#         - lib_lightgbm.dylib
+#         - lib_lightgbm.so
+#         - lightgbm-4.6.0-py3-none-macosx_10_15_x86_64.whl
+#         - lightgbm-4.6.0-py3-none-manylinux_2_28_x86_64.whl
+#         - lightgbm-4.6.0-py3-none-win_amd64.whl
+#         - lightgbm-4.6.0.tar.gz
+#         - LightGBM-complete_source_code_tar_gz.tar.gz
+#         - LightGBM-complete_source_code_zip.zip
+#         - LightGBM.4.6.0.nupkg
+#         - lightgbm.exe
+#         - lightgbmlib_linux.jar
+#
 
-COMMIT="${1}"
+set -e -u -E -o pipefail
+
+COMMIT_ID="${1}"
 OUTPUT_DIR="./release-artifacts"
 
 get-latest-run-id() {
@@ -15,7 +41,7 @@ get-latest-run-id() {
 }
 
 # ensure directory for storing artifacts exists
-echo "preparing to dowload artifacts to '${OUTPUT_DIR}'"
+echo "preparing to dowload artifacts for commit '${COMMIT_ID}' to '${OUTPUT_DIR}'"
 mkdir -p "${OUTPUT_DIR}"
 
 # get python-package artifacts
@@ -23,8 +49,24 @@ echo "downloading python-package artifacts"
 gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
-    $(get-latest-run-id ${COMMIT} "python_package.yml")
+    $(get-latest-run-id ${COMMIT_ID} "python_package.yml")
 echo "done downloading python-package artifacts"
 
-echo "downloaded the following:"
+# get R-package artifacts
+echo "downloading python-package artifacts"
+gh run download \
+    --repo "microsoft/LightGBM" \
+    --dir "${OUTPUT_DIR}" \
+    $(get-latest-run-id ${COMMIT_ID} "r_package.yml")
+echo "done downloading R-package artifacts"
+
+# get SWIG artifacts
+echo "downloading SWIG artifacts"
+gh run download \
+    --repo "microsoft/LightGBM" \
+    --dir "${OUTPUT_DIR}" \
+    $(get-latest-run-id ${COMMIT_ID} "swig.yml")
+echo "done downloading SWIG artifacts"
+
+echo "downloaded artifacts:"
 find "${OUTPUT_DIR}" -type f
