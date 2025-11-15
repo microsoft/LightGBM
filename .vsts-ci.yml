@@ -2,9 +2,6 @@ trigger:
   branches:
     include:
       - master
-  tags:
-    include:
-      - v*
 pr:
   - master
 variables:
@@ -363,21 +360,3 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
           artifactName: NuGet
           artifactType: container
-      - task: GitHubRelease@0
-        displayName: 'Create GitHub Release'
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          gitHubConnection: guolinke
-          repositoryName: '$(Build.Repository.Name)'
-          action: 'create'
-          target: '$(Build.SourceVersion)'
-          tagSource: 'auto'
-          title: '$(Build.SourceBranchName)'
-          assets: |
-            $(Build.SourcesDirectory)/binaries/PackageAssets/*
-            $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
-            $(Build.ArtifactStagingDirectory)/archives/*
-          assetUploadMode: 'delete'
-          isDraft: true
-          isPreRelease: false
-          addChangeLog: false
