@@ -478,3 +478,6 @@ dask-worker-space/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# files created by release tasks
+/release-artifacts
