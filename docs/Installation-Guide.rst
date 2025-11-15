@@ -1026,10 +1026,6 @@ gcc
      cmake -B build -S . -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
-
-.. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
-   :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
-
 .. _Visual Studio: https://visualstudio.microsoft.com/downloads/
 
 .. _Git for Windows: https://git-scm.com/download/win
