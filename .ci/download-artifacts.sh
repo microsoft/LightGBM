@@ -41,7 +41,7 @@ get-latest-run-id() {
 }
 
 # ensure directory for storing artifacts exists
-echo "preparing to dowload artifacts for commit '${COMMIT_ID}' to '${OUTPUT_DIR}'"
+echo "preparing to download artifacts for commit '${COMMIT_ID}' to '${OUTPUT_DIR}'"
 mkdir -p "${OUTPUT_DIR}"
 
 # get python-package artifacts
@@ -49,7 +49,7 @@ echo "downloading python-package artifacts"
 gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
-    $(get-latest-run-id ${COMMIT_ID} "python_package.yml")
+    "$(get-latest-run-id "${COMMIT_ID}" 'python_package.yml')"
 echo "done downloading python-package artifacts"
 
 # get R-package artifacts
@@ -57,7 +57,7 @@ echo "downloading python-package artifacts"
 gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
-    $(get-latest-run-id ${COMMIT_ID} "r_package.yml")
+    "$(get-latest-run-id "${COMMIT_ID}" 'r_package.yml')"
 echo "done downloading R-package artifacts"
 
 # get SWIG artifacts
@@ -65,8 +65,16 @@ echo "downloading SWIG artifacts"
 gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
-    $(get-latest-run-id ${COMMIT_ID} "swig.yml")
+    "$(get-latest-run-id "${COMMIT_ID}" 'swig.yml')"
 echo "done downloading SWIG artifacts"
+
+# 'gh run download' unpackages into nested directories like {artifact-name}/{file}.
+#
+# This moves all files to the top level and then deletes those {artifact-name}/ directories,
+# to make it easier to bulk upload all files to a release.
+echo "flattening directory structure"
+find "${OUTPUT_DIR}" -type f -mindepth 2 -exec mv -i '{}' "${OUTPUT_DIR}" \;
+find "${OUTPUT_DIR}" -type d -mindepth 1 -exec rm -r '{}' \+
 
 echo "downloaded artifacts:"
 find "${OUTPUT_DIR}" -type f

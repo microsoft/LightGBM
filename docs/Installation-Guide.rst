@@ -32,7 +32,14 @@ than all previous releases, and "older" than all future releases.
 
 .. _nightly-builds:
 
-You can find such artifacts from the latest successful build on the ``master`` branch (nightly builds) here: |download artifacts|.
+To download such artifacts, run the following from the root of this repository.
+
+.. code:: sh
+
+   bash .ci/download-artifacts.sh ${COMMIT_ID}
+
+Where `COMMIT_ID` is the full commit SHA pointing to a commit on ``master``.
+The artifacts can then be found in the ``release-artifacts/`` directory.
 
 For more details on why LightGBM uses EffVer instead of other schemes like semantic versioning,
 see https://jacobtomlinson.dev/effver/.
