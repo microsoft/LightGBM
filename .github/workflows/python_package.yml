@@ -97,11 +97,6 @@ jobs:
             task: bdist
             compiler: gcc
             python_version: '3.9'
-          - os: macos-14
-            task: bdist
-            compiler: gcc
-            method: wheel
-            python_version: '3.11'
           - os: macos-13
             task: mpi
             compiler: gcc
