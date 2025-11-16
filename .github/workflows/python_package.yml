@@ -160,8 +160,8 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            dist/*.whl
-            dist/*.dylib
+            artifacts/*.whl
+            artifacts/*.dylib
           if-no-files-found: error
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
