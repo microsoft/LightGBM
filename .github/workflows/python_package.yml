@@ -80,10 +80,6 @@ jobs:
         include:
           - os: macos-13
             task: regular
-            compiler: clang
-            python_version: '3.11'
-          - os: macos-13
-            task: regular
             compiler: gcc
             python_version: '3.11'
           - os: macos-13
@@ -131,6 +127,12 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'macosx-arm64-wheel'
             python_version: '3.11'
+          - os: macos-13
+            task: regular
+            compiler: clang
+            produces-artifacts: 'true'
+            artifact-name: 'macosx-amd64-liblightgbm'
+            python_version: '3.11'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -152,7 +154,7 @@ jobs:
           export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
-      - name: upload wheels
+      - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
         uses: actions/upload-artifact@v5
         with:
