@@ -159,7 +159,10 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact-name }}
-          path: dist/*.whl
+          path: |
+            dist/*.whl
+            dist/*.dylib
+          if-no-files-found: error
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
     runs-on: ubuntu-latest
