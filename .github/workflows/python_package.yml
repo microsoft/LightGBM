@@ -70,6 +70,7 @@ jobs:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
   test-macos:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
