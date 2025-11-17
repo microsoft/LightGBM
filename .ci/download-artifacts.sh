@@ -49,7 +49,7 @@ gh run download \
 echo "done downloading python-package artifacts"
 
 # get R-package artifacts
-echo "downloading python-package artifacts"
+echo "downloading R-package artifacts"
 gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
