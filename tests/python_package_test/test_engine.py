@@ -2014,22 +2014,21 @@ def test_contribs_sparse_multiclass():
 
 
 def test_predict_contrib_int64():
-    n_samples = 100
-    n_features = 5
-
-    X, y = make_multilabel_classification(
-        n_samples=n_samples, sparse=True, n_features=n_features, n_classes=1, n_labels=2
-    )
+    X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
     y = y.flatten()
     X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
     X_test.indptr = X_test.indptr.astype(np.int64)
 
     train_data = lgb.Dataset(X_train, label=y_train)
-    params = {"objective": "binary", "num_leaves": 7, "learning_rate": 0.1, "verbose": -1}
-    booster = lgb.Booster(params, train_data)
-
-    for _ in range(5):
-        booster.update()
+    params = {
+        "objective": "binary",
+        "num_leaves": 7,
+        "min_data_in_bin": 1,
+        "min_data_in_leaf": 1,
+        "seed": 708,
+        "verbose": -1,
+    }
+    booster = lgb.train(params, train_set=train_data, num_boost_round=5)
 
     preds = booster.predict(X_test, pred_contrib=True, num_iteration=booster.best_iteration)
 
