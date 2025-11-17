@@ -23,7 +23,6 @@
 #         - LightGBM-complete_source_code_zip.zip
 #         - LightGBM.4.6.0.nupkg
 #         - lightgbm.exe
-#         - lightgbmlib_linux.jar
 #
 
 set -e -u -E -o pipefail
