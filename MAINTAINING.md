@@ -56,7 +56,7 @@ Where:
 * `COMMIT_ID` = full commit hash of the commit on `master` corresponding to the release
 * `TAG` = the tag for the release (e.g. `v4.6.0`)
 
-### Step 6: Complete all other post-merge release steps
+### Step 6: Complete All Other Post-merge Release Steps
 
 These include things like publishing to package managers, updating build configs for repackagers like ``conda-forge``, and many other steps.
 
