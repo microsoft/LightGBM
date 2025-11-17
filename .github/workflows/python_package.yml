@@ -70,7 +70,8 @@ jobs:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
   test-macos:
-    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
+    # yamllint disable-line rule:line-length
+    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -79,29 +80,59 @@ jobs:
         include:
           - os: macos-13
             task: regular
+            compiler: gcc
             python_version: '3.11'
           - os: macos-13
             task: sdist
+            compiler: clang
+            python_version: '3.10'
+          - os: macos-13
+            task: sdist
+            compiler: gcc
             python_version: '3.12'
           - os: macos-13
             task: bdist
+            compiler: gcc
             python_version: '3.9'
-          - os: macos-14
-            task: bdist
-            method: wheel
-            python_version: '3.11'
           - os: macos-13
             task: mpi
+            compiler: gcc
             method: source
             python_version: '3.12'
           - os: macos-13
             task: mpi
+            compiler: gcc
             method: pip
             python_version: '3.13'
           - os: macos-13
             task: mpi
+            compiler: gcc
             method: wheel
             python_version: '3.10'
+          #####################
+          # jobs that create  #
+          # release artifacts #
+          #####################
+          - os: macos-13
+            task: bdist
+            compiler: clang
+            method: wheel
+            produces-artifacts: 'true'
+            artifact-name: 'macosx-amd64-wheel'
+            python_version: '3.13'
+          - os: macos-14
+            task: bdist
+            compiler: clang
+            method: wheel
+            produces-artifacts: 'true'
+            artifact-name: 'macosx-arm64-wheel'
+            python_version: '3.11'
+          - os: macos-13
+            task: regular
+            compiler: clang
+            produces-artifacts: 'true'
+            artifact-name: 'macosx-amd64-liblightgbm'
+            python_version: '3.11'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -112,27 +143,26 @@ jobs:
       - name: Setup and run tests
         shell: bash
         run: |
+          export COMPILER="${{ matrix.compiler }}"
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export OS_NAME="macos"
           export PYTHON_VERSION="${{ matrix.python_version }}"
-          if [[ "${{ matrix.os }}" == "macos-14" ]]; then
-              # use clang when creating macOS release artifacts
-              export COMPILER="clang"
-          else
-              export COMPILER="gcc"
-          fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
+          export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
-      - name: upload wheels
-        if: ${{ matrix.method == 'wheel' && matrix.os == 'macos-14' }}
+      - name: Upload artifacts
+        if: ${{ matrix.produces-artifacts == 'true' }}
         uses: actions/upload-artifact@v5
         with:
-          name: macosx-arm64-wheel
-          path: dist/*.whl
+          name: ${{ matrix.artifact-name }}
+          path: |
+            artifacts/*.whl
+            artifacts/*.dylib
+          if-no-files-found: error
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
     runs-on: ubuntu-latest
