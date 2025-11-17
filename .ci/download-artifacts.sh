@@ -13,17 +13,13 @@
 #
 #         - commit.txt
 #         - lib_lightgbm.dll
-#         - lib_lightgbm.dylib
 #         - lib_lightgbm.so
-#         - lightgbm-4.6.0-py3-none-macosx_10_15_x86_64.whl
 #         - lightgbm-4.6.0-py3-none-manylinux_2_28_x86_64.whl
 #         - lightgbm-4.6.0-py3-none-win_amd64.whl
 #         - lightgbm-4.6.0.tar.gz
 #         - LightGBM-complete_source_code_tar_gz.tar.gz
-#         - LightGBM-complete_source_code_zip.zip
 #         - LightGBM.4.6.0.nupkg
 #         - lightgbm.exe
-#         - lightgbmlib_linux.jar
 #
 
 set -e -u -E -o pipefail

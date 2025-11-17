@@ -264,15 +264,6 @@ jobs:
     steps:
       # Create archives with complete source code included (with git submodules)
       - task: ArchiveFiles@2
-        displayName: Create zip archive
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          rootFolderOrFile: $(Build.SourcesDirectory)
-          includeRootFolder: false
-          archiveType: zip
-          archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
-          replaceExistingArchive: true
-      - task: ArchiveFiles@2
         displayName: Create tar.gz archive
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
         inputs:
