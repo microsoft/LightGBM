@@ -2,9 +2,6 @@ trigger:
   branches:
     include:
       - master
-  tags:
-    include:
-      - v*
 pr:
   - master
 variables:
@@ -267,15 +264,6 @@ jobs:
     steps:
       # Create archives with complete source code included (with git submodules)
       - task: ArchiveFiles@2
-        displayName: Create zip archive
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          rootFolderOrFile: $(Build.SourcesDirectory)
-          includeRootFolder: false
-          archiveType: zip
-          archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
-          replaceExistingArchive: true
-      - task: ArchiveFiles@2
         displayName: Create tar.gz archive
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
         inputs:
@@ -304,21 +292,3 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
           artifactName: NuGet
           artifactType: container
-      - task: GitHubRelease@0
-        displayName: 'Create GitHub Release'
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          gitHubConnection: guolinke
-          repositoryName: '$(Build.Repository.Name)'
-          action: 'create'
-          target: '$(Build.SourceVersion)'
-          tagSource: 'auto'
-          title: '$(Build.SourceBranchName)'
-          assets: |
-            $(Build.SourcesDirectory)/binaries/PackageAssets/*
-            $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
-            $(Build.ArtifactStagingDirectory)/archives/*
-          assetUploadMode: 'delete'
-          isDraft: true
-          isPreRelease: false
-          addChangeLog: false
