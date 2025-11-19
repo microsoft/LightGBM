@@ -12,6 +12,7 @@
 #include <limits>
 #include <string>
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -65,12 +66,6 @@ using json11_internal_lightgbm::Json;
 */
 static void C_stringstream(std::stringstream &ss) {
   ss.imbue(std::locale::classic());
-}
-
-static char tolower(char in) {
-  if (in <= 'Z' && in >= 'A')
-    return in - ('Z' - 'z');
-  return in;
 }
 
 inline static std::string Trim(std::string str) {
@@ -340,7 +335,7 @@ inline static const char* Atof(const char* p, double* out) {
     }
     if (cnt > 0) {
       std::string tmp_str(p, cnt);
-      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), Common::tolower);
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), [](char c) { return std::tolower(c); });
       if (tmp_str == std::string("na") || tmp_str == std::string("nan") ||
           tmp_str == std::string("null")) {
         *out = NAN;
