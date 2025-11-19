@@ -2013,6 +2013,9 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
+)
 def test_predict_contrib_int64():
     X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
     y = y.flatten()
