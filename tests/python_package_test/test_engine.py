@@ -2017,7 +2017,7 @@ def test_contribs_sparse_multiclass():
     getenv("TASK", "") == "cuda", reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
 )
 def test_predict_contrib_int64():
-    X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
+    X, y = make_multilabel_classification(n_samples=100, sparse=False, n_features=5, n_classes=1, n_labels=2)
     y = y.flatten()
     X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
     X_test.indptr = X_test.indptr.astype(np.int64)
