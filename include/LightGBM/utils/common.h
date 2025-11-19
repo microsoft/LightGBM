@@ -67,7 +67,7 @@ static void C_stringstream(std::stringstream &ss) {
   ss.imbue(std::locale::classic());
 }
 
-char tolower(char in) {
+static char tolower(char in) {
   if (in <= 'Z' && in >= 'A')
     return in - ('Z' - 'z');
   return in;
