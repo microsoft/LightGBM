@@ -335,7 +335,7 @@ inline static const char* Atof(const char* p, double* out) {
     }
     if (cnt > 0) {
       std::string tmp_str(p, cnt);
-      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), [](char c) { return std::tolower(c); });
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), [](unsigned char c){ return std::tolower(c); });
       if (tmp_str == std::string("na") || tmp_str == std::string("nan") ||
           tmp_str == std::string("null")) {
         *out = NAN;

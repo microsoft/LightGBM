@@ -105,7 +105,7 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
 void GetBoostingType(const std::unordered_map<std::string, std::string>& params, std::string* boosting) {
   std::string value;
   if (Config::GetString(params, "boosting", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       *boosting = "gbdt";
     } else if (value == std::string("dart")) {
@@ -123,7 +123,7 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
 void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& params, std::string* strategy) {
   std::string value;
   if (Config::GetString(params, "data_sample_strategy", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("goss")) {
       *strategy = "goss";
     } else if (value == std::string("bagging")) {
@@ -150,7 +150,7 @@ void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric
 void GetObjectiveType(const std::unordered_map<std::string, std::string>& params, std::string* objective) {
   std::string value;
   if (Config::GetString(params, "objective", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     *objective = ParseObjectiveAlias(value);
   }
 }
@@ -158,7 +158,7 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
 void GetMetricType(const std::unordered_map<std::string, std::string>& params, const std::string& objective, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     ParseMetrics(value, metric);
   }
   // add names of objective function if not providing metric
@@ -170,7 +170,7 @@ void GetMetricType(const std::unordered_map<std::string, std::string>& params, c
 void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task) {
   std::string value;
   if (Config::GetString(params, "task", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("train") || value == std::string("training")) {
       *task = TaskType::kTrain;
     } else if (value == std::string("predict") || value == std::string("prediction")
@@ -191,7 +191,7 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
 void GetDeviceType(const std::unordered_map<std::string, std::string>& params, std::string* device_type) {
   std::string value;
   if (Config::GetString(params, "device_type", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("cpu")) {
       *device_type = "cpu";
     } else if (value == std::string("gpu")) {
@@ -207,7 +207,7 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
 void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params, std::string* tree_learner) {
   std::string value;
   if (Config::GetString(params, "tree_learner", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), [](char c) { return std::tolower(c); });
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("serial")) {
       *tree_learner = "serial";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
