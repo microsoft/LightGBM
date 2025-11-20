@@ -23,6 +23,7 @@
 
 #include <string>
 #include <algorithm>
+#include <cctype>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -1204,7 +1205,7 @@ inline bool Config::GetBool(
   const std::string& name, bool* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     std::string value = params.at(name);
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("false") || value == std::string("-")) {
       *out = false;
     } else if (value == std::string("true") || value == std::string("+")) {

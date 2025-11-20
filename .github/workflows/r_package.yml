@@ -74,13 +74,13 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
-          - os: macos-13
+          - os: macos-15-intel
             task: r-package
             compiler: gcc
             r_version: 4.3
             build_type: cmake
             container: null
-          - os: macos-13
+          - os: macos-15-intel
             task: r-package
             compiler: clang
             r_version: 4.3
@@ -119,7 +119,7 @@ jobs:
             container: 'ubuntu:22.04'
             produces-artifacts: 'true'
             artifact-name: r-cran-package
-          - os: macos-13
+          - os: macos-15-intel
             task: r-package
             compiler: clang
             r_version: 4.3
