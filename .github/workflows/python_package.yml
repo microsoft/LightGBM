@@ -200,6 +200,7 @@ jobs:
           path: |
             artifacts/*.dll
             artifacts/*.dylib
+            artifacts/*.exe
             artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
