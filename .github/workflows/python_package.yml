@@ -17,6 +17,8 @@ env:
   # tell scripts where to put artifacts
   # (this variable name is left over from when jobs ran on Azure DevOps)
   BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
+  # where repo sources are cloned to
+  BUILD_SOURCESDIRECTORY: '${{ github.workspace }}'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
 
@@ -182,7 +184,6 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
-          $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
           # $env:PATH = @("$env:CONDA/Scripts", "$env:PATH") -join ";"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:TASK = "${{ matrix.task }}"
