@@ -184,7 +184,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
-          # $env:PATH = @("$env:CONDA/Scripts", "$env:PATH") -join ";"
+          $env:PATH = @("$env:CONDA/Scripts", "$env:PATH") -join ";"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:TASK = "${{ matrix.task }}"
           cmd /c "conda config --remove channels defaults"
