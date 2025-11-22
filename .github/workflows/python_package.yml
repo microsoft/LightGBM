@@ -69,7 +69,7 @@ jobs:
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
-  test-macos:
+  test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
@@ -94,6 +94,13 @@ jobs:
             task: bdist
             compiler: gcc
             python_version: '3.9'
+          - os: windows-2022
+            task: sdist
+            compiler: MSVC
+            python_version: '3.10'
+          ############
+          # MPI jobs #
+          ############
           - os: macos-15-intel
             task: mpi
             compiler: gcc
@@ -133,6 +140,18 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'macosx-amd64-liblightgbm'
             python_version: '3.11'
+          - os: windows-2022
+            task: bdist
+            compiler: MSVC
+            produces-artifacts: 'true'
+            artifact-name: 'windows-amd64-wheel'
+            python_version: '3.13'
+          - os: windows-2022
+            task: regular
+            compiler: MSVC
+            produces-artifacts: 'true'
+            artifact-name: 'windows-amd64-liblightgbm'
+            python_version: '3.11'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -140,7 +159,8 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
-      - name: Setup and run tests
+      - name: Setup and run tests on Linux and macOS
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
@@ -154,14 +174,33 @@ jobs:
           export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+      - name: Install OpenCL on Windows
+        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
+        run: |
+          cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install-opencl.ps1"
+      - name: Setup and run tests on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
+          # $env:PATH = @("$env:CONDA/Scripts", "$env:PATH") -join ";"
+          $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
+          $env:TASK = "${{ matrix.task }}"
+          cmd /c "conda config --remove channels defaults"
+          cmd /c "conda config --add channels nodefaults"
+          cmd /c "conda config --add channels conda-forge"
+          cmd /c "conda config --set channel_priority strict"
+          cmd /c "conda init powershell"
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            artifacts/*.whl
+            artifacts/*.dll
             artifacts/*.dylib
+            artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
@@ -231,7 +270,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test-latest-versions
-      - test-macos
+      - test
       - test-linux-aarch64
       - test-old-versions
     steps:
