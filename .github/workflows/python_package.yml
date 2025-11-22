@@ -187,11 +187,6 @@ jobs:
           $env:PATH = @("$env:CONDA/Scripts", "$env:PATH") -join ";"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:TASK = "${{ matrix.task }}"
-          cmd /c "conda config --remove channels defaults"
-          cmd /c "conda config --add channels nodefaults"
-          cmd /c "conda config --add channels conda-forge"
-          cmd /c "conda config --set channel_priority strict"
-          cmd /c "conda init powershell"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}

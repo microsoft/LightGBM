@@ -69,6 +69,10 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
+conda config --remove channels defaults
+conda config --add channels nodefaults
+conda config --add channels conda-forge
+conda config --set channel_priority strict
 conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
 # print output of 'conda info', to help in submitting bug reports
