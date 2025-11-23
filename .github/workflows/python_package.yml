@@ -152,7 +152,7 @@ jobs:
             task: regular
             compiler: MSVC
             produces-artifacts: 'true'
-            artifact-name: 'windows-amd64-liblightgbm'
+            artifact-name: 'windows-amd64-cli-and-liblightgbm'
             python_version: '3.11'
     steps:
       - name: Checkout repository
