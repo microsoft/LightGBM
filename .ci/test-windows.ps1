@@ -73,7 +73,7 @@ conda config --remove channels defaults
 conda config --add channels nodefaults
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
+conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
