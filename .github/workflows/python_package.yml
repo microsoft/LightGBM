@@ -184,14 +184,11 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
+          $env:COMPILER = "${{ matrix.compiler }}"
           $env:PATH = "$env:CONDA/Scripts;$env:PATH"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
+          $env:PYTHON_VERSION = "${{ matrix.python_version }}"
           $env:TASK = "${{ matrix.task }}"
-          cmd /c "conda config --remove channels defaults"
-          cmd /c "conda config --add channels nodefaults"
-          cmd /c "conda config --add channels conda-forge"
-          cmd /c "conda config --set channel_priority strict"
-          cmd /c "conda init powershell"
           cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
