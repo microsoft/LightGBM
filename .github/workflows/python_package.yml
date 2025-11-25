@@ -189,7 +189,6 @@ jobs:
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:PYTHON_VERSION = "${{ matrix.python_version }}"
           $env:TASK = "${{ matrix.task }}"
-          conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
