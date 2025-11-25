@@ -184,13 +184,13 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
+          $env:PATH = "$env:CONDA/Scripts;$env:PATH"
           conda init powershell
       - name: Setup and run tests on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
         run: |
           $env:COMPILER = "${{ matrix.compiler }}"
-          $env:PATH = "$env:CONDA/Scripts;$env:PATH"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:PYTHON_VERSION = "${{ matrix.python_version }}"
           $env:TASK = "${{ matrix.task }}"
