@@ -66,14 +66,15 @@ if ($env:TASK -eq "swig") {
 }
 
 # setup for Python
-conda init powershell
-conda activate
-conda config --set always_yes yes --set changeps1 no
-conda config --remove channels defaults
-conda config --add channels nodefaults
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
+Write-Output "PATH: $env:PATH"
+conda init powershell ; Assert-Output $?
+conda activate ; Assert-Output $?
+conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
+conda config --remove channels defaults ; Assert-Output $?
+conda config --add channels nodefaults ; Assert-Output $?
+conda config --add channels conda-forge ; Assert-Output $?
+conda config --set channel_priority strict ; Assert-Output $?
+conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
