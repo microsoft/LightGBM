@@ -180,6 +180,8 @@ jobs:
         if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
         run: |
           cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install-opencl.ps1"
+      # 'conda init powershell' needs to be run in a separate process
+      # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
       - name: Initialize conda on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
