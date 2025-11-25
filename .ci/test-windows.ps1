@@ -67,7 +67,6 @@ if ($env:TASK -eq "swig") {
 
 # setup for Python
 Write-Output "PATH: $env:PATH"
-conda init powershell ; Assert-Output $?
 conda activate ; Assert-Output $?
 conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
 conda config --remove channels defaults ; Assert-Output $?
