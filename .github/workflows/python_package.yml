@@ -180,6 +180,11 @@ jobs:
         if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
         run: |
           cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install-opencl.ps1"
+      - name: Initialize conda on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          conda init powershell
       - name: Setup and run tests on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
