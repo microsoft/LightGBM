@@ -128,6 +128,7 @@ jobs:
             method: source
             python_version: '3.10'
             in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
           - os: ubuntu-latest
             container: &ubuntu_latest_image mcr.microsoft.com/mirror/docker/library/ubuntu:22.04
             task: mpi
@@ -223,6 +224,7 @@ jobs:
         run: |
           export COMPILER="${{ matrix.compiler }}"
           export IN_UBUNTU_BASE_CONTAINER="${{ matrix.in-ubuntu-base-container }}"
+          export SETUP_CONDA="${{ matrix.setup-conda }}"
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then

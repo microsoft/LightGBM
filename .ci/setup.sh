@@ -4,6 +4,7 @@ set -e -E -u -o pipefail
 
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 ARCH=$(uname -m)
 
@@ -144,8 +145,7 @@ else  # Linux
 fi
 
 if [[ "${TASK}" != "cpp-tests" ]] && [[ "${TASK}" != "r-package" ]]; then
-    if ! type conda >/dev/null; then
-        echo "conda not found, installing it..."
+    if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
             -o miniforge.sh \
