@@ -189,7 +189,7 @@ jobs:
             python_version: '3.11'
     steps:
       - name: Install packages used by third-party actions
-        if: startsWith(matrix.os, 'ubuntu')
+        if: ${{ matrix.in-ubuntu-base-container == 'true' }}
         shell: bash
         run: |
           apt-get update -y
