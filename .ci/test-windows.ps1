@@ -66,10 +66,13 @@ if ($env:TASK -eq "swig") {
 }
 
 # setup for Python
-conda init powershell
-conda activate
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
+conda activate ; Assert-Output $?
+conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
+conda config --remove channels defaults ; Assert-Output $?
+conda config --add channels nodefaults ; Assert-Output $?
+conda config --add channels conda-forge ; Assert-Output $?
+conda config --set channel_priority strict ; Assert-Output $?
+conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
@@ -141,7 +144,7 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 if ($env:TASK -eq "bdist") {
     # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
     # TODO: set LIGHTGBM_TEST_DUAL_CPU_GPU back to "1" as part of https://github.com/microsoft/LightGBM/issues/6968
-    env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
+    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
 pytest $tests ; Assert-Output $?
