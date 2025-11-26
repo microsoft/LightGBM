@@ -116,7 +116,6 @@ jobs:
           export PATH=${CONDA}/bin:${PATH}
           export PYTHON_VERSION="${{ matrix.python_version }}"
           export SANITIZERS="${{ matrix.sanitizers }}"
-          export SETUP_CONDA="${{ matrix.setup-conda }}"
           export TASK="${{ matrix.task }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"

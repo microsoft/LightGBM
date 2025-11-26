@@ -76,7 +76,6 @@ jobs:
   - job: Linux
     variables:
       COMPILER: gcc
-      SETUP_CONDA: 'false'
       OS_NAME: 'linux'
       PRODUCES_ARTIFACTS: 'true'
     pool: lightgbm_agent_pool_ado
@@ -136,7 +135,6 @@ jobs:
       DEBIAN_FRONTEND: 'noninteractive'
       IN_UBUNTU_BASE_CONTAINER: 'true'
       OS_NAME: 'linux'
-      SETUP_CONDA: 'true'
     pool: lightgbm_agent_pool_ado
     container: ubuntu-latest
     strategy:
