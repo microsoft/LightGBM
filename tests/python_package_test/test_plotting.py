@@ -88,6 +88,17 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     assert ax3.get_ylabel() == "y @importance_type@"
     assert len(ax3.patches) <= 30
 
+    ax4 = lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, xlim=(0, 30))
+    assert isinstance(ax4, matplotlib.axes.Axes)
+    assert ax4.get_title() == ""
+    assert ax4.get_xlabel() == ""
+    assert ax4.get_ylabel() == ""
+    assert ax4.get_xlim() == (0, 30)
+    assert len(ax4.patches) <= 30
+
+    with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
+        lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, xlim="not a tuple")
+
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, importance_type="gain")
     gbm2.fit(X_train, y_train)
 

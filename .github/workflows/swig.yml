@@ -39,7 +39,7 @@ jobs:
             container: 'lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64'
             artifact-name: swig-linux-x86_64-jar
             os-display-name: 'manylinux_2_28'
-          - os: macos-13
+          - os: macos-15-intel
             compiler: clang
             container: null
             artifact-name: swig-macos-x86_64-jar
@@ -78,7 +78,7 @@ jobs:
           $env:BUILD_SOURCESDIRECTORY = $env:BUILD_DIRECTORY
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}/*.jar
