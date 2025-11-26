@@ -13,6 +13,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+x-shared-references:
+  images:
+    - &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+    - &ubuntu_latest_image mcr.microsoft.com/mirror/docker/library/ubuntu:22.04
+
 env:
   # tell scripts where to put artifacts
   # (this variable name is left over from when jobs ran on Azure DevOps)
@@ -20,6 +25,8 @@ env:
   # where repo sources are cloned to
   BUILD_SOURCESDIRECTORY: '${{ github.workspace }}'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # avoid interactive prompts in Debian-based distributions
+  DEBIAN_FRONTEND: noninteractive
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
@@ -75,6 +82,7 @@ jobs:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -118,6 +126,35 @@ jobs:
             compiler: gcc
             method: wheel
             python_version: '3.10'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            task: mpi
+            compiler: gcc
+            method: source
+            python_version: '3.10'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            task: mpi
+            compiler: clang-17
+            method: source
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            task: mpi
+            compiler: clang-17
+            method: pip
+            python_version: '3.12'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            task: mpi
+            compiler: clang-17
+            method: wheel
+            python_version: '3.10'
+            in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
           # release artifacts #
@@ -167,9 +204,16 @@ jobs:
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
+          export IN_UBUNTU_BASE_CONTAINER="${{ matrix.in-ubuntu-base-container }}"
+          export SETUP_CONDA="${{ matrix.setup-conda }}"
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
-          export OS_NAME="macos"
+          if [[ "${{ matrix.os }}" =~ ^macos ]]; then
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+              export PATH="/usr/lib64/openmpi/bin:${PATH}"
+          fi
           export PYTHON_VERSION="${{ matrix.python_version }}"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge

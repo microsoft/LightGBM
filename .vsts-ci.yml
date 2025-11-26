@@ -92,17 +92,12 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.10'
-        mpi_source:
-          TASK: mpi
-          METHOD: source
-          PYTHON_VERSION: '3.10'
         gpu_source:
           TASK: gpu
           METHOD: source
     steps:
       - script: |
           echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
-          echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
           echo "##vso[task.prependpath]$CONDA/bin"
         displayName: 'Set variables'
       - script: |
@@ -153,17 +148,6 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.11'
-        mpi_source:
-          TASK: mpi
-          METHOD: source
-        mpi_pip:
-          TASK: mpi
-          METHOD: pip
-          PYTHON_VERSION: '3.12'
-        mpi_wheel:
-          TASK: mpi
-          METHOD: wheel
-          PYTHON_VERSION: '3.10'
         gpu_source:
           TASK: gpu
           METHOD: source
