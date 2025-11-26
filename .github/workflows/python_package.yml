@@ -145,6 +145,7 @@ jobs:
           - os: windows-2022
             task: bdist
             compiler: MSVC
+            method: wheel
             produces-artifacts: 'true'
             artifact-name: 'windows-amd64-wheel'
             python_version: '3.13'
@@ -193,6 +194,7 @@ jobs:
         shell: pwsh -command ". {0}"
         run: |
           $env:COMPILER = "${{ matrix.compiler }}"
+          $env:METHOD = "${{ matrix.method }}"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:PYTHON_VERSION = "${{ matrix.python_version }}"
           $env:TASK = "${{ matrix.task }}"
