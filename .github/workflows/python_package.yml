@@ -17,6 +17,8 @@ env:
   # tell scripts where to put artifacts
   # (this variable name is left over from when jobs ran on Azure DevOps)
   BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
+  # where repo sources are cloned to
+  BUILD_SOURCESDIRECTORY: '${{ github.workspace }}'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
 
@@ -69,7 +71,7 @@ jobs:
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
-  test-macos:
+  test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
@@ -94,6 +96,13 @@ jobs:
             task: bdist
             compiler: gcc
             python_version: '3.9'
+          - os: windows-2022
+            task: sdist
+            compiler: MSVC
+            python_version: '3.10'
+          ############
+          # MPI jobs #
+          ############
           - os: macos-15-intel
             task: mpi
             compiler: gcc
@@ -133,6 +142,19 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'macosx-amd64-liblightgbm'
             python_version: '3.11'
+          - os: windows-2022
+            task: bdist
+            compiler: MSVC
+            method: wheel
+            produces-artifacts: 'true'
+            artifact-name: 'windows-amd64-wheel'
+            python_version: '3.13'
+          - os: windows-2022
+            task: regular
+            compiler: MSVC
+            produces-artifacts: 'true'
+            artifact-name: 'windows-amd64-cli-and-liblightgbm'
+            python_version: '3.11'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -140,7 +162,8 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
-      - name: Setup and run tests
+      - name: Setup and run tests on Linux and macOS
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
@@ -154,14 +177,39 @@ jobs:
           export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+      - name: Install OpenCL on Windows
+        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
+        shell: pwsh -command ". {0}"
+        run: |
+          & "$env:GITHUB_WORKSPACE/.ci/install-opencl.ps1"
+      # 'conda init powershell' needs to be run in a separate process
+      # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
+      - name: Initialize conda on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:PATH = "$env:CONDA/Scripts;$env:PATH"
+          conda init powershell
+      - name: Setup and run tests on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:COMPILER = "${{ matrix.compiler }}"
+          $env:METHOD = "${{ matrix.method }}"
+          $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
+          $env:PYTHON_VERSION = "${{ matrix.python_version }}"
+          $env:TASK = "${{ matrix.task }}"
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            artifacts/*.whl
+            artifacts/*.dll
             artifacts/*.dylib
+            artifacts/*.exe
+            artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
@@ -231,7 +279,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test-latest-versions
-      - test-macos
+      - test
       - test-linux-aarch64
       - test-old-versions
     steps:
