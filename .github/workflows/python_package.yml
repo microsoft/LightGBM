@@ -179,8 +179,9 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
       - name: Install OpenCL on Windows
         if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
+        shell: pwsh -command ". {0}"
         run: |
-          cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install-opencl.ps1"
+          & "$env:GITHUB_WORKSPACE/.ci/install-opencl.ps1"
       # 'conda init powershell' needs to be run in a separate process
       # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
       - name: Initialize conda on Windows
