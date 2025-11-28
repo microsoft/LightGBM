@@ -150,7 +150,7 @@ Dataset <- R6::R6Class(
             cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
             # Provided indices, but some indices are missing?
-            if (sum(is.na(cate_indices)) > 0L) {
+            if (anyNA(cate_indices)) {
               stop(
                 "lgb.Dataset.construct: supplied an unknown feature in categorical_feature: "
                 , sQuote(private$categorical_feature[is.na(cate_indices)], q = FALSE)
