@@ -75,7 +75,7 @@ jobs:
           path: artifacts/*.whl
   test:
     # yamllint disable-line rule:line-length
-    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
@@ -123,6 +123,7 @@ jobs:
             python_version: '3.10'
           - os: ubuntu-latest
             container: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: 'manylinux_2_28'
             task: mpi
             compiler: gcc
             method: source
