@@ -24,7 +24,7 @@ env:
 
 jobs:
   test-linux-aarch64:
-    name: bdist wheel (ubuntu-24.04-arm)
+    name: bdist wheel (manylinux2014-arm, gcc, Python 3.13)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -66,7 +66,7 @@ jobs:
             -w ${{ env.BUILD_DIRECTORY }} \
             "${IMAGE_URI}" \
             /bin/bash ./docker-script.sh
-      - name: upload wheels
+      - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
           name: linux-aarch64-wheel
@@ -212,7 +212,7 @@ jobs:
             artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
-    name: Python - latest versions (ubuntu-latest)
+    name: Python - latest versions (manylinux_2_28)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -240,7 +240,7 @@ jobs:
             python:3.13 \
             /bin/bash ./.ci/test-python-latest.sh
   test-old-versions:
-    name: Python - oldest supported versions (ubuntu-latest)
+    name: Python - oldest supported versions (manylinux_2_28, Python ${{ matrix.python_version }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
