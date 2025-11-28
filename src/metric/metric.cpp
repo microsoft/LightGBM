@@ -38,8 +38,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("binary_logloss")) {
       return new CUDABinaryLoglossMetric(config);
     } else if (type == std::string("binary_error")) {
-      Log::Warning("Metric binary_error is not implemented in cuda version. Fall back to evaluation on CPU.");
-      return new BinaryErrorMetric(config);
+      return new CUDABinaryErrorMetric(config);
     } else if (type == std::string("auc")) {
       Log::Warning("Metric auc is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new AUCMetric(config);
