@@ -123,6 +123,7 @@ jobs:
             python_version: '3.10'
           - os: ubuntu-latest
             container: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: 'manylinux_2_28'
             task: mpi
             compiler: gcc
             method: source
@@ -130,7 +131,8 @@ jobs:
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
           - os: ubuntu-latest
-            container: &ubuntu_latest_image mcr.microsoft.com/mirror/docker/library/ubuntu:22.04
+            container: &ubuntu_latest_image ubuntu:22.04
+            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
             task: mpi
             compiler: clang-17
             method: source
@@ -138,6 +140,7 @@ jobs:
             in-ubuntu-base-container: 'true'
           - os: ubuntu-latest
             container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
             task: mpi
             compiler: clang-17
             method: pip
@@ -145,6 +148,7 @@ jobs:
             in-ubuntu-base-container: 'true'
           - os: ubuntu-latest
             container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
             task: mpi
             compiler: clang-17
             method: wheel
