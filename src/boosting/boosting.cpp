@@ -11,6 +11,10 @@
 #include "gbdt.h"
 #include "rf.hpp"
 
+#ifdef USE_CUDA
+#include "cuda/nccl_gbdt.hpp"
+#endif  // USE_CUDA
+
 namespace LightGBM {
 
 std::string GetBoostingTypeFromModelFile(const char* filename) {
@@ -34,10 +38,27 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   return true;
 }
 
-Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
+Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename,
+  const std::string&
+  #ifdef USE_CUDA
+  device_type
+  #endif  // USE_CUDA
+  , const int
+  #ifdef USE_CUDA
+  num_gpu
+  #endif  // USE_CUDA
+  ) {
   if (filename == nullptr || filename[0] == '\0') {
     if (type == std::string("gbdt")) {
-      return new GBDT();
+      #ifdef USE_CUDA
+      if (device_type == std::string("cuda") && num_gpu > 1) {
+        return new NCCLGBDT<GBDT>();
+      } else {
+      #endif  // USE_CUDA
+        return new GBDT();
+      #ifdef USE_CUDA
+      }
+      #endif  // USE_CUDA
     } else if (type == std::string("dart")) {
       return new DART();
     } else if (type == std::string("goss")) {
@@ -51,13 +72,21 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
     std::unique_ptr<Boosting> ret;
     if (GetBoostingTypeFromModelFile(filename) == std::string("tree")) {
       if (type == std::string("gbdt")) {
-        ret.reset(new GBDT());
+        #ifdef USE_CUDA
+        if (device_type == std::string("cuda") && num_gpu > 1) {
+          ret.reset(new NCCLGBDT<GBDT>());
+        } else {
+        #endif  // USE_CUDA
+          ret.reset(new GBDT());
+        #ifdef USE_CUDA
+        }
+        #endif  // USE_CUDA
       } else if (type == std::string("dart")) {
         ret.reset(new DART());
       } else if (type == std::string("goss")) {
         ret.reset(new GBDT());
       } else if (type == std::string("rf")) {
-        return new RF();
+        ret.reset(new RF());
       } else {
         Log::Fatal("Unknown boosting type %s", type.c_str());
       }
