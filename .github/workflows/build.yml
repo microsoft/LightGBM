@@ -35,8 +35,11 @@ jobs:
           mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
           tar \
             -czvf \
-            ${BUILD_ARTIFACTSTAGINGDIRECTORY}/LightGBM-complete_source_code_tar_gz.tar.gz \
+            /tmp/LightGBM-complete_source_code_tar_gz.tar.gz \
             .
+          mv \
+            /tmp/LightGBM-complete_source_code_tar_gz.tar.gz \
+            ${BUILD_ARTIFACTSTAGINGDIRECTORY}/
       - name: Create commit.txt
         shell: bash
         run: |
