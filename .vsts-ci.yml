@@ -78,20 +78,11 @@ jobs:
       COMPILER: gcc
       SETUP_CONDA: 'false'
       OS_NAME: 'linux'
-      PRODUCES_ARTIFACTS: 'true'
+      PRODUCES_ARTIFACTS: 'false'
     pool: lightgbm_agent_pool_ado
     container: linux-artifact-builder
     strategy:
       matrix:
-        regular:
-          TASK: regular
-          PYTHON_VERSION: '3.11'
-        sdist:
-          TASK: sdist
-          PYTHON_VERSION: '3.9'
-        bdist:
-          TASK: bdist
-          PYTHON_VERSION: '3.10'
         gpu_source:
           TASK: gpu
           METHOD: source
@@ -116,17 +107,6 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/.ci/test.sh
           targetType: filePath
-      - task: PublishBuildArtifacts@1
-        condition: >
-          and(
-          succeeded(),
-          in(variables['TASK'], 'regular', 'sdist', 'bdist'),
-          not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
-          )
-        inputs:
-          pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          artifactName: PackageAssets
-          artifactType: container
   ################
   # Linux_latest #
   ################
@@ -141,13 +121,6 @@ jobs:
     container: ubuntu-latest
     strategy:
       matrix:
-        regular:
-          TASK: regular
-        sdist:
-          TASK: sdist
-        bdist:
-          TASK: bdist
-          PYTHON_VERSION: '3.11'
         gpu_source:
           TASK: gpu
           METHOD: source

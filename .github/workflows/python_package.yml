@@ -103,6 +103,35 @@ jobs:
             task: sdist
             compiler: MSVC
             python_version: '3.10'
+          - os: ubuntu-latest
+            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
+            task: sdist
+            compiler: gcc
+            python_version: '3.9'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+          - os: ubuntu-latest
+            container: &ubuntu_latest_image ubuntu:22.04
+            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            task: bdist
+            compiler: clang-17
+            python_version: '3.11'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
+            task: regular
+            compiler: clang-17
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
+            task: sdist
+            compiler: clang-17
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
           ############
           # MPI jobs #
           ############
@@ -122,8 +151,8 @@ jobs:
             method: wheel
             python_version: '3.10'
           - os: ubuntu-latest
-            container: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
-            os-display-name: 'manylinux_2_28'
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
             task: mpi
             compiler: gcc
             method: source
@@ -131,8 +160,8 @@ jobs:
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
           - os: ubuntu-latest
-            container: &ubuntu_latest_image ubuntu:22.04
-            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
             task: mpi
             compiler: clang-17
             method: source
@@ -178,6 +207,26 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'macosx-amd64-liblightgbm'
             python_version: '3.11'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: regular
+            compiler: gcc
+            python_version: '3.11'
+            in-ubuntu-base-container: 'liblightgbm'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'linux-amd64-liblightgbm'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: bdist
+            compiler: gcc
+            python_version: '3.10'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'linux-amd64-wheel'
           - os: windows-2022
             task: bdist
             compiler: MSVC
@@ -279,6 +328,7 @@ jobs:
             artifacts/*.dll
             artifacts/*.dylib
             artifacts/*.exe
+            artifacts/*.so
             artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
