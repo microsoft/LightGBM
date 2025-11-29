@@ -32,6 +32,7 @@ jobs:
           submodules: true
       - name: Create source archive
         run: |
+          mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
           tar \
             -czvf \
             ${BUILD_ARTIFACTSTAGINGDIRECTORY}/LightGBM-complete_source_code_tar_gz.tar.gz \
@@ -39,7 +40,6 @@ jobs:
       - name: Create commit.txt
         shell: bash
         run: |
-          mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}""
           git rev-parse HEAD > "${BUILD_ARTIFACTSTAGINGDIRECTORY}/commit.txt"
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
