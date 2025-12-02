@@ -53,7 +53,7 @@ BEGIN {
 
         glibc_count++
 
-        if (major > 2 || (major == 2 && minor > 28)) {
+        if (major > 2 || (major == 2 && minor > 21)) {
             print "Error: found unexpected GLIBC version: \x27" major "." minor "\x27"
             has_error = 1
         }
@@ -80,7 +80,7 @@ BEGIN {
              print "Error: found unexpected GLIBCXX version: \x27" msg_ver "\x27"
              has_error = 1
         }
-        if (n >= 3 && patch > 22) {
+        if (n >= 3 && patch > 2) {
              print "Error: found unexpected GLIBCXX version: \x27" msg_ver "\x27"
              has_error = 1
         }
@@ -101,7 +101,7 @@ BEGIN {
 
         gomp_count++
 
-        if (major > 4 || (major == 4 && minor > 5)) {
+        if (major > 3 || (major == 3 && minor > 5)) {
             print "Error: found unexpected OMP/GOMP version: \x27" major "." minor "\x27"
             has_error = 1
         }
