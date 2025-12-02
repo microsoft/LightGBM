@@ -43,7 +43,7 @@ jobs:
       - name: Create commit.txt
         shell: bash
         run: |
-          cat "${{ github.sha }}" > "${BUILD_ARTIFACTSTAGINGDIRECTORY}/commit.txt"
+          echo "${{ github.sha }}" > "${BUILD_ARTIFACTSTAGINGDIRECTORY}/commit.txt"
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
