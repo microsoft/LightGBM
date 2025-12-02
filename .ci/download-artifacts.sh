@@ -14,7 +14,6 @@
 #         - commit.txt
 #         - lib_lightgbm.so
 #         - lightgbm-4.6.0-py3-none-manylinux_2_28_x86_64.whl
-#         - lightgbm-4.6.0.tar.gz
 #         - LightGBM-complete_source_code_tar_gz.tar.gz
 #         - LightGBM.4.6.0.nupkg
 #

@@ -104,14 +104,6 @@ jobs:
             compiler: MSVC
             python_version: '3.10'
           - os: ubuntu-latest
-            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
-            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
-            task: sdist
-            compiler: gcc
-            python_version: '3.9'
-            in-ubuntu-base-container: 'false'
-            setup-conda: 'false'
-          - os: ubuntu-latest
             container: &ubuntu_latest_image ubuntu:22.04
             os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
             task: bdist
@@ -151,8 +143,8 @@ jobs:
             method: wheel
             python_version: '3.10'
           - os: ubuntu-latest
-            container: *manylinux_amd64_image
-            os-display-name: *manylinux_amd64_display_name
+            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
             task: mpi
             compiler: gcc
             method: source
@@ -227,6 +219,16 @@ jobs:
             setup-conda: 'false'
             produces-artifacts: 'true'
             artifact-name: 'linux-amd64-wheel'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: sdist
+            compiler: gcc
+            python_version: '3.9'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'sdist'
           - os: windows-2022
             task: bdist
             compiler: MSVC
@@ -329,6 +331,7 @@ jobs:
             artifacts/*.dylib
             artifacts/*.exe
             artifacts/*.so
+            artifacts/*.tar.gz
             artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
