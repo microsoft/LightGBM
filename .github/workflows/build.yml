@@ -1,6 +1,6 @@
 # builds core artifacts, intended to be attached to releases
 # or used by other workflows
-name: build
+name: Build
 
 on:
   push:
@@ -43,7 +43,14 @@ jobs:
       - name: Create commit.txt
         shell: bash
         run: |
-          echo "${{ github.sha }}" > "${BUILD_ARTIFACTSTAGINGDIRECTORY}/commit.txt"
+          # for pull requests, github.sha refers to the merge commit from merging the PR and
+          # target branch... we want the actual commit that was pushed
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            COMMIT_SHA="${{ github.sha }}"
+          fi
+          echo "${COMMIT_SHA}" > "${BUILD_ARTIFACTSTAGINGDIRECTORY}/commit.txt"
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
