@@ -58,7 +58,7 @@ if [[ $TASK == "swig" ]]; then
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
         objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
-        python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
+        ./.ci/check-dynamic-dependencies.sh ./objdump.log || exit 1
     fi
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbmlib_${OS_NAME}.jar"
@@ -249,7 +249,7 @@ if [[ $TASK == "regular" ]]; then
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
-                python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
+                ./.ci/check-dynamic-dependencies.sh ./objdump.log || exit 1
             fi
             cp ./lib_lightgbm.so "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.so"
         fi
