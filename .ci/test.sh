@@ -160,10 +160,10 @@ elif [[ $TASK == "bdist" ]]; then
         fi
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
-        python ./check-dual.py
-        exit 123
     fi
     pip install -v ./dist/*.whl || exit 1
+    python ./check-dual.py
+    exit 123
     pytest ./tests || exit 1
     exit 0
 fi
