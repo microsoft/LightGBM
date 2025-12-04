@@ -11,9 +11,6 @@
 #     Based on the list from https://github.com/microsoft/LightGBM/releases/tag/v4.6.0.
 #     The following are not yet handled by this script.
 #
-#         - lib_lightgbm.so
-#         - lightgbm-4.6.0-py3-none-manylinux_2_28_x86_64.whl
-#         - lightgbm-4.6.0.tar.gz
 #         - LightGBM.4.6.0.nupkg
 #
 
