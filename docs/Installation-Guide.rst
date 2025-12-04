@@ -692,9 +692,9 @@ Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/d
 Build CUDA Version
 ~~~~~~~~~~~~~~~~~~
 
-The `original GPU version <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
+The `original GPU version <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL, and only computes histograms on GPUs, with other parts of training in CPUs.
 
-The CUDA-based version (``device_type=cuda``) is a separate implementation.
+The CUDA-based version (``device_type=cuda``) is a separate implementation that runs significantly faster by putting all the training process on GPUs. It also supports multi-GPU, and multi-node multi-GPU training.
 Use this version in Linux environments with an NVIDIA GPU with compute capability 6.0 or higher.
 
 Windows
