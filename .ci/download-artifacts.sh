@@ -11,8 +11,6 @@
 #     Based on the list from https://github.com/microsoft/LightGBM/releases/tag/v4.6.0.
 #     The following are not yet handled by this script.
 #
-#         - commit.txt
-#         - LightGBM-complete_source_code_tar_gz.tar.gz
 #         - LightGBM.4.6.0.nupkg
 #
 
@@ -33,6 +31,14 @@ get-latest-run-id() {
 # ensure directory for storing artifacts exists
 echo "preparing to download artifacts for commit '${COMMIT_ID}' to '${OUTPUT_DIR}'"
 mkdir -p "${OUTPUT_DIR}"
+
+# get core artifacts
+echo "downloading core artifacts"
+gh run download \
+    --repo "microsoft/LightGBM" \
+    --dir "${OUTPUT_DIR}" \
+    "$(get-latest-run-id "${COMMIT_ID}" 'build.yml')"
+echo "done downloading core artifacts"
 
 # get python-package artifacts
 echo "downloading python-package artifacts"
