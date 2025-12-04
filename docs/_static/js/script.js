@@ -22,6 +22,7 @@ $(() => {
             "#build-mpi-version",
             "#build-gpu-version",
             "#build-cuda-version",
+            "#build-rocm-version",
             "#build-java-wrapper",
             "#build-python-package",
             "#build-r-package",
