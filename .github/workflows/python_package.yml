@@ -79,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container:
       image: ${{ matrix.container }}
-      options: ${{ matrix.container-options }}
+      options: ${{ matrix.container-options || null }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -284,8 +284,13 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
+      - name: Get GPU details
+        if: matrix.os == 'LightGBM-GPU'
+        shell: bash
+        run: |
+          nvidia-smi
       - name: Setup and run tests on Linux and macOS
-        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || matrix.os == 'LightGBM-GPU'
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
@@ -295,7 +300,7 @@ jobs:
           export METHOD="${{ matrix.method }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]] || [[ "${{ matrix.os }}" == "LightGBM-GPU" ]]; then
               export OS_NAME="linux"
               export PATH="/usr/lib64/openmpi/bin:${PATH}"
           fi
