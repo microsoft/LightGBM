@@ -148,7 +148,7 @@ jobs:
             compiler: gcc
             method: pip
             python_version: '3.13'
-          - os: macos-15-intel:
+          - os: macos-15-intel
             task: mpi
             compiler: gcc
             method: wheel
