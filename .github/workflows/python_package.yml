@@ -22,6 +22,10 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # avoid interactive prompts in Debian-based distributions
   DEBIAN_FRONTEND: noninteractive
+  # On runners using nvidia-container-runtime with Docker, ensure GPUs are available to running processes.
+  #
+  # ref: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#gpu-enumeration
+  NVIDIA_VISIBLE_DEVICES: 'all'
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
@@ -77,9 +81,7 @@ jobs:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
-    container:
-      image: ${{ matrix.container }}
-      options: ${{ matrix.container-options || null }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
