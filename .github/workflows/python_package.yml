@@ -286,11 +286,6 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
-      - name: Get GPU details
-        if: matrix.os == 'LightGBM-GPU'
-        shell: bash
-        run: |
-          nvidia-smi
       - name: Setup and run tests on Linux and macOS
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || matrix.os == 'LightGBM-GPU'
         shell: bash
