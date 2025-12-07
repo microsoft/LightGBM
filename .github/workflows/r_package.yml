@@ -310,7 +310,7 @@ jobs:
       #       and https://github.com/microsoft/LightGBM/issues/7099 is resolved
       - name: Install development versions of some libraries
         run: |
-          git clone git@github.com:r-lib/yaml.git /tmp/yaml
+          git clone https://github.com/r-lib/yaml.git /tmp/yaml
           pushd /tmp/yaml
           R CMD INSTALL .
           popd
