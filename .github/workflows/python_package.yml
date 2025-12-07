@@ -24,7 +24,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   # On runners using nvidia-container-runtime with Docker, ensure GPUs are available to running processes.
   #
-  # ref: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#gpu-enumeration
+  # ref: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html
   NVIDIA_VISIBLE_DEVICES: 'all'
   SKBUILD_STRICT_CONFIG: true
 
