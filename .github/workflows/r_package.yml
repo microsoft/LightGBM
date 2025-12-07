@@ -306,6 +306,14 @@ jobs:
                 texlive-latex \
                 tidy
           fi
+      # TODO: remove this when there 'yaml' 2.3.12 or newer is published to CRAN,
+      #       and https://github.com/microsoft/LightGBM/issues/7099 is resolved
+      - name: Install development versions of some libraries
+        run: |
+          git clone git@github.com:r-lib/yaml.git /tmp/yaml
+          pushd /tmp/yaml
+          R CMD INSTALL .
+          popd
       - name: Install packages and run tests
         shell: bash
         run: |
