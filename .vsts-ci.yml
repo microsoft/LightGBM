@@ -92,25 +92,17 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.10'
-        mpi_source:
-          TASK: mpi
-          METHOD: source
-          PYTHON_VERSION: '3.10'
         gpu_source:
           TASK: gpu
           METHOD: source
     steps:
       - script: |
           echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
-          echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
           echo "##vso[task.prependpath]$CONDA/bin"
         displayName: 'Set variables'
       - script: |
           git clean -d -f -x
         displayName: 'Clean source directory'
-      - script: |
-          echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
-        displayName: 'Add commit hash to artifacts archive'
       - task: Bash@3
         displayName: Setup
         inputs:
@@ -153,17 +145,6 @@ jobs:
         bdist:
           TASK: bdist
           PYTHON_VERSION: '3.11'
-        mpi_source:
-          TASK: mpi
-          METHOD: source
-        mpi_pip:
-          TASK: mpi
-          METHOD: pip
-          PYTHON_VERSION: '3.12'
-        mpi_wheel:
-          TASK: mpi
-          METHOD: wheel
-          PYTHON_VERSION: '3.10'
         gpu_source:
           TASK: gpu
           METHOD: source
@@ -215,17 +196,6 @@ jobs:
     pool:
       vmImage: 'ubuntu-22.04'
     steps:
-      # Create archives with complete source code included (with git submodules)
-      - task: ArchiveFiles@2
-        displayName: Create tar.gz archive
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-        inputs:
-          rootFolderOrFile: $(Build.SourcesDirectory)
-          includeRootFolder: false
-          archiveType: tar
-          tarCompression: gz
-          archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_tar_gz.tar.gz'
-          replaceExistingArchive: true
       # Download all agent packages from all previous phases
       - task: DownloadBuildArtifacts@0
         displayName: Download package assets

@@ -20,16 +20,18 @@ env:
   # where repo sources are cloned to
   BUILD_SOURCESDIRECTORY: '${{ github.workspace }}'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # avoid interactive prompts in Debian-based distributions
+  DEBIAN_FRONTEND: noninteractive
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
   test-linux-aarch64:
-    name: bdist wheel (ubuntu-24.04-arm)
+    name: bdist wheel (manylinux2014-arm, gcc, Python 3.13)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -66,15 +68,16 @@ jobs:
             -w ${{ env.BUILD_DIRECTORY }} \
             "${IMAGE_URI}" \
             /bin/bash ./docker-script.sh
-      - name: upload wheels
+      - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
   test:
     # yamllint disable-line rule:line-length
-    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -118,6 +121,39 @@ jobs:
             compiler: gcc
             method: wheel
             python_version: '3.10'
+          - os: ubuntu-latest
+            container: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: 'manylinux_2_28'
+            task: mpi
+            compiler: gcc
+            method: source
+            python_version: '3.10'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+          - os: ubuntu-latest
+            container: &ubuntu_latest_image ubuntu:22.04
+            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            task: mpi
+            compiler: clang-17
+            method: source
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
+            task: mpi
+            compiler: clang-17
+            method: pip
+            python_version: '3.12'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
+            task: mpi
+            compiler: clang-17
+            method: wheel
+            python_version: '3.10'
+            in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
           # release artifacts #
@@ -156,8 +192,32 @@ jobs:
             artifact-name: 'windows-amd64-cli-and-liblightgbm'
             python_version: '3.11'
     steps:
+      - name: Install packages used by third-party actions
+        if: ${{ matrix.in-ubuntu-base-container == 'true' }}
+        shell: bash
+        run: |
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+            ca-certificates \
+            dirmngr \
+            gpg \
+            gpg-agent \
+            software-properties-common \
+            sudo
+          # install newest version of git
+          # ref:
+          #     - https://unix.stackexchange.com/a/170831/550004
+          #     - https://git-scm.com/download/linux
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+            git
+      - name: Trust git cloning LightGBM
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -167,12 +227,22 @@ jobs:
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
+          export IN_UBUNTU_BASE_CONTAINER="${{ matrix.in-ubuntu-base-container }}"
+          export SETUP_CONDA="${{ matrix.setup-conda }}"
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
-          export OS_NAME="macos"
+          if [[ "${{ matrix.os }}" =~ ^macos ]]; then
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+              export PATH="/usr/lib64/openmpi/bin:${PATH}"
+          fi
           export PYTHON_VERSION="${{ matrix.python_version }}"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=${HOME}/miniforge
+          # some pre-built images already have 'CONDA' set
+          if [[ -z "${CONDA:-}" ]]; then
+            export CONDA=${HOME}/miniforge
+          fi
           export PATH=${CONDA}/bin:${PATH}
           export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
@@ -212,12 +282,12 @@ jobs:
             artifacts/*.whl
           if-no-files-found: error
   test-latest-versions:
-    name: Python - latest versions (ubuntu-latest)
+    name: Python - latest versions (manylinux_2_28)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -240,7 +310,7 @@ jobs:
             python:3.13 \
             /bin/bash ./.ci/test-python-latest.sh
   test-old-versions:
-    name: Python - oldest supported versions (ubuntu-latest)
+    name: Python - oldest supported versions (manylinux_2_28, Python ${{ matrix.python_version }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -252,7 +322,7 @@ jobs:
           - '3.9'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
