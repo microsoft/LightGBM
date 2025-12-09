@@ -51,7 +51,7 @@ env:
 jobs:
   test:
     # yamllint disable-line rule:line-length
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
+    name: ${{ matrix.task }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
@@ -68,12 +68,14 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
+            os-display-name: 'ubuntu22.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
+            os-display-name: 'ubuntu22.04'
           - os: macos-15-intel
             task: r-package
             compiler: gcc
@@ -117,6 +119,7 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: 'ubuntu:22.04'
+            os-display-name: 'ubuntu22.04'
             produces-artifacts: 'true'
             artifact-name: r-cran-package
           - os: macos-15-intel
@@ -162,7 +165,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -231,7 +234,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -272,7 +275,7 @@ jobs:
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
