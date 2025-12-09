@@ -92,11 +92,11 @@ namespace LightGBM {
   }
 
   void UpdatePointwiseScoresForOneQuery(double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,
-    data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
+    const std::pair<data_size_t, data_size_t>* paired_index_map,
     const std::vector<std::vector<std::pair<short, data_size_t>>>& right2left2pair_map,
     const std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map,
     int truncation_level, double sigma, const CommonC::SigmoidCache& sigmoid_cache, bool model_indirect_comparison, bool model_conditional_rel,
-    bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank) {
+    bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, double indirect_comparison_weight) {
 
     // get sorted indices for scores
     global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
@@ -116,64 +116,89 @@ namespace LightGBM {
     global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 1");
     std::vector<double> gradients(cnt_pointwise);
     std::vector<double> hessians(cnt_pointwise);
-    for (data_size_t i = 0; i < selected_pairs_cnt; i++) {
-      data_size_t current_pair = selected_pairs[i];
-      short indexLeft = paired_index_map[current_pair].first;
-      short indexRight = paired_index_map[current_pair].second;
-      if (ranks[indexLeft] >= truncation_level && ranks[indexRight] >= truncation_level) { continue; }
 
-      double delta_score = score_pairwise[current_pair];
-      int comparisons = 1;
+    for (data_size_t i = 0; i < cnt_pointwise - 1 && i < truncation_level; ++i) {
+      if (score_pointwise[sorted_idx[i]] == kMinScore) { continue; }
+      for (data_size_t j = i + 1; j < cnt_pointwise; ++j) {
+        if (score_pointwise[sorted_idx[j]] == kMinScore) { continue; }
 
-      data_size_t i_inverse = get_pair_index(left2right2pair_map[indexRight], indexLeft);
-      if (i_inverse != static_cast<data_size_t>(-1)) {
-        delta_score -= score_pairwise[i_inverse];
-        ++comparisons;
+        const data_size_t indexLeft = sorted_idx[i];
+        const data_size_t indexRight = sorted_idx[j];
+
+        double delta_score = 0.0;
+        double delta_score_total_weight = 0.0;
+        int comparisons_direct = 0;
+
+        data_size_t pair = get_pair_index(left2right2pair_map[indexLeft], indexRight);
+        if (pair != static_cast<data_size_t>(-1)) {
+          delta_score += score_pairwise[pair];
+          ++comparisons_direct;
+        }
+
+        data_size_t pair_inverse = get_pair_index(left2right2pair_map[indexRight], indexLeft);
+        if (pair_inverse != static_cast<data_size_t>(-1)) {
+          delta_score -= score_pairwise[pair_inverse];
+          ++comparisons_direct;
+        }
+
+        if (comparisons_direct > 0) {
+          delta_score /= comparisons_direct;
+          delta_score *= (1.0 - indirect_comparison_weight);
+          delta_score_total_weight += (1.0 - indirect_comparison_weight);
+        }
+
+        if (model_indirect_comparison) {
+          double delta_score_indirect = 0.0;
+          int comparisons_indirect = 0;
+
+          auto apply_score = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
+            delta_score_indirect += signA * score_pairwise[a] + signB * score_pairwise[b];
+            ++comparisons_indirect;
+            };
+
+          process_indirect_comparisons_optimized(
+            indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
+            indirect_comparison_max_rank, indirect_comparison_above_only, model_conditional_rel,
+            // Case 1: (+, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, -1); },
+            // Case 2: (−, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, -1); },
+            // Case 3: (+, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, +1); },
+            // Case 4: (−, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, +1); }
+          );
+
+          if (comparisons_indirect > 0) {
+            delta_score_indirect /= comparisons_indirect;
+            delta_score += delta_score_indirect * indirect_comparison_weight;
+            delta_score_total_weight += indirect_comparison_weight;
+          }
+        }
+
+        if (delta_score_total_weight <= 0.0) { continue;  }
+        delta_score /= delta_score_total_weight;
+
+        double delta_score_pointwise = score_pointwise[indexLeft] - score_pointwise[indexRight];
+        if (delta_score_pointwise == kMinScore || -delta_score_pointwise == kMinScore || delta_score == kMinScore || -delta_score == kMinScore) { continue; }
+        // get discount of this pair	
+        double paired_discount = logarithmic_discounts ? fabs(DCGCalculator::GetDiscount(ranks[indexRight]) - DCGCalculator::GetDiscount(ranks[indexLeft])) : 1.0;
+        double p_lr_pairwise = sigmoid_cache.compute(-delta_score);
+        double p_rl_pairwise = 1.0 - p_lr_pairwise;
+        double p_lr_pointwise = sigmoid_cache.compute(-delta_score_pointwise);
+        double p_rl_pointwise = 1.0 - p_lr_pointwise;
+
+        if (hard_pairwise_preference) {
+          paired_discount *= std::abs(0.5 - p_lr_pairwise);
+          p_lr_pairwise = p_lr_pairwise >= 0.5 ? 1.0 : 0.0;
+          p_rl_pairwise = 1.0 - p_lr_pairwise;
+        }
+
+        gradients[indexLeft] += sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
+        hessians[indexLeft] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
+        gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
+        hessians[indexRight] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
       }
-
-      if (model_indirect_comparison) {
-        auto apply_score = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
-          delta_score += signA * score_pairwise[a] + signB * score_pairwise[b];
-          ++comparisons;
-          };
-
-        process_indirect_comparisons_optimized(
-          indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
-          indirect_comparison_max_rank, indirect_comparison_above_only, model_conditional_rel,
-          // Case 1: (+, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, -1); },
-          // Case 2: (−, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, -1); },
-          // Case 3: (+, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, +1); },
-          // Case 4: (−, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, +1); }
-        );
-      }
-
-
-      double delta_score_pointwise = score_pointwise[indexLeft] - score_pointwise[indexRight];
-      if (delta_score_pointwise == kMinScore || -delta_score_pointwise == kMinScore || delta_score == kMinScore || -delta_score == kMinScore) { continue; }
-      delta_score /= comparisons;
-      // get discount of this pair	
-      double paired_discount = logarithmic_discounts ? fabs(DCGCalculator::GetDiscount(ranks[indexRight]) - DCGCalculator::GetDiscount(ranks[indexLeft])) : 1.0;
-      //double p_lr_pairwise = 1.0f / (1.0f + std::exp(-delta_score * sigma));
-      double p_lr_pairwise = sigmoid_cache.compute(-delta_score);
-      double p_rl_pairwise = 1.0 - p_lr_pairwise;
-      //double p_lr_pointwise = 1.0f / (1.0f + std::exp(-delta_score_pointwise * sigma));
-      double p_lr_pointwise = sigmoid_cache.compute(-delta_score_pointwise);
-      double p_rl_pointwise = 1.0 - p_lr_pointwise;
-
-      if (hard_pairwise_preference) {
-        paired_discount *= std::abs(0.5 - p_lr_pairwise);
-        p_lr_pairwise = p_lr_pairwise >= 0.5 ? 1.0 : 0.0;
-        p_rl_pairwise = 1.0 - p_lr_pairwise;
-      }
-
-      gradients[indexLeft] += sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
-      hessians[indexLeft] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
-      gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
-      hessians[indexRight] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
     }
     global_timer.Stop("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 1");
     global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 2");
@@ -634,6 +659,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     logarithmic_discounts_ = config.pairwise_lambdarank_logarithmic_discounts;
     hard_pairwise_preference_ = config.pairwise_lambdarank_hard_pairwise_preference;
     indirect_comparison_max_rank_ = config.pairwise_lambdarank_indirect_comparison_max_rank;
+    indirect_comparison_weight_ = model_indirect_comparison_? config.pairwise_lambdarank_indirect_comparison_weight: 0.0;
   }
 
   explicit PairwiseLambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
@@ -716,13 +742,11 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       GetGradientsForOneQuery(query_index, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data() + start_pointwise, num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
         right2left2pair_map_byquery_[query_index], left2right2pair_map_byquery_[query_index],
         gradients_pairwise + start_pairwise, hessians_pairwise + start_pairwise);
-      std::vector<data_size_t> all_pairs(cnt_pairwise);
-      std::iota(all_pairs.begin(), all_pairs.end(), 0);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 1");
       global_timer.Start("pairwise_lambdarank::GetGradients part 2");
-      UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
+      UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise,
         paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[query_index], left2right2pair_map_byquery_[query_index], truncation_level_, sigmoid_, sigmoid_cache_,
-        model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_);
+        model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 2");
     }
     if (num_position_ids_ > 0) {
@@ -796,118 +820,157 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     }
     const double worst_score = score_pointwise[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
-    // start accmulate lambdas by pairs
-    for (data_size_t i = 0; i < cnt_pairwise; i++) {
-      data_size_t indexLeft = paired_index_map_[i + start_pairwise].first;
-      data_size_t indexRight = paired_index_map_[i + start_pairwise].second;
 
-      if (label[indexLeft] <= label[indexRight] || (ranks[indexLeft] >= truncation_level_ && ranks[indexRight] >= truncation_level_)) {
-        continue;
+
+    // start accumulate lambdas by pairs that contain at least one document above truncation level
+    for (data_size_t i = 0; i < cnt_pointwise - 1 && i < truncation_level_; ++i) {
+      if (score_pointwise[sorted_idx[i]] == kMinScore) { continue; }
+      for (data_size_t j = i + 1; j < cnt_pointwise; ++j) {
+        if (score_pointwise[sorted_idx[j]] == kMinScore) { continue; }
+        // skip pairs with the same labels
+        if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
+        data_size_t high_rank, low_rank;
+        if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
+          high_rank = i;
+          low_rank = j;
+        }
+        else {
+          high_rank = j;
+          low_rank = i;
+        }
+        const data_size_t high = sorted_idx[high_rank];
+        data_size_t indexLeft = high;
+        const int high_label = static_cast<int>(label[high]);
+        const double high_label_gain = label_gain_[high_label];
+        const double high_discount = DCGCalculator::GetDiscount(high_rank);
+        const data_size_t low = sorted_idx[low_rank];
+        data_size_t indexRight = low;
+        const int low_label = static_cast<int>(label[low]);
+        const double low_label_gain = label_gain_[low_label];
+        const double low_discount = DCGCalculator::GetDiscount(low_rank);
+
+
+        double delta_score = 0.0;
+        double delta_score_total_weight = 0.0;
+        int comparisons_direct = 0;
+        double delta_score_indirect = 0.0;
+        int comparisons_indirect = 0;
+
+        data_size_t pair = get_pair_index(left2right2pair_map[indexLeft], indexRight);
+        if (pair != static_cast<data_size_t>(-1)) {
+          delta_score += score_pairwise[pair];
+          ++comparisons_direct;
+        }
+
+        data_size_t pair_inverse = get_pair_index(left2right2pair_map[indexRight], indexLeft);
+        if (pair_inverse != static_cast<data_size_t>(-1)) {
+          delta_score -= score_pairwise[pair_inverse];
+          ++comparisons_direct;
+        }
+
+        if (comparisons_direct > 0) {
+          delta_score /= comparisons_direct;
+          delta_score *= (1.0 - indirect_comparison_weight_);
+          delta_score_total_weight += (1.0 - indirect_comparison_weight_);
+        }
+
+        if (model_indirect_comparison_) {
+          auto apply_score = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
+            delta_score_indirect += signA * score_pairwise[a] + signB * score_pairwise[b];
+            ++comparisons_indirect;
+            };
+
+          process_indirect_comparisons_optimized(
+            indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
+            indirect_comparison_max_rank_, indirect_comparison_above_only_, model_conditional_rel_,
+            // Case 1: (+, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, -1); },
+            // Case 2: (−, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, -1); },
+            // Case 3: (+, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, +1); },
+            // Case 4: (−, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, +1); }
+          );
+
+          if (comparisons_indirect > 0) {
+            delta_score_indirect /= comparisons_indirect;
+            delta_score += delta_score_indirect * indirect_comparison_weight_;
+            delta_score_total_weight += indirect_comparison_weight_;
+          }
+        }
+
+
+        if (delta_score_total_weight <= 0.0) { continue; }
+        delta_score /= delta_score_total_weight;
+
+        if (delta_score == kMinScore || -delta_score == kMinScore) { continue; }
+
+
+        // get dcg gap
+        const double dcg_gap = high_label_gain - low_label_gain;
+        // get discount of this pair	
+        const double paired_discount = fabs(high_discount - low_discount);
+        // get delta NDCG
+        double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
+        // regularize the delta_pair_NDCG by score distance
+        if (norm_ && best_score != worst_score) {
+          delta_pair_NDCG /= (0.01f + fabs(delta_score));
+        }
+        // calculate lambda for this pair
+        double p_lambda = GetSigmoid(delta_score);
+        double p_hessian = p_lambda * (1.0f - p_lambda);
+        // update
+        p_lambda *= -sigmoid_ * delta_pair_NDCG;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
+        if (weights_ != nullptr) {
+          p_lambda *= weights_[start_pointwise + high] * weights_[start_pointwise + low];
+          p_hessian *= weights_[start_pointwise + high] * weights_[start_pointwise + low];
+        }
+
+        if (pair >= 0) {
+          lambdas_pairwise[pair] += static_cast<score_t>(((1.0 - indirect_comparison_weight_) / delta_score_total_weight) * p_lambda / comparisons_direct);
+          hessians_pairwise[pair] += static_cast<score_t>(((1.0 - indirect_comparison_weight_) / delta_score_total_weight) * p_hessian / comparisons_direct);
+        }
+        if (pair_inverse >= 0) {
+          lambdas_pairwise[pair_inverse] -= static_cast<score_t>(((1.0 - indirect_comparison_weight_) / delta_score_total_weight) * p_lambda / comparisons_direct);
+          hessians_pairwise[pair_inverse] += static_cast<score_t>(((1.0 - indirect_comparison_weight_) / delta_score_total_weight) * p_hessian / comparisons_direct);
+        }
+
+        if (model_indirect_comparison_ && comparisons_indirect > 0) {
+          const score_t l = static_cast<score_t>((indirect_comparison_weight_ / delta_score_total_weight) * p_lambda / comparisons_indirect);
+          const score_t h = static_cast<score_t>((indirect_comparison_weight_ / delta_score_total_weight ) * p_hessian / comparisons_indirect);
+
+          auto apply_update = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
+            lambdas_pairwise[a] += signA * l;
+            hessians_pairwise[a] += h;
+            lambdas_pairwise[b] += signB * l;
+            hessians_pairwise[b] += h;
+            };
+
+          process_indirect_comparisons_optimized(
+            indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
+            indirect_comparison_max_rank_, indirect_comparison_above_only_, model_conditional_rel_,
+            // Case 1: (+, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, +1, -1); },
+            // Case 2: (−, −)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, -1, -1); },
+            // Case 3: (+, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, +1, +1); },
+            // Case 4: (−, +)
+            [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, -1, +1); }
+          );
+        }
+        // lambda is negative, so use minus to accumulate
+        sum_lambdas -= 2 * p_lambda;
       }
-
-      const data_size_t high = indexLeft;
-      const data_size_t low = indexRight;
-      const data_size_t high_rank = ranks[high];
-      const data_size_t low_rank = ranks[low];
-      const int high_label = static_cast<int>(label[high]);
-      const double high_label_gain = label_gain_[high_label];
-      const double high_discount = DCGCalculator::GetDiscount(high_rank);
-      const int low_label = static_cast<int>(label[low]);
-      const double low_label_gain = label_gain_[low_label];
-      const double low_discount = DCGCalculator::GetDiscount(low_rank);
-      double delta_score = score_pairwise[i];
-      int comparisons = 1;
-
-      data_size_t i_inverse = get_pair_index(left2right2pair_map[indexRight], indexLeft);
-      if (i_inverse != static_cast<data_size_t>(-1)) {
-        delta_score -= score_pairwise[i_inverse];
-        ++comparisons;
-      }
-
-      if (model_indirect_comparison_) {
-        auto apply_score = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
-          delta_score += signA * score_pairwise[a] + signB * score_pairwise[b];
-          ++comparisons;
-          };
-
-        process_indirect_comparisons_optimized(
-          indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
-          indirect_comparison_max_rank_, indirect_comparison_above_only_, model_conditional_rel_,
-          // Case 1: (+, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, -1); },
-          // Case 2: (−, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, -1); },
-          // Case 3: (+, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, +1); },
-          // Case 4: (−, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, -1, +1); }
-        );
-      }
-
-
-      if (delta_score == kMinScore || -delta_score == kMinScore) { continue; }
-      delta_score /= comparisons;
-
-      // get dcg gap
-      const double dcg_gap = high_label_gain - low_label_gain;
-      // get discount of this pair	
-      const double paired_discount = fabs(high_discount - low_discount);
-      // get delta NDCG
-      double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-      // regularize the delta_pair_NDCG by score distance
-      if (norm_ && best_score != worst_score) {
-        delta_pair_NDCG /= (0.01f + fabs(delta_score));
-      }
-      // calculate lambda for this pair
-      double p_lambda = GetSigmoid(delta_score);
-      double p_hessian = p_lambda * (1.0f - p_lambda);
-      // update
-      p_lambda *= -sigmoid_ * delta_pair_NDCG;
-      p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
-      if (weights_ != nullptr) {
-        p_lambda *= weights_[start_pointwise + high] * weights_[start_pointwise + low];
-        p_hessian *= weights_[start_pointwise + high] * weights_[start_pointwise + low];
-      }
-      lambdas_pairwise[i] += static_cast<score_t>(p_lambda / comparisons);
-      hessians_pairwise[i] += static_cast<score_t>(p_hessian / comparisons);
-      if (i_inverse >= 0) {
-        lambdas_pairwise[i_inverse] -= static_cast<score_t>(p_lambda / comparisons);
-        hessians_pairwise[i_inverse] += static_cast<score_t>(p_hessian / comparisons);
-      }
-
-      if (model_indirect_comparison_) {
-        const score_t l = static_cast<score_t>(p_lambda / comparisons);
-        const score_t h = static_cast<score_t>(p_hessian / comparisons);
-
-        auto apply_update = [&](data_size_t a, data_size_t b, score_t signA, score_t signB) noexcept {
-          lambdas_pairwise[a] += signA * l;
-          hessians_pairwise[a] += h;
-          lambdas_pairwise[b] += signB * l;
-          hessians_pairwise[b] += h;
-          };
-
-        process_indirect_comparisons_optimized(
-          indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
-          indirect_comparison_max_rank_, indirect_comparison_above_only_, model_conditional_rel_,
-          // Case 1: (+, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, +1, -1); },
-          // Case 2: (−, −)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, -1, -1); },
-          // Case 3: (+, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, +1, +1); },
-          // Case 4: (−, +)
-          [&](data_size_t idxA, data_size_t idxB) noexcept { apply_update(idxA, idxB, -1, +1); }
-        );
-      }
-      // lambda is negative, so use minus to accumulate
-      sum_lambdas -= 2 * p_lambda;
     }
 
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
-      for (data_size_t i = 0; i < cnt_pairwise; ++i) {
-        lambdas_pairwise[i] = static_cast<score_t>(lambdas_pairwise[i] * norm_factor);
-        hessians_pairwise[i] = static_cast<score_t>(hessians_pairwise[i] * norm_factor);
+      for (data_size_t pair = 0; pair < cnt_pairwise; ++pair) {
+        lambdas_pairwise[pair] = static_cast<score_t>(lambdas_pairwise[pair] * norm_factor);
+        hessians_pairwise[pair] = static_cast<score_t>(hessians_pairwise[pair] * norm_factor);
       }
     }
   }
@@ -941,6 +1004,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
    bool logarithmic_discounts_;
    bool hard_pairwise_preference_;
    int indirect_comparison_max_rank_;
+   double indirect_comparison_weight_;
 
  private:
   const std::pair<data_size_t, data_size_t>* paired_index_map_;

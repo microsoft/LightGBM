@@ -776,7 +776,7 @@ class Booster {
                         config.precise_float_parser, config.pairwise_lambdarank_prediction_num_iteration, config.use_differential_feature_in_pairwise_ranking,
                         config.sigmoid, config.lambdarank_truncation_level, config.pairwise_lambdarank_model_indirect_comparison, config.pairwise_lambdarank_model_conditional_rel,
                         config.pairwise_lambdarank_indirect_comparison_above_only, config.pairwise_lambdarank_logarithmic_discounts, config.pairwise_lambdarank_hard_pairwise_preference,
-                        config.pairwise_lambdarank_indirect_comparison_max_rank, config.pairwise_lambdarank_prediction_pairing_top_n, config.pairwise_lambdarank_prediction_pairing_top_pairs_k,
+                        config.pairwise_lambdarank_indirect_comparison_max_rank, config.pairwise_lambdarank_model_indirect_comparison? config.pairwise_lambdarank_indirect_comparison_weight : 0.0, config.pairwise_lambdarank_prediction_pairing_top_n, config.pairwise_lambdarank_prediction_pairing_top_pairs_k,
                         config.pairwise_lambdarank_prediction_shuffle_sigma, config.pairwise_lambdarank_prediction_pointwise_updates_per_iteration);
     } else {
       predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,

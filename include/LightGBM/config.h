@@ -1033,6 +1033,10 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   int pairwise_lambdarank_indirect_comparison_max_rank = 10;
 
+  // desc = weight for indirect comparison of documents within a pair, between 0.0 and 1.0
+  // desc = used only in ``pairwise_lambdarank`` application
+  double pairwise_lambdarank_indirect_comparison_weight = 0.5;
+
   // desc = pairing appraoch for training dataset
   // desc = used only in ``pairwise_lambdarank`` application
   // desc = with ``different_relevance``, only consider pairs with difference relevance score

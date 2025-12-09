@@ -314,6 +314,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "pairwise_lambdarank_logarithmic_discounts",
   "pairwise_lambdarank_hard_pairwise_preference",
   "pairwise_lambdarank_indirect_comparison_max_rank",
+  "pairwise_lambdarank_indirect_comparison_weight",
   "pairwise_lambdarank_train_pairing_approach",
   "pairwise_lambdarank_valid_pairing_approach",
   "pairwise_lambdarank_train_pairing_random_k",
@@ -664,6 +665,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "pairwise_lambdarank_indirect_comparison_max_rank", &pairwise_lambdarank_indirect_comparison_max_rank);
 
+  GetDouble(params, "pairwise_lambdarank_indirect_comparison_weight", &pairwise_lambdarank_indirect_comparison_weight);
+  CHECK_GE(pairwise_lambdarank_indirect_comparison_weight, 0.0);
+  CHECK_LE(pairwise_lambdarank_indirect_comparison_weight, 1.0);
+
   GetString(params, "pairwise_lambdarank_train_pairing_approach", &pairwise_lambdarank_train_pairing_approach);
 
   GetString(params, "pairwise_lambdarank_valid_pairing_approach", &pairwise_lambdarank_valid_pairing_approach);
@@ -842,6 +847,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[pairwise_lambdarank_logarithmic_discounts: " << pairwise_lambdarank_logarithmic_discounts << "]\n";
   str_buf << "[pairwise_lambdarank_hard_pairwise_preference: " << pairwise_lambdarank_hard_pairwise_preference << "]\n";
   str_buf << "[pairwise_lambdarank_indirect_comparison_max_rank: " << pairwise_lambdarank_indirect_comparison_max_rank << "]\n";
+  str_buf << "[pairwise_lambdarank_indirect_comparison_weight: " << pairwise_lambdarank_indirect_comparison_weight << "]\n";
   str_buf << "[pairwise_lambdarank_train_pairing_approach: " << pairwise_lambdarank_train_pairing_approach << "]\n";
   str_buf << "[pairwise_lambdarank_valid_pairing_approach: " << pairwise_lambdarank_valid_pairing_approach << "]\n";
   str_buf << "[pairwise_lambdarank_train_pairing_random_k: " << pairwise_lambdarank_train_pairing_random_k << "]\n";
@@ -1004,6 +1010,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"pairwise_lambdarank_logarithmic_discounts", {}},
     {"pairwise_lambdarank_hard_pairwise_preference", {}},
     {"pairwise_lambdarank_indirect_comparison_max_rank", {}},
+    {"pairwise_lambdarank_indirect_comparison_weight", {}},
     {"pairwise_lambdarank_train_pairing_approach", {}},
     {"pairwise_lambdarank_valid_pairing_approach", {}},
     {"pairwise_lambdarank_train_pairing_random_k", {}},
@@ -1169,6 +1176,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"pairwise_lambdarank_logarithmic_discounts", "bool"},
     {"pairwise_lambdarank_hard_pairwise_preference", "bool"},
     {"pairwise_lambdarank_indirect_comparison_max_rank", "int"},
+    {"pairwise_lambdarank_indirect_comparison_weight", "double"},
     {"pairwise_lambdarank_train_pairing_approach", "string"},
     {"pairwise_lambdarank_valid_pairing_approach", "string"},
     {"pairwise_lambdarank_train_pairing_random_k", "int"},
