@@ -2033,7 +2033,7 @@ def test_predict_contrib_int64():
     }
     booster = lgb.train(params, train_set=train_data, num_boost_round=5)
 
-    preds = booster.predict(X_test, pred_contrib=True, num_iteration=booster.best_iteration)
+    preds = booster.predict(X_test, pred_contrib=True)
 
     assert preds is not None
     assert preds.shape[0] == X_test.shape[0]
