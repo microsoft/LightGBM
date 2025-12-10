@@ -2013,6 +2013,33 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
+)
+def test_predict_contrib_int64():
+    X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
+    y = y.flatten()
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_test.indptr = X_test.indptr.astype(np.int64)
+
+    train_data = lgb.Dataset(X_train, label=y_train)
+    params = {
+        "objective": "binary",
+        "num_leaves": 7,
+        "min_data_in_bin": 1,
+        "min_data_in_leaf": 1,
+        "seed": 708,
+        "verbose": -1,
+    }
+    booster = lgb.train(params, train_set=train_data, num_boost_round=5)
+
+    preds = booster.predict(X_test, pred_contrib=True)
+
+    assert preds is not None
+    assert preds.shape[0] == X_test.shape[0]
+    assert preds.shape[1] == X_test.shape[1] + 1
+
+
 # @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
 # def test_int32_max_sparse_contribs(rng):
 #     params = {"objective": "binary"}
