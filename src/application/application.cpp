@@ -235,8 +235,17 @@ void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
-                      config_.precise_float_parser);
+    if (config_.objective == std::string("pairwise_lambdarank")) {
+      predictor.PredictPairwise(config_.data.c_str(), config_.output_model.c_str(), config_.header, config_.predict_disable_shape_check,
+                        config_.precise_float_parser, config_.pairwise_lambdarank_prediction_num_iteration, config_.use_differential_feature_in_pairwise_ranking,
+                        config_.sigmoid, config_.lambdarank_truncation_level, config_.pairwise_lambdarank_model_indirect_comparison, config_.pairwise_lambdarank_model_conditional_rel,
+                        config_.pairwise_lambdarank_indirect_comparison_above_only, config_.pairwise_lambdarank_logarithmic_discounts, config_.pairwise_lambdarank_hard_pairwise_preference,
+                        config_.pairwise_lambdarank_indirect_comparison_max_rank, config_.pairwise_lambdarank_model_indirect_comparison? config_.pairwise_lambdarank_indirect_comparison_weight : 0.0, config_.pairwise_lambdarank_prediction_pairing_top_n, config_.pairwise_lambdarank_prediction_pairing_top_pairs_k,
+                        config_.pairwise_lambdarank_prediction_shuffle_sigma, config_.pairwise_lambdarank_prediction_pointwise_updates_per_iteration, config_.label_gain);
+    } else {
+      predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
+                        config_.precise_float_parser);
+    }
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
 
@@ -278,9 +287,18 @@ void Application::Predict() {
                         config_.predict_leaf_index, config_.predict_contrib,
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
-    predictor.Predict(config_.data.c_str(),
-                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
-                      config_.precise_float_parser);
+    if (config_.objective == std::string("pairwise_lambdarank")) {
+      predictor.PredictPairwise(config_.data.c_str(), config_.output_model.c_str(), config_.header, config_.predict_disable_shape_check,
+                        config_.precise_float_parser, config_.pairwise_lambdarank_prediction_num_iteration, config_.use_differential_feature_in_pairwise_ranking,
+                        config_.sigmoid, config_.lambdarank_truncation_level, config_.pairwise_lambdarank_model_indirect_comparison, config_.pairwise_lambdarank_model_conditional_rel,
+                        config_.pairwise_lambdarank_indirect_comparison_above_only, config_.pairwise_lambdarank_logarithmic_discounts, config_.pairwise_lambdarank_hard_pairwise_preference,
+                        config_.pairwise_lambdarank_indirect_comparison_max_rank, config_.pairwise_lambdarank_model_indirect_comparison? config_.pairwise_lambdarank_indirect_comparison_weight : 0.0, config_.pairwise_lambdarank_prediction_pairing_top_n, config_.pairwise_lambdarank_prediction_pairing_top_pairs_k,
+                        config_.pairwise_lambdarank_prediction_shuffle_sigma, config_.pairwise_lambdarank_prediction_pointwise_updates_per_iteration, config_.label_gain);
+    } else {
+      predictor.Predict(config_.data.c_str(),
+                        config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
+                        config_.precise_float_parser);
+    }
     Log::Info("Finished prediction");
   }
 }

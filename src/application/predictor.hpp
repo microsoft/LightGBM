@@ -414,7 +414,7 @@ class Predictor {
   */
   void PredictPairwise(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser, int num_iteration,
     bool use_differential_feature_in_pairwise_ranking, double sigmoid, int truncation_level, bool model_indirect_comparison, bool model_conditional_rel, bool indirect_comparison_above_only,
-    bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, double indirect_comparison_weight, int top_n, int top_pairs_k, double shuffle_sigma, int pointwise_updates_per_iteration) {
+    bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, double indirect_comparison_weight, int top_n, int top_pairs_k, double shuffle_sigma, int pointwise_updates_per_iteration, const std::vector<double>& label_gain) {
     std::unique_ptr<Metadata> metadata(new Metadata());
     metadata->Init(data_filename);
     auto writer = VirtualFileWriter::Make(result_filename);
@@ -428,9 +428,17 @@ class Predictor {
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    if (!header && !disable_shape_check && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
+
+    int num_total_features = 0;
+    if (use_differential_feature_in_pairwise_ranking) {
+      num_total_features = 3 * parser->NumFeatures();
+    } else {
+      num_total_features = 2 * parser->NumFeatures();
+    }
+
+    if (!header && !disable_shape_check && num_total_features != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
-                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", num_total_features, boosting_->MaxFeatureIdx() + 1);
     }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
     std::vector<int> feature_remapper(parser->NumFeatures(), -1);
@@ -489,6 +497,9 @@ class Predictor {
     CommonC::SigmoidCache sigmoid_cache;
     sigmoid_cache.Init(sigmoid);
 
+    auto label_gain_copy = label_gain;
+    DCGCalculator::DefaultLabelGain(&label_gain_copy);
+    DCGCalculator::Init(label_gain_copy);
 
 
     // Use query-aware processing for ranking tasks
@@ -503,15 +514,16 @@ class Predictor {
 
       // Parse all the data in the current query
       std::vector<std::vector<std::pair<int, double>>> oneline_features_in_query(lines.size());
-      OMP_INIT_EX();
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(oneline_features_in_query)
+      // OMP_INIT_EX();
+      // #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(oneline_features_in_query)
       for (data_size_t i = 0; i < num_items_in_query; ++i) {
-        OMP_LOOP_EX_BEGIN();
+        // OMP_LOOP_EX_BEGIN();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features_in_query[i]);
-        OMP_LOOP_EX_END();
+        // Log::Warning("oneline_features_in_query[i].size() = %ld", oneline_features_in_query[i].size());
+        // OMP_LOOP_EX_END();
       }
-      OMP_THROW_EX();
+      // OMP_THROW_EX();
 
       // Prepare for final prediction results
       std::vector<std::string> result_to_write(lines.size());
@@ -552,16 +564,16 @@ class Predictor {
 
         // resize result vector
         result.resize(pair_indices.size() * num_pred_one_row_);
-        OMP_INIT_EX();
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+        // OMP_INIT_EX();
+        // #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
         for (data_size_t i = old_num_pairs; i < static_cast<data_size_t>(pair_indices.size()); ++i) {
-          OMP_LOOP_EX_BEGIN();
+          // OMP_LOOP_EX_BEGIN();
           
           // concatenate features from the paired instances
           std::vector<std::pair<int, double>> oneline_features;
-          oneline_features.insert(oneline_features.end(),
-                                  oneline_features_in_query[pair_indices[i].first].begin(),
-                                  oneline_features_in_query[pair_indices[i].first].end());
+          for (const auto& pair : oneline_features_in_query[pair_indices[i].first]) {
+            oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
+          }
           for (const auto& pair : oneline_features_in_query[pair_indices[i].second]) {
             oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
           }
@@ -595,18 +607,25 @@ class Predictor {
               oneline_features.push_back(std::make_pair(feature + 2 * num_features, val1 - val2));
             }
           }
+
+          // Log::Warning("pair_indices[i].first = %d, oneline_features.size() = %ld", pair_indices[i].first, oneline_features.size());
+
+          // for (auto& pair : oneline_features) {
+          //   Log::Warning("pair.first = %d, pair.second = %f", pair.first, pair.second);
+          // }
+
           predict_fun_(oneline_features, result.data() + i * num_pred_one_row_);
-          OMP_LOOP_EX_END();          
+          // OMP_LOOP_EX_END();          
         }
-        OMP_THROW_EX();
+        // OMP_THROW_EX();
 
         for (int i = 0; i < pointwise_updates_per_iteration; i++) {
           UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(),
             pair_indices.data(), right2left2pair_map, left2right2pair_map, truncation_level, sigmoid, sigmoid_cache, model_indirect_comparison,
             model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank, indirect_comparison_weight);
         }
-        //Log::Info((std::string("result = ") + VectorToString(result)).c_str());
-        //Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
+        Log::Info((std::string("result = ") + VectorToString(result)).c_str());
+        Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
       }
 
 

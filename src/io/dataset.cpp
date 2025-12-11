@@ -111,7 +111,7 @@ std::vector<std::vector<int>> FindGroups(
     const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
     const std::vector<int>& find_order, int** sample_indices,
     const int* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
-    data_size_t num_data, bool is_use_gpu, bool is_sparse,
+    data_size_t random_seed, bool is_use_gpu, bool is_sparse,
     std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
   const int max_bin_per_group = 256;
@@ -119,7 +119,7 @@ std::vector<std::vector<int>> FindGroups(
       static_cast<data_size_t>(total_sample_cnt / 10000);
   multi_val_group->clear();
 
-  Random rand(num_data);
+  Random rand(random_seed);
   std::vector<std::vector<int>> features_in_group;
   std::vector<std::vector<bool>> conflict_marks;
   std::vector<data_size_t> group_used_row_cnt;
@@ -984,7 +984,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   std::vector<int> used_diff_features;
   if (config.use_differential_feature_in_pairwise_ranking) {
     for (int diff_feature_index = 0; diff_feature_index < static_cast<int>(diff_feature_bin_mappers.size()); ++diff_feature_index) {
-      if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
+      if (diff_feature_bin_mappers[diff_feature_index] != nullptr && !diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
         num_numeric_features_ += 1;
         num_features_ += 1;
         used_diff_features.push_back(diff_feature_index);
@@ -997,7 +997,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   const bool is_use_gpu = config.device_type == std::string("cuda") || config.device_type == std::string("gpu");
   std::vector<int8_t> group_is_multi_val;
   std::vector<std::vector<int>> diff_feature_groups =
-    FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(sampled_indices_.get()).data(), Common::VectorSize<int>(*sampled_indices_).data(), static_cast<int>(sampled_indices_->size()), num_total_sampled_data_, num_data_, is_use_gpu, false, &group_is_multi_val);
+    FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(sampled_indices_.get()).data(), Common::VectorSize<int>(*sampled_indices_).data(), static_cast<int>(sampled_indices_->size()), num_total_sampled_data_, config.seed, is_use_gpu, false, &group_is_multi_val);
 
   if (is_validation) {
     std::vector<std::vector<int>> flatten_feature_groups;
@@ -2090,9 +2090,9 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config.min_data_in_leaf * num_total_sample_data) / num_data_);
   for (int i = 0; i < num_original_features; ++i) {
-    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial() && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
-      diff_original_feature_index->push_back(i);
-    }
+    // if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial() && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
+    diff_original_feature_index->push_back(i);
+    // }
   }
   const int num_numerical_features = static_cast<int>(diff_original_feature_index->size());
   std::vector<std::vector<double>> sampled_differential_values(num_numerical_features);
@@ -2100,57 +2100,61 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
     differential_feature_bin_mappers->push_back(nullptr);
   }
   const int num_threads = OMP_NUM_THREADS();
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  // #pragma omp parallel for schedule(static) num_threads(num_threads)
   for (int i = 0; i < num_numerical_features; ++i) {
-    const int feature_index = diff_original_feature_index->at(i);
-    const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
-    if (config.zero_as_missing) {
-      int cur_query = 0;
-      for (int j = 0; j < num_samples_for_feature; ++j) {
-        const double value = sample_values[feature_index][j];
-        data_size_t cur_data_index = sample_indices[feature_index][j];
-        while (query_boundaries[cur_query + 1] <= cur_data_index) {
-          ++cur_query;
-        }
-        for (int k = j + 1; sample_indices[feature_index][k] < query_boundaries[cur_query + 1]; ++k) {
-          const double diff_value = value - sample_values[feature_index][k];
-          sampled_differential_values[i].push_back(diff_value);
-        }
-      }
+    if (bin_mappers[i] == nullptr || bin_mappers[i]->is_trivial() || bin_mappers[i]->bin_type() != BinType::NumericalBin) {
+      differential_feature_bin_mappers->operator[](i).reset(nullptr);
     } else {
-      CHECK_GT(sample_indices[feature_index].size(), 0);
-      int cur_pos_j = 0;
-      int cur_query = 0;
-      for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
-        while (query_boundaries[cur_query + 1] <= j) {
-          ++cur_query;
-        }
-        double value_j = 0.0;
-        if (j == sample_indices[feature_index][cur_pos_j]) {
-          value_j = sample_values[feature_index][cur_pos_j];
-          ++cur_pos_j;
-        }
-        int cur_pos_k = cur_pos_j;
-        for (int k = j + 1; k < query_boundaries[cur_query + 1] && k < sample_indices[feature_index].back() + 1; ++k) {
-          double value_k = 0.0;
-          if (k == sample_indices[feature_index][cur_pos_k]) {
-            value_k = sample_values[feature_index][cur_pos_k];
-            ++cur_pos_k;
+      const int feature_index = diff_original_feature_index->at(i);
+      const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
+      if (config.zero_as_missing) {
+        int cur_query = 0;
+        for (int j = 0; j < num_samples_for_feature; ++j) {
+          const double value = sample_values[feature_index][j];
+          data_size_t cur_data_index = sample_indices[feature_index][j];
+          while (query_boundaries[cur_query + 1] <= cur_data_index) {
+            ++cur_query;
           }
-          const double diff_value = value_j - value_k;
-          sampled_differential_values[i].push_back(diff_value);
+          for (int k = j + 1; sample_indices[feature_index][k] < query_boundaries[cur_query + 1]; ++k) {
+            const double diff_value = value - sample_values[feature_index][k];
+            sampled_differential_values[i].push_back(diff_value);
+          }
+        }
+      } else {
+        CHECK_GT(sample_indices[feature_index].size(), 0);
+        int cur_pos_j = 0;
+        int cur_query = 0;
+        for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
+          while (query_boundaries[cur_query + 1] <= j) {
+            ++cur_query;
+          }
+          double value_j = 0.0;
+          if (j == sample_indices[feature_index][cur_pos_j]) {
+            value_j = sample_values[feature_index][cur_pos_j];
+            ++cur_pos_j;
+          }
+          int cur_pos_k = cur_pos_j;
+          for (int k = j + 1; k < query_boundaries[cur_query + 1] && k < sample_indices[feature_index].back() + 1; ++k) {
+            double value_k = 0.0;
+            if (k == sample_indices[feature_index][cur_pos_k]) {
+              value_k = sample_values[feature_index][cur_pos_k];
+              ++cur_pos_k;
+            }
+            const double diff_value = value_j - value_k;
+            sampled_differential_values[i].push_back(diff_value);
+          }
         }
       }
+      differential_feature_bin_mappers->operator[](i).reset(new BinMapper());
+      std::vector<double> forced_upper_bounds;
+      differential_feature_bin_mappers->operator[](i)->FindBin(
+        sampled_differential_values[i].data(),
+        static_cast<int>(sampled_differential_values[i].size()),
+        static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
+        config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
+        BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
+      );
     }
-    differential_feature_bin_mappers->operator[](i).reset(new BinMapper());
-    std::vector<double> forced_upper_bounds;
-    differential_feature_bin_mappers->operator[](i)->FindBin(
-      sampled_differential_values[i].data(),
-      static_cast<int>(sampled_differential_values[i].size()),
-      static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
-      config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
-      BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
-    );
   }
 }
 
