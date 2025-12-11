@@ -134,6 +134,7 @@ jobs:
             os-display-name: ubuntu22.04-with-gpu
             task: bdist
             compiler: clang-17
+            method: wheel
             python_version: '3.11'
             in-ubuntu-base-container: 'true'
           ############
@@ -217,7 +218,7 @@ jobs:
             task: regular
             compiler: gcc
             python_version: '3.11'
-            in-ubuntu-base-container: 'liblightgbm'
+            in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
             artifact-name: 'linux-amd64-liblightgbm'
@@ -226,6 +227,7 @@ jobs:
             os-display-name: *manylinux_amd64_display_name
             task: bdist
             compiler: gcc
+            method: wheel
             python_version: '3.10'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
