@@ -101,6 +101,7 @@ jobs:
             python_version: '3.12'
           - os: macos-15-intel
             task: bdist
+            method: wheel
             compiler: gcc
             python_version: '3.9'
           - os: windows-2022
