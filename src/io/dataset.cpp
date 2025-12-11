@@ -947,7 +947,6 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   // create differential features
   std::vector<std::unique_ptr<BinMapper>> diff_feature_bin_mappers;
   std::vector<std::unique_ptr<const BinMapper>> original_bin_mappers;
-  std::vector<int> diff_original_feature_index;
   if (config.use_differential_feature_in_pairwise_ranking) {
     for (int i = 0; i < dataset->num_total_features_; ++i) {
       const int inner_feature_index = dataset->InnerFeatureIndex(i);
@@ -966,7 +965,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
       train_num_queries_ = dataset->train_num_queries_;
     }
     // TODO(shiyu1994): verify the difference in training and validation results even when they share the same dataset
-    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, train_query_boundaries_, train_num_queries_, &diff_feature_bin_mappers, &diff_original_feature_index, config);
+    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, train_query_boundaries_, train_num_queries_, &diff_feature_bin_mappers, config);
   }
 
   used_feature_map_.clear();
@@ -1053,7 +1052,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
           ++cur_feature_index;
           ++num_features_in_group;
           ++num_used_differential_features_;
-          const int ori_feature_index = dataset->InnerFeatureIndex(diff_original_feature_index[diff_feature_index]);
+          const int ori_feature_index = dataset->InnerFeatureIndex(diff_feature_index);
           ori_bin_mappers.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
           ori_bin_mappers_for_diff.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
           diff_bin_mappers.emplace_back(new BinMapper(*diff_feature_bin_mappers[diff_feature_index]));
@@ -1067,7 +1066,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
       for (int j = 0; j < num_features_in_group; ++j) {
         const int tid = omp_get_thread_num();
         const int diff_feature_index = features_in_group[j];
-        const int original_feature_index = dataset->InnerFeatureIndex(diff_original_feature_index[diff_feature_index]);
+        const int original_feature_index = dataset->InnerFeatureIndex(diff_feature_index);
         const BinMapper* original_feature_bin_mapper = dataset->FeatureBinMapper(original_feature_index);
         BinIterator* original_feature_iterator = dataset->FeatureIterator(original_feature_index);
         original_feature_iterator->Reset(0);
@@ -1098,8 +1097,8 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     feature_names_.push_back(feature_name + std::string("_j"));
   }
   if (config.use_differential_feature_in_pairwise_ranking) {
-    for (const int real_feature_index : diff_original_feature_index) {
-      feature_names_.push_back(dataset->feature_names_[real_feature_index] + std::string("_k"));
+    for (const std::string& feature_name : dataset->feature_names_) {
+      feature_names_.push_back(feature_name + std::string("_k"));
     }
   }
 
@@ -2084,28 +2083,21 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
   const data_size_t* query_boundaries,
   const data_size_t num_queries,
   std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
-  std::vector<int>* diff_original_feature_index,
   const Config& config) const {
   const int num_original_features = static_cast<int>(sample_values.size());
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config.min_data_in_leaf * num_total_sample_data) / num_data_);
+  std::vector<std::vector<double>> sampled_differential_values(num_original_features);
   for (int i = 0; i < num_original_features; ++i) {
-    // if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial() && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
-    diff_original_feature_index->push_back(i);
-    // }
-  }
-  const int num_numerical_features = static_cast<int>(diff_original_feature_index->size());
-  std::vector<std::vector<double>> sampled_differential_values(num_numerical_features);
-  for (int i = 0; i < num_numerical_features; ++i) {
     differential_feature_bin_mappers->push_back(nullptr);
   }
   const int num_threads = OMP_NUM_THREADS();
   // #pragma omp parallel for schedule(static) num_threads(num_threads)
-  for (int i = 0; i < num_numerical_features; ++i) {
+  for (int i = 0; i < num_original_features; ++i) {
     if (bin_mappers[i] == nullptr || bin_mappers[i]->is_trivial() || bin_mappers[i]->bin_type() != BinType::NumericalBin) {
       differential_feature_bin_mappers->operator[](i).reset(nullptr);
     } else {
-      const int feature_index = diff_original_feature_index->at(i);
+      const int feature_index = i;
       const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
       if (config.zero_as_missing) {
         int cur_query = 0;

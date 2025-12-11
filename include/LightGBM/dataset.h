@@ -1090,7 +1090,6 @@ class Dataset {
     const data_size_t* query_boundaries,
     const data_size_t num_queries,
     std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
-    std::vector<int>* diff_original_feature_index,
     const Config& config) const;
 
   std::string data_filename_;

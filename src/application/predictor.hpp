@@ -514,16 +514,15 @@ class Predictor {
 
       // Parse all the data in the current query
       std::vector<std::vector<std::pair<int, double>>> oneline_features_in_query(lines.size());
-      // OMP_INIT_EX();
-      // #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(oneline_features_in_query)
+      OMP_INIT_EX();
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_items_in_query; ++i) {
-        // OMP_LOOP_EX_BEGIN();
+        OMP_LOOP_EX_BEGIN();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features_in_query[i]);
-        // Log::Warning("oneline_features_in_query[i].size() = %ld", oneline_features_in_query[i].size());
-        // OMP_LOOP_EX_END();
+        OMP_LOOP_EX_END();
       }
-      // OMP_THROW_EX();
+      OMP_THROW_EX();
 
       // Prepare for final prediction results
       std::vector<std::string> result_to_write(lines.size());
@@ -564,10 +563,10 @@ class Predictor {
 
         // resize result vector
         result.resize(pair_indices.size() * num_pred_one_row_);
-        // OMP_INIT_EX();
-        // #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+        OMP_INIT_EX();
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
         for (data_size_t i = old_num_pairs; i < static_cast<data_size_t>(pair_indices.size()); ++i) {
-          // OMP_LOOP_EX_BEGIN();
+          OMP_LOOP_EX_BEGIN();
           
           // concatenate features from the paired instances
           std::vector<std::pair<int, double>> oneline_features;
@@ -608,24 +607,18 @@ class Predictor {
             }
           }
 
-          // Log::Warning("pair_indices[i].first = %d, oneline_features.size() = %ld", pair_indices[i].first, oneline_features.size());
-
-          // for (auto& pair : oneline_features) {
-          //   Log::Warning("pair.first = %d, pair.second = %f", pair.first, pair.second);
-          // }
-
           predict_fun_(oneline_features, result.data() + i * num_pred_one_row_);
-          // OMP_LOOP_EX_END();          
+          OMP_LOOP_EX_END();          
         }
-        // OMP_THROW_EX();
+        OMP_THROW_EX();
 
         for (int i = 0; i < pointwise_updates_per_iteration; i++) {
           UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(),
             pair_indices.data(), right2left2pair_map, left2right2pair_map, truncation_level, sigmoid, sigmoid_cache, model_indirect_comparison,
             model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank, indirect_comparison_weight);
         }
-        Log::Info((std::string("result = ") + VectorToString(result)).c_str());
-        Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
+        // Log::Info((std::string("result = ") + VectorToString(result)).c_str());
+        // Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
       }
 
 
