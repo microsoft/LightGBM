@@ -2040,25 +2040,25 @@ def test_predict_contrib_int64():
     assert preds.shape[1] == X_test.shape[1] + 1
 
 
-# @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
-# def test_int32_max_sparse_contribs(rng):
-#     params = {"objective": "binary"}
-#     train_features = rng.uniform(size=(100, 1000))
-#     train_targets = [0] * 50 + [1] * 50
-#     lgb_train = lgb.Dataset(train_features, train_targets)
-#     gbm = lgb.train(params, lgb_train, num_boost_round=2)
-#     csr_input_shape = (3000000, 1000)
-#     test_features = csr_matrix(csr_input_shape)
-#     for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
-#         for j in range(0, 1000, 100):
-#             test_features[i, j] = random.random()
-#     y_pred_csr = gbm.predict(test_features, pred_contrib=True)
-#     # Note there is an extra column added to the output for the expected value
-#     csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
-#     assert y_pred_csr.shape == csr_output_shape
-#     y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
-#     # Note output CSC shape should be same as CSR output shape
-#     assert y_pred_csc.shape == csr_output_shape
+@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
+def test_int32_max_sparse_contribs(rng):
+    params = {"objective": "binary"}
+    train_features = rng.uniform(size=(100, 1000))
+    train_targets = [0] * 50 + [1] * 50
+    lgb_train = lgb.Dataset(train_features, train_targets)
+    gbm = lgb.train(params, lgb_train, num_boost_round=2)
+    csr_input_shape = (3000000, 1000)
+    test_features = csr_matrix(csr_input_shape)
+    for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+        for j in range(0, 1000, 100):
+            test_features[i, j] = random.random()
+    y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+    # Note there is an extra column added to the output for the expected value
+    csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+    assert y_pred_csr.shape == csr_output_shape
+    y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+    # Note output CSC shape should be same as CSR output shape
+    assert y_pred_csc.shape == csr_output_shape
 
 
 def test_sliced_data(rng):
