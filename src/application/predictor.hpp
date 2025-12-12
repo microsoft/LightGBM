@@ -441,19 +441,33 @@ class Predictor {
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", num_total_features, boosting_->MaxFeatureIdx() + 1);
     }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
-    std::vector<int> feature_remapper(parser->NumFeatures(), -1);
+    std::vector<int> feature_remapper(num_total_features, -1);
     bool need_adjust = false;
     // skip raw feature remapping if trained model has parser config str which may contain actual feature names.
     if (header && boosting_->ParserConfigStr().empty()) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
-      std::unordered_map<std::string, int> header_mapper;
+      std::unordered_map<std::string, int> pointwise_header_mapper;
       for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
-        if (header_mapper.count(header_words[i]) > 0) {
+        if (pointwise_header_mapper.count(header_words[i]) > 0) {
           Log::Fatal("Feature (%s) appears more than one time.", header_words[i].c_str());
         }
-        header_mapper[header_words[i]] = i;
+        pointwise_header_mapper[header_words[i]] = i;
       }
+
+      std::unordered_map<std::string, int> header_mapper;
+      for (const auto& pair : pointwise_header_mapper) {
+        header_mapper[pair.first + std::string("_i")] = pair.second;
+      }
+      for (const auto& pair : pointwise_header_mapper) {
+        header_mapper[pair.first + std::string("_j")] = pair.second + parser->NumFeatures();
+      }
+      if (use_differential_feature_in_pairwise_ranking) {
+        for (const auto& pair : pointwise_header_mapper) {
+          header_mapper[pair.first + std::string("_k")] = pair.second + 2 * parser->NumFeatures();
+        }
+      }
+
       const auto& fnames = boosting_->FeatureNames();
       for (int i = 0; i < static_cast<int>(fnames.size()); ++i) {
         if (header_mapper.count(fnames[i]) <= 0) {
