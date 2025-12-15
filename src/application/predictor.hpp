@@ -581,11 +581,11 @@ class Predictor {
         #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
         for (data_size_t i = old_num_pairs; i < static_cast<data_size_t>(pair_indices.size()); ++i) {
           OMP_LOOP_EX_BEGIN();
-          
+
           // concatenate features from the paired instances
           std::vector<std::pair<int, double>> oneline_features;
           for (const auto& pair : oneline_features_in_query[pair_indices[i].first]) {
-            oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
+            oneline_features.push_back(std::make_pair(pair.first, pair.second));
           }
           for (const auto& pair : oneline_features_in_query[pair_indices[i].second]) {
             oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
