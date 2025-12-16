@@ -365,6 +365,10 @@ class Metadata {
     return 1;
   }
 
+  inline bool query_load_from_file() const {
+    return query_load_from_file_;
+  }
+
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
   /*! \brief Disable copy */

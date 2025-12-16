@@ -412,42 +412,45 @@ class Predictor {
   * \param data_filename Filename of data
   * \param result_filename Filename of output result
   */
-  void PredictPairwise(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser, int num_iteration,
-    bool use_differential_feature_in_pairwise_ranking, double sigmoid, int truncation_level, bool model_indirect_comparison, bool model_conditional_rel, bool indirect_comparison_above_only,
-    bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, double indirect_comparison_weight, int top_n, int top_pairs_k, double shuffle_sigma, int pointwise_updates_per_iteration, const std::vector<double>& label_gain) {
+  void PredictPairwise(const Config& config) {
+
+    const double indirect_comparison_weight = config.pairwise_lambdarank_model_indirect_comparison ? config.pairwise_lambdarank_indirect_comparison_weight : 0.0;
+
+    const char* data_filename = config.data.c_str();
+    const char* result_filename = config.output_result.c_str();
     std::unique_ptr<Metadata> metadata(new Metadata());
     metadata->Init(data_filename);
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be created", result_filename);
     }
-    auto label_idx = header ? -1 : boosting_->LabelIdx();
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx,
-                                                               precise_float_parser, boosting_->ParserConfigStr()));
+    auto label_idx = config.header ? -1 : boosting_->LabelIdx();
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, config.header, boosting_->MaxFeatureIdx() + 1, label_idx,
+                                                               config.precise_float_parser, boosting_->ParserConfigStr()));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
     int num_total_features = 0;
-    if (use_differential_feature_in_pairwise_ranking) {
+    if (config.use_differential_feature_in_pairwise_ranking) {
       num_total_features = 3 * parser->NumFeatures();
     } else {
       num_total_features = 2 * parser->NumFeatures();
     }
 
-    if (!header && !disable_shape_check && num_total_features != boosting_->MaxFeatureIdx() + 1) {
+    if (!config.header && !config.predict_disable_shape_check && num_total_features != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", num_total_features, boosting_->MaxFeatureIdx() + 1);
     }
-    TextReader<data_size_t> predict_data_reader(data_filename, header);
+    TextReader<data_size_t> predict_data_reader(data_filename, config.header);
     std::vector<int> feature_remapper(num_total_features, -1);
     bool need_adjust = false;
+    std::unordered_map<std::string, int> pointwise_header_mapper;
     // skip raw feature remapping if trained model has parser config str which may contain actual feature names.
-    if (header && boosting_->ParserConfigStr().empty()) {
+    if (config.header && boosting_->ParserConfigStr().empty()) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
-      std::unordered_map<std::string, int> pointwise_header_mapper;
       for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
         if (pointwise_header_mapper.count(header_words[i]) > 0) {
           Log::Fatal("Feature (%s) appears more than one time.", header_words[i].c_str());
@@ -462,7 +465,7 @@ class Predictor {
       for (const auto& pair : pointwise_header_mapper) {
         header_mapper[pair.first + std::string("_j")] = pair.second + parser->NumFeatures();
       }
-      if (use_differential_feature_in_pairwise_ranking) {
+      if (config.use_differential_feature_in_pairwise_ranking) {
         for (const auto& pair : pointwise_header_mapper) {
           header_mapper[pair.first + std::string("_k")] = pair.second + 2 * parser->NumFeatures();
         }
@@ -483,6 +486,10 @@ class Predictor {
         }
       }
     }
+
+    // try to parse query_id from data file
+    ParseQueryGroupBoundaries(pointwise_header_mapper, config.group_column, metadata, config, data_filename, parser);
+
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
@@ -509,18 +516,16 @@ class Predictor {
     const int num_features = parser->NumFeatures();
 
     CommonC::SigmoidCache sigmoid_cache;
-    sigmoid_cache.Init(sigmoid);
+    sigmoid_cache.Init(config.sigmoid);
 
-    auto label_gain_copy = label_gain;
+    auto label_gain_copy = config.label_gain;
     DCGCalculator::DefaultLabelGain(&label_gain_copy);
     DCGCalculator::Init(label_gain_copy);
 
 
     // Use query-aware processing for ranking tasks
     std::function<void(data_size_t, data_size_t, const std::vector<std::string>&)>
-        process_fun_by_query = [use_differential_feature_in_pairwise_ranking, top_n, top_pairs_k, shuffle_sigma, sigmoid, sigmoid_cache, model_indirect_comparison,
-        model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank, indirect_comparison_weight, truncation_level,
-        pointwise_updates_per_iteration, num_features, num_iteration, &parser_fun, &writer, this](
+        process_fun_by_query = [&config, sigmoid_cache, indirect_comparison_weight, num_features, &parser_fun, &writer, this](
                                   data_size_t query_idx, data_size_t query_start, const std::vector<std::string>& lines) {
 
       // Get num items in this query
@@ -556,19 +561,19 @@ class Predictor {
       static thread_local std::mt19937 rng(std::random_device{}());
       //Log::Info((std::string("pair_indices = ") + VectorPairsToString(pair_indices)).c_str());
       //Log::Info("InitializeRandomPairs");
-      InitializeRandomPairs(num_items_in_query, pair_indices, top_n, rng);
+      InitializeRandomPairs(num_items_in_query, pair_indices, config.pairwise_lambdarank_prediction_pairing_top_n, rng);
       //Log::Info((std::string("pair_indices = ") + VectorPairsToString(pair_indices)).c_str());
       UpdateMapsForNewPairs(0, pair_indices, right2left2pair_map, left2right2pair_map);
       //Log::Info((std::string("right2left2pair_map = ") + MapToString(right2left2pair_map)).c_str());
       //Log::Info((std::string("left2right2pair_map = ") + MapToString(left2right2pair_map)).c_str());
 
 
-      for (int k = 0; k < num_iteration; ++k) {
+      for (int k = 0; k < config.pairwise_lambdarank_prediction_num_iteration; ++k) {
         //Log::Info("iteration=" + num_iteration);
         if (k > 0) {
           old_num_pairs = static_cast<data_size_t>(pair_indices.size());
           //Log::Info("ComputeNewPairs");
-          ComputeNewPairs(pair_indices, scores_pointwise, left2right2pair_map, shuffle_sigma, rng, top_n, top_pairs_k);
+          ComputeNewPairs(pair_indices, scores_pointwise, left2right2pair_map, config.pairwise_lambdarank_prediction_shuffle_sigma, rng, config.pairwise_lambdarank_prediction_pairing_top_n, config.pairwise_lambdarank_prediction_pairing_top_pairs_k);
           //Log::Info((std::string("pair_indices = ") + VectorPairsToString(pair_indices)).c_str());
           UpdateMapsForNewPairs(old_num_pairs, pair_indices, right2left2pair_map, left2right2pair_map);
           //Log::Info((std::string("right2left2pair_map = ") + MapToString(right2left2pair_map)).c_str());
@@ -590,7 +595,7 @@ class Predictor {
           for (const auto& pair : oneline_features_in_query[pair_indices[i].second]) {
             oneline_features.push_back(std::make_pair(pair.first + num_features, pair.second));
           }
-          if (use_differential_feature_in_pairwise_ranking) {
+          if (config.use_differential_feature_in_pairwise_ranking) {
             std::set<int> feature_set;
             for (const auto& pair : oneline_features_in_query[pair_indices[i].first]) {
               feature_set.insert(pair.first);
@@ -626,10 +631,10 @@ class Predictor {
         }
         OMP_THROW_EX();
 
-        for (int i = 0; i < pointwise_updates_per_iteration; i++) {
+        for (int i = 0; i < config.pairwise_lambdarank_prediction_pointwise_updates_per_iteration; i++) {
           UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(),
-            pair_indices.data(), right2left2pair_map, left2right2pair_map, truncation_level, sigmoid, sigmoid_cache, model_indirect_comparison,
-            model_conditional_rel, indirect_comparison_above_only, logarithmic_discounts, hard_pairwise_preference, indirect_comparison_max_rank, indirect_comparison_weight);
+            pair_indices.data(), right2left2pair_map, left2right2pair_map, config.lambdarank_truncation_level, config.sigmoid, sigmoid_cache, config.pairwise_lambdarank_model_indirect_comparison,
+            config.pairwise_lambdarank_model_conditional_rel, config.pairwise_lambdarank_indirect_comparison_above_only, config.pairwise_lambdarank_logarithmic_discounts, config.pairwise_lambdarank_hard_pairwise_preference, config.pairwise_lambdarank_indirect_comparison_max_rank, indirect_comparison_weight);
         }
         // Log::Info((std::string("result = ") + VectorToString(result)).c_str());
         // Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
@@ -652,6 +657,84 @@ class Predictor {
   }
 
  private:
+  int ParseGroupColumnIdx(const std::unordered_map<std::string, int>& header_mapper, std::string group_column) {
+    std::string name_prefix("name:");
+    int group_idx = -1;
+    if (group_column.size() > 0) {
+      if (Common::StartsWith(group_column, name_prefix)) {
+        std::string name = group_column.substr(name_prefix.size());
+        if (header_mapper.count(name) > 0) {
+          group_idx = header_mapper.at(name);
+          Log::Info("Using column %s as group/query id", name.c_str());
+        } else {
+          Log::Fatal("Could not find group/query column %s in data file", name.c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(group_column.c_str(), &group_idx)) {
+          Log::Fatal("group_column is not a number,\n"
+                     "if you want to use a column name,\n"
+                     "please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as group/query id", group_idx);
+      }
+    }
+
+    return group_idx;
+  }
+
+
+  void ParseQueryGroupBoundaries(const std::unordered_map<std::string, int>& header_mapper, const std::string group_column, const std::unique_ptr<Metadata>& metadata, const Config& config, const char* data_filename, const std::unique_ptr<Parser>& parser) {
+    const int group_column_idx = ParseGroupColumnIdx(header_mapper, group_column);
+
+    if (group_column_idx >= 0) {
+      if (metadata->query_load_from_file()) {
+        Log::Info("Using query id in data file, ignoring the additional query file");
+      }
+
+      // use dataset loader
+      DatasetLoader loader(config, nullptr, config.num_class, data_filename);
+
+      if (Network::num_machines() == 1) {
+        data_size_t global_num_data = 0;
+        std::vector<data_size_t> used_data_indices;
+        const std::vector<std::string> text_lines = loader.LoadTextDataToMemory(data_filename, *metadata.get(), 0, 1, &global_num_data, &used_data_indices);
+        const int num_threads = OMP_NUM_THREADS();
+        const data_size_t num_lines = static_cast<data_size_t>(text_lines.size());
+        metadata->Init(num_lines, -1, group_column_idx);
+        #pragma omp parallel for schedule(static) num_threads(num_threads)
+        for (data_size_t i = 0; i < num_lines; ++i) { // skipping header
+          const std::string& line = text_lines[i];
+          std::vector<std::pair<int, double>> oneline_feature;
+          double out_label = 0.0;
+          parser->ParseOneLine(line.c_str(), &oneline_feature, &out_label);
+          bool query_id_found = false;
+          int query_id = -1;
+          for (const auto& pair : oneline_feature) {
+            if (pair.first == group_column_idx) {
+              query_id_found = true;
+              query_id = static_cast<int>(pair.second);
+              if (query_id < 0) {
+                Log::Fatal("Invalid query_id %d found", query_id);
+              }
+              break;
+            }
+          }
+
+          if (!query_id_found) {
+            query_id = 0;
+          }
+
+          metadata->SetQueryAt(i, query_id);
+        }
+
+        metadata->FinishLoad();
+      } else {
+        Log::Fatal("Pairwise ranking prediction now supports only single machine mode.");
+      }
+    }
+  }
+
+
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     for (const auto &feature : features) {
       if (feature.first < num_feature_) {
