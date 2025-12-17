@@ -114,8 +114,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new MapMetric(config);
     } else if (type == std::string("multi_logloss")) {
       return new MultiSoftmaxLoglossMetric(config);
-    } else if (type == std::string("custom_multi_logloss")) {
-      return new CustomMultiSoftmaxLoglossMetric(config);
+    } else if (type == std::string("focalloss")) {
+      return new FocalLossMetric(config);
     } else if (type == std::string("multi_error")) {
       return new MultiErrorMetric(config);
     } else if (type == std::string("cross_entropy")) {
