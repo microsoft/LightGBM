@@ -7,6 +7,7 @@
 #include <string>
 
 #include "binary_metric.hpp"
+#include "custom_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
 #include "rank_metric.hpp"
@@ -113,6 +114,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new MapMetric(config);
     } else if (type == std::string("multi_logloss")) {
       return new MultiSoftmaxLoglossMetric(config);
+    } else if (type == std::string("custom_multi_logloss")) {
+      return new CustomMultiSoftmaxLoglossMetric(config);
     } else if (type == std::string("multi_error")) {
       return new MultiErrorMetric(config);
     } else if (type == std::string("cross_entropy")) {
