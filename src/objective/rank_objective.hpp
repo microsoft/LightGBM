@@ -274,7 +274,7 @@ class RankingObjective : public ObjectiveFunction {
       }
     }
     if (num_position_ids_ > 0) {
-      UpdatePositionBiasFactors(gradients, hessians);
+      UpdatePositionBiasFactors(gradients, hessians); 
     }
   }
 

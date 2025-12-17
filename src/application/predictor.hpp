@@ -257,20 +257,61 @@ class Predictor {
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
   }
 
-  void InitializeRandomPairs(data_size_t num_items_in_query, std::vector<std::pair<int, int>>& random_pairs, int top_n, std::mt19937& rng) {
-    std::vector<int> nums(num_items_in_query);
+
+  // Produces all unique directed pairs (x, y), x != y,
+  // such that at least one of x or y is in the selected top_n set.
+  // Selection of the top_n set is random via 'rng' (shuffle + truncate).
+  void InitializeRandomPairs(data_size_t num_items_in_query,
+    std::vector<std::pair<int, int>>& random_pairs,
+    int top_n,
+    std::mt19937& rng) {
+    const std::size_t N = num_items_in_query;
+    if (N < 2 || top_n <= 0) {
+      return;  // no pairs possible
+    }
+
+    // Build indices 0..N-1 and shuffle
+    std::vector<int> nums(static_cast<std::size_t>(N));
     std::iota(nums.begin(), nums.end(), 0);
     std::shuffle(nums.begin(), nums.end(), rng);
-    top_n = std::min<int>(top_n, static_cast<int>(num_items_in_query));
-    nums.resize(top_n);
-    for (int i : nums) {
-      for (int j = 0; j < num_items_in_query; ++j) {
-        if (i != j) {
-          random_pairs.push_back(std::make_pair(i, j));
-          random_pairs.push_back(std::make_pair(j, i));
-        }
+
+    // Clamp top_n to N and take the first top_n as the selected set S
+    const int M = std::min<int>(top_n, static_cast<int>(N));
+    nums.resize(static_cast<std::size_t>(M));
+
+    // Mark membership in S for O(1) checks
+    std::vector<unsigned char> in_top(N, 0);
+    for (int x : nums) {
+      in_top[static_cast<std::size_t>(x)] = 1;
+    }
+
+    // Reserve exact capacity to avoid reallocations:
+    // total = N*(N-1) - (K*(K-1)), where K = N - M
+    const std::size_t K = N - static_cast<std::size_t>(M);
+    const std::size_t total_pairs =
+      N * (N - 1) - K * (K - 1);  // directed pairs with at least one endpoint in S
+    random_pairs.reserve(random_pairs.size() + total_pairs);
+
+    // 1) Emit S × U (minus diagonal)
+    for (int x : nums) {  // x in S
+      const std::size_t xs = static_cast<std::size_t>(x);
+      for (std::size_t y = 0; y < N; ++y) {
+        if (y == xs) continue;  // skip diagonal
+        random_pairs.emplace_back(x, static_cast<int>(y));
       }
     }
+
+    // 2) Emit (U \ S) × S (these are not duplicates of step 1)
+    for (std::size_t x = 0; x < N; ++x) {
+      if (in_top[x]) continue;  // only x outside S
+      for (int y : nums) {      // y in S
+        if (static_cast<std::size_t>(y) == x) continue;  // diagonal guard (redundant because x !in S)
+        random_pairs.emplace_back(static_cast<int>(x), y);
+      }
+    }
+
+    // At this point, random_pairs contains exactly all (x, y), x != y,
+    // with (x in S) OR (y in S) — no duplicates.
   }
 
   void UpdateMapsForNewPairs(data_size_t previous_pairs_count, std::vector<std::pair<int, int>>& pairs, std::vector<std::vector<std::pair<short, data_size_t>>>& right2left2pair_map,
@@ -354,6 +395,96 @@ class Predictor {
         pairs.emplace_back(left, right);
         pairs.emplace_back(right, left);
         ++collected;
+      }
+    }
+  }
+
+
+  // Sort indices by raw scores (descending). No NaN per your assumption.
+  static inline std::vector<int>
+    sort_by_scores_desc(const std::vector<double>& scores_pointwise) {
+    const std::size_t n = scores_pointwise.size();
+    std::vector<int> idx(static_cast<int>(n));
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(),
+      [&](int a, int b) {
+        return scores_pointwise[static_cast<std::size_t>(a)]
+        > scores_pointwise[static_cast<std::size_t>(b)];
+      });
+    return idx;
+  }
+
+  /**
+   * ComputeNewPairs:
+   * - Scan docs by descending scores_pointwise.
+   * - Take up to 'top_n' docs that are NOT fully connected (degree < N-1).
+   * - For each selected doc 'left', add ALL missing pairs involving it.
+   * - No "seen" set; only rely on left2right2pair_map lookups.
+   * - To avoid intra-call duplicates when inserting the reverse orientation,
+   *   only add (right, left) if rank_pos[left] < rank_pos[right].
+   */
+  void ComputeNewPairs(std::vector<std::pair<data_size_t, data_size_t>>& pairs,
+    const std::vector<double>& scores_pointwise,
+    const std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map,
+    int top_n) {
+    const std::size_t N = scores_pointwise.size();
+    if (N <= 1 || top_n <= 0) return;
+
+    // Safety: helper uses short keys; ensure indices fit (adjust if needed).
+    if (N > static_cast<std::size_t>(std::numeric_limits<short>::max())) {
+      // If this can happen in your environment, widen the helper key type.
+      // For now, clamp top_n to prevent out-of-range keys.
+      top_n = std::min<int>(top_n, static_cast<int>(std::numeric_limits<short>::max()));
+    }
+
+    // 1) Rank by raw scores (descending).
+    std::vector<int> ranked = sort_by_scores_desc(scores_pointwise);
+
+    // Build rank positions for duplicate-safe reverse insertion:
+    // rank_pos[doc_id] = position in 'ranked'
+    std::vector<int> rank_pos(N, -1);
+    for (int pos = 0; pos < static_cast<int>(ranked.size()); ++pos) {
+      rank_pos[static_cast<std::size_t>(ranked[pos])] = pos;
+    }
+
+    // 2) Select up to 'top_n' docs that are NOT fully connected.
+    std::vector<data_size_t> selected;
+    selected.reserve(static_cast<std::size_t>(std::min<int>(top_n, static_cast<int>(N))));
+    for (int pos = 0; pos < static_cast<int>(ranked.size()) && static_cast<int>(selected.size()) < top_n; ++pos) {
+      const data_size_t left = static_cast<data_size_t>(ranked[pos]);
+      const auto& adj = left2right2pair_map[left];
+      if (adj.size() < (N - 1)) {
+        selected.push_back(left);
+      }
+    }
+    if (selected.empty()) return;
+
+    // 3) For each selected 'left', add all missing pairs.
+    for (data_size_t left : selected) {
+      const auto& adj_left = left2right2pair_map[left];
+
+      for (data_size_t right = 0; right < N; ++right) {
+        if (right == left) continue;
+
+        // (left, right): add if missing in adjacency
+        const data_size_t lr_idx =
+          get_pair_index(adj_left, static_cast<short>(right));
+        if (lr_idx == static_cast<data_size_t>(-1)) {
+          pairs.emplace_back(left, right);
+        }
+
+        // (right, left): add if missing in adjacency on 'right' AND
+        // honor rank-order rule to avoid intra-call duplicates.
+        const auto& adj_right = left2right2pair_map[right];
+        const data_size_t rl_idx =
+          get_pair_index(adj_right, static_cast<short>(left));
+        if (rl_idx == static_cast<data_size_t>(-1)) {
+          if (rank_pos[left] < rank_pos[right]) {
+            pairs.emplace_back(right, left);
+          }
+          // If rank_pos[right] < rank_pos[left], the symmetric insertion
+          // will happen when 'right' is (or becomes) a selected 'left'.
+        }
       }
     }
   }
@@ -569,11 +700,12 @@ class Predictor {
 
 
       for (int k = 0; k < config.pairwise_lambdarank_prediction_num_iteration; ++k) {
-        //Log::Info("iteration=" + num_iteration);
+        //Log::Info("iteration=" + k);
         if (k > 0) {
           old_num_pairs = static_cast<data_size_t>(pair_indices.size());
           //Log::Info("ComputeNewPairs");
-          ComputeNewPairs(pair_indices, scores_pointwise, left2right2pair_map, config.pairwise_lambdarank_prediction_shuffle_sigma, rng, config.pairwise_lambdarank_prediction_pairing_top_n, config.pairwise_lambdarank_prediction_pairing_top_pairs_k);
+          //ComputeNewPairs(pair_indices, scores_pointwise, left2right2pair_map, config.pairwise_lambdarank_prediction_shuffle_sigma, rng, config.pairwise_lambdarank_prediction_pairing_top_n, config.pairwise_lambdarank_prediction_pairing_top_pairs_k);
+          ComputeNewPairs(pair_indices, scores_pointwise, left2right2pair_map, config.pairwise_lambdarank_prediction_pairing_top_n);
           //Log::Info((std::string("pair_indices = ") + VectorPairsToString(pair_indices)).c_str());
           UpdateMapsForNewPairs(old_num_pairs, pair_indices, right2left2pair_map, left2right2pair_map);
           //Log::Info((std::string("right2left2pair_map = ") + MapToString(right2left2pair_map)).c_str());
@@ -636,8 +768,8 @@ class Predictor {
             pair_indices.data(), right2left2pair_map, left2right2pair_map, config.lambdarank_truncation_level, config.sigmoid, sigmoid_cache, config.pairwise_lambdarank_model_indirect_comparison,
             config.pairwise_lambdarank_model_conditional_rel, config.pairwise_lambdarank_indirect_comparison_above_only, config.pairwise_lambdarank_logarithmic_discounts, config.pairwise_lambdarank_hard_pairwise_preference, config.pairwise_lambdarank_indirect_comparison_max_rank, indirect_comparison_weight);
         }
-        // Log::Info((std::string("result = ") + VectorToString(result)).c_str());
-        // Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
+        //Log::Info((std::string("result = ") + VectorToString(result)).c_str());
+        //Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());
       }
 
 
