@@ -976,6 +976,12 @@ struct Config {
   // desc = set this closer to ``1`` to shift towards a **Poisson** distribution
   double tweedie_variance_power = 1.5;
 
+  // check = >=0.0
+  // desc = used only in ``focalloss`` multiclass classification application
+  // desc = gamma parameter for `Focal Loss <https://arxiv.org/abs/1708.02002>`__
+  // desc = when ``focal_gamma=0``, focal loss is equivalent to cross-entropy loss
+  double focal_gamma = 1.0;
+
   // check = >0
   // desc = used only in ``lambdarank`` application
   // desc = controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/publication/from-ranknet-to-lambdarank-to-lambdamart-an-overview/>`__

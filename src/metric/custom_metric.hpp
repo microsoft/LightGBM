@@ -14,8 +14,8 @@ class FocalLossMetric: public MulticlassMetric<FocalLossMetric> {
  public:
   explicit FocalLossMetric(const Config& config) : MulticlassMetric<FocalLossMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config&) {
-    constexpr double gamma = 1.0;  // TODO: make this configurable
+  inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config& config) {
+    double gamma = config.focal_gamma;
     size_t k = static_cast<size_t>(label);
     auto& ref_score = *score;
     double p_k = ref_score[k];

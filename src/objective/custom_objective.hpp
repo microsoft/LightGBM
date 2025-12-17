@@ -14,11 +14,19 @@ namespace LightGBM {
 class FocalLossSoftmax: public MulticlassSoftmax {
  public:
   explicit FocalLossSoftmax(const Config& config) : MulticlassSoftmax(config) {
-    gamma_ = 1.0;  // TODO: make this configurable
+    gamma_ = config.focal_gamma;
   }
 
   explicit FocalLossSoftmax(const std::vector<std::string>& strs) : MulticlassSoftmax(strs) {
-    gamma_ = 1.0;
+    gamma_ = 1.0;  // default value for model loading
+    for (auto str : strs) {
+      auto tokens = Common::Split(str.c_str(), ':');
+      if (tokens.size() == 2) {
+        if (tokens[0] == std::string("focal_gamma")) {
+          Common::Atof(tokens[1].c_str(), &gamma_);
+        }
+      }
+    }
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
@@ -99,6 +107,14 @@ class FocalLossSoftmax: public MulticlassSoftmax {
 
   const char* GetName() const override {
     return "focalloss";
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName() << " ";
+    str_buf << "num_class:" << num_class_ << " ";
+    str_buf << "focal_gamma:" << gamma_;
+    return str_buf.str();
   }
 
  private:
