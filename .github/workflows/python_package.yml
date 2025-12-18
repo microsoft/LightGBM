@@ -387,6 +387,12 @@ jobs:
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
         uses: NuGet/setup-nuget@v2
+      # ref: https://github.com/NuGet/setup-nuget/issues/168
+      - name: Setup mono
+        run: |
+          apt-get update -y
+          apt-get install --no-install-recommends \
+            mono-devel
       - name: Create NuGet package
         run: |
           python .ci/create-nuget.py "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
