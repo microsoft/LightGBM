@@ -555,7 +555,52 @@ class Predictor {
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be created", result_filename);
     }
-    auto label_idx = config.header ? -1 : boosting_->LabelIdx();
+
+    TextReader<data_size_t> predict_data_reader(data_filename, config.header);
+    std::string first_line = predict_data_reader.first_line();
+    std::vector<std::string> header_words;
+    std::unordered_map<std::string, int> pointwise_header_mapper;
+    if (config.header) {
+      header_words = Common::Split(first_line.c_str(), "\t,");
+      for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
+        if (pointwise_header_mapper.count(header_words[i]) > 0) {
+          Log::Fatal("Feature (%s) appears more than one time.", header_words[i].c_str());
+        }
+        pointwise_header_mapper[header_words[i]] = i;
+      }
+    }
+
+    auto label_idx = -1;
+
+    if (boosting_->ParserConfigStr().empty()) {
+      if (!config.header) {
+        label_idx = boosting_->LabelIdx();
+      } else {
+        std::string label_name = std::string("");
+        ParseLabelColumnIdx(pointwise_header_mapper, config.label_column, &label_idx, &label_name);
+
+        if (label_idx >= 0) {
+          // label will be separated with features when parsing a line
+          std::string label_name_in_header = std::string("");
+          for (auto& pair : pointwise_header_mapper) {
+            if (pair.second > label_idx) {
+              --pair.second;
+            } else if (pair.second == label_idx) {
+              label_name_in_header = pair.first;
+            }
+          }
+          CHECK(pointwise_header_mapper.count(label_name_in_header) > 0);
+          pointwise_header_mapper.erase(label_name_in_header);
+          if (!label_name.empty()) {
+            CHECK_EQ(label_name, label_name_in_header);
+          }
+        }
+
+      }
+    } else {
+      Log::Fatal("Unsupported with the combination of pairwise ranking and parser config str.");
+    }
+
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, config.header, boosting_->MaxFeatureIdx() + 1, label_idx,
                                                                config.precise_float_parser, boosting_->ParserConfigStr()));
 
@@ -574,21 +619,10 @@ class Predictor {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", num_total_features, boosting_->MaxFeatureIdx() + 1);
     }
-    TextReader<data_size_t> predict_data_reader(data_filename, config.header);
     std::vector<int> feature_remapper(num_total_features, -1);
     bool need_adjust = false;
-    std::unordered_map<std::string, int> pointwise_header_mapper;
     // skip raw feature remapping if trained model has parser config str which may contain actual feature names.
     if (config.header && boosting_->ParserConfigStr().empty()) {
-      std::string first_line = predict_data_reader.first_line();
-      std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
-      for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
-        if (pointwise_header_mapper.count(header_words[i]) > 0) {
-          Log::Fatal("Feature (%s) appears more than one time.", header_words[i].c_str());
-        }
-        pointwise_header_mapper[header_words[i]] = i;
-      }
-
       std::unordered_map<std::string, int> header_mapper;
       for (const auto& pair : pointwise_header_mapper) {
         header_mapper[pair.first + std::string("_i")] = pair.second;
@@ -813,6 +847,31 @@ class Predictor {
     }
 
     return group_idx;
+  }
+
+  void ParseLabelColumnIdx(const std::unordered_map<std::string, int>& header_mapper, std::string label_column, int* label_idx, std::string* name) {
+    const std::string name_prefix("name:");
+    *label_idx = -1;
+    if (label_column.size() > 0) {
+      if (Common::StartsWith(label_column, name_prefix)) {
+        *name = label_column.substr(name_prefix.size());
+        *label_idx = -1;
+        if (header_mapper.count(*name) > 0) {
+          *label_idx = header_mapper.at(*name);
+          Log::Info("Using column %s as label", name->c_str());
+        } else {
+          Log::Fatal("Could not find label column %s in data file \n"
+                      "or data file doesn't contain header", name->c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(label_column.c_str(), label_idx)) {
+          Log::Fatal("label_column is not a number,\n"
+                      "if you want to use a column name,\n"
+                      "please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as label", label_idx);
+      }
+    }
   }
 
 
