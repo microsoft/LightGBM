@@ -138,6 +138,14 @@ jobs:
             method: wheel
             python_version: '3.11'
             in-ubuntu-base-container: 'true'
+          - os: LightGBM-GPU
+            container: nvcr.io/nvidia/cuda:12.9.1-devel-ubuntu22.04
+            os-display-name: ubuntu22.04-with-gpu
+            task: gpu
+            compiler: clang-17
+            method: source
+            python_version: '3.12'
+            in-ubuntu-base-container: 'true'
           - os: ubuntu-latest
             container: *manylinux_amd64_image
             os-display-name: *manylinux_amd64_display_name
@@ -377,35 +385,21 @@ jobs:
           path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}
           pattern: '*amd64*-liblightgbm'
           run-id: ${{ github.run_id }}
+      - name: Setup NuGet CLI
+        uses: NuGet/setup-nuget@v2
       - name: Create NuGet package
         run: |
           python .ci/create-nuget.py "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
-
-          # ref: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-pack
-          dotnet pack \
-            $(pwd)/nuget/LightGBM.nuspec \
-            --verbosity detailed \
-            --output "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
-
-          home/vsts/work/1/s/.ci/nuget/LightGBM.nuspec -NonInteractive -OutputDirectory /home/vsts/work/1/a/nuget -Verbosity Detailed
-
-      # this? https://github.com/actions/setup-dotnet
-
-
-      # - script: |
-      #     python "$(Build.SourcesDirectory)/.ci/create-nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
-      #   displayName: 'Create NuGet configuration files'
-      # - task: NuGetCommand@2
-      #   inputs:
-      #     command: pack
-      #     packagesToPack: '$(Build.SourcesDirectory)/.ci/nuget/*.nuspec'
-      #     packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
-      # - task: PublishBuildArtifacts@1
-      #   inputs:
-      #     pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
-      #     artifactName: NuGet
-      #     artifactType: container
-
+          nuget pack \
+            $(pwd)/.ci/nuget/LightGBM.nuspec \
+            -NonInteractive \
+            -Verbosity detailed \
+            -OutputDirectory "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg
 
   test-latest-versions:
     name: Python - latest versions (manylinux_2_28)
