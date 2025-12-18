@@ -77,6 +77,7 @@ jobs:
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
+          if-no-files-found: error
   test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
@@ -406,6 +407,7 @@ jobs:
         with:
           name: nuget-package
           path: artifacts/*.nupkg
+          if-no-files-found: error
 
   test-latest-versions:
     name: Python - latest versions (manylinux_2_28)
