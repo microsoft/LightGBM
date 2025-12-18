@@ -96,7 +96,8 @@ namespace LightGBM {
     const std::vector<std::vector<std::pair<short, data_size_t>>>& right2left2pair_map,
     const std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map,
     int truncation_level, double sigma, const CommonC::SigmoidCache& sigmoid_cache, bool model_indirect_comparison, bool model_conditional_rel,
-    bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank, double indirect_comparison_weight) {
+    bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank,
+    double indirect_comparison_weight, double l2_pairwise_diff_weight) {
 
     // get sorted indices for scores
     global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
@@ -198,6 +199,20 @@ namespace LightGBM {
         hessians[indexLeft] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
         gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
         hessians[indexRight] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
+
+
+        // === Pairwise-difference L2 regularization (observed pairs only)
+        // Apply iff there is at least one direct observation between (indexLeft,indexRight)
+        if (l2_pairwise_diff_weight > 0.0) {
+          const double w = paired_discount;
+          const double d = delta_score_pointwise;                             // (s_i - s_j)
+          // Gradient contributions: -lambda*w·(s_i-s_j)  and  +2lambda*w·(s_i-s_j)
+          gradients[indexLeft] -= 2.0 * l2_pairwise_diff_weight * w * d;
+          gradients[indexRight] += 2.0 * l2_pairwise_diff_weight * w * d;
+          // Diagonal Hessian contributions: +2lambda*w for both sides (ignore off-diagonals for speed)
+          hessians[indexLeft] += 2.0 * l2_pairwise_diff_weight * w;
+          hessians[indexRight] += 2.0 * l2_pairwise_diff_weight * w;
+        }
       }
     }
     global_timer.Stop("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 1");
@@ -274,7 +289,7 @@ class RankingObjective : public ObjectiveFunction {
       }
     }
     if (num_position_ids_ > 0) {
-      UpdatePositionBiasFactors(gradients, hessians); 
+      UpdatePositionBiasFactors(gradients, hessians);
     }
   }
 
@@ -660,6 +675,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     hard_pairwise_preference_ = config.pairwise_lambdarank_hard_pairwise_preference;
     indirect_comparison_max_rank_ = config.pairwise_lambdarank_indirect_comparison_max_rank;
     indirect_comparison_weight_ = model_indirect_comparison_? config.pairwise_lambdarank_indirect_comparison_weight: 0.0;
+    l2_pairwise_diff_weight_ = config.pairwise_lambdarank_l2_pairwise_diff_weight;
   }
 
   explicit PairwiseLambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
@@ -746,7 +762,8 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       global_timer.Start("pairwise_lambdarank::GetGradients part 2");
       UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise,
         paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[query_index], left2right2pair_map_byquery_[query_index], truncation_level_, sigmoid_, sigmoid_cache_,
-        model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_);
+        model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_,
+        indirect_comparison_weight_, l2_pairwise_diff_weight_);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 2");
     }
     if (num_position_ids_ > 0) {
@@ -1005,6 +1022,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
    bool hard_pairwise_preference_;
    int indirect_comparison_max_rank_;
    double indirect_comparison_weight_;
+   double l2_pairwise_diff_weight_;
 
  private:
   const std::pair<data_size_t, data_size_t>* paired_index_map_;

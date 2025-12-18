@@ -1037,6 +1037,10 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   double pairwise_lambdarank_indirect_comparison_weight = 0.5;
 
+  // desc = regularization weight for the inferred pointwise score differences (to avoid large differences)
+  // desc = used only in ``pairwise_lambdarank`` application
+  double pairwise_lambdarank_l2_pairwise_diff_weight = 0.0;
+
   // desc = pairing appraoch for training dataset
   // desc = used only in ``pairwise_lambdarank`` application
   // desc = with ``different_relevance``, only consider pairs with difference relevance score

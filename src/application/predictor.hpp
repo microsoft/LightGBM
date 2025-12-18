@@ -766,7 +766,8 @@ class Predictor {
         for (int i = 0; i < config.pairwise_lambdarank_prediction_pointwise_updates_per_iteration; i++) {
           UpdatePointwiseScoresForOneQuery(scores_pointwise.data(), result.data(), scores_pointwise.size(),
             pair_indices.data(), right2left2pair_map, left2right2pair_map, config.lambdarank_truncation_level, config.sigmoid, sigmoid_cache, config.pairwise_lambdarank_model_indirect_comparison,
-            config.pairwise_lambdarank_model_conditional_rel, config.pairwise_lambdarank_indirect_comparison_above_only, config.pairwise_lambdarank_logarithmic_discounts, config.pairwise_lambdarank_hard_pairwise_preference, config.pairwise_lambdarank_indirect_comparison_max_rank, indirect_comparison_weight);
+            config.pairwise_lambdarank_model_conditional_rel, config.pairwise_lambdarank_indirect_comparison_above_only, config.pairwise_lambdarank_logarithmic_discounts, config.pairwise_lambdarank_hard_pairwise_preference,
+            config.pairwise_lambdarank_indirect_comparison_max_rank, indirect_comparison_weight, config.pairwise_lambdarank_l2_pairwise_diff_weight);
         }
         //Log::Info((std::string("result = ") + VectorToString(result)).c_str());
         //Log::Info((std::string("scores_pointwise = ") + VectorToString(scores_pointwise)).c_str());

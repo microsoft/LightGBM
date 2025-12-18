@@ -38,6 +38,7 @@ class NDCGMetric:public Metric {
     hard_pairwise_preference_ = config.pairwise_lambdarank_hard_pairwise_preference;
     indirect_comparison_max_rank_ = config.pairwise_lambdarank_indirect_comparison_max_rank;
     indirect_comparison_weight_ = model_indirect_comparison_ ? config.pairwise_lambdarank_indirect_comparison_weight : 0.0;
+    l2_pairwise_diff_weight_ = config.pairwise_lambdarank_l2_pairwise_diff_weight;
   }
 
   ~NDCGMetric() {
@@ -168,7 +169,8 @@ class NDCGMetric:public Metric {
             const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise,
               paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
-              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_);
+              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_,
+              hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_, l2_pairwise_diff_weight_);
           }
 
           // calculate DCG
@@ -198,7 +200,8 @@ class NDCGMetric:public Metric {
             const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             UpdatePointwiseScoresForOneQuery(scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, 
               paired_index_map_ + start_pairwise, right2left2pair_map_byquery_[i], left2right2pair_map_byquery_[i], truncation_level_,
-              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_);
+              sigmoid_, sigmoid_cache_, model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_,
+              hard_pairwise_preference_, indirect_comparison_max_rank_, indirect_comparison_weight_, l2_pairwise_diff_weight_);
           }
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
@@ -260,6 +263,7 @@ class NDCGMetric:public Metric {
   bool hard_pairwise_preference_;
   int indirect_comparison_max_rank_;
   double indirect_comparison_weight_;
+  double l2_pairwise_diff_weight_;
 };
 
 }  // namespace LightGBM
