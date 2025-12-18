@@ -390,8 +390,8 @@ jobs:
       # ref: https://github.com/NuGet/setup-nuget/issues/168
       - name: Setup mono
         run: |
-          apt-get update -y
-          apt-get install --no-install-recommends \
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends \
             mono-devel
       - name: Create NuGet package
         run: |
