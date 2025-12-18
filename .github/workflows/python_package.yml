@@ -147,8 +147,8 @@ jobs:
             python_version: '3.12'
             in-ubuntu-base-container: 'true'
           - os: ubuntu-latest
-            container: *manylinux_amd64_image
-            os-display-name: *manylinux_amd64_display_name
+            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
             task: gpu
             method: source
             compiler: gcc
@@ -174,8 +174,8 @@ jobs:
             method: wheel
             python_version: '3.10'
           - os: ubuntu-latest
-            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
-            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
             task: mpi
             compiler: gcc
             method: source
