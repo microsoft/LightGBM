@@ -334,8 +334,6 @@ That script supports the following command-line options:
 - `--no-build-vignettes`: Skip building vignettes.
 - `--r-executable=[path-to-executable]`: Use an alternative build of R.
 
-Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
-
 ### Standard Installation from CRAN Package
 
 After building the package, install it with a command like the following:
