@@ -24,7 +24,7 @@ if __name__ == "__main__":
     copyfile(source / "lib_lightgbm.dll", windows_folder_path / "lib_lightgbm.dll")
     copyfile(source / "lightgbm.exe", windows_folder_path / "lightgbm.exe")
     version = (nuget_dir.parents[1] / "VERSION.txt").read_text(encoding="utf-8").strip().replace("rc", "-rc")
-    print(f"Setting  version to '{version}'")
+    print(f"Setting version to '{version}'")
     nuget_str = rf"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>

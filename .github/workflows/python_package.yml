@@ -378,7 +378,7 @@ jobs:
         with:
           fetch-depth: 5
           persist-credentials: false
-          submodules: true
+          submodules: false
       - name: Download lib_lightgbm (all operating systems) and Windows CLI
         uses: actions/download-artifact@v7
         with:
@@ -392,7 +392,7 @@ jobs:
       - name: Setup mono
         run: |
           sudo apt-get update -y
-          sudo apt-get install --no-install-recommends \
+          sudo apt-get install --no-install-recommends -y \
             mono-devel
       - name: Create NuGet package
         run: |
