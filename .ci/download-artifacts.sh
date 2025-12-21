@@ -39,7 +39,7 @@ gh run download \
     --repo "microsoft/LightGBM" \
     --dir "${OUTPUT_DIR}" \
     "$(get-latest-run-id "${COMMIT_ID}" 'python_package.yml')"
-echo "done downloading python-package artifacts"
+echo "done downloading python-package artifacts and NuGet package"
 
 # get R-package artifacts
 echo "downloading R-package artifacts"
