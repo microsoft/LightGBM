@@ -5,8 +5,20 @@
         "clientKind": "git",
         "useIgnoreFile": true
     },
+    "files": {
+        "includes": [
+            "**",
+            "!build",
+            "!external_libs",
+            "!lightgbm-python",
+            "!lightgbm_r"
+        ]
+    },
     "formatter": {
         "enabled": true,
+        "expand": "always",
+        "indentStyle": "space",
+        "indentWidth": 4,
         "useEditorconfig": true,
         "lineWidth": 120
     },

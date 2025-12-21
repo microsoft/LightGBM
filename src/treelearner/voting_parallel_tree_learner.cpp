@@ -389,7 +389,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
   std::vector<int> smaller_top_features, larger_top_features;
   GlobalVoting(this->smaller_leaf_splits_->leaf_index(), smaller_top_k_splits_global, &smaller_top_features);
   GlobalVoting(this->larger_leaf_splits_->leaf_index(), larger_top_k_splits_global, &larger_top_features);
-  // copy local histgrams to buffer
+  // copy local histograms to buffer
   CopyLocalHistogram(smaller_top_features, larger_top_features);
 
   // Reduce scatter for histogram
