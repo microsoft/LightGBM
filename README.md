@@ -9,7 +9,6 @@ Light Gradient Boosting Machine
 [![CUDA Version GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/cuda.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/cuda.yml)
 [![SWIG Wrapper GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/swig.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/swig.yml)
 [![Static Analysis GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/static_analysis.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/static_analysis.yml)
-[![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![Link checks](https://github.com/microsoft/LightGBM/actions/workflows/lychee.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/lychee.yml)
