@@ -30,7 +30,7 @@ If you would like your AMD or Intel CPU to act like a GPU (for testing and debug
 you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <https://portablecl.org>`_ on **Linux**.
 Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
 
-For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** is not installed.
+For **Windows** users, `VC runtime <https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist>`_ is needed if **Visual Studio** is not installed.
 
 For **macOS** users, the **OpenMP** library is needed.
 You can install it by the following command: ``brew install libomp``.
@@ -346,7 +346,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    bash .ci/run-pre-commit-mypy.sh
+    pre-commit run --all-files
 
 To run the tests locally and compute test coverage, install the Python package using one of the options mentioned above.
 Then run the following from the root of the repo.

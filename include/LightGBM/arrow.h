@@ -5,8 +5,8 @@
  * Author: Oliver Borchert
  */
 
-#ifndef LIGHTGBM_ARROW_H_
-#define LIGHTGBM_ARROW_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_ARROW_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_ARROW_H_
 
 #ifdef __cplusplus
 #include <algorithm>
@@ -300,4 +300,4 @@ class ArrowTable {
 #include "arrow.tpp"
 #endif /* __cplusplus */
 
-#endif /* LIGHTGBM_ARROW_H_ */
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_ARROW_H_

@@ -18,14 +18,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
           submodules: false
-      - name: Setup and run tests
+      - name: Build docs
         run: |
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${HOME}/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
-          $GITHUB_WORKSPACE/.ci/test-docs.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/build-docs.sh || exit 1
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2.7.0
+        with:
+          args: >-
+            --config=./docs/.lychee.toml
+            --
+            "**/*.rst"
+            "**/*.md"
+            "./R-package/**/*.Rd"
+            "./docs/_build/html/*.html"
+          fail: true
+          failIfEmpty: true

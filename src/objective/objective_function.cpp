@@ -4,6 +4,8 @@
  */
 #include <LightGBM/objective_function.h>
 
+#include <string>
+
 #include "binary_objective.hpp"
 #include "multiclass_objective.hpp"
 #include "rank_objective.hpp"

@@ -7,6 +7,8 @@
 
 #include <LightGBM/cuda/cuda_metadata.hpp>
 
+#include <vector>
+
 namespace LightGBM {
 
 CUDAMetadata::CUDAMetadata(const int gpu_device_id) {

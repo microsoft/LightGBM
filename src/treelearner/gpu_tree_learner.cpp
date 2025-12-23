@@ -11,6 +11,11 @@
 #include <LightGBM/utils/array_args.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "../io/dense_bin.hpp"
 
