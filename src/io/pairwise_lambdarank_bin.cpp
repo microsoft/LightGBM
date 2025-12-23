@@ -14,24 +14,40 @@ template <typename VAL_T, bool IS_4BIT>
 uint32_t DensePairwiseRankingDiffBin<VAL_T, IS_4BIT>::GetBinAt(const data_size_t paired_data_index) const {
   const data_size_t first_data_index = this->paired_ranking_item_index_map_[paired_data_index].first;
   const data_size_t second_data_index = this->paired_ranking_item_index_map_[paired_data_index].second;
-  const uint32_t first_bin = static_cast<uint32_t>(this->unpaired_bin_->data(first_data_index));
-  const uint32_t second_bin = static_cast<uint32_t>(this->unpaired_bin_->data(second_data_index));
-  int first_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), first_bin) - bin_offsets_->begin()) - 1;
-  int second_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), second_bin) - bin_offsets_->begin()) - 1;
 
-  // TODO(shiyu1994): better original value, handle nan as missing
-  const double first_value = first_feature_index >= 0 ? ori_bin_mappers_->at(first_feature_index)->BinToValue(first_bin) : 0.0;
-  const double second_value = second_feature_index >= 0 ? ori_bin_mappers_->at(second_feature_index)->BinToValue(second_bin) : 0.0;
-  const double diff_value = first_value - second_value;
-  CHECK(first_feature_index >= 0 || first_bin == 0);
-  if (first_feature_index >= 0 && first_feature_index == second_feature_index) {
-    const uint32_t min_bin = diff_bin_offsets_->at(first_feature_index);
-    const uint32_t max_bin = diff_bin_offsets_->at(first_feature_index + 1) - 1;
-    const uint32_t most_freq_bin = diff_bin_mappers_->at(first_feature_index)->GetMostFreqBin();
-    const uint32_t diff_bin = diff_bin_mappers_->at(first_feature_index)->ValueToBin(diff_value);
-    return diff_bin + min_bin - static_cast<uint32_t>(most_freq_bin == 0);
+  // Log::Warning("raw_values_ == nullptr = %d", static_cast<int>(raw_values_ == nullptr));
+
+  double diff_value = 0.0;
+
+  if (raw_values_ == nullptr) {
+    const uint32_t first_bin = static_cast<uint32_t>(this->unpaired_bin_->data(first_data_index));
+    const uint32_t second_bin = static_cast<uint32_t>(this->unpaired_bin_->data(second_data_index));
+    int first_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), first_bin) - bin_offsets_->begin()) - 1;
+    int second_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), second_bin) - bin_offsets_->begin()) - 1;
+
+    // TODO(shiyu1994): better original value, handle nan as missing
+    const double first_value = first_feature_index >= 0 ? ori_bin_mappers_->at(first_feature_index)->BinToValue(first_bin) : 0.0;
+    const double second_value = second_feature_index >= 0 ? ori_bin_mappers_->at(second_feature_index)->BinToValue(second_bin) : 0.0;
+    diff_value = first_value - second_value;
+
+    CHECK(first_feature_index >= 0 || first_bin == 0);
+    if (first_feature_index >= 0 && first_feature_index == second_feature_index) {
+      const uint32_t min_bin = diff_bin_offsets_->at(first_feature_index);
+      const uint32_t most_freq_bin = diff_bin_mappers_->at(first_feature_index)->GetMostFreqBin();
+      const uint32_t diff_bin = diff_bin_mappers_->at(first_feature_index)->ValueToBin(diff_value);
+      return diff_bin + min_bin - static_cast<uint32_t>(most_freq_bin == 0);
+    } else {
+      return 0;
+    }
   } else {
-    return 0;
+    const double first_value = raw_values_->at(first_data_index);
+    const double second_value = raw_values_->at(second_data_index);
+    diff_value = first_value - second_value;
+    // Log::Warning("first_value = %f, second_value = %f", first_value, second_value);
+    const uint32_t min_bin = diff_bin_offsets_->at(0);
+    const uint32_t most_freq_bin = diff_bin_mappers_->at(0)->GetMostFreqBin();
+    const uint32_t diff_bin = diff_bin_mappers_->at(0)->ValueToBin(diff_value);
+    return diff_bin + min_bin - static_cast<uint32_t>(most_freq_bin == 0);
   }
 }
 

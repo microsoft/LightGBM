@@ -76,7 +76,7 @@ void PairwiseRankingFeatureGroup::CreateBinData(int num_data, bool is_multi_val,
   }
 }
 
-PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, std::vector<std::unique_ptr<BinMapper>>& diff_feature_bin_mappers, std::vector<std::unique_ptr<BinMapper>>& ori_feature_bin_mappers): PairwiseRankingFeatureGroup(other, num_original_data, is_first_or_second_in_pairing, num_pairs, paired_ranking_item_index_map) {
+PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, std::vector<std::unique_ptr<BinMapper>>& diff_feature_bin_mappers, std::vector<std::unique_ptr<BinMapper>>& ori_feature_bin_mappers, const std::vector<float>* raw_values): PairwiseRankingFeatureGroup(other, num_original_data, is_first_or_second_in_pairing, num_pairs, paired_ranking_item_index_map), raw_values_(raw_values) {
   for (auto& bin_mapper_ref : diff_feature_bin_mappers) {
     diff_feature_bin_mappers_.emplace_back(bin_mapper_ref.release());
   }
@@ -117,6 +117,11 @@ PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup
   for (const auto& bin_mapper : diff_feature_bin_mappers_) {
     bin_mappers_.emplace_back(new BinMapper(*bin_mapper.get()));
   }
+
+  if (raw_values_ != nullptr) {
+    Log::Warning("raw_values_->size() = %ld", raw_values_->size());
+  }
+
 }
 
 void PairwiseRankingDifferentialFeatureGroup::CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
@@ -125,10 +130,10 @@ void PairwiseRankingDifferentialFeatureGroup::CreateBinData(int num_data, bool i
       (!force_dense && num_feature_ == 1 &&
         bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
     is_sparse_ = true;
-    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_));
+    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_, raw_values_));
   } else {
     is_sparse_ = false;
-    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_));
+    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_, raw_values_));
   }
   is_multi_val_ = false;
 }

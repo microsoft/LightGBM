@@ -678,41 +678,42 @@ namespace LightGBM {
     }
   }
 
-  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
+  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets, const std::vector<float>* raw_values) {
     if (num_bin <= 16) {
-      return new DensePairwiseRankingDiffBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     } else if (num_bin <= 256) {
-      return new DensePairwiseRankingDiffBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     } else if (num_bin <= 65536) {
-      return new DensePairwiseRankingDiffBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     } else {
-      return new DensePairwiseRankingDiffBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     }
   }
 
-  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
+  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets, const std::vector<float>* raw_values) {
     if (num_bin <= 256) {
-      return new SparsePairwiseRankingDiffBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     } else if (num_bin <= 65536) {
-      return new SparsePairwiseRankingDiffBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     } else {
-      return new SparsePairwiseRankingDiffBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets, raw_values);
     }
   }
 
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
-    double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
+    double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map, const std::vector<const BinMapper*> diff_feature_bin_mappers, const std::vector<std::vector<float>>* raw_data,
+    const std::vector<uint32_t>& all_offsets) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       // if (use_pairwise_ranking) {
         Log::Warning("Pairwise ranking with sparse row-wse bins is not supported yet.");
-        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
+        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
       // } else {
       //   return CreateMultiValSparseBin(num_data, num_bin,
       //                                  average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
       // }
     } else {
-      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
     }
   }
 
@@ -721,7 +722,8 @@ namespace LightGBM {
                                                    int num_feature,
                                                    const std::vector<uint32_t>& offsets,
                                                    const bool use_pairwise_ranking,
-                                                   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
+                                                   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map, const std::vector<const BinMapper*> diff_feature_bin_mappers, const std::vector<std::vector<float>>* raw_data,
+                                                   const std::vector<uint32_t>& all_offsets) {
     // calculate max bin of all features to select the int type in MultiValDenseBin
     int max_bin = 0;
     for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
@@ -732,19 +734,19 @@ namespace LightGBM {
     }
     if (max_bin <= 256) {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint8_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+        return new MultiValDensePairwiseLambdarankBin<uint8_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
       } else {
         return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
       }
     } else if (max_bin <= 65536) {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint16_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+        return new MultiValDensePairwiseLambdarankBin<uint16_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
       } else {
         return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
       }
     } else {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint32_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map);
+        return new MultiValDensePairwiseLambdarankBin<uint32_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
       } else {
         return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
       }

@@ -1258,6 +1258,24 @@ Objective Parameters
 
    -  used only in ``pairwise_lambdarank`` application
 
+-  ``pairwise_lambdarank_indirect_comparison_max_rank`` :raw-html:`<a id="pairwise_lambdarank_indirect_comparison_max_rank" title="Permalink to this parameter" href="#pairwise_lambdarank_indirect_comparison_max_rank">&#x1F517;&#xFE0E;</a>`, default = ``10``, type = int
+
+   -  consider auxilliary documents up to this rank, for indirect comparison of documents within a pair
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_indirect_comparison_weight`` :raw-html:`<a id="pairwise_lambdarank_indirect_comparison_weight" title="Permalink to this parameter" href="#pairwise_lambdarank_indirect_comparison_weight">&#x1F517;&#xFE0E;</a>`, default = ``0.5``, type = double
+
+   -  weight for indirect comparison of documents within a pair, between 0.0 and 1.0
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_l2_pairwise_diff_weight`` :raw-html:`<a id="pairwise_lambdarank_l2_pairwise_diff_weight" title="Permalink to this parameter" href="#pairwise_lambdarank_l2_pairwise_diff_weight">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double
+
+   -  regularization weight for the inferred pointwise score differences (to avoid large differences)
+
+   -  used only in ``pairwise_lambdarank`` application
+
 -  ``pairwise_lambdarank_train_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
 
    -  pairing appraoch for training dataset
@@ -1325,6 +1343,42 @@ Objective Parameters
    -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
 
    -  pairwise ranking for validation dataset
+
+-  ``pairwise_lambdarank_prediction_num_iteration`` :raw-html:`<a id="pairwise_lambdarank_prediction_num_iteration" title="Permalink to this parameter" href="#pairwise_lambdarank_prediction_num_iteration">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of iterations in pairwise ranking prediction
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_prediction_pairing_top_n`` :raw-html:`<a id="pairwise_lambdarank_prediction_pairing_top_n" title="Permalink to this parameter" href="#pairwise_lambdarank_prediction_pairing_top_n">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
+
+   -  number of top n documents to additionaly pair in each iteration of pairwise ranking prediction
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_prediction_pairing_top_pairs_k`` :raw-html:`<a id="pairwise_lambdarank_prediction_pairing_top_pairs_k" title="Permalink to this parameter" href="#pairwise_lambdarank_prediction_pairing_top_pairs_k">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
+
+   -  number of pairs to add for each document in the top in each iteration of pairwise ranking prediction
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_prediction_shuffle_sigma`` :raw-html:`<a id="pairwise_lambdarank_prediction_shuffle_sigma" title="Permalink to this parameter" href="#pairwise_lambdarank_prediction_shuffle_sigma">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``pairwise_lambdarank_prediction_shuffle_sigma > 0.0``
+
+   -  parameter to add randomness when selecting pairwise preferences
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_prediction_pointwise_updates_per_iteration`` :raw-html:`<a id="pairwise_lambdarank_prediction_pointwise_updates_per_iteration" title="Permalink to this parameter" href="#pairwise_lambdarank_prediction_pointwise_updates_per_iteration">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of pairs to add for each document in the top in each iteration of pairwise ranking prediction
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_keep_raw_feature_values`` :raw-html:`<a id="pairwise_lambdarank_keep_raw_feature_values" title="Permalink to this parameter" href="#pairwise_lambdarank_keep_raw_feature_values">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to keep raw feature values
+
+   -  will be used to calculate differential feature values during training
 
 Metric Parameters
 -----------------

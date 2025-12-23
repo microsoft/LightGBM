@@ -131,7 +131,7 @@ class PairwiseRankingDifferentialFeatureGroup: public PairwiseRankingFeatureGrou
   * \param is_first_or_second_in_pairing Mark whether features in this group belong to the first or second element in the pairing
   */
 
-  PairwiseRankingDifferentialFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, std::vector<std::unique_ptr<BinMapper>>& diff_feature_bin_mappers, std::vector<std::unique_ptr<BinMapper>>& ori_feature_bin_mappers);
+  PairwiseRankingDifferentialFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, std::vector<std::unique_ptr<BinMapper>>& diff_feature_bin_mappers, std::vector<std::unique_ptr<BinMapper>>& ori_feature_bin_mappers, const std::vector<float>* raw_values);
 
   virtual inline BinIterator* SubFeatureIterator(int sub_feature) const override;
 
@@ -146,6 +146,7 @@ class PairwiseRankingDifferentialFeatureGroup: public PairwiseRankingFeatureGrou
   std::vector<std::unique_ptr<const BinMapper>> diff_feature_bin_mappers_;
   std::vector<std::unique_ptr<const BinMapper>> ori_feature_bin_mappers_;
   std::vector<uint32_t> original_bin_offsets_;
+  const std::vector<float>* raw_values_;
 };
 
 

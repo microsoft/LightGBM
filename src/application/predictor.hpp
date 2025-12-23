@@ -658,7 +658,7 @@ class Predictor {
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [&parser, &feature_remapper, &tmp_label, need_adjust]
+    parser_fun = [&parser, &feature_remapper, &tmp_label, need_adjust, &config]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if (need_adjust) {
@@ -673,6 +673,14 @@ class Predictor {
           }
         }
         feature->resize(i);
+
+        if (config.use_differential_feature_in_pairwise_ranking) {
+          // need sorting, since differential feature calculation requires feature indices in ascending ordering
+          std::sort(feature->begin(), feature->end(), [] (std::pair<int, double> pair_1, std::pair<int, double> pair_2) {
+            return pair_1.first < pair_2.first;
+          });
+        }
+
       }
     };
 
@@ -747,6 +755,7 @@ class Predictor {
         }
 
         // resize result vector
+        // Log::Warning("pair_indices[%d].first = %d, pair_indices[%d].second = %d", i, pair_indices[i].first, i, pair_indices[i].second);
         result.resize(pair_indices.size() * num_pred_one_row_);
         OMP_INIT_EX();
         #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
@@ -788,6 +797,7 @@ class Predictor {
               if (second_feature_iterator < second_feature_iterator_end && second_feature_iterator->first == feature) {
                 val2 = second_feature_iterator->second;
               }
+              // Log::Warning("feature = %d, val1 = %f, val2 = %f", feature, val1, val2);
               oneline_features.push_back(std::make_pair(feature + 2 * num_features, val1 - val2));
             }
           }

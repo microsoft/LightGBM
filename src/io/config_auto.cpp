@@ -329,6 +329,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "pairwise_lambdarank_prediction_pairing_top_pairs_k",
   "pairwise_lambdarank_prediction_shuffle_sigma",
   "pairwise_lambdarank_prediction_pointwise_updates_per_iteration",
+  "pairwise_lambdarank_keep_raw_feature_values",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -667,11 +668,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "pairwise_lambdarank_indirect_comparison_max_rank", &pairwise_lambdarank_indirect_comparison_max_rank);
 
   GetDouble(params, "pairwise_lambdarank_indirect_comparison_weight", &pairwise_lambdarank_indirect_comparison_weight);
-  CHECK_GE(pairwise_lambdarank_indirect_comparison_weight, 0.0);
-  CHECK_LE(pairwise_lambdarank_indirect_comparison_weight, 1.0);
 
   GetDouble(params, "pairwise_lambdarank_l2_pairwise_diff_weight", &pairwise_lambdarank_l2_pairwise_diff_weight);
-  CHECK_GE(pairwise_lambdarank_l2_pairwise_diff_weight, 0.0);
 
   GetString(params, "pairwise_lambdarank_train_pairing_approach", &pairwise_lambdarank_train_pairing_approach);
 
@@ -696,9 +694,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "pairwise_lambdarank_prediction_pairing_top_pairs_k", &pairwise_lambdarank_prediction_pairing_top_pairs_k);
 
   GetDouble(params, "pairwise_lambdarank_prediction_shuffle_sigma", &pairwise_lambdarank_prediction_shuffle_sigma);
-  CHECK_GE(pairwise_lambdarank_prediction_shuffle_sigma, 0.0);
+  CHECK_GT(pairwise_lambdarank_prediction_shuffle_sigma, 0.0);
 
   GetInt(params, "pairwise_lambdarank_prediction_pointwise_updates_per_iteration", &pairwise_lambdarank_prediction_pointwise_updates_per_iteration);
+
+  GetBool(params, "pairwise_lambdarank_keep_raw_feature_values", &pairwise_lambdarank_keep_raw_feature_values);
 
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
@@ -866,6 +866,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[pairwise_lambdarank_prediction_pairing_top_pairs_k: " << pairwise_lambdarank_prediction_pairing_top_pairs_k << "]\n";
   str_buf << "[pairwise_lambdarank_prediction_shuffle_sigma: " << pairwise_lambdarank_prediction_shuffle_sigma << "]\n";
   str_buf << "[pairwise_lambdarank_prediction_pointwise_updates_per_iteration: " << pairwise_lambdarank_prediction_pointwise_updates_per_iteration << "]\n";
+  str_buf << "[pairwise_lambdarank_keep_raw_feature_values: " << pairwise_lambdarank_keep_raw_feature_values << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -1030,6 +1031,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"pairwise_lambdarank_prediction_pairing_top_pairs_k", {}},
     {"pairwise_lambdarank_prediction_shuffle_sigma", {}},
     {"pairwise_lambdarank_prediction_pointwise_updates_per_iteration", {}},
+    {"pairwise_lambdarank_keep_raw_feature_values", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -1197,6 +1199,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"pairwise_lambdarank_prediction_pairing_top_pairs_k", "int"},
     {"pairwise_lambdarank_prediction_shuffle_sigma", "double"},
     {"pairwise_lambdarank_prediction_pointwise_updates_per_iteration", "int"},
+    {"pairwise_lambdarank_keep_raw_feature_values", "bool"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},

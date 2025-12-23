@@ -1104,6 +1104,10 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   int pairwise_lambdarank_prediction_pointwise_updates_per_iteration = 3;
 
+  // desc = whether to keep raw feature values
+  // desc = will be used to calculate differential feature values during training
+  bool pairwise_lambdarank_keep_raw_feature_values = false;
+
   #ifndef __NVCC__
   #pragma endregion
 

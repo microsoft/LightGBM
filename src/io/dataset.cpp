@@ -435,7 +435,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
   has_raw_ = false;
-  if (io_config.linear_tree) {
+  if (io_config.linear_tree || io_config.pairwise_lambdarank_keep_raw_feature_values) {
     has_raw_ = true;
   }
   numeric_feature_map_ = std::vector<int>(num_features_, -1);
@@ -583,14 +583,15 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
   Log::Debug("Dataset::GetMultiBinFromSparseFeatures: sparse rate %f",
              sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
+  std::vector<const BinMapper*> diff_bin_mappers;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
-                                           num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
+                                           num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, nullptr, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
 
-MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const {
+MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const bool use_raw_data_in_pairwise_ranking_diff) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
   int num_threads = OMP_NUM_THREADS();
@@ -633,6 +634,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
+  std::vector<const BinMapper*> diff_feature_bin_mappers;
   if (use_pairwise_ranking) {
 
     // for (size_t i = 0; i < iters.size(); ++i) {
@@ -651,36 +653,41 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       original_offsets.push_back(offsets[i]);
     }
     original_offsets.push_back(offsets[num_original_features]);
-    std::ofstream fout("mutli_val_bin_meta_info_pairwise.txt");
-    fout << "original_most_freq_bins" << std::endl;
-    for (size_t i = 0; i < original_most_freq_bins.size(); ++i) {
-      fout << original_most_freq_bins[i] << std::endl;
+    // std::ofstream fout("mutli_val_bin_meta_info_pairwise.txt");
+    // fout << "original_most_freq_bins" << std::endl;
+    // for (size_t i = 0; i < original_most_freq_bins.size(); ++i) {
+    //   fout << original_most_freq_bins[i] << std::endl;
+    // }
+    // fout << "original_offsets" << std::endl;
+    // for (size_t i = 0; i < original_offsets.size(); ++i) {
+    //   fout << original_offsets[i] << std::endl;
+    // }
+    // fout.close();
+
+    for (int feature_index = 2 * num_original_features; feature_index < num_features_; ++feature_index) {
+      diff_feature_bin_mappers.push_back(new BinMapper(*FeatureBinMapper(feature_index)));
     }
-    fout << "original_offsets" << std::endl;
-    for (size_t i = 0; i < original_offsets.size(); ++i) {
-      fout << original_offsets[i] << std::endl;
-    }
-    fout.close();
+
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
         num_original_data, offsets.back(), num_original_features,
-        1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
+        1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets));
     PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get());
   } else {
     ret.reset(MultiValBin::CreateMultiValBin(
         num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
-        1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
+        1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets));
     PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
-    std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
-    fout << "original_most_freq_bins" << std::endl;
-    for (size_t i = 0; i < most_freq_bins.size(); ++i) {
-      fout << most_freq_bins[i] << std::endl;
-    }
-    fout << "original_offsets" << std::endl;
-    for (size_t i = 0; i < offsets.size(); ++i) {
-      fout << offsets[i] << std::endl;
-    }
-    fout.close();
+    // std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
+    // fout << "original_most_freq_bins" << std::endl;
+    // for (size_t i = 0; i < most_freq_bins.size(); ++i) {
+    //   fout << most_freq_bins[i] << std::endl;
+    // }
+    // fout << "original_offsets" << std::endl;
+    // for (size_t i = 0; i < offsets.size(); ++i) {
+    //   fout << offsets[i] << std::endl;
+    // }
+    // fout.close();
   }
   ret->FinishLoad();
   ret->DumpContent();
@@ -693,7 +700,8 @@ TrainingShareStates* Dataset::GetShareStates(
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
     const int num_grad_quant_bins,
-    const bool use_pairwise_ranking) const {
+    const bool use_pairwise_ranking,
+    const bool use_raw_data_in_pairwise_ranking_diff) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
   if (force_col_wise && force_row_wise) {
@@ -724,7 +732,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, false);
     Log::Warning("feature_groups_.size() = %ld, offsets.size() = %ld", feature_groups_.size(), offsets.size());
-    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets, use_pairwise_ranking), num_data_,
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets, use_pairwise_ranking, use_raw_data_in_pairwise_ranking_diff), num_data_,
       feature_groups_, false, false, num_grad_quant_bins);
     share_state->is_col_wise = false;
     share_state->is_constant_hessian = is_constant_hessian;
@@ -748,7 +756,7 @@ TrainingShareStates* Dataset::GetShareStates(
     start_time = std::chrono::steady_clock::now();
     std::vector<uint32_t> row_wise_offsets;
     row_wise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets, false);
-    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets, use_pairwise_ranking), num_data_,
+    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets, use_pairwise_ranking, use_raw_data_in_pairwise_ranking_diff), num_data_,
       feature_groups_, false, false, num_grad_quant_bins);
     row_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
@@ -810,21 +818,24 @@ template TrainingShareStates* Dataset::GetShareStates<false, 0>(
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
     const int num_grad_quant_bins,
-    const bool use_pairwise_ranking) const;
+    const bool use_pairwise_ranking,
+    const bool use_raw_data_in_pairwise_ranking_diff) const;
 
 template TrainingShareStates* Dataset::GetShareStates<true, 16>(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
     const int num_grad_quant_bins,
-    const bool use_pairwise_ranking) const;
+    const bool use_pairwise_ranking,
+    const bool use_raw_data_in_pairwise_ranking_diff) const;
 
 template TrainingShareStates* Dataset::GetShareStates<true, 32>(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
     const int num_grad_quant_bins,
-    const bool use_pairwise_ranking) const;
+    const bool use_pairwise_ranking,
+    const bool use_raw_data_in_pairwise_ranking_diff) const;
 
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
@@ -922,6 +933,9 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   feature2group_.clear();
   feature2subfeature_.clear();
   has_raw_ = dataset->has_raw();
+  if (has_raw_) {
+    raw_data_ = dataset->raw_data_;
+  }
   numeric_feature_map_ = dataset->numeric_feature_map_;
   num_numeric_features_ = dataset->num_numeric_features_;
   for (const int nuermic_feature_index : dataset->numeric_feature_map_) {
@@ -998,7 +1012,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   std::vector<std::vector<int>> diff_feature_groups =
     FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(sampled_indices_.get()).data(), Common::VectorSize<int>(*sampled_indices_).data(), static_cast<int>(sampled_indices_->size()), num_total_sampled_data_, config.seed, is_use_gpu, false, &group_is_multi_val);
 
-  if (is_validation) {
+  if (is_validation || config.pairwise_lambdarank_keep_raw_feature_values) { // use single feature groups when keep original feature values for difference in training
     std::vector<std::vector<int>> flatten_feature_groups;
     for (const auto& features_in_group : diff_feature_groups) {
       for (const int feature_index : features_in_group) {
@@ -1077,7 +1091,15 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
 
       feature_group.FinishLoad();
 
-      feature_groups_.emplace_back(new PairwiseRankingDifferentialFeatureGroup(feature_group, dataset->num_data(), 2, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, ori_bin_mappers_for_diff));
+      const std::vector<float>* raw_value_vector = nullptr;
+      if (config.pairwise_lambdarank_keep_raw_feature_values) {
+        CHECK_EQ(features_in_group.size(), 1);
+        const int original_feature_index = features_in_group[0];
+        const int inner_feature_index = dataset->InnerFeatureIndex(original_feature_index);
+        Log::Warning("inner_feature_index = %d", inner_feature_index);
+        raw_value_vector = &raw_data_[inner_feature_index];
+      }
+      feature_groups_.emplace_back(new PairwiseRankingDifferentialFeatureGroup(feature_group, dataset->num_data(), 2, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, ori_bin_mappers_for_diff, raw_value_vector));
 
       group_feature_cnt_.push_back(cur_feature_index - group_feature_start_.back());
       num_total_bin += feature_groups_.back()->num_total_bin_;
