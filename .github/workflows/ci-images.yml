@@ -11,9 +11,6 @@ on:
           Suffix for image tags, including a leading "-" if desired.
           Set to the empty string to overwrite the main images used by LightGBM's CI.
 
-env:
-  REGISTRY: ghcr.io
-
 jobs:
   build-and-push-images:
     runs-on: ubuntu-latest
@@ -28,17 +25,17 @@ jobs:
         include:
           - os: ubuntu-24.04-arm
             dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_aarch64/Dockerfile
-            uri: ${{ env.REGISTRY }}/${{ github.repository }}:manylinux2014_aarch64${{ inputs.tag-suffix }}
+            uri: ghcr.io/${{ github.repository }}:manylinux2014_aarch64${{ inputs.tag-suffix }}
           - os: ubuntu-latest
             dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_x86_64/Dockerfile
-            uri: ${{ env.REGISTRY }}/${{ github.repository }}:manylinux_2_28_x86_64${{ inputs.tag-suffix }}
+            uri: ghcr.io/${{ github.repository }}:manylinux_2_28_x86_64${{ inputs.tag-suffix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
       - name: Log in to the Container registry
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1  # v3.5.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Build and push Docker image
