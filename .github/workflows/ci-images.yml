@@ -14,7 +14,7 @@ on:
 jobs:
   build-and-push-images:
     name: build-ci-images (${{ matrix.uri }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
       packages: write
@@ -28,10 +28,10 @@ jobs:
         include:
           - os: ubuntu-24.04-arm
             dockerfile: .ci/ci-images/manylinux_2_28_aarch64/Dockerfile
-            uri: ghcr.io/${{ github.repository_owner }}/lightgbm:ci-manylinux2014_aarch64${{ inputs.tag-suffix }}
+            tag: ci-manylinux2014_aarch64${{ inputs.tag-suffix }}
           - os: ubuntu-latest
             dockerfile: .ci/ci-images/manylinux_2_28_x86_64/Dockerfile
-            uri: ghcr.io/${{ github.repository_owner }}/lightgbm:ci-manylinux_2_28_x86_64${{ inputs.tag-suffix }}
+            tag: ci-manylinux_2_28_x86_64${{ inputs.tag-suffix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
@@ -48,11 +48,11 @@ jobs:
           context: null
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ matrix.uri }}
+          tags: ghcr.io/${{ github.repository_owner }}/lightgbm:${{ matrix.tag }}
       # create an attestation to prove that this image came from a workflow in this repository
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
         with:
-          subject-name: ${{ matrix.uri }}
+          subject-name: ghcr.io/${{ github.repository_owner }}/lightgbm
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
