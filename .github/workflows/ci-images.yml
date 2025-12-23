@@ -1,6 +1,7 @@
 name: publish-images
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       tag-suffix:
