@@ -1,0 +1,57 @@
+name: publish-images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag-suffix:
+        type: string
+        default: "-dev"
+        description: |
+          Suffix for image tags, including a leading "-" if desired.
+          Set to the empty string to overwrite the main images used by LightGBM's CI.
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04-arm
+            dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_aarch64/Dockerfile
+            uri: ${{ env.REGISTRY }}/${{ github.repository }}:manylinux2014_aarch64${{ inputs.tag-suffix }}
+          - os: ubuntu-latest
+            dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_x86_64/Dockerfile
+            uri: ${{ env.REGISTRY }}/${{ github.repository }}:manylinux_2_28_x86_64${{ inputs.tag-suffix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - name: Log in to the Container registry
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1  # v3.5.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6.18.0
+        with:
+          context: null
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ matrix.uri }}
+      # create an attestation to prove that this image came from a workflow in this repository
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
+        with:
+          subject-name: ${{ matrix.uri }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
