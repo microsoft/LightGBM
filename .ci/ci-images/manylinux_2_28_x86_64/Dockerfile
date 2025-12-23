@@ -42,6 +42,7 @@ RUN mkdir /usr/local/src/clang \
  && cd build \
  && cmake \
      -DCMAKE_BUILD_TYPE=Release \
+     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
      -DGCC_INSTALL_PREFIX=${DEVTOOLSET_ROOTPATH} \
      -DLLVM_BUILD_BENCHMARKS=OFF \
      -DLLVM_BUILD_DOCS=OFF \

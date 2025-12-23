@@ -20,6 +20,7 @@ RUN git clone --depth 1 --branch v1.8 https://github.com/pocl/pocl.git \
     -DCMAKE_C_COMPILER=/usr/bin/gcc \
     -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
     -DCMAKE_C_FLAGS=-std=gnu99 \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors \
     -DPOCL_DEBUG_MESSAGES=OFF \
     -DINSTALL_OPENCL_HEADERS=OFF \
