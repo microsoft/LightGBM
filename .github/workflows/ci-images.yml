@@ -13,6 +13,7 @@ on:
 
 jobs:
   build-and-push-images:
+    name: build-ci-images (${{ matrix.uri }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,14 +22,16 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
+      # NOTE: Cannot use "{{ github.repository }}" because that'd return "{org}/LightGBM" which results in
+      #       and error like "repository name must be lowercase".
       matrix:
         include:
           - os: ubuntu-24.04-arm
             dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_aarch64/Dockerfile
-            uri: ghcr.io/${{ github.repository }}:manylinux2014_aarch64${{ inputs.tag-suffix }}
+            uri: ghcr.io/${{ github.repository_owner }}/lightgbm:ci-manylinux2014_aarch64${{ inputs.tag-suffix }}
           - os: ubuntu-latest
             dockerfile: ${{ github.workspace }}/.ci/ci-images/manylinux_2_28_x86_64/Dockerfile
-            uri: ghcr.io/${{ github.repository }}:manylinux_2_28_x86_64${{ inputs.tag-suffix }}
+            uri: ghcr.io/${{ github.repository_owner }}/lightgbm:ci-manylinux_2_28_x86_64${{ inputs.tag-suffix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
