@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-and-push-images:
-    name: build-ci-images (${{ matrix.uri }})
+    name: build-ci-images (${{ matrix.tag }})
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
