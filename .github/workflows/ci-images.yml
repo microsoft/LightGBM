@@ -1,4 +1,4 @@
-name: publish-images
+name: ci-images
 
 on:
   push:

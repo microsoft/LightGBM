@@ -9,6 +9,7 @@ yum update -y
 
 yum install --nodocs -y \
    epel-release
+
 yum install --nodocs -y \
    clang-devel \
    gcc-c++ \
