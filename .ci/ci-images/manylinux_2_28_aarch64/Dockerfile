@@ -40,6 +40,11 @@ git clone \
    --branch v7.1 \
    https://github.com/pocl/pocl.git
 
+# explanations for some flags:
+#
+#   * -DCMAKE_{C,CXX}_COMPILER: DEVTOOLSET_ROOTPATH is where manylinux puts the gcc toolset
+#   * -DLLC_HOST_CPU="generic": passed to clang's -march/-mcpu flag.
+#
 cmake \
    -B pocl/build \
    -S pocl \

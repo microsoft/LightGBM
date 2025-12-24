@@ -40,6 +40,11 @@ git clone \
    --branch v7.1 \
    https://github.com/pocl/pocl.git
 
+# explanations for some flags:
+#
+#   * -DCMAKE_{C,CXX}_COMPILER: DEVTOOLSET_ROOTPATH is where manylinux puts the gcc toolset
+#   * -DLLC_HOST_CPU="x86_64": passed to clang's -march/-mcpu flag. see https://github.com/chromebrew/chromebrew/pull/9176#issuecomment-1891751465
+#
 cmake \
    -B pocl/build \
    -S pocl \
@@ -55,7 +60,7 @@ cmake \
    -DENABLE_TESTS=OFF \
    -DENABLE_VALGRIND=OFF \
    -DINSTALL_OPENCL_HEADERS=OFF \
-   -DLLC_HOST_CPU=generic \
+   -DLLC_HOST_CPU="x86-64" \
    -DPOCL_DEBUG_MESSAGES=OFF \
    -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors
 
