@@ -30,7 +30,7 @@ env:
 
 jobs:
   test-linux-aarch64:
-    name: bdist wheel (manylinux2014-arm, gcc, Python 3.13)
+    name: bdist wheel (manylinux_2_28-arm, gcc, Python 3.13)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:

@@ -24,7 +24,7 @@ RUN curl -sL https://cmake.org/files/v3.23/cmake-3.23.1-linux-x86_64.sh -o cmake
 #
 # [why from source?]
 #
-# - manylinux images use a custom sysroot foor the gcc toolchain, which doesn't play well with the precompiled llvm+clang available from https://github.com/llvm/llvm-project/releases
+# - manylinux images use a custom sysroot for the gcc toolchain, which doesn't play well with the precompiled llvm+clang available from https://github.com/llvm/llvm-project/releases
 # - there is not a precompiled llvm+clang available for x86_64 architecture + non-Ubuntu distributions
 #
 # [why are we building libcxx and lld?]
