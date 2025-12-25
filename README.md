@@ -20,6 +20,7 @@ Light Gradient Boosting Machine
 [![conda Version](https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda)](https://anaconda.org/conda-forge/lightgbm)
 [![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
 [![NuGet Version](https://img.shields.io/nuget/v/lightgbm?logo=nuget&logoColor=white)](https://www.nuget.org/packages/LightGBM)
+[![Winget Version](https://img.shields.io/winget/v/Microsoft.LightBGM)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/m/Microsoft/LightBGM)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
