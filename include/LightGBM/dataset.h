@@ -1167,6 +1167,8 @@ class Dataset {
   data_size_t num_used_differential_features_;
   /*! \brief stored number of differential feature groups used in training dataset, for creating differential features in pairwise lambdarank */
   data_size_t num_used_differential_groups_;
+  /*! \brief map differential feature index to inner feature index of original dataset */
+  std::vector<int> used_differential_feature_to_inner_feature_index_;
 };
 
 }  // namespace LightGBM

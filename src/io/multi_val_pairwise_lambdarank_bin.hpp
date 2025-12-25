@@ -28,14 +28,16 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
   MultiValDensePairwiseLambdarankBin(data_size_t num_data, int num_bin, int num_feature,
     const std::vector<uint32_t>& offsets, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map,
     const std::vector<const BinMapper*> diff_feature_bin_mappers, const std::vector<std::vector<float>>* raw_data,
-    const std::vector<uint32_t>& all_offsets): MultiValPairwiseLambdarankBin<BIN_TYPE, LightGBM::MultiValDenseBin>(num_data, num_bin, num_feature, offsets) {
+    const std::vector<uint32_t>& all_offsets,
+    const std::vector<int>& real_feature_index): MultiValPairwiseLambdarankBin<BIN_TYPE, LightGBM::MultiValDenseBin>(num_data, num_bin, num_feature, offsets),
+    real_feature_index_(real_feature_index) {
     this->paired_ranking_item_global_index_map_ = paired_ranking_item_global_index_map;
     raw_data_ = raw_data;
     all_offsets_ = all_offsets;
     for (const BinMapper* bin_mapper : diff_feature_bin_mappers) {
       diff_feature_bin_mappers_.emplace_back(bin_mapper);
     }
-    num_diff_features_ = static_cast<int>(all_offsets_.size()) - 2 * num_feature;
+    num_diff_features_ = static_cast<int>(all_offsets_.size()) - 2 * num_feature - 1;
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
@@ -105,10 +107,18 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
       if (raw_data_->size() > 0) {
         // use raw data and differential features
         for (int j = 0; j < num_diff_features_; ++j) {
-          const float first_value = raw_data_->at(j).at(first_idx);
-          const float second_value = raw_data_->at(j).at(second_idx);
+          const int real_feature_idx = real_feature_index_[j];
+          const float first_value = raw_data_->at(real_feature_idx).at(first_idx);
+          const float second_value = raw_data_->at(real_feature_idx).at(second_idx);
           const double diff_value = first_value - second_value;
-          const uint32_t bin = static_cast<uint32_t>(diff_feature_bin_mappers_[j]->ValueToBin(diff_value));
+
+          // calculate offset of feature
+          const uint32_t offset = static_cast<uint32_t>(diff_feature_bin_mappers_[j]->GetMostFreqBin() == 0);
+          // imitates push the bin into a single feature group (+ min_bin_ (which is always 1 for single feature groups) - offset)
+          // and then extracted in a FeatureGroupIteartor (+ min_bin_ (which is 1 for FeatureGroupIterator) - offset (which is 1 for FeatureGroupIterator))
+          // thus effectively should do only (+ 1 - offset)
+          const uint32_t bin = static_cast<uint32_t>(diff_feature_bin_mappers_[j]->ValueToBin(diff_value)) + 1 - offset;
+
           const auto ti = (bin + all_offsets_[2 * this->num_feature_ + j]) << 1;
           grad[ti] += gradient;
           hess[ti] += hessian;
@@ -122,6 +132,7 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
   std::vector<std::unique_ptr<const BinMapper>> diff_feature_bin_mappers_;
   std::vector<uint32_t> all_offsets_;
   int num_diff_features_;
+  const std::vector<int>& real_feature_index_;
 };
 
 }  // namespace LightGBM

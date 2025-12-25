@@ -585,7 +585,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
   std::unique_ptr<MultiValBin> ret;
   std::vector<const BinMapper*> diff_bin_mappers;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
-                                           num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, nullptr, offsets));
+                                           num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, nullptr, offsets, real_feature_idx_));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -664,19 +664,19 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     // }
     // fout.close();
 
-    for (int feature_index = 2 * num_original_features; feature_index < num_features_; ++feature_index) {
+    for (int feature_index = num_features_ - num_used_differential_features_; feature_index < num_features_; ++feature_index) {
       diff_feature_bin_mappers.push_back(new BinMapper(*FeatureBinMapper(feature_index)));
     }
 
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
         num_original_data, offsets.back(), num_original_features,
-        1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets));
+        1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets, used_differential_feature_to_inner_feature_index_));
     PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get());
   } else {
     ret.reset(MultiValBin::CreateMultiValBin(
         num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
-        1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets));
+        1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, &raw_data_, offsets, real_feature_idx_));
     PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
     // std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
     // fout << "original_most_freq_bins" << std::endl;
@@ -1067,6 +1067,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
           ++num_features_in_group;
           ++num_used_differential_features_;
           const int ori_feature_index = dataset->InnerFeatureIndex(diff_feature_index);
+          used_differential_feature_to_inner_feature_index_.push_back(ori_feature_index);
           ori_bin_mappers.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
           ori_bin_mappers_for_diff.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
           diff_bin_mappers.emplace_back(new BinMapper(*diff_feature_bin_mappers[diff_feature_index]));
@@ -1096,7 +1097,6 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
         CHECK_EQ(features_in_group.size(), 1);
         const int original_feature_index = features_in_group[0];
         const int inner_feature_index = dataset->InnerFeatureIndex(original_feature_index);
-        Log::Warning("inner_feature_index = %d", inner_feature_index);
         raw_value_vector = &raw_data_[inner_feature_index];
       }
       feature_groups_.emplace_back(new PairwiseRankingDifferentialFeatureGroup(feature_group, dataset->num_data(), 2, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, ori_bin_mappers_for_diff, raw_value_vector));

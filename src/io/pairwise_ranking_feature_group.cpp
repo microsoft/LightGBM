@@ -84,6 +84,10 @@ PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup
     ori_feature_bin_mappers_.emplace_back(bin_mapper_ref.release());
   }
 
+  for (size_t i = 0; i < diff_feature_bin_mappers_.size(); ++i) {
+    Log::Warning("diff_feature_bin_mappers_[%ld]->num_bin() = %d", i, diff_feature_bin_mappers_[i]->num_bin());
+  }
+
   CreateBinData(num_original_data, is_multi_val_, !is_sparse_, is_sparse_);
 
   Threading::For<data_size_t>(0, num_original_data, 512, [this, &other] (int block_index, data_size_t block_start, data_size_t block_end) {

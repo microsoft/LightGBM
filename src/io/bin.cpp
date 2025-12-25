@@ -702,18 +702,18 @@ namespace LightGBM {
 
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
     double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map, const std::vector<const BinMapper*> diff_feature_bin_mappers, const std::vector<std::vector<float>>* raw_data,
-    const std::vector<uint32_t>& all_offsets) {
+    const std::vector<uint32_t>& all_offsets, const std::vector<int>& real_feature_index) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       // if (use_pairwise_ranking) {
         Log::Warning("Pairwise ranking with sparse row-wse bins is not supported yet.");
-        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
+        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets, real_feature_index);
       // } else {
       //   return CreateMultiValSparseBin(num_data, num_bin,
       //                                  average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
       // }
     } else {
-      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets, real_feature_index);
     }
   }
 
@@ -723,7 +723,7 @@ namespace LightGBM {
                                                    const std::vector<uint32_t>& offsets,
                                                    const bool use_pairwise_ranking,
                                                    const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map, const std::vector<const BinMapper*> diff_feature_bin_mappers, const std::vector<std::vector<float>>* raw_data,
-                                                   const std::vector<uint32_t>& all_offsets) {
+                                                   const std::vector<uint32_t>& all_offsets, const std::vector<int>& real_feature_index) {
     // calculate max bin of all features to select the int type in MultiValDenseBin
     int max_bin = 0;
     for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
@@ -734,19 +734,19 @@ namespace LightGBM {
     }
     if (max_bin <= 256) {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint8_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
+        return new MultiValDensePairwiseLambdarankBin<uint8_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets, real_feature_index);
       } else {
         return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
       }
     } else if (max_bin <= 65536) {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint16_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
+        return new MultiValDensePairwiseLambdarankBin<uint16_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets, real_feature_index);
       } else {
         return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
       }
     } else {
       if (use_pairwise_ranking) {
-        return new MultiValDensePairwiseLambdarankBin<uint32_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets);
+        return new MultiValDensePairwiseLambdarankBin<uint32_t>(num_data, num_bin, num_feature, offsets, paired_ranking_item_global_index_map, diff_feature_bin_mappers, raw_data, all_offsets, real_feature_index);
       } else {
         return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
       }
