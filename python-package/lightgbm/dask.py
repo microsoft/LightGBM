@@ -1208,12 +1208,13 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
-        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
+        *,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         **kwargs: Any,
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -1416,11 +1417,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
-        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
+        *,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         **kwargs: Any,
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -1589,13 +1591,14 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
-        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
+        *,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         **kwargs: Any,
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
