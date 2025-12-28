@@ -36,7 +36,7 @@ jobs:
             dockerfile: .ci/ci-images/manylinux_2_28_x86_64/Dockerfile
             # TODO(jameslamb): revert hard-coded tag before merging
             tag: ci-manylinux_2_28_x86_64-dev
-            #tag: ci-manylinux_2_28_x86_64${{ inputs.tag-suffix }}
+            # tag: ci-manylinux_2_28_x86_64${{ inputs.tag-suffix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1

@@ -1,4 +1,7 @@
+# Build static libraries by default
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+# set dependency versions
 set(BOOST_VERSION_DOT "1.74")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
@@ -49,7 +52,19 @@ if(NOT OpenCL-ICD-Loader_POPULATED)
   message(STATUS "Populated OpenCL ICD Loader")
 endif()
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${OPENCL_ICD_LOADER_HEADERS_DIR})
-list(APPEND INTEGRATED_OPENCL_DEFINITIONS CL_TARGET_OPENCL_VERSION=120)
+
+# lint_cmake: -linelength
+# CL_TARGET_OPENCL_VERSION should match whatever the version was with the OpenCL-Headers commit pulled above.
+# That should also be consistent with whatever version of PoCL is built in LightGBM's CI images.
+#
+#  references:
+#
+#    * https://github.com/KhronosGroup/OpenCL-Headers/blob/6137cfbbc7938cd43069d45c622022572fb87113/README.md?plain=1#L56-L71
+#    * https://github.com/KhronosGroup/OpenCL-Headers/blob/6137cfbbc7938cd43069d45c622022572fb87113/CL/cl_version.h#L23
+#    * https://github.com/pocl/pocl/blob/070b1081111d5f29bd8bd87fb8355866644fe8ea/CMakeLists.txt#L1572-L1573
+#
+# lint_cmake: +linelength
+list(APPEND INTEGRATED_OPENCL_DEFINITIONS CL_TARGET_OPENCL_VERSION=300)
 if(WIN32)
   list(
     APPEND

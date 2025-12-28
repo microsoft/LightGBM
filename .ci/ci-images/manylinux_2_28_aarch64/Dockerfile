@@ -35,6 +35,9 @@ chmod +x cmake.sh
 rm -f ./cmake.sh
 
 # build PoCL
+#
+# NOTE: If this is updated, check if CL_TARGET_OPENCL_VERSION in cmake/IntegratedOpenCL.cmake
+#       needs to be updated (see comments there fore links).
 git clone \
    --depth 1 \
    --branch v7.1 \
