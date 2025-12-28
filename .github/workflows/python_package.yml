@@ -22,6 +22,10 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # avoid interactive prompts in Debian-based distributions
   DEBIAN_FRONTEND: noninteractive
+  # On runners using nvidia-container-runtime with Docker, ensure GPUs are available to running processes.
+  #
+  # ref: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html
+  NVIDIA_VISIBLE_DEVICES: 'all'
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
@@ -31,7 +35,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -73,6 +77,7 @@ jobs:
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
+          if-no-files-found: error
   test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
@@ -97,12 +102,60 @@ jobs:
             python_version: '3.12'
           - os: macos-15-intel
             task: bdist
+            method: wheel
             compiler: gcc
             python_version: '3.9'
           - os: windows-2022
             task: sdist
             compiler: MSVC
             python_version: '3.10'
+          - os: ubuntu-latest
+            container: &ubuntu_latest_image ubuntu:22.04
+            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            task: regular
+            compiler: clang-17
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
+            task: sdist
+            compiler: clang-17
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
+          #########################
+          # OpenCL-based GPU jobs #
+          #########################
+          # clang-17 jobs are run on machines with actual GPUs because
+          # the package built with that compiler toolchain can't target the
+          # CPUs on GitHub's runners.
+          #
+          # ref: https://github.com/microsoft/LightGBM/pull/7096/files#r2590879590
+          - os: LightGBM-GPU
+            container: nvcr.io/nvidia/cuda:12.9.1-devel-ubuntu22.04
+            os-display-name: ubuntu22.04-with-gpu
+            task: bdist
+            compiler: clang-17
+            method: wheel
+            python_version: '3.11'
+            in-ubuntu-base-container: 'true'
+          - os: LightGBM-GPU
+            container: nvcr.io/nvidia/cuda:12.9.1-devel-ubuntu22.04
+            os-display-name: ubuntu22.04-with-gpu
+            task: gpu
+            compiler: clang-17
+            method: source
+            python_version: '3.12'
+            in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: &manylinux_amd64_image lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
+            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
+            task: gpu
+            method: source
+            compiler: gcc
+            python_version: '3.13'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
           ############
           # MPI jobs #
           ############
@@ -122,8 +175,8 @@ jobs:
             method: wheel
             python_version: '3.10'
           - os: ubuntu-latest
-            container: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
-            os-display-name: 'manylinux_2_28'
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
             task: mpi
             compiler: gcc
             method: source
@@ -131,8 +184,8 @@ jobs:
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
           - os: ubuntu-latest
-            container: &ubuntu_latest_image ubuntu:22.04
-            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            container: *ubuntu_latest_image
+            os-display-name: *ubuntu_latest_display_name
             task: mpi
             compiler: clang-17
             method: source
@@ -178,6 +231,37 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'macosx-amd64-liblightgbm'
             python_version: '3.11'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: regular
+            compiler: gcc
+            python_version: '3.11'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'linux-amd64-liblightgbm'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: bdist
+            compiler: gcc
+            method: wheel
+            python_version: '3.10'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'linux-amd64-wheel'
+          - os: ubuntu-latest
+            container: *manylinux_amd64_image
+            os-display-name: *manylinux_amd64_display_name
+            task: sdist
+            compiler: gcc
+            python_version: '3.9'
+            in-ubuntu-base-container: 'false'
+            setup-conda: 'false'
+            produces-artifacts: 'true'
+            artifact-name: 'sdist'
           - os: windows-2022
             task: bdist
             compiler: MSVC
@@ -217,13 +301,13 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
       - name: Setup and run tests on Linux and macOS
-        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || matrix.os == 'LightGBM-GPU'
         shell: bash
         run: |
           export COMPILER="${{ matrix.compiler }}"
@@ -233,7 +317,7 @@ jobs:
           export METHOD="${{ matrix.method }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]] || [[ "${{ matrix.os }}" == "LightGBM-GPU" ]]; then
               export OS_NAME="linux"
               export PATH="/usr/lib64/openmpi/bin:${PATH}"
           fi
@@ -279,15 +363,59 @@ jobs:
             artifacts/*.dll
             artifacts/*.dylib
             artifacts/*.exe
+            artifacts/*.so
+            artifacts/*.tar.gz
             artifacts/*.whl
           if-no-files-found: error
+  create-nuget:
+    name: NuGet package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [test]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 5
+          persist-credentials: false
+          submodules: false
+      - name: Download lib_lightgbm (all operating systems) and Windows CLI
+        uses: actions/download-artifact@v7
+        with:
+          merge-multiple: true
+          path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}
+          pattern: '*amd64*-liblightgbm'
+          run-id: ${{ github.run_id }}
+      - name: Setup NuGet CLI
+        uses: NuGet/setup-nuget@v2
+      # ref: https://github.com/NuGet/setup-nuget/issues/168
+      - name: Setup mono
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y \
+            mono-devel
+      - name: Create NuGet package
+        run: |
+          python .ci/create-nuget.py "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
+          nuget pack \
+            $(pwd)/.ci/nuget/LightGBM.nuspec \
+            -NonInteractive \
+            -Verbosity detailed \
+            -OutputDirectory "${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
   test-latest-versions:
     name: Python - latest versions (manylinux_2_28)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -322,7 +450,7 @@ jobs:
           - '3.9'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false

@@ -645,7 +645,7 @@ class Dataset {
   inline int Feature2Group(int feature_idx) const {
     return feature2group_[feature_idx];
   }
-  inline int Feture2SubFeature(int feature_idx) const {
+  inline int Feature2SubFeature(int feature_idx) const {
     return feature2subfeature_[feature_idx];
   }
   inline uint64_t GroupBinBoundary(int group_idx) const {
