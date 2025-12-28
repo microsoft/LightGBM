@@ -2072,7 +2072,7 @@ def test_eval_set_raises():
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_X=X_test)
     with pytest.raises(ValueError, match=msg):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_y=y_test)
-    
+
     msg = "You must specify eval_X and eval_y, not just one of them."
     with pytest.raises(ValueError, match=msg):
         gbm.fit(X_train, y_train, eval_X=X_test)
