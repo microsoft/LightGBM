@@ -1020,7 +1020,7 @@ def _predict(
             pred_contrib=pred_contrib,
             **kwargs,
         )
-        pred_row = predict_fn(data_row)
+        pred_row = predict_fn(data_row)  # type: ignore[misc]
         chunks: Tuple[int, ...] = (data.chunks[0],)
         map_blocks_kwargs = {}
         if len(pred_row.shape) > 1:

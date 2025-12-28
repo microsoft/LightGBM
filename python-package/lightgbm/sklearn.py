@@ -1528,8 +1528,9 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
         tags = super().__sklearn_tags__()
-        tags.classifier_tags.multi_class = True
-        tags.classifier_tags.multi_label = False
+        if tags is not None:
+            tags.classifier_tags.multi_class = True
+            tags.classifier_tags.multi_label = False
         return tags
 
     def fit(  # type: ignore[override]
