@@ -2061,6 +2061,33 @@ def test_eval_set_deprecation():
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
 
 
+def test_eval_set_raises():
+    """Test that eval_set and eval_X raise errors where appropriate."""
+    X, y = make_synthetic_regression(n_samples=10)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    gbm = lgb.LGBMRegressor()
+
+    msg = "Specify either 'eval_set' or 'eval_X'.*"
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_X=X_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_y=y_test)
+    
+    msg = "You must specify eval_X and eval_y, not just one of them."
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=X_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_y=y_test)
+
+    msg = "If eval_X is a tuple, y_val must be a tuple of same length, and vice versa."
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=(X_test, X_test), eval_y=y_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=X_test, eval_y=(y_test, y_test))
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=(X_test,) * 3, eval_y=(y_test,) * 2)
+
+
 def test_eval_X_eval_y_eval_set_equivalence():
     """Test that eval_X and eval_y are equivalent to eval_set."""
     X, y = make_synthetic_regression()
