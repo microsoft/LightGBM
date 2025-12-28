@@ -345,7 +345,7 @@ _lgbmmodel_doc_fit = """
         This is deprecated, use `eval_X` and `eval_y` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : {eval_sample_weight_shape} or tuple or None (default=None)
+    eval_sample_weight : {eval_sample_weight_shape}
         Weights of eval data. Weights should be non-negative.
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
