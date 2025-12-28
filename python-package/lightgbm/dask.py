@@ -113,6 +113,7 @@ def _get_dask_client(client: Optional[Client]) -> Client:
 
 
 def _assign_open_ports_to_workers(
+    *,
     client: Client,
     workers: List[str],
 ) -> Tuple[Dict[str, Future], Dict[str, int]]:
@@ -165,7 +166,11 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
     return [[z for z in arg if z is not None] for arg in args]
 
 
-def _pad_eval_names(lgbm_model: LGBMModel, required_names: List[str]) -> LGBMModel:
+def _pad_eval_names(
+    *,
+    lgbm_model: LGBMModel,
+    required_names: List[str],
+) -> LGBMModel:
     """Append missing (key, value) pairs to a LightGBM model's evals_result_ and best_score_ OrderedDict attrs based on a set of required eval_set names.
 
     Allows users to rely on expected eval_set names being present when fitting DaskLGBM estimators with ``eval_set``.
@@ -356,12 +361,12 @@ def _train_part(
 
     if n_evals:
         # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.
-        model = _pad_eval_names(model, required_names=evals_result_names)
+        model = _pad_eval_names(lgbm_model=model, required_names=evals_result_names)
 
     return model if return_model else None
 
 
-def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
+def _split_to_parts(*, data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     parts = data.to_delayed()
     if isinstance(parts, np.ndarray):
         if is_matrix:
@@ -372,7 +377,11 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
-def _machines_to_worker_map(machines: str, worker_addresses: Iterable[str]) -> Dict[str, int]:
+def _machines_to_worker_map(
+    *,
+    machines: str,
+    worker_addresses: Iterable[str],
+) -> Dict[str, int]:
     """Create a worker_map from machines list.
 
     Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
@@ -773,7 +782,8 @@ def _train(
         else:
             _log_info("Finding random open ports for workers")
             worker_to_socket_future, worker_address_to_port = _assign_open_ports_to_workers(
-                client, list(worker_map.keys())
+                client=client,
+                workers=list(worker_map.keys()),
             )
 
         machines = ",".join(
@@ -1091,7 +1101,7 @@ class _DaskLGBMModel:
         )
 
         self.set_params(**model.get_params())  # type: ignore[attr-defined]
-        self._lgb_dask_copy_extra_params(model, self)  # type: ignore[attr-defined]
+        self._lgb_dask_copy_extra_params(source=model, dest=self)  # type: ignore[attr-defined]
 
         return self
 
@@ -1099,12 +1109,13 @@ class _DaskLGBMModel:
         params = self.get_params()  # type: ignore[attr-defined]
         params.pop("client", None)
         model = model_factory(**params)
-        self._lgb_dask_copy_extra_params(self, model)
+        self._lgb_dask_copy_extra_params(source=self, dest=model)
         model._other_params.pop("client", None)
         return model
 
     @staticmethod
     def _lgb_dask_copy_extra_params(
+        *,
         source: Union["_DaskLGBMModel", LGBMModel],
         dest: Union["_DaskLGBMModel", LGBMModel],
     ) -> None:

@@ -304,13 +304,13 @@ class _EarlyStoppingCallback:
         self.cmp_op: List[Callable[[float, float], bool]] = []
         self.first_metric = ""
 
-    def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+    def _gt_delta(self, curr_score: float, best_score: float, *, delta: float) -> bool:
         return curr_score > best_score + delta
 
-    def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+    def _lt_delta(self, curr_score: float, best_score: float, *, delta: float) -> bool:
         return curr_score < best_score - delta
 
-    def _is_train_set(self, dataset_name: str, env: CallbackEnv) -> bool:
+    def _is_train_set(self, *, dataset_name: str, env: CallbackEnv) -> bool:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
