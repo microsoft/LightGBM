@@ -345,10 +345,6 @@ _lgbmmodel_doc_fit = """
         This is deprecated, use `eval_X` and `eval_y` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_X : {X_shape} or tuple or None, optional (default=None)
-        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
-    eval_y : {y_shape} or tuple or None, optional (default=None)
-        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
     eval_sample_weight : {eval_sample_weight_shape} or tuple or None (default=None)
         Weights of eval data. Weights should be non-negative.
     eval_class_weight : list or None, optional (default=None)
@@ -381,6 +377,10 @@ _lgbmmodel_doc_fit = """
         See Callbacks in Python API for more information.
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
+    eval_X : {X_shape} or tuple or None, optional (default=None)
+        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
+    eval_y : {y_shape} or tuple or None, optional (default=None)
+        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
 
     Returns
     -------
@@ -947,8 +947,6 @@ class LGBMModel(_LGBMModelBase):
         group: Optional[_LGBM_GroupType] = None,
         eval_set: Optional[List[_LGBM_ScikitValidSet]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
-        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_class_weight: Optional[List[float]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
@@ -958,6 +956,9 @@ class LGBMModel(_LGBMModelBase):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
@@ -1423,8 +1424,6 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         init_score: Optional[_LGBM_InitScoreType] = None,
         eval_set: Optional[List[_LGBM_ScikitValidSet]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
-        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
@@ -1432,6 +1431,9 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
@@ -1540,8 +1542,6 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         init_score: Optional[_LGBM_InitScoreType] = None,
         eval_set: Optional[List[_LGBM_ScikitValidSet]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
-        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_class_weight: Optional[List[float]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
@@ -1550,6 +1550,9 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
@@ -1790,8 +1793,6 @@ class LGBMRanker(LGBMModel):
         group: Optional[_LGBM_GroupType] = None,
         eval_set: Optional[List[_LGBM_ScikitValidSet]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
-        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
         eval_group: Optional[List[_LGBM_GroupType]] = None,
@@ -1801,6 +1802,9 @@ class LGBMRanker(LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
