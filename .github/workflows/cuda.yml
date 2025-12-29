@@ -9,12 +9,6 @@ on:
       - master
   # Run manually by clicking a button in the UI
   workflow_dispatch:
-    inputs:
-      restart_docker:
-        description: 'Restart nvidia-docker on the runner before building?'
-        required: true
-        type: boolean
-        default: false
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -22,49 +16,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Optionally reinstall + restart docker on the runner before building.
-  # This is safe as long as only 1 of these jobs runs at a time.
-  restart-docker:
-    name: set up docker
-    runs-on: [self-hosted, linux]
-    timeout-minutes: 30
-    steps:
-      - name: Setup or update software on host machine
-        if: ${{ inputs.restart_docker }}
-        run: |
-            # install core packages
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                apt-transport-https \
-                ca-certificates \
-                curl \
-                gnupg-agent \
-                lsb-release \
-                software-properties-common
-            # set up nvidia-docker
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-            sudo add-apt-repository -y \
-              "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-            curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-            curl -sL \
-              https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list \
-            | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                containerd.io \
-                docker-ce \
-                docker-ce-cli \
-                nvidia-docker2
-            sudo chmod a+rw /var/run/docker.sock
-            sudo systemctl restart docker
-      - name: mark job successful
-        run: |
-          exit 0
   test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (${{ matrix.linux_version }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
-    runs-on: [self-hosted, linux]
-    needs: [restart-docker]
+    # yamllint disable-line rule:line-length
+    # ref: https://docs.github.com/en/actions/concepts/runners/about-larger-runners#specifications-for-gpu-larger-runners
+    runs-on: LightGBM-GPU
     container:
       image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel-${{ matrix.linux_version }}
       env:
@@ -114,12 +71,14 @@ jobs:
               git \
               sudo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Setup and run tests
         run: |
+          export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export PATH=$CONDA/bin:$PATH
 

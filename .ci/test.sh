@@ -13,6 +13,9 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
+# create the artifact upload directory if it doesn't exist yet
+mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-14
     export CC=gcc-14
@@ -44,6 +47,22 @@ fi
 
 if [[ "${TASK}" == "r-package" ]]; then
     bash "${BUILD_DIRECTORY}/.ci/test-r-package.sh" || exit 1
+    exit 0
+fi
+
+cd "${BUILD_DIRECTORY}"
+
+if [[ $TASK == "swig" ]]; then
+    cmake -B build -S . -DUSE_SWIG=ON
+    cmake --build build -j4 || exit 1
+    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+        objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
+        objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
+        ./.ci/check-dynamic-dependencies.sh ./objdump.log || exit 1
+    fi
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
+        cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbmlib_${OS_NAME}.jar"
+    fi
     exit 0
 fi
 
@@ -82,88 +101,8 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-cd "${BUILD_DIRECTORY}"
-
-if [[ $TASK == "swig" ]]; then
-    cmake -B build -S . -DUSE_SWIG=ON
-    cmake --build build -j4 || exit 1
-    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
-        objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
-        objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
-        python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
-    fi
-    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbmlib_${OS_NAME}.jar"
-    fi
-    exit 0
-fi
-
-if [[ $TASK == "lint" ]]; then
-    pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
-    echo "Linting PowerShell code"
-    pwsh -file ./.ci/lint-powershell.ps1 || exit 1
-    conda create -q -y -n "${CONDA_ENV}" \
-        "${CONDA_PYTHON_REQUIREMENT}" \
-        'biome>=1.9.3' \
-        'cmakelint>=1.4.3' \
-        'cpplint>=1.6.0' \
-        'matplotlib-base>=3.9.1' \
-        'mypy>=1.11.1' \
-        'pre-commit>=3.8.0' \
-        'pyarrow-core>=17.0' \
-        'scikit-learn>=1.5.2' \
-        'r-lintr>=3.1.2'
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    echo "Linting Python and bash code"
-    bash ./.ci/lint-python-bash.sh || exit 1
-    echo "Linting R code"
-    Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
-    echo "Linting C++ code"
-    bash ./.ci/lint-cpp.sh || exit 1
-    echo "Linting JavaScript code"
-    bash ./.ci/lint-js.sh || exit 1
-    exit 0
-fi
-
-if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
-    conda env create \
-        -n "${CONDA_ENV}" \
-        --file ./docs/env.yml || exit 1
-    conda install \
-        -q \
-        -y \
-        -n "${CONDA_ENV}" \
-            'doxygen>=1.10.0' \
-            'rstcheck>=6.2.4' || exit 1
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
-    # check reStructuredText formatting
-    find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
-        -exec rstcheck --report-level warning {} \+ || exit 1
-    find "${BUILD_DIRECTORY}/docs" -type f -name "*.rst" \
-        -exec rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} \+ || exit 1
-    # build docs
-    make -C docs html || exit 1
-    if [[ $TASK == "check-links" ]]; then
-        # check docs for broken links
-        pip install 'linkchecker>=10.5.0'
-        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
-        exit 0
-    fi
-    # check the consistency of parameters' descriptions and other stuff
-    cp ./docs/Parameters.rst ./docs/Parameters-backup.rst
-    cp ./src/io/config_auto.cpp ./src/io/config_auto-backup.cpp
-    python ./.ci/parameter-generator.py || exit 1
-    diff ./docs/Parameters-backup.rst ./docs/Parameters.rst || exit 1
-    diff ./src/io/config_auto-backup.cpp ./src/io/config_auto.cpp || exit 1
-    exit 0
-fi
-
-if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
-elif [[ $PYTHON_VERSION == "3.8" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py38.txt"
+if [[ $PYTHON_VERSION == "3.9" ]]; then
+    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py39.txt"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
@@ -174,6 +113,10 @@ conda create \
     --file "${CONDA_REQUIREMENT_FILE}" \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
+
+# print output of 'conda list', to help in submitting bug reports
+echo "conda list:"
+conda list -n ${CONDA_ENV}
 
 # shellcheck disable=SC1091
 source activate $CONDA_ENV
@@ -306,7 +249,7 @@ if [[ $TASK == "regular" ]]; then
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
-                python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
+                ./.ci/check-dynamic-dependencies.sh ./objdump.log || exit 1
             fi
             cp ./lib_lightgbm.so "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.so"
         fi

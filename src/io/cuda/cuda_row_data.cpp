@@ -7,6 +7,8 @@
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 
+#include <vector>
+
 namespace LightGBM {
 
 CUDARowData::CUDARowData(const Dataset* train_data,
@@ -105,7 +107,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
           &cuda_row_ptr_uint64_t_,
           &cuda_partition_ptr_uint64_t_);
       } else {
-        Log::Fatal("Unknow data ptr bit type %d", row_ptr_bit_type_);
+        Log::Fatal("Unknown data ptr bit type %d", row_ptr_bit_type_);
       }
     }
   } else if (bit_type_ == 16) {
@@ -136,7 +138,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
           &cuda_row_ptr_uint64_t_,
           &cuda_partition_ptr_uint64_t_);
       } else {
-        Log::Fatal("Unknow data ptr bit type %d", row_ptr_bit_type_);
+        Log::Fatal("Unknown data ptr bit type %d", row_ptr_bit_type_);
       }
     }
   } else if (bit_type_ == 32) {
@@ -167,11 +169,11 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
           &cuda_row_ptr_uint64_t_,
           &cuda_partition_ptr_uint64_t_);
       } else {
-        Log::Fatal("Unknow data ptr bit type %d", row_ptr_bit_type_);
+        Log::Fatal("Unknown data ptr bit type %d", row_ptr_bit_type_);
       }
     }
   } else {
-    Log::Fatal("Unknow bit type = %d", bit_type_);
+    Log::Fatal("Unknown bit type = %d", bit_type_);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }

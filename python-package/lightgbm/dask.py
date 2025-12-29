@@ -769,7 +769,7 @@ def _train(
                 )
                 raise LightGBMError(msg)
 
-            worker_address_to_port = {address: local_listen_port for address in worker_addresses}
+            worker_address_to_port = dict.fromkeys(worker_addresses, local_listen_port)
         else:
             _log_info("Finding random open ports for workers")
             worker_to_socket_future, worker_address_to_port = _assign_open_ports_to_workers(
@@ -1003,7 +1003,7 @@ def _predict(
             pred_contrib=pred_contrib,
             **kwargs,
         )
-        pred_row = predict_fn(data_row)
+        pred_row = predict_fn(data_row)  # type: ignore[misc]
         chunks: Tuple[int, ...] = (data.chunks[0],)
         map_blocks_kwargs = {}
         if len(pred_row.shape) > 1:

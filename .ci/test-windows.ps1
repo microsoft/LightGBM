@@ -16,6 +16,9 @@ $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
+# create the artifact upload directory if it doesn't exist yet
+[Void][System.IO.Directory]::CreateDirectory($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
+
 if ($env:TASK -eq "r-package") {
     & .\.ci\test-r-package-windows.ps1 ; Assert-Output $?
     exit 0
@@ -42,7 +45,7 @@ if ($env:TASK -eq "swig") {
         "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip",
         "$env:BUILD_SOURCESDIRECTORY/swig"
     ) ; Assert-Output $?
-    $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
+    $SwigFolder = Get-ChildItem -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig" -Attributes Directory
     $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", "$env:PATH") -join ";"
     $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
     cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
@@ -56,22 +59,27 @@ if ($env:TASK -eq "swig") {
         Assert-Output $False
     }
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
-    if ($env:AZURE -eq "true") {
+    if ($env:PRODUCES_ARTIFACTS -eq "true") {
         cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Assert-Output $?
     }
     exit 0
 }
 
 # setup for Python
-conda init powershell
-conda activate
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
+conda activate ; Assert-Output $?
+conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
+conda config --remove channels defaults ; Assert-Output $?
+conda config --add channels nodefaults ; Assert-Output $?
+conda config --add channels conda-forge ; Assert-Output $?
+conda config --set channel_priority strict ; Assert-Output $?
+conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
-if ($env:PYTHON_VERSION -eq "3.7") {
-    $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
-} elseif ($env:PYTHON_VERSION -eq "3.8") {
-    $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py38.txt"
+# print output of 'conda info', to help in submitting bug reports
+Write-Output "conda info:"
+conda info
+
+if ($env:PYTHON_VERSION -eq "3.9") {
+    $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py39.txt"
 } else {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
@@ -83,6 +91,10 @@ $condaParams = @(
     "python=$env:PYTHON_VERSION[build=*_cp*]"
 )
 conda create @condaParams ; Assert-Output $?
+
+# print output of 'conda list', to help in submitting bug reports
+Write-Output "conda list:"
+conda list -n $env:CONDA_ENV
 
 if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
@@ -110,7 +122,8 @@ if ($env:TASK -eq "regular") {
     Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
     conda activate $env:CONDA_ENV
-    sh "build-python.sh" bdist_wheel --integrated-opencl ; Assert-Output $?
+    # TODO: restore --integrated-opencl as part of https://github.com/microsoft/LightGBM/issues/6968
+    sh "build-python.sh" bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
@@ -130,7 +143,8 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 }
 if ($env:TASK -eq "bdist") {
     # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
+    # TODO: set LIGHTGBM_TEST_DUAL_CPU_GPU back to "1" as part of https://github.com/microsoft/LightGBM/issues/6968
+    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
 pytest $tests ; Assert-Output $?

@@ -10,8 +10,8 @@
  * .
  * The reason is that they are called frequently, and the type conversion on them may be time-cost.
  */
-#ifndef LIGHTGBM_C_API_H_
-#define LIGHTGBM_C_API_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_C_API_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_C_API_H_
 
 #include <LightGBM/arrow.h>
 #include <LightGBM/export.h>
@@ -449,8 +449,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
-                                                  const ArrowArray* chunks,
-                                                  const ArrowSchema* schema,
+                                                  const struct ArrowArray* chunks,
+                                                  const struct ArrowSchema* schema,
                                                   const char* parameters,
                                                   const DatasetHandle reference,
                                                   DatasetHandle *out);
@@ -571,8 +571,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                                     const char* field_name,
                                                     int64_t n_chunks,
-                                                    const ArrowArray* chunks,
-                                                    const ArrowSchema* schema);
+                                                    const struct ArrowArray* chunks,
+                                                    const struct ArrowSchema* schema);
 
 /*!
  * \brief Get info vector from dataset.
@@ -759,11 +759,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle,
 /*!
  * \brief Update the model for one iteration.
  * \param handle Handle of booster
- * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
+ *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
+ *                         However, that is not always the case.
+ *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
+ *                         it is possible that another call to this function would produce a non-empty tree.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle,
-                                                int* is_finished);
+                                                int* produced_empty_tree);
 
 /*!
  * \brief Refit the tree model using the new data (online learning).
@@ -787,13 +791,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
- * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
+ *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
+ *                         However, that is not always the case.
+ *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
+ *                         it is possible that another call to this function would produce a non-empty tree.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                                       const float* grad,
                                                       const float* hess,
-                                                      int* is_finished);
+                                                      int* produced_empty_tree);
 
 /*!
  * \brief Rollback one iteration.
@@ -1442,8 +1450,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                                   int64_t n_chunks,
-                                                  const ArrowArray* chunks,
-                                                  const ArrowSchema* schema,
+                                                  const struct ArrowArray* chunks,
+                                                  const struct ArrowSchema* schema,
                                                   int predict_type,
                                                   int start_iteration,
                                                   int num_iteration,
@@ -1655,4 +1663,4 @@ INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
 #endif
 }
 
-#endif  /* LIGHTGBM_C_API_H_ */
+#endif  /* LIGHTGBM_INCLUDE_LIGHTGBM_C_API_H_ */

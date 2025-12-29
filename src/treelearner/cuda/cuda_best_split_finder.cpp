@@ -7,6 +7,7 @@
 #ifdef USE_CUDA
 
 #include <algorithm>
+#include <vector>
 
 #include "cuda_best_split_finder.hpp"
 #include "cuda_leaf_splits.hpp"

@@ -2,12 +2,13 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
-#ifdef USE_CUDA
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
-#ifndef LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
-#define LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#ifdef USE_CUDA
 
 #include <LightGBM/meta.h>
 
@@ -40,24 +41,24 @@ class CUDASplitInfo {
   uint32_t* cat_threshold = nullptr;
   int* cat_threshold_real = nullptr;
 
-  __device__ CUDASplitInfo() {
+  __host__ __device__ CUDASplitInfo() {
     num_cat_threshold = 0;
     cat_threshold = nullptr;
     cat_threshold_real = nullptr;
   }
 
-  __device__ ~CUDASplitInfo() {
+  __host__ __device__ ~CUDASplitInfo() {
     if (num_cat_threshold > 0) {
       if (cat_threshold != nullptr) {
-        cudaFree(cat_threshold);
+        CUDASUCCESS_OR_FATAL(cudaFree(cat_threshold));
       }
       if (cat_threshold_real != nullptr) {
-        cudaFree(cat_threshold_real);
+        CUDASUCCESS_OR_FATAL(cudaFree(cat_threshold_real));
       }
     }
   }
 
-  __device__ CUDASplitInfo& operator=(const CUDASplitInfo& other) {
+  __host__ __device__ CUDASplitInfo& operator=(const CUDASplitInfo& other) {
     is_valid = other.is_valid;
     leaf_index = other.leaf_index;
     gain = other.gain;
@@ -102,6 +103,6 @@ class CUDASplitInfo {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
-
 #endif  // USE_CUDA
+
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_

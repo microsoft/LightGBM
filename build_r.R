@@ -24,7 +24,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
     , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path.
         out_list[["make_args"]] <- arg
     } else if (any(grepl("=", arg, fixed = TRUE))) {
       split_arg <- strsplit(arg, "=", fixed = TRUE)[[1L]]
@@ -97,7 +97,7 @@ install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_con
 keyword_args <- parsed_args[["keyword_args"]]
 if (length(keyword_args) > 0L) {
   cmake_args_to_add <- NULL
-  for (i in seq_len(length(keyword_args))) {
+  for (i in seq_along(keyword_args)) {
     arg_name <- names(keyword_args)[[i]]
     define_name <- ARGS_TO_DEFINES[[arg_name]]
     arg_value <- shQuote(normalizePath(keyword_args[[arg_name]], winslash = "/"))
@@ -147,7 +147,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint: undesirable_function
+        require("processx")  # nolint: undesirable_function, unused_import.
       })
     })
     if (has_processx && on_windows) {
@@ -387,12 +387,6 @@ description_contents <- gsub(
 description_contents <- gsub(
   pattern = "~~DATE~~"
   , replacement = as.character(Sys.Date())
-  , x = description_contents
-  , fixed = TRUE
-)
-description_contents <- gsub(
-  pattern = "~~CXXSTD~~"
-  , replacement = "C++11"
   , x = description_contents
   , fixed = TRUE
 )

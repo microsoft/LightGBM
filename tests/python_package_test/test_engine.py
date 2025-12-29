@@ -16,7 +16,14 @@ import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_blobs, make_classification, make_multilabel_classification
-from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    log_loss,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
@@ -33,6 +40,7 @@ from .utils import (
     logistic_sigmoid,
     make_synthetic_regression,
     mse_obj,
+    np_assert_array_equal,
     pickle_and_unpickle_object,
     sklearn_multiclass_custom_objective,
     softmax,
@@ -662,7 +670,7 @@ def test_ranking_prediction_early_stopping():
 
     pred_parameter["pred_early_stop_margin"] = 5.5
     ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
@@ -845,7 +853,7 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
 
     # test get_position works
     positions_from_get = lgb_train.get_position()
-    np.testing.assert_array_equal(positions_from_get, positions)
+    np_assert_array_equal(positions_from_get, positions, strict=True)
 
 
 def test_early_stopping():
@@ -1391,7 +1399,7 @@ def test_cvbooster_save_load(tmp_path):
     cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
     for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
         assert best_iteration == cvbooster_loaded.best_iteration
-        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
+        np_assert_array_equal(preds, cvbooster_loaded.predict(X_test), strict=True)
 
 
 @pytest.mark.parametrize("serializer", SERIALIZERS)
@@ -1424,7 +1432,7 @@ def test_cvbooster_picklable(serializer):
     assert best_iteration == cvbooster_from_disk.best_iteration
 
     preds_from_disk = cvbooster_from_disk.predict(X_test)
-    np.testing.assert_array_equal(preds, preds_from_disk)
+    np_assert_array_equal(preds, preds_from_disk, strict=True)
 
 
 def test_feature_name():
@@ -1828,18 +1836,18 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     gbm7 = lgb.train(params, lgb_train, num_boost_round=10)
     pred8 = gbm7.predict(X_test)
     assert lgb_train.categorical_feature == []
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred0, pred4)
     np.testing.assert_allclose(pred0, pred5)
     np.testing.assert_allclose(pred0, pred6)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values
@@ -2005,25 +2013,52 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
-# @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
-# def test_int32_max_sparse_contribs(rng):
-#     params = {"objective": "binary"}
-#     train_features = rng.uniform(size=(100, 1000))
-#     train_targets = [0] * 50 + [1] * 50
-#     lgb_train = lgb.Dataset(train_features, train_targets)
-#     gbm = lgb.train(params, lgb_train, num_boost_round=2)
-#     csr_input_shape = (3000000, 1000)
-#     test_features = csr_matrix(csr_input_shape)
-#     for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
-#         for j in range(0, 1000, 100):
-#             test_features[i, j] = random.random()
-#     y_pred_csr = gbm.predict(test_features, pred_contrib=True)
-#     # Note there is an extra column added to the output for the expected value
-#     csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
-#     assert y_pred_csr.shape == csr_output_shape
-#     y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
-#     # Note output CSC shape should be same as CSR output shape
-#     assert y_pred_csc.shape == csr_output_shape
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
+)
+def test_predict_contrib_int64():
+    X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
+    y = y.flatten()
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_test.indptr = X_test.indptr.astype(np.int64)
+
+    train_data = lgb.Dataset(X_train, label=y_train)
+    params = {
+        "objective": "binary",
+        "num_leaves": 7,
+        "min_data_in_bin": 1,
+        "min_data_in_leaf": 1,
+        "seed": 708,
+        "verbose": -1,
+    }
+    booster = lgb.train(params, train_set=train_data, num_boost_round=5)
+
+    preds = booster.predict(X_test, pred_contrib=True)
+
+    assert preds is not None
+    assert preds.shape[0] == X_test.shape[0]
+    assert preds.shape[1] == X_test.shape[1] + 1
+
+
+@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
+def test_int32_max_sparse_contribs(rng):
+    params = {"objective": "binary"}
+    train_features = rng.uniform(size=(100, 1000))
+    train_targets = [0] * 50 + [1] * 50
+    lgb_train = lgb.Dataset(train_features, train_targets)
+    gbm = lgb.train(params, lgb_train, num_boost_round=2)
+    csr_input_shape = (3000000, 1000)
+    test_features = csr_matrix(csr_input_shape)
+    for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+        for j in range(0, 1000, 100):
+            test_features[i, j] = random.random()
+    y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+    # Note there is an extra column added to the output for the expected value
+    csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+    assert y_pred_csr.shape == csr_output_shape
+    y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+    # Note output CSC shape should be same as CSR output shape
+    assert y_pred_csc.shape == csr_output_shape
 
 
 def test_sliced_data(rng):
@@ -2304,7 +2339,7 @@ def test_monotone_penalty_max():
         constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
 
         # Check that a very high penalization is the same as not using the features at all
-        np.testing.assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions)
+        np_assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions, strict=True)
 
 
 def test_max_bin_by_feature():
@@ -3179,22 +3214,24 @@ def test_get_split_value_histogram(rng_fixed_seed):
     assert len(bins) == 8
     hist_idx, bins_idx = gbm.get_split_value_histogram(0)
     hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
-    np.testing.assert_array_equal(hist_idx, hist_name)
+    np_assert_array_equal(hist_idx, hist_name, strict=True)
     np.testing.assert_allclose(bins_idx, bins_name)
     hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
     hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
-    np.testing.assert_array_equal(hist_idx, hist_name)
+    np_assert_array_equal(hist_idx, hist_name, strict=True)
     np.testing.assert_allclose(bins_idx, bins_name)
     # test bins string type
     hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins="auto")
     hist = gbm.get_split_value_histogram(0, bins="auto", xgboost_style=True)
     if lgb.compat.PANDAS_INSTALLED:
         mask = hist_vals > 0
-        np.testing.assert_array_equal(hist_vals[mask], hist["Count"].values)
+        # strict=False due to dtype mismatch: 'int64' and 'float64'
+        np_assert_array_equal(hist_vals[mask], hist["Count"].values, strict=False)
         np.testing.assert_allclose(bin_edges[1:][mask], hist["SplitValue"].values)
     else:
         mask = hist_vals > 0
-        np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
+        # strict=False due to dtype mismatch: 'int64' and 'float64'
+        np_assert_array_equal(hist_vals[mask], hist[:, 1], strict=False)
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
     with pytest.raises(
@@ -4049,6 +4086,29 @@ def test_average_precision_metric():
     assert res["training"]["average_precision"][-1] == pytest.approx(1)
 
 
+def test_r2_metric():
+    # test against sklearn R2 metric
+    X, y = make_synthetic_regression()
+    params = {"objective": "regression", "metric": "r2", "verbose": -1}
+    res = {}
+    train_data = lgb.Dataset(X, label=y)
+    est = lgb.train(
+        params, train_data, num_boost_round=1, valid_sets=[train_data], callbacks=[lgb.record_evaluation(res)]
+    )
+    r2 = res["training"]["r2"][-1]
+    pred = est.predict(X)
+    sklearn_r2 = r2_score(y, pred)
+    assert r2 == pytest.approx(sklearn_r2)
+    assert r2 != 0
+    assert r2 != 1
+    # test that R2 is 1 when y has no variance and the model predicts perfectly
+    y = y.copy()
+    y[:] = 1
+    lgb_X = lgb.Dataset(X, label=y)
+    lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], callbacks=[lgb.record_evaluation(res)])
+    assert res["training"]["r2"][-1] == pytest.approx(1)
+
+
 def test_reset_params_works_with_metric_num_class_and_boosting():
     X, y = load_breast_cancer(return_X_y=True)
     dataset_params = {"max_bin": 150}
@@ -4794,14 +4854,16 @@ def test_bagging_by_query_in_lambdarank():
 
 def test_equal_predict_from_row_major_and_col_major_data():
     X_row, y = make_synthetic_regression()
-    assert X_row.flags["C_CONTIGUOUS"] and not X_row.flags["F_CONTIGUOUS"]
+    assert X_row.flags["C_CONTIGUOUS"]
+    assert not X_row.flags["F_CONTIGUOUS"]
     ds = lgb.Dataset(X_row, y)
     params = {"num_leaves": 8, "verbose": -1}
     bst = lgb.train(params, ds, num_boost_round=5)
     preds_row = bst.predict(X_row)
 
     X_col = np.asfortranarray(X_row)
-    assert X_col.flags["F_CONTIGUOUS"] and not X_col.flags["C_CONTIGUOUS"]
+    assert X_col.flags["F_CONTIGUOUS"]
+    assert not X_col.flags["C_CONTIGUOUS"]
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)

@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
-#define LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
+#ifndef LIGHTGBM_SRC_METRIC_MULTICLASS_METRIC_HPP_
+#define LIGHTGBM_SRC_METRIC_MULTICLASS_METRIC_HPP_
 
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/log.h>
@@ -237,7 +237,7 @@ class AucMuMetric : public Metric {
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // the notation follows that used in the paper introducing the auc-mu metric:
-    // http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+    // https://proceedings.mlr.press/v97/kleiman19a.html
 
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;
@@ -365,4 +365,4 @@ class AucMuMetric : public Metric {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_METRIC_MULTICLASS_METRIC_HPP_
+#endif   // LIGHTGBM_SRC_METRIC_MULTICLASS_METRIC_HPP_

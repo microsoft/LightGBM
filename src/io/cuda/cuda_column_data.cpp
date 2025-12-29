@@ -8,6 +8,7 @@
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
 #include <cstdint>
+#include <vector>
 
 namespace LightGBM {
 
@@ -135,7 +136,7 @@ void CUDAColumnData::Init(const int num_columns,
         } else if (bit_type == 32) {
           InitOneColumnData<false, false, uint32_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
         } else {
-          Log::Fatal("Unknow column bit type %d", bit_type);
+          Log::Fatal("Unknown column bit type %d", bit_type);
         }
       } else {
         // is sparse column
@@ -146,7 +147,7 @@ void CUDAColumnData::Init(const int num_columns,
         } else if (bit_type == 32) {
           InitOneColumnData<true, false, uint32_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
         } else {
-          Log::Fatal("Unknow column bit type %d", bit_type);
+          Log::Fatal("Unknown column bit type %d", bit_type);
         }
       }
       OMP_LOOP_EX_END();

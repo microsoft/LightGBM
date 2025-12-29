@@ -36,23 +36,23 @@ try:
         # validate_data() was added in scikit-learn 1.6, this function roughly imitates it for older versions.
         # It can be removed when lightgbm's minimum scikit-learn version is at least 1.6.
         def validate_data(
-            _estimator,
-            X,
-            y="no_validation",
+            _estimator: Any,
+            X: Any,
+            y: Any = "no_validation",
             accept_sparse: bool = True,
             # 'force_all_finite' was renamed to 'ensure_all_finite' in scikit-learn 1.6
             ensure_all_finite: bool = False,
             ensure_min_samples: int = 1,
             # trap other keyword arguments that only work on scikit-learn >=1.6, like 'reset'
-            **ignored_kwargs,
-        ):
+            **ignored_kwargs: Any,
+        ) -> Any:
             # it's safe to import _num_features unconditionally because:
             #
             #  * it was first added in scikit-learn 0.24.2
             #  * lightgbm cannot be used with scikit-learn versions older than that
             #  * this validate_data() re-implementation will not be called in scikit-learn>=1.6
             #
-            from sklearn.utils.validation import _num_features
+            from sklearn.utils.validation import _num_features  # noqa: PLC0415
 
             # _num_features() raises a TypeError on 1-dimensional input. That's a problem
             # because scikit-learn's 'check_fit1d' estimator check sets that expectation that

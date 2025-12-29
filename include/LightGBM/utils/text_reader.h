@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_TEXT_READER_H_
-#define LIGHTGBM_UTILS_TEXT_READER_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_TEXT_READER_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_TEXT_READER_H_
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/pipeline_reader.h>
@@ -124,7 +124,9 @@ class TextReader {
           ++i;
           ++total_cnt;
           // skip end of line
-          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
+          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) {
+            ++i;
+          }
           last_i = i;
         } else {
           ++i;
@@ -284,7 +286,9 @@ class TextReader {
           ++i;
           ++total_cnt;
           // skip end of line
-          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
+          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) {
+            ++i;
+          }
           last_i = i;
         } else {
           ++i;
@@ -352,4 +356,4 @@ class TextReader {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_TEXT_READER_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_TEXT_READER_H_

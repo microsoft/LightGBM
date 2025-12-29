@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # tell scripts where to put artifacts
+  # (this variable name is left over from when jobs ran on Azure DevOps)
+  BUILD_ARTIFACTSTAGINGDIRECTORY: '${{ github.workspace }}/artifacts'
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # on Debian-based images, avoid interactive prompts
@@ -48,7 +51,7 @@ env:
 jobs:
   test:
     # yamllint disable-line rule:line-length
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
+    name: ${{ matrix.task }} (${{ matrix.os-display-name || matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
@@ -65,29 +68,24 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
+            os-display-name: 'ubuntu22.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
-          - os: macos-13
+            os-display-name: 'ubuntu22.04'
+          - os: macos-15-intel
             task: r-package
             compiler: gcc
             r_version: 4.3
             build_type: cmake
             container: null
-          - os: macos-13
+          - os: macos-15-intel
             task: r-package
             compiler: clang
             r_version: 4.3
-            build_type: cmake
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
             build_type: cmake
             container: null
           - os: windows-latest
@@ -95,14 +93,6 @@ jobs:
             compiler: MINGW
             toolchain: MSYS
             r_version: 4.3
-            build_type: cmake
-            container: null
-          # Visual Studio 2019
-          - os: windows-2019
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
             build_type: cmake
             container: null
           # Visual Studio 2022
@@ -119,13 +109,6 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
             toolchain: MSYS
             r_version: 4.3
             build_type: cran
@@ -136,7 +119,10 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: 'ubuntu:22.04'
-          - os: macos-13
+            os-display-name: 'ubuntu22.04'
+            produces-artifacts: 'true'
+            artifact-name: r-cran-package
+          - os: macos-15-intel
             task: r-package
             compiler: clang
             r_version: 4.3
@@ -179,9 +165,10 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
@@ -204,6 +191,8 @@ jobs:
               export IN_UBUNTU_BASE_CONTAINER="true"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
+          export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
@@ -220,6 +209,13 @@ jobs:
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
+      - name: Upload artifacts
+        if: ${{ matrix.produces-artifacts == 'true' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}/*.tar.gz
+          if-no-files-found: error
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
@@ -238,9 +234,10 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install packages
         shell: bash
@@ -278,9 +275,10 @@ jobs:
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
+          persist-credentials: false
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2

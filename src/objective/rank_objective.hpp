@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
-#define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#define LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
@@ -206,11 +206,17 @@ class LambdarankNDCG : public RankingObjective {
     double sum_lambdas = 0.0;
     // start accumulate lambdas by pairs that contain at least one document above truncation level
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
-      if (score[sorted_idx[i]] == kMinScore) { continue; }
+      if (score[sorted_idx[i]] == kMinScore) {
+        continue;
+      }
       for (data_size_t j = i + 1; j < cnt; ++j) {
-        if (score[sorted_idx[j]] == kMinScore) { continue; }
+        if (score[sorted_idx[j]] == kMinScore) {
+          continue;
+        }
         // skip pairs with the same labels
-        if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
+        if (label[sorted_idx[i]] == label[sorted_idx[j]]) {
+          continue;
+        }
         data_size_t high_rank, low_rank;
         if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
           high_rank = i;
@@ -456,4 +462,4 @@ class RankXENDCG : public RankingObjective {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_

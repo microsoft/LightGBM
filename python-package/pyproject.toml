@@ -10,8 +10,6 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -30,7 +28,7 @@ maintainers = [
 ]
 name = "lightgbm"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 version = "4.6.0.99"
 
 [project.optional-dependencies]
@@ -93,6 +91,15 @@ disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_directives = [
+    "autoclass",
+    "autofunction",
+    "autosummary",
+    "doxygenfile"
+]
+
 [tool.ruff]
 exclude = [
     "build",
@@ -103,7 +110,7 @@ exclude = [
 line-length = 120
 
 # this should be set to the oldest version of python LightGBM supports
-target-version = "py37"
+target-version = "py39"
 
 [tool.ruff.format]
 docstring-code-format = false
@@ -136,7 +143,9 @@ ignore = [
     # (pylint) for loop variable overwritten by assignment target
     "PLW2901",
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
-    "PLR5501"
+    "PLR5501",
+    # (flake8-pytest-style) `scope='function'` is implied in `@pytest.fixture()`
+    "PT003"
 ]
 select = [
     # flake8-bugbear
@@ -155,6 +164,8 @@ select = [
     "NPY",
     # pylint
     "PL",
+    # flake8-pytest-style
+    "PT",
     # flake8-return: unnecessary assignment before return
     "RET504",
     # flake8-return: superfluous-else-raise
@@ -167,7 +178,14 @@ select = [
     "W",
 ]
 
+[tool.ruff.lint.flake8-pytest-style]
+raises-extend-require-match-for = ["*Exception", "*Error"]
+
 [tool.ruff.lint.per-file-ignores]
+".ci/create-nuget.py" = [
+    # (flake8-print) flake8-print
+    "T201"
+]
 "docs/conf.py" = [
     # (flake8-bugbear) raise exceptions with "raise ... from err"
     "B904",

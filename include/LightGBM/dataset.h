@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_DATASET_H_
-#define LIGHTGBM_DATASET_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_H_
 
 #include <LightGBM/arrow.h>
 #include <LightGBM/config.h>
@@ -554,9 +554,13 @@ class Dataset {
   }
 
   inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
-    if (is_finish_load_) { return; }
+    if (is_finish_load_) {
+      return;
+    }
     for (auto fidx : feature_need_push_zeros_) {
-      if (is_feature_added[fidx]) { continue; }
+      if (is_feature_added[fidx]) {
+        continue;
+      }
       const int group = feature2group_[fidx];
       const int sub_feature = feature2subfeature_[fidx];
       feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
@@ -587,10 +591,14 @@ class Dataset {
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
-    if (is_finish_load_) { return; }
+    if (is_finish_load_) {
+      return;
+    }
     std::vector<bool> is_feature_added(num_features_, false);
     for (auto& inner_data : feature_values) {
-      if (inner_data.first >= num_total_features_) { continue; }
+      if (inner_data.first >= num_total_features_) {
+        continue;
+      }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
         is_feature_added[feature_idx] = true;
@@ -637,7 +645,7 @@ class Dataset {
   inline int Feature2Group(int feature_idx) const {
     return feature2group_[feature_idx];
   }
-  inline int Feture2SubFeature(int feature_idx) const {
+  inline int Feature2SubFeature(int feature_idx) const {
     return feature2subfeature_[feature_idx];
   }
   inline uint64_t GroupBinBoundary(int group_idx) const {
@@ -1063,4 +1071,4 @@ class Dataset {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_DATA_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_DATASET_H_
