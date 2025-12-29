@@ -1,5 +1,13 @@
 name: R valgrind tests
 
+# 'run-name' is used here to distinguish in the API between different runs from forks.
+#
+# When this was added, it was the only way to feed workflow inputs into something that
+# would show up in the output of 'gh run list'.
+#
+# See https://github.com/orgs/community/discussions/73223#discussioncomment-11862624
+run-name: R valgrind tests (pr=${{ inputs.pr-number }})
+
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +22,7 @@ on:
         description: Pull request ID, found in the PR URL.
 
 permissions:
-  actions: none
+  actions: write
   checks: write
   contents: read
   deployments: none
@@ -44,11 +52,21 @@ jobs:
           apt-get install --no-install-recommends -y \
             curl \
             jq
+      - name: Install GitHub CLI
+        run: |
+          GH_CLI_VERSION="2.83.0"
+          curl \
+            --fail \
+            -O \
+            -L \
+            https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
+          tar -xvf ./gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
+          mv ./gh_${GH_CLI_VERSION}_linux_amd64/bin/gh /usr/local/bin/
       - name: Trust git cloning LightGBM
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           submodules: true
@@ -76,6 +94,5 @@ jobs:
         run: |
           bash $GITHUB_WORKSPACE/.ci/rerun-workflow.sh \
             "optional_checks.yml" \
-            "${{ inputs.pr-number }}" \
             "${{ inputs.pr-branch }}" \
             || true

@@ -334,8 +334,6 @@ That script supports the following command-line options:
 - `--no-build-vignettes`: Skip building vignettes.
 - `--r-executable=[path-to-executable]`: Use an alternative build of R.
 
-Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
-
 ### Standard Installation from CRAN Package
 
 After building the package, install it with a command like the following:
@@ -493,6 +491,16 @@ These tests can also be triggered on a pull request branch, using GitHub Actions
 3. enter the branch from the pull request for the `pr-branch` input
 4. enter the pull request ID for the `pr-number` input
 5. click "Run workflow" (button)
+
+Or by using the GitHub CLI, using a command similar to this:
+
+```shell
+gh workflow run \
+    --repo microsoft/LightGBM \
+    r_valgrind.yml \
+    -f pr-branch=ci/fix-rerun-workflow \
+    -f pr-number=7072
+```
 
 Known Issues
 ------------

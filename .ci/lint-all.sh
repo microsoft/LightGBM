@@ -9,7 +9,7 @@ pwsh -file ./.ci/lint-powershell.ps1 || exit 1
 conda create -q -y -n test-env \
     "python=3.13[build=*_cp*]" \
     'pre-commit>=3.8.0' \
-    'r-lintr>=3.1.2'
+    'r-lintr>=3.3.0'
 
 # shellcheck disable=SC1091
 source activate test-env

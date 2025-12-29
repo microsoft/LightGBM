@@ -50,6 +50,21 @@ class CUDABinaryLoglossMetric: public CUDABinaryMetricInterface<BinaryLoglossMet
   }
 };
 
+class CUDABinaryErrorMetric: public CUDABinaryMetricInterface<BinaryErrorMetric, CUDABinaryErrorMetric> {
+ public:
+  explicit CUDABinaryErrorMetric(const Config& config);
+
+  virtual ~CUDABinaryErrorMetric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, const double /*param*/) {
+    if (score <= 0.5f) {
+      return label > 0;
+    } else {
+      return label <= 0;
+    }
+  }
+};
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

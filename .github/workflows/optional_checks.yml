@@ -13,7 +13,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -26,4 +26,5 @@ jobs:
             echo "checking status for branch '${PR_BRANCH}'"
             ./.ci/check-workflow-status.sh \
                 "${PR_BRANCH}" \
-                'r_valgrind.yml'
+                'r_valgrind.yml' \
+                ${{ github.event.number }}

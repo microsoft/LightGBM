@@ -144,6 +144,7 @@ publish/
 
 # NuGet Packages
 *.nupkg
+nuget/
 # The packages folder can be ignored because of Package Restore
 **/packages/*
 # except build/, which is used as an MSBuild target.
@@ -478,3 +479,6 @@ dask-worker-space/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# files created by release tasks
+/release-artifacts
