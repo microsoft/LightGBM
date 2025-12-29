@@ -377,9 +377,9 @@ _lgbmmodel_doc_fit = """
         See Callbacks in Python API for more information.
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
-    eval_X : {X_shape} or tuple or None, optional (default=None)
+    eval_X : {X_shape}, or tuple of such inputs, or None, optional (default=None)
         Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
-    eval_y : {y_shape} or tuple or None, optional (default=None)
+    eval_y : {y_shape}, or tuple of such inputs, or None, optional (default=None)
         Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
 
     Returns
@@ -490,7 +490,11 @@ def _extract_evaluation_meta_data(
         raise TypeError(f"{name} should be dict or list")
 
 
-def _validate_eval_set_Xy(eval_set, eval_X, eval_y):
+def _validate_eval_set_Xy(
+    eval_set: Optional[List[_LGBM_ScikitValidSet]],
+    eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]],
+    eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]],
+) -> Optional[List[_LGBM_ScikitValidSet]]:
     """Validate eval args.
 
     Returns
@@ -502,15 +506,19 @@ def _validate_eval_set_Xy(eval_set, eval_X, eval_y):
         warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
         if eval_X is not None or eval_y is not None:
             raise ValueError("Specify either 'eval_set' or 'eval_X' and 'eval_y', but not both.")
-        return eval_set
+        if isinstance(eval_set, tuple):
+            return [eval_set]
+        else:
+            return eval_set
     if (eval_X is None) != (eval_y is None):
         raise ValueError("You must specify eval_X and eval_y, not just one of them.")
     if eval_set is None and eval_X is not None:
         if isinstance(eval_X, tuple) != isinstance(eval_y, tuple):
             raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
-        if isinstance(eval_X, tuple) and len(eval_X) != len(eval_y):
-            raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
-        if isinstance(eval_X, tuple):
+        if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
+            if len(eval_X) != len(eval_y):
+                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+        if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
             eval_set = list(zip(eval_X, eval_y))
         else:
             eval_set = [(eval_X, eval_y)]
@@ -1026,8 +1034,13 @@ class LGBMModel(_LGBMModelBase):
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
         if eval_set is not None:
-            if isinstance(eval_set, tuple):
-                eval_set = [eval_set]
+            # check eval_group (only relevant for ranking tasks)
+            if eval_group is not None:
+                if len(eval_group) != len(eval_set):
+                    raise ValueError(
+                        f"Length of eval_group ({len(eval_group)}) not equal to length of eval_set ({len(eval_set)})"
+                    )
+
             for i, valid_data in enumerate(eval_set):
                 # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
@@ -1812,21 +1825,8 @@ class LGBMRanker(LGBMModel):
         if group is None:
             raise ValueError("Should set group for ranking task")
 
-        if eval_set is not None:
-            if eval_group is None:
-                raise ValueError("Eval_group cannot be None when eval_set is not None")
-            if len(eval_group) != len(eval_set):
-                raise ValueError("Length of eval_group should be equal to eval_set")
-            if (
-                isinstance(eval_group, dict)
-                and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
-                or isinstance(eval_group, list)
-                and any(group is None for group in eval_group)
-            ):
-                raise ValueError(
-                    "Should set group for all eval datasets for ranking task; "
-                    "if you use dict, the index should start from 0"
-                )
+        if eval_group is None and (eval_set is not None or eval_X is not None or eval_y is not None):
+            raise ValueError("eval_group cannot be None if any of eval_set, eval_X, or eval_y are provided")
 
         self._eval_at = eval_at
         super().fit(
