@@ -125,13 +125,16 @@ else  # Linux
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 pocl-opencl-icd
-        elif [[ $(uname -m) == "x86_64" ]]; then
+        else # in manylinux image
             sudo yum update -y
             sudo yum install -y \
+                clinfo \
                 ocl-icd-devel \
                 opencl-headers \
             || exit 1
         fi
+        echo "--- clinfo: ---"
+        clinfo || true
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
