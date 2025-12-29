@@ -271,7 +271,7 @@ jobs:
           - gcc14
           - intel
           # TODO: restore 'rchk' job when https://github.com/microsoft/LightGBM/issues/7113 is resolved
-          #- rchk
+          # - rchk
     runs-on: ubuntu-latest
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
