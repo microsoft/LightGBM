@@ -15,7 +15,6 @@ yum install --nodocs -y \
 
 yum install --nodocs -y \
    clang-devel \
-   gcc-c++ \
    hwloc-devel \
    llvm-devel \
    llvm-static \
@@ -32,7 +31,7 @@ EOF
 
 RUN <<EOF
 # install a newer CMake than what the package manager has
-curl -sL https://cmake.org/files/v3.23/cmake-3.23.1-linux-$(arch).sh -o cmake.sh
+curl -sL https://cmake.org/files/v4.2/cmake-4.2.1-linux-$(arch).sh -o cmake.sh
 chmod +x cmake.sh
 ./cmake.sh --prefix=/usr/local --exclude-subdir
 rm -f ./cmake.sh
@@ -52,16 +51,16 @@ cmake \
    -B pocl/build \
    -S pocl \
    -DCMAKE_BUILD_TYPE=release \
-   -DCMAKE_C_COMPILER="${DEVTOOLSET_ROOTPATH}/usr/bin/gcc" \
-   -DCMAKE_CXX_COMPILER="${DEVTOOLSET_ROOTPATH}/usr/bin/g++" \
+   -DCMAKE_C_COMPILER="clang" \
+   -DCMAKE_CXX_COMPILER="clang++" \
    -DENABLE_DOXYGEN=OFF \
+   -DENABLE_ICD=ON \
+   -DENABLE_LLVM=ON \
    -DENABLE_EXAMPLES=OFF \
    -DENABLE_HOST_CPU_DEVICES=ON \
-   -DENABLE_ICD=ON \
    -DENABLE_HWLOC=ON \
    -DENABLE_POCLCC=ON \
    -DENABLE_SPIRV=ON \
-   -DSTATIC_LLVM=ON \
    -DENABLE_TESTS=OFF \
    -DENABLE_VALGRIND=OFF \
    -DINSTALL_OPENCL_HEADERS=OFF \
@@ -71,7 +70,10 @@ cmake \
 
 cmake --build pocl/build -j4
 
-cmake --install pocl/build
+cmake \
+   --install pocl/build \
+   --component dev \
+   --component icd
 EOF
 
 # Install Java

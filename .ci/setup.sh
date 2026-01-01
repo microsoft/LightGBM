@@ -126,33 +126,17 @@ else  # Linux
             sudo apt-get install --no-install-recommends -y \
                 pocl-opencl-icd
         else # in manylinux image
-
-# install Intel OpenCL support
-# https://www.intel.com/content/www/us/en/developer/articles/tool/opencl-drivers.html#philinux
-# https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2023-0/yum-dnf-zypper.html#GUID-B5018FF2-B9F3-4ADC-9EB6-F99F6BFC7948
-# https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
-tee > /tmp/oneAPI.repo << EOF
-[oneAPI]
-name=Intel® oneAPI repository
-baseurl=https://yum.repos.intel.com/oneapi
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
-EOF
-
-sudo mv /tmp/oneAPI.repo /etc/yum.repos.d
-yum update -y
-
-yum install -y \
-    intel-oneapi-runtime-opencl
-
             sudo yum update -y
             sudo yum install -y \
                 clinfo \
                 ocl-icd-devel \
                 opencl-headers \
             || exit 1
+
+            # install drives allowing the OpenCL version to target host GPUs
+            if [[ "${ARCH}" == "x86_64" ]]; then
+                .ci/install-opencl-intel-driver.sh
+            fi
         fi
         echo "--- clinfo: ---"
         clinfo || true

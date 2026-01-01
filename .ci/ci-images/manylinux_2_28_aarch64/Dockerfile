@@ -72,5 +72,8 @@ cmake \
 
 cmake --build pocl/build -j4
 
-cmake --install pocl/build
+cmake \
+   --install pocl/build \
+   --component dev \
+   --component icd
 EOF

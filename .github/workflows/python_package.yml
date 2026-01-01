@@ -335,7 +335,7 @@ jobs:
         if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
         shell: pwsh -command ". {0}"
         run: |
-          & "$env:GITHUB_WORKSPACE/.ci/install-opencl.ps1"
+          & "$env:GITHUB_WORKSPACE/.ci/install-opencl-amd-driver.ps1"
       # 'conda init powershell' needs to be run in a separate process
       # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
       - name: Initialize conda on Windows
