@@ -134,12 +134,16 @@ else  # Linux
             || exit 1
 
             # install drives allowing the OpenCL version to target host GPUs
-            if [[ "${ARCH}" == "x86_64" ]]; then
-                .ci/install-opencl-intel-driver.sh
-            fi
+            # if [[ "${ARCH}" == "x86_64" ]]; then
+            #     .ci/install-opencl-intel-driver.sh
+            # fi
         fi
         echo "--- clinfo: ---"
         clinfo || true
+        echo "--- llc -mcpu=help ---"
+        # this shows the possible values for -DLLC_HOST_CPU
+        # see https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/install.rst#L171
+        llc -mcpu=help
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
