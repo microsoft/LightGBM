@@ -47,7 +47,7 @@ git clone \
 #
 #   * -DCMAKE_{C,CXX}_COMPILER: DEVTOOLSET_ROOTPATH is where manylinux puts the gcc toolset
 #   * -DENABLE_ICD=ON: select appropriate OpenCL platform at runtime (https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/using.rst#installable-client-driver-icd)
-#   * -DLLC_HOST_CPU="generic": passed to clang's -march/-mcpu flag.
+#   * -DLLC_HOST_CPU="cortex-a53": passed to clang's -march/-mcpu flag, which is like "support a bunch of Arm CPUs".
 #
 cmake \
    -B pocl/build \
@@ -66,7 +66,7 @@ cmake \
    -DENABLE_TESTS=OFF \
    -DENABLE_VALGRIND=OFF \
    -DINSTALL_OPENCL_HEADERS=OFF \
-   -DLLC_HOST_CPU=generic \
+   -DLLC_HOST_CPU=cortex-a53 \
    -DPOCL_DEBUG_MESSAGES=OFF \
    -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors
 
