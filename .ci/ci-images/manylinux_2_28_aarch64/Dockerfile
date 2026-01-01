@@ -12,14 +12,14 @@ yum install --nodocs -y \
 
 yum install --nodocs -y \
    clang-devel \
-   gcc-c++ \
    hwloc-devel \
    llvm-devel \
    llvm-static \
    ocl-icd-devel \
+   opencl-headers \
    sudo
 
-yum module install --nodocs -y \
+yum module install -y \
    llvm-toolset
 
 yum clean all
@@ -29,7 +29,7 @@ EOF
 
 RUN <<EOF
 # install a newer CMake than what the package manager has
-curl -sL https://cmake.org/files/v3.23/cmake-3.23.1-linux-aarch64.sh -o cmake.sh
+curl -sL https://cmake.org/files/v4.2/cmake-4.2.1-linux-aarch64.sh -o cmake.sh
 chmod +x cmake.sh
 ./cmake.sh --prefix=/usr/local --exclude-subdir
 rm -f ./cmake.sh
@@ -46,15 +46,18 @@ git clone \
 # explanations for some flags:
 #
 #   * -DCMAKE_{C,CXX}_COMPILER: DEVTOOLSET_ROOTPATH is where manylinux puts the gcc toolset
+#   * -DENABLE_ICD=ON: select appropriate OpenCL platform at runtime (https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/using.rst#installable-client-driver-icd)
 #   * -DLLC_HOST_CPU="generic": passed to clang's -march/-mcpu flag.
 #
 cmake \
    -B pocl/build \
    -S pocl \
    -DCMAKE_BUILD_TYPE=release \
-   -DCMAKE_C_COMPILER="${DEVTOOLSET_ROOTPATH}/usr/bin/gcc" \
-   -DCMAKE_CXX_COMPILER="${DEVTOOLSET_ROOTPATH}/usr/bin/g++" \
+   -DCMAKE_C_COMPILER="clang" \
+   -DCMAKE_CXX_COMPILER="clang++" \
    -DENABLE_DOXYGEN=OFF \
+   -DENABLE_ICD=ON \
+   -DENABLE_LLVM=ON \
    -DENABLE_EXAMPLES=OFF \
    -DENABLE_HOST_CPU_DEVICES=ON \
    -DENABLE_HWLOC=ON \
