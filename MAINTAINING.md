@@ -15,7 +15,10 @@ Most Linux CI jobs use container images built from within this repository.
 
 To build new images, do the following:
 
-1. 
+1. create a branch in the LightGBM repo (not a fork!)
+2. navigate to https://github.com/microsoft/LightGBM/actions/workflows/ci-images.yml and click "Run workflow"
+3. for the `tag-suffix` input, provide a string beginning with a `-`, like "`-dev`"
+4. 
 
 ## Releasing
 

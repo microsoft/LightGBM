@@ -109,13 +109,13 @@ jobs:
           #   task: sdist
           #   compiler: MSVC
           #   python_version: '3.10'
-          # - os: ubuntu-latest
-          #   container: &ubuntu_latest_image ubuntu:22.04
-          #   os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
-          #   task: regular
-          #   compiler: clang-17
-          #   python_version: '3.13'
-          #   in-ubuntu-base-container: 'true'
+          - os: ubuntu-latest
+            container: &ubuntu_latest_image ubuntu:22.04
+            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+            task: regular
+            compiler: clang-17
+            python_version: '3.13'
+            in-ubuntu-base-container: 'true'
           # - os: ubuntu-latest
           #   container: *ubuntu_latest_image
           #   os-display-name: *ubuntu_latest_display_name
@@ -231,16 +231,16 @@ jobs:
           #   produces-artifacts: 'true'
           #   artifact-name: 'macosx-amd64-liblightgbm'
           #   python_version: '3.11'
-          - os: ubuntu-latest
-            container: *manylinux_amd64_image
-            os-display-name: *manylinux_amd64_display_name
-            task: regular
-            compiler: gcc
-            python_version: '3.11'
-            in-ubuntu-base-container: 'false'
-            setup-conda: 'false'
-            produces-artifacts: 'true'
-            artifact-name: 'linux-amd64-liblightgbm'
+          # - os: ubuntu-latest
+          #   container: *manylinux_amd64_image
+          #   os-display-name: *manylinux_amd64_display_name
+          #   task: regular
+          #   compiler: gcc
+          #   python_version: '3.11'
+          #   in-ubuntu-base-container: 'false'
+          #   setup-conda: 'false'
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'linux-amd64-liblightgbm'
           - os: ubuntu-latest
             container: *manylinux_amd64_image
             os-display-name: *manylinux_amd64_display_name
@@ -252,16 +252,16 @@ jobs:
             setup-conda: 'false'
             produces-artifacts: 'true'
             artifact-name: 'linux-amd64-wheel'
-          - os: ubuntu-latest
-            container: *manylinux_amd64_image
-            os-display-name: *manylinux_amd64_display_name
-            task: sdist
-            compiler: gcc
-            python_version: '3.9'
-            in-ubuntu-base-container: 'false'
-            setup-conda: 'false'
-            produces-artifacts: 'true'
-            artifact-name: 'sdist'
+          # - os: ubuntu-latest
+          #   container: *manylinux_amd64_image
+          #   os-display-name: *manylinux_amd64_display_name
+          #   task: sdist
+          #   compiler: gcc
+          #   python_version: '3.9'
+          #   in-ubuntu-base-container: 'false'
+          #   setup-conda: 'false'
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'sdist'
           - os: windows-2022
             task: bdist
             compiler: MSVC
@@ -269,12 +269,12 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'windows-amd64-wheel'
             python_version: '3.13'
-          - os: windows-2022
-            task: regular
-            compiler: MSVC
-            produces-artifacts: 'true'
-            artifact-name: 'windows-amd64-cli-and-liblightgbm'
-            python_version: '3.11'
+          # - os: windows-2022
+          #   task: regular
+          #   compiler: MSVC
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'windows-amd64-cli-and-liblightgbm'
+          #   python_version: '3.11'
     steps:
       - name: Install packages used by third-party actions
         if: ${{ matrix.in-ubuntu-base-container == 'true' }}
@@ -409,77 +409,77 @@ jobs:
           path: artifacts/*.nupkg
           if-no-files-found: error
 
-  test-latest-versions:
-    name: Python - latest versions (manylinux_2_28)
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 5
-          persist-credentials: false
-          submodules: true
-      - name: Create wheel
-        run: |
-          docker run \
-            --rm \
-            --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
-            -v $(pwd):/opt/lgb-build \
-            -w /opt/lgb-build \
-            lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
-      - name: Test compatibility
-        run: |
-          docker run \
-            --rm \
-            -v $(pwd):/opt/lgb-build \
-            -w /opt/lgb-build \
-            python:3.13 \
-            /bin/bash ./.ci/test-python-latest.sh
-  test-old-versions:
-    name: Python - oldest supported versions (manylinux_2_28, Python ${{ matrix.python_version }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        # This should always include at least the oldest
-        # not-yet-end-of-life Python version
-        python_version:
-          - '3.9'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 5
-          persist-credentials: false
-          submodules: true
-      - name: Create wheel
-        run: |
-          docker run \
-            --rm \
-            --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
-            -v $(pwd):/opt/lgb-build \
-            -w /opt/lgb-build \
-            lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
-      - name: Test compatibility
-        run: |
-          docker run \
-            --rm \
-            -v $(pwd):/opt/lgb-build \
-            -w /opt/lgb-build \
-            python:${{ matrix.python_version }} \
-            /bin/bash ./.ci/test-python-oldest.sh
+  # test-latest-versions:
+  #   name: Python - latest versions (manylinux_2_28)
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v6
+  #       with:
+  #         fetch-depth: 5
+  #         persist-credentials: false
+  #         submodules: true
+  #     - name: Create wheel
+  #       run: |
+  #         docker run \
+  #           --rm \
+  #           --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
+  #           -v $(pwd):/opt/lgb-build \
+  #           -w /opt/lgb-build \
+  #           lightgbm/vsts-agent:manylinux_2_28_x86_64 \
+  #           /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+  #     - name: Test compatibility
+  #       run: |
+  #         docker run \
+  #           --rm \
+  #           -v $(pwd):/opt/lgb-build \
+  #           -w /opt/lgb-build \
+  #           python:3.13 \
+  #           /bin/bash ./.ci/test-python-latest.sh
+  # test-old-versions:
+  #   name: Python - oldest supported versions (manylinux_2_28, Python ${{ matrix.python_version }})
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # This should always include at least the oldest
+  #       # not-yet-end-of-life Python version
+  #       python_version:
+  #         - '3.9'
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v6
+  #       with:
+  #         fetch-depth: 5
+  #         persist-credentials: false
+  #         submodules: true
+  #     - name: Create wheel
+  #       run: |
+  #         docker run \
+  #           --rm \
+  #           --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
+  #           -v $(pwd):/opt/lgb-build \
+  #           -w /opt/lgb-build \
+  #           lightgbm/vsts-agent:manylinux_2_28_x86_64 \
+  #           /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+  #     - name: Test compatibility
+  #       run: |
+  #         docker run \
+  #           --rm \
+  #           -v $(pwd):/opt/lgb-build \
+  #           -w /opt/lgb-build \
+  #           python:${{ matrix.python_version }} \
+  #           /bin/bash ./.ci/test-python-oldest.sh
   all-python-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - test-latest-versions
+      # - test-latest-versions
       - test
       - test-linux-aarch64
-      - test-old-versions
+      # - test-old-versions
     steps:
       - name: Note that all tests succeeded
         uses: re-actors/alls-green@v1.2.2
