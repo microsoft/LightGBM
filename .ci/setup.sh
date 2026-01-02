@@ -143,6 +143,8 @@ else  # Linux
             # # this shows the possible values for -DLLC_HOST_CPU
             # # see https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/install.rst#L171
             # llc -mcpu=help
+            echo "--- /etc/OpenCL contents ---"
+            find /etc/OpenCL -type f -name '*'
         fi
     fi
     if [[ $TASK == "cuda" ]]; then
