@@ -3,6 +3,9 @@ FROM quay.io/pypa/manylinux_2_28_aarch64
 # use 'bash' for RUN steps
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
+# allow the linker to find OpenCL libraries
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/lib64:/usr/local/lib64:/usr/local/lib"
+
 # install packages
 RUN <<EOF
 yum update -y
@@ -16,8 +19,7 @@ yum install --nodocs -y \
    llvm-devel \
    llvm-static \
    ocl-icd-devel \
-   opencl-headers \
-   sudo
+   opencl-headers
 
 yum module install -y \
    llvm-toolset
@@ -37,7 +39,7 @@ rm -f ./cmake.sh
 # build PoCL
 #
 # NOTE: If this is updated, check if CL_TARGET_OPENCL_VERSION in cmake/IntegratedOpenCL.cmake
-#       needs to be updated (see comments there fore links).
+#       needs to be updated (see comments there for links).
 git clone \
    --depth 1 \
    --branch v7.1 \
@@ -60,6 +62,30 @@ AARCH64_CPUS="${AARCH64_CPUS};thunderx;thunderx2t99;thunderxt81;thunderxt83;thun
 #   * -DENABLE_ICD=ON: select appropriate OpenCL platform at runtime (https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/using.rst#installable-client-driver-icd)
 #   * -DLLC_HOST_CPU="cortex-a35": passed to clang's -march/-mcpu flag, which is like "support a bunch of Arm CPUs".
 #
+# TODO: fix /etc/OpenCL/vendors not being populated:
+#
+#  - needs an ocl-icd>=2.3 (I think?)
+#  - almalinux 8 has ocl-icd=2.2.*
+#  - almalinux 10 has a 2.3.*, but its GLIBC requirement is too high
+# 
+# relevant CMake output:
+#
+# -- Checking for module 'ocl-icd>=1.3'
+# --   Found ocl-icd, version 2.2.12
+# CMake Warning at CMakeLists.txt:82 (message):
+#   Requested build with icd, but ICD loader not found! some examples will not
+#   work..
+# Call Stack (most recent call first):
+#   CMakeLists.txt:1518 (setup_cached_var)
+# -- Using an ICD loader (override): 0
+# -- Run tests with ICD: 0
+# -- Using PoCL's OpenCL 3.0 headers
+# 
+# references:
+#
+#    - https://github.com/pocl/pocl/issues/1280
+#
+# 
 cmake \
    -B pocl/build \
    -S pocl \
@@ -85,8 +111,14 @@ cmake \
 
 cmake --build pocl/build -j4
 
-cmake \
-   --install pocl/build \
-   --component dev \
-   --component icd
+cmake --install pocl/build
+cmake --install pocl/build --component icd
+
+# try hand-writing the pocl.icd file in the case where pocl's CMake refused to
+if [[ ! test -f /etc/OpenCL/vendors/pocl.icd ]]; then
+   POCL_LIBRARY=$(
+      find /usr/local/lib64 -type f -name 'libOpenCL.so.2.*'
+   )
+   echo "${POCL_LIBRARY}" > /etc/OpenCL/vendors/pocl.icd
+fi
 EOF

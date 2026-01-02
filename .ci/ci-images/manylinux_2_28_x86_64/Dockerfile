@@ -70,10 +70,16 @@ cmake \
 
 cmake --build pocl/build -j4
 
-cmake \
-   --install pocl/build \
-   --component all \
-   --component icd
+cmake --install pocl/build
+cmake --install pocl/build --component icd
+
+# try hand-writing the pocl.icd file in the case where pocl's CMake refused to
+if [[ ! test -f /etc/OpenCL/vendors/pocl.icd ]]; then
+   POCL_LIBRARY=$(
+      find /usr/local/lib64 -type f -name 'libOpenCL.so.2.*'
+   )
+   echo "${POCL_LIBRARY}" > /etc/OpenCL/vendors/pocl.icd
+fi
 EOF
 
 # Install Java
