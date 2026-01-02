@@ -43,15 +43,27 @@ git clone \
    --branch v7.1 \
    https://github.com/pocl/pocl.git
 
+# compile support for a bunch of different aarch64 CPUs
+#
+# Copied from https://github.com/conda-forge/pocl-feedstock/blob/64c2c02d96960160e20cabf1b1392a1752146f29/recipe/build.sh#L58-L62
+#
+# This support is mostly added for CI...testing device="gpu" codepaths on host CPUs, which tend to be cheaper and more
+# available than CI runners with GPUs. But using the host CPU as an OpenCL device can be useful for research as well.
+#
+AARCH64_CPUS="generic;cortex-a35;cortex-a53;cortex-a55;cortex-a57;cortex-a65;cortex-a72;cortex-a73;cortex-a75;cortex-a76"
+AARCH64_CPUS="${AARCH64_CPUS};cyclone;exynos-m3;exynos-m4;exynos-m5;falkor;kryo;neoverse-e1;neoverse-n1;saphira"
+AARCH64_CPUS="${AARCH64_CPUS};thunderx;thunderx2t99;thunderxt81;thunderxt83;thunderxt88;tsv110"
+
 # explanations for some flags:
 #
 #   * -DCMAKE_{C,CXX}_COMPILER: DEVTOOLSET_ROOTPATH is where manylinux puts the gcc toolset
 #   * -DENABLE_ICD=ON: select appropriate OpenCL platform at runtime (https://github.com/pocl/pocl/blob/013d2f19f4e8f2e0fd9aedcb70117d6dcc737aa9/doc/sphinx/source/using.rst#installable-client-driver-icd)
-#   * -DLLC_HOST_CPU="cortex-a53": passed to clang's -march/-mcpu flag, which is like "support a bunch of Arm CPUs".
+#   * -DLLC_HOST_CPU="cortex-a35": passed to clang's -march/-mcpu flag, which is like "support a bunch of Arm CPUs".
 #
 cmake \
    -B pocl/build \
    -S pocl \
+   -DCLANG_MARCH_FLAG="-mcpu=" \
    -DCMAKE_BUILD_TYPE=release \
    -DCMAKE_C_COMPILER="clang" \
    -DCMAKE_CXX_COMPILER="clang++" \
@@ -66,7 +78,8 @@ cmake \
    -DENABLE_TESTS=OFF \
    -DENABLE_VALGRIND=OFF \
    -DINSTALL_OPENCL_HEADERS=OFF \
-   -DLLC_HOST_CPU=cortex-a53 \
+   -DKERNELLIB_HOST_CPU_VARIANTS="${AARCH64_CPUS}" \
+   -DLLC_HOST_CPU=cortex-a35 \
    -DPOCL_DEBUG_MESSAGES=OFF \
    -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors
 

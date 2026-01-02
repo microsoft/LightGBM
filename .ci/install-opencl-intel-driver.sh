@@ -7,7 +7,7 @@ set -e -u -o pipefail
 # https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2023-0/yum-dnf-zypper.html#GUID-B5018FF2-B9F3-4ADC-9EB6-F99F6BFC7948
 # https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
 
-sudo cat > /etc/yum.repos.d/oneAPI.repo <<EOF
+cat > /etc/yum.repos.d/oneAPI.repo <<EOF
 [oneAPI]
 name=Intel® oneAPI repository
 baseurl=https://yum.repos.intel.com/oneapi
