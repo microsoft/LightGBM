@@ -115,7 +115,7 @@ cmake --install pocl/build
 cmake --install pocl/build --component icd
 
 # try hand-writing the pocl.icd file in the case where pocl's CMake refused to
-if [[ ! test -f /etc/OpenCL/vendors/pocl.icd ]]; then
+if ! test -f /etc/OpenCL/vendors/pocl.icd ; then
    POCL_LIBRARY=$(
       find /usr/local/lib64 -type f -name 'libOpenCL.so.2.*'
    )
