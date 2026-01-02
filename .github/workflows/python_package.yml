@@ -88,41 +88,41 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15-intel
-            task: regular
-            compiler: gcc
-            python_version: '3.11'
-          - os: macos-15-intel
-            task: sdist
-            compiler: clang
-            python_version: '3.10'
-          - os: macos-15-intel
-            task: sdist
-            compiler: gcc
-            python_version: '3.12'
-          - os: macos-15-intel
-            task: bdist
-            method: wheel
-            compiler: gcc
-            python_version: '3.9'
-          - os: windows-2022
-            task: sdist
-            compiler: MSVC
-            python_version: '3.10'
-          - os: ubuntu-latest
-            container: &ubuntu_latest_image ubuntu:22.04
-            os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
-            task: regular
-            compiler: clang-17
-            python_version: '3.13'
-            in-ubuntu-base-container: 'true'
-          - os: ubuntu-latest
-            container: *ubuntu_latest_image
-            os-display-name: *ubuntu_latest_display_name
-            task: sdist
-            compiler: clang-17
-            python_version: '3.13'
-            in-ubuntu-base-container: 'true'
+          # - os: macos-15-intel
+          #   task: regular
+          #   compiler: gcc
+          #   python_version: '3.11'
+          # - os: macos-15-intel
+          #   task: sdist
+          #   compiler: clang
+          #   python_version: '3.10'
+          # - os: macos-15-intel
+          #   task: sdist
+          #   compiler: gcc
+          #   python_version: '3.12'
+          # - os: macos-15-intel
+          #   task: bdist
+          #   method: wheel
+          #   compiler: gcc
+          #   python_version: '3.9'
+          # - os: windows-2022
+          #   task: sdist
+          #   compiler: MSVC
+          #   python_version: '3.10'
+          # - os: ubuntu-latest
+          #   container: &ubuntu_latest_image ubuntu:22.04
+          #   os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
+          #   task: regular
+          #   compiler: clang-17
+          #   python_version: '3.13'
+          #   in-ubuntu-base-container: 'true'
+          # - os: ubuntu-latest
+          #   container: *ubuntu_latest_image
+          #   os-display-name: *ubuntu_latest_display_name
+          #   task: sdist
+          #   compiler: clang-17
+          #   python_version: '3.13'
+          #   in-ubuntu-base-container: 'true'
           #########################
           # OpenCL-based GPU jobs #
           #########################
@@ -159,78 +159,78 @@ jobs:
           ############
           # MPI jobs #
           ############
-          - os: macos-15-intel
-            task: mpi
-            compiler: gcc
-            method: source
-            python_version: '3.12'
-          - os: macos-15-intel
-            task: mpi
-            compiler: gcc
-            method: pip
-            python_version: '3.13'
-          - os: macos-15-intel
-            task: mpi
-            compiler: gcc
-            method: wheel
-            python_version: '3.10'
-          - os: ubuntu-latest
-            container: *manylinux_amd64_image
-            os-display-name: *manylinux_amd64_display_name
-            task: mpi
-            compiler: gcc
-            method: source
-            python_version: '3.10'
-            in-ubuntu-base-container: 'false'
-            setup-conda: 'false'
-          - os: ubuntu-latest
-            container: *ubuntu_latest_image
-            os-display-name: *ubuntu_latest_display_name
-            task: mpi
-            compiler: clang-17
-            method: source
-            python_version: '3.13'
-            in-ubuntu-base-container: 'true'
-          - os: ubuntu-latest
-            container: *ubuntu_latest_image
-            os-display-name: *ubuntu_latest_display_name
-            task: mpi
-            compiler: clang-17
-            method: pip
-            python_version: '3.12'
-            in-ubuntu-base-container: 'true'
-          - os: ubuntu-latest
-            container: *ubuntu_latest_image
-            os-display-name: *ubuntu_latest_display_name
-            task: mpi
-            compiler: clang-17
-            method: wheel
-            python_version: '3.10'
-            in-ubuntu-base-container: 'true'
+          # - os: macos-15-intel
+          #   task: mpi
+          #   compiler: gcc
+          #   method: source
+          #   python_version: '3.12'
+          # - os: macos-15-intel
+          #   task: mpi
+          #   compiler: gcc
+          #   method: pip
+          #   python_version: '3.13'
+          # - os: macos-15-intel
+          #   task: mpi
+          #   compiler: gcc
+          #   method: wheel
+          #   python_version: '3.10'
+          # - os: ubuntu-latest
+          #   container: *manylinux_amd64_image
+          #   os-display-name: *manylinux_amd64_display_name
+          #   task: mpi
+          #   compiler: gcc
+          #   method: source
+          #   python_version: '3.10'
+          #   in-ubuntu-base-container: 'false'
+          #   setup-conda: 'false'
+          # - os: ubuntu-latest
+          #   container: *ubuntu_latest_image
+          #   os-display-name: *ubuntu_latest_display_name
+          #   task: mpi
+          #   compiler: clang-17
+          #   method: source
+          #   python_version: '3.13'
+          #   in-ubuntu-base-container: 'true'
+          # - os: ubuntu-latest
+          #   container: *ubuntu_latest_image
+          #   os-display-name: *ubuntu_latest_display_name
+          #   task: mpi
+          #   compiler: clang-17
+          #   method: pip
+          #   python_version: '3.12'
+          #   in-ubuntu-base-container: 'true'
+          # - os: ubuntu-latest
+          #   container: *ubuntu_latest_image
+          #   os-display-name: *ubuntu_latest_display_name
+          #   task: mpi
+          #   compiler: clang-17
+          #   method: wheel
+          #   python_version: '3.10'
+          #   in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
           # release artifacts #
           #####################
-          - os: macos-15-intel
-            task: bdist
-            compiler: clang
-            method: wheel
-            produces-artifacts: 'true'
-            artifact-name: 'macosx-amd64-wheel'
-            python_version: '3.13'
-          - os: macos-14
-            task: bdist
-            compiler: clang
-            method: wheel
-            produces-artifacts: 'true'
-            artifact-name: 'macosx-arm64-wheel'
-            python_version: '3.11'
-          - os: macos-15-intel
-            task: regular
-            compiler: clang
-            produces-artifacts: 'true'
-            artifact-name: 'macosx-amd64-liblightgbm'
-            python_version: '3.11'
+          # - os: macos-15-intel
+          #   task: bdist
+          #   compiler: clang
+          #   method: wheel
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'macosx-amd64-wheel'
+          #   python_version: '3.13'
+          # - os: macos-14
+          #   task: bdist
+          #   compiler: clang
+          #   method: wheel
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'macosx-arm64-wheel'
+          #   python_version: '3.11'
+          # - os: macos-15-intel
+          #   task: regular
+          #   compiler: clang
+          #   produces-artifacts: 'true'
+          #   artifact-name: 'macosx-amd64-liblightgbm'
+          #   python_version: '3.11'
           - os: ubuntu-latest
             container: *manylinux_amd64_image
             os-display-name: *manylinux_amd64_display_name
