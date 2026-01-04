@@ -2,6 +2,24 @@
 
 This document is for LightGBM maintainers.
 
+## Continuous Integration
+
+This section describes how to maintain the project's continuous integration ("CI").
+
+### Docker Images
+
+Most Linux CI jobs use container images built from within this repository.
+
+* Dockerfiles: `.ci/ci-images/`
+* workflow: `.github/workflows/ci-images.yml`
+
+To build new images, do the following:
+
+1. create a branch in the LightGBM repo (not a fork!)
+2. navigate to https://github.com/microsoft/LightGBM/actions/workflows/ci-images.yml and click "Run workflow"
+3. for the `tag-suffix` input, provide a string beginning with a `-`, like "`-dev`"
+4. 
+
 ## Releasing
 
 ### Step 1: Put up a Release PR
