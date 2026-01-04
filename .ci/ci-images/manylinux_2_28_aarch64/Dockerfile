@@ -19,7 +19,8 @@ yum install --nodocs -y \
    llvm-devel \
    llvm-static \
    ocl-icd-devel \
-   opencl-headers
+   opencl-headers \
+   sudo
 
 yum module install -y \
    llvm-toolset
