@@ -23,6 +23,7 @@ from .basic import (
     _LGBM_GroupType,
     _LGBM_InitScoreType,
     _LGBM_LabelType,
+    _LGBM_PredictReturnType,
     _LGBM_WeightType,
     _log_warning,
 )
@@ -1100,7 +1101,7 @@ class LGBMModel(_LGBMModelBase):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> _LGBM_PredictReturnType:
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
@@ -1593,7 +1594,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> _LGBM_PredictReturnType:
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(
             X=X,
@@ -1623,7 +1624,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> _LGBM_PredictReturnType:
         """Docstring is set after definition, using a template."""
         result = super().predict(
             X=X,
