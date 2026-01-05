@@ -191,7 +191,7 @@ def _np2d_to_np1d(mat: np.ndarray) -> Tuple[np.ndarray, int]:
         dtype = mat.dtype
     else:
         dtype = np.float32
-    order: Literal["C", "F"]
+    order: "Literal['C', 'F']"
     if mat.flags["F_CONTIGUOUS"]:
         order = "F"
         layout = _C_API_IS_COL_MAJOR
