@@ -403,7 +403,7 @@ def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]
     return isinstance(data, (pa_Array, pa_ChunkedArray))
 
 
-def _is_pyarrow_table(data: Any) -> bool:
+def _is_pyarrow_table(data: Any) -> "TypeGuard[pa_Table]":
     """Check whether data is a PyArrow table."""
     return isinstance(data, pa_Table)
 
