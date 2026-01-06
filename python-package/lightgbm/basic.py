@@ -192,6 +192,7 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
 
 
 def _np2d_to_np1d(mat: np.ndarray) -> Tuple[np.ndarray, int]:
+    dtype: "np.typing.DTypeLike"
     if mat.dtype in (np.float32, np.float64):
         dtype = mat.dtype
     else:
@@ -407,7 +408,7 @@ def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]
     return isinstance(data, (pa_Array, pa_ChunkedArray))
 
 
-def _is_pyarrow_table(data: Any) -> bool:
+def _is_pyarrow_table(data: Any) -> "TypeGuard[pa_Table]":
     """Check whether data is a PyArrow table."""
     return isinstance(data, pa_Table)
 
@@ -1322,7 +1323,7 @@ class _InnerPredictor:
 
         nrow = mat.shape[0]
         if nrow > _MAX_INT32:
-            sections = np.arange(start=_MAX_INT32, stop=nrow, step=_MAX_INT32)
+            sections = np.arange(_MAX_INT32, nrow, _MAX_INT32)
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [
                 self.__get_num_preds(start_iteration, num_iteration, i, predict_type)
@@ -1538,7 +1539,7 @@ class _InnerPredictor:
             )
         nrow = len(csr.indptr) - 1
         if nrow > _MAX_INT32:
-            sections = [0] + list(np.arange(start=_MAX_INT32, stop=nrow, step=_MAX_INT32)) + [nrow]
+            sections = [0] + list(np.arange(_MAX_INT32, nrow, _MAX_INT32)) + [nrow]
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
