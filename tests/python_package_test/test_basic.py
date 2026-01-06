@@ -945,7 +945,7 @@ def test_max_depth_is_enforced(capsys):
         .value_counts()
         .index.max()
         <= 7
-    ), "Trained model contains trees deeper than max_depth = 6"
+    ), "Trained model contains splits deeper than max_depth = 6"
 
 
 # NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
