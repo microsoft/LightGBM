@@ -138,7 +138,11 @@ _LGBM_PredictDataType = Union[
     scipy.sparse.spmatrix,
     pa_Table,
 ]
-_LGBM_PredictReturnType = Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]
+_LGBM_PredictReturnType = Union[
+    np.ndarray,
+    scipy.sparse.spmatrix,
+    List[scipy.sparse.spmatrix],
+]
 _LGBM_WeightType = Union[
     List[float],
     List[int],
