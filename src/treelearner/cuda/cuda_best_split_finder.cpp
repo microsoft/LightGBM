@@ -339,7 +339,7 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(
   const uint8_t larger_num_bits_in_histogram_bins) {
   const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ &&
     sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_ &&
-    ((max_depth_ > 0 && smaller_leaf_depth > 0 && smaller_leaf_depth < max_depth_) || (max_depth_ <= 0)));
+    ((max_depth_ > 0 && smaller_leaf_depth > 0 && smaller_leaf_depth <= max_depth_) || (max_depth_ <= 0)));
   const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ &&
     sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_ && larger_leaf_index >= 0 &&
     ((max_depth_ > 0 && larger_leaf_depth > 0 && larger_leaf_depth < max_depth_) || (max_depth_ <= 0)));
