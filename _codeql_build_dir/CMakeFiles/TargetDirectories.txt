@@ -1,0 +1,10 @@
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/lightgbm_objs.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/lightgbm.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/lightgbm_capi_objs.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/_lightgbm.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/edit_cache.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/rebuild_cache.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/list_install_components.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/install.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/install/local.dir
+/home/runner/work/LightGBM/LightGBM/_codeql_build_dir/CMakeFiles/install/strip.dir
