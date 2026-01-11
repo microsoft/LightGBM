@@ -1199,6 +1199,13 @@ struct Config {
   // desc = 0 means no smoothing, 1 means complete carry-forward
   double mixture_r_ema_lambda = 0.0;
 
+  // check = >=0
+  // desc = number of warmup iterations before E-step begins
+  // desc = during warmup, experts train with initial responsibilities (quantile-based)
+  // desc = this allows experts to differentiate before competitive EM begins
+  // desc = 0 means no warmup (may cause expert collapse)
+  int mixture_warmup_iters = 5;
+
   // type = enum
   // options = value, value_and_regime, all
   // desc = output mode for mixture prediction

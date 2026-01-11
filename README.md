@@ -135,6 +135,23 @@ expert_preds = model.predict_expert_pred(X_test)  # Individual expert prediction
 
 The overhead is **near-optimal**: with K=4 experts + 1 gate = 5 models, ~4-5x overhead is expected. The implementation uses OpenMP parallelization in 7 critical sections.
 
+### Regime-Switching Benchmark
+
+When data has underlying regime structure, MoE significantly outperforms standard GBDT:
+
+**Setup**: 2,000 samples with 2 regimes (Bull/Bear), 5 features, 150 boosting rounds
+
+| Model | RMSE | R² | Improvement |
+|-------|------|-----|-------------|
+| Standard GBDT | 5.19 | 0.821 | - |
+| MoE (K=2, α=1.0) | 4.49 | 0.867 | **+13.6%** |
+
+**Key insight**: Standard GBDT learns a single compromised function. MoE learns specialized experts for each regime, providing both better accuracy and interpretability through regime probability outputs.
+
+![Regime Switching Comparison](examples/regime_switching_comparison.png)
+
+Run the demo: `python examples/regime_switching_demo.py`
+
 ---
 
 <a name="japanese"></a>
@@ -262,6 +279,23 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 | MoE (K=4) | 0.44秒 | 18.69ms | 約4.5x |
 
 オーバーヘッドは**ほぼ理論最適値**: K=4エキスパート + 1ゲート = 5モデルで、約4-5倍は想定通り。実装では7箇所の重要セクションでOpenMP並列化を使用。
+
+### レジームスイッチング・ベンチマーク
+
+データに潜在的なレジーム構造がある場合、MoEは標準GBDTを大きく上回ります:
+
+**設定**: 2,000サンプル、2レジーム（強気/弱気）、5特徴量、150ブースティングラウンド
+
+| モデル | RMSE | R² | 改善率 |
+|-------|------|-----|--------|
+| 標準GBDT | 5.19 | 0.821 | - |
+| MoE (K=2, α=1.0) | 4.49 | 0.867 | **+13.6%** |
+
+**重要な知見**: 標準GBDTは妥協した単一の関数を学習します。MoEは各レジームに特化したエキスパートを学習し、より高い精度とレジーム確率出力による解釈可能性の両方を提供します。
+
+![レジームスイッチング比較](examples/regime_switching_comparison.png)
+
+デモ実行: `python examples/regime_switching_demo.py`
 
 ---
 

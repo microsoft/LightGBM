@@ -18,6 +18,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -128,13 +129,83 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
 }
 
 void MixtureGBDT::InitResponsibilities() {
-  // Uniform initialization
-  const double uniform_r = 1.0 / num_experts_;
-  std::fill(responsibilities_.begin(), responsibilities_.end(), uniform_r);
+  const label_t* labels = train_data_->metadata().label();
 
-  // TODO: Implement kmeans and residual_kmeans initialization
-  if (config_->mixture_init != "uniform") {
-    Log::Warning("MixtureGBDT: Only 'uniform' initialization is currently implemented. Using uniform.");
+  if (config_->mixture_init == "quantile") {
+    // Quantile-based initialization: assign samples to experts based on label quantiles
+    // This breaks symmetry by giving each expert a different subset of data
+    Log::Info("MixtureGBDT: Using quantile-based initialization");
+
+    // Sort indices by label value
+    std::vector<data_size_t> sorted_indices(num_data_);
+    std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+    std::sort(sorted_indices.begin(), sorted_indices.end(),
+              [labels](data_size_t a, data_size_t b) { return labels[a] < labels[b]; });
+
+    // Assign to experts based on quantiles with soft boundaries
+    const double base_r = 0.1 / num_experts_;  // Small base probability for all experts
+    const double main_r = 1.0 - base_r * num_experts_;  // Main probability for assigned expert
+
+    for (data_size_t rank = 0; rank < num_data_; ++rank) {
+      data_size_t i = sorted_indices[rank];
+      int assigned_expert = static_cast<int>(rank * num_experts_ / num_data_);
+      if (assigned_expert >= num_experts_) assigned_expert = num_experts_ - 1;
+
+      for (int k = 0; k < num_experts_; ++k) {
+        if (k == assigned_expert) {
+          responsibilities_[i * num_experts_ + k] = main_r + base_r;
+        } else {
+          responsibilities_[i * num_experts_ + k] = base_r;
+        }
+      }
+    }
+  } else if (config_->mixture_init == "random") {
+    // Random initialization: randomly assign samples to experts
+    Log::Info("MixtureGBDT: Using random initialization");
+
+    std::mt19937 rng(config_->seed);
+    std::uniform_int_distribution<int> dist(0, num_experts_ - 1);
+
+    const double base_r = 0.1 / num_experts_;
+    const double main_r = 1.0 - base_r * num_experts_;
+
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      int assigned_expert = dist(rng);
+      for (int k = 0; k < num_experts_; ++k) {
+        if (k == assigned_expert) {
+          responsibilities_[i * num_experts_ + k] = main_r + base_r;
+        } else {
+          responsibilities_[i * num_experts_ + k] = base_r;
+        }
+      }
+    }
+  } else {
+    // Default: quantile-based initialization (better than uniform for MoE)
+    // Use quantile as default because it ensures experts specialize on different
+    // regions of the target distribution
+    Log::Info("MixtureGBDT: Using default quantile-based initialization");
+
+    std::vector<data_size_t> sorted_indices(num_data_);
+    std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+    std::sort(sorted_indices.begin(), sorted_indices.end(),
+              [labels](data_size_t a, data_size_t b) { return labels[a] < labels[b]; });
+
+    const double base_r = 0.1 / num_experts_;
+    const double main_r = 1.0 - base_r * num_experts_;
+
+    for (data_size_t rank = 0; rank < num_data_; ++rank) {
+      data_size_t i = sorted_indices[rank];
+      int assigned_expert = static_cast<int>(rank * num_experts_ / num_data_);
+      if (assigned_expert >= num_experts_) assigned_expert = num_experts_ - 1;
+
+      for (int k = 0; k < num_experts_; ++k) {
+        if (k == assigned_expert) {
+          responsibilities_[i * num_experts_ + k] = main_r + base_r;
+        } else {
+          responsibilities_[i * num_experts_ + k] = base_r;
+        }
+      }
+    }
   }
 }
 
@@ -185,14 +256,22 @@ void MixtureGBDT::Forward() {
   }
 
   // Get gate probabilities (softmax of gate raw predictions)
+  // Note: GetPredictAt returns class-major order (all class 0, then class 1, etc.)
   std::vector<double> gate_raw(static_cast<size_t>(num_data_) * num_experts_);
   int64_t out_len;
   gate_->GetPredictAt(0, gate_raw.data(), &out_len);
 
   // Apply softmax per sample
+  // gate_raw is in class-major order: gate_raw[k * num_data_ + i] = score for sample i, class k
+  // gate_proba_ is in sample-major order: gate_proba_[i * num_experts_ + k]
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
-    Softmax(gate_raw.data() + i * num_experts_, num_experts_,
+    // Copy to sample-major order for this sample
+    std::vector<double> scores(num_experts_);
+    for (int k = 0; k < num_experts_; ++k) {
+      scores[k] = gate_raw[k * num_data_ + i];  // class-major indexing
+    }
+    Softmax(scores.data(), num_experts_,
             gate_proba_.data() + i * num_experts_);
   }
 
@@ -274,30 +353,41 @@ void MixtureGBDT::SmoothResponsibilities() {
 void MixtureGBDT::MStepExperts() {
   const label_t* labels = train_data_->metadata().label();
 
-  // Compute gradients and hessians for the mixture loss
-  // Using the combined prediction yhat
-  if (objective_function_ != nullptr) {
-    objective_function_->GetGradients(yhat_.data(), gradients_.data(), hessians_.data());
-  } else {
-    // Default to MSE if no objective
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      double diff = yhat_[i] - labels[i];
-      gradients_[i] = 2.0 * diff;
-      hessians_[i] = 2.0;
-    }
-  }
+  // Each expert should optimize its OWN prediction toward the label
+  // Gradient for expert k: r_ik * d_L(y_i, f_k(x_i)) / d_f_k(x_i)
+  // This ensures experts specialize on different parts of the data
 
   // Train each expert with responsibility-weighted gradients
+  // computed from the expert's OWN prediction (not mixture yhat)
   for (int k = 0; k < num_experts_; ++k) {
     std::vector<score_t> grad_k(num_data_);
     std::vector<score_t> hess_k(num_data_);
 
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      double r_ik = responsibilities_[i * num_experts_ + k];
-      grad_k[i] = static_cast<score_t>(r_ik * gradients_[i]);
-      hess_k[i] = static_cast<score_t>(r_ik * hessians_[i]);
+    // Get expert k's predictions
+    const double* expert_k_pred = expert_pred_.data() + k * num_data_;
+
+    if (objective_function_ != nullptr) {
+      // Use objective function to compute gradients for expert k's predictions
+      std::vector<double> expert_k_pred_vec(expert_k_pred, expert_k_pred + num_data_);
+      std::vector<score_t> temp_grad(num_data_);
+      std::vector<score_t> temp_hess(num_data_);
+      objective_function_->GetGradients(expert_k_pred_vec.data(), temp_grad.data(), temp_hess.data());
+
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        double r_ik = responsibilities_[i * num_experts_ + k];
+        grad_k[i] = static_cast<score_t>(r_ik * temp_grad[i]);
+        hess_k[i] = static_cast<score_t>(r_ik * temp_hess[i]);
+      }
+    } else {
+      // Default to MSE: d/df (y - f)^2 = 2*(f - y)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        double r_ik = responsibilities_[i * num_experts_ + k];
+        double diff = expert_k_pred[i] - labels[i];
+        grad_k[i] = static_cast<score_t>(r_ik * 2.0 * diff);
+        hess_k[i] = static_cast<score_t>(r_ik * 2.0);
+      }
     }
 
     // Train one iteration with custom gradients
@@ -362,19 +452,29 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
 
   Log::Debug("MixtureGBDT::TrainOneIter - starting iteration %d", iter_);
 
-  // Forward pass
+  // Forward pass - compute expert predictions and gate probabilities
   Forward();
 
   // E-step: update responsibilities
-  EStep();
-
-  // Apply time-series smoothing if enabled
-  SmoothResponsibilities();
+  // Skip E-step for first few iterations to allow experts to differentiate
+  // with the initial (non-uniform) responsibilities.
+  // Without this, all experts start with prediction=0, causing EStep to
+  // compute uniform responsibilities and all experts train identically.
+  const int warmup_iters = config_->mixture_warmup_iters;
+  if (iter_ >= warmup_iters) {
+    EStep();
+    // Apply time-series smoothing if enabled
+    SmoothResponsibilities();
+  }
 
   // M-step: update experts
   MStepExperts();
 
   // M-step: update gate
+  // Gate should always be trained, even during warmup.
+  // During warmup, responsibilities are fixed from initialization (quantile-based),
+  // so gate learns to predict these fixed responsibilities.
+  // This is crucial for hard alpha (1.0) to work properly.
   MStepGate();
 
   ++iter_;
