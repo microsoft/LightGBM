@@ -152,6 +152,17 @@ The overhead is **near-optimal**: with K=4 experts + 1 gate = 5 models, ~4-5x ov
 
 Run the demo: `python examples/regime_switching_demo.py`
 
+#### Classic Regime-Switching Benchmarks
+
+**Hamilton's GNP Data (1951-2009)**: The original regime-switching benchmark from Hamilton (1989). This dataset has well-documented expansion/recession regime structure.
+
+| Dataset | Std GBDT | MoE GBDT | Winner | Improvement |
+|---------|----------|----------|--------|-------------|
+| Hamilton GNP | 0.7117 | **0.6733** | MoE | **+5.4%** |
+| VIX Volatility Regime | 0.01117 | **0.01112** | MoE | +0.4% |
+
+**MoE optimal params**: K=3, α=1.53 (GNP); K=3, α=0.11 (VIX)
+
 #### Real Financial Data (Weak Regime Structure)
 
 **With Optuna Hyperparameter Tuning** (50 trials each, time-series CV):
@@ -163,14 +174,12 @@ Run the demo: `python examples/regime_switching_demo.py`
 
 The difference is minimal (-0.43%), suggesting **no significant advantage** for either method on this task.
 
-**MoE optimal params found**: K=2, α=0.67, warmup=16
-
 **Key insight**: MoE is **not universally better**. It excels when:
-- Data has clear, separable regime structure
+- Data has clear, separable regime structure (e.g., Hamilton's GNP with +5.4% improvement)
 - Different regimes follow fundamentally different functions
 - Regimes can be learned from features (not purely latent)
 
-For general prediction tasks without clear regime structure, standard GBDT may perform better due to lower model complexity.
+For general prediction tasks without clear regime structure, standard GBDT may perform equally well or better due to lower model complexity.
 
 ---
 
@@ -317,6 +326,17 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 デモ実行: `python examples/regime_switching_demo.py`
 
+#### 古典的レジームスイッチングベンチマーク
+
+**Hamilton's GNPデータ (1951-2009)**: Hamilton (1989) の元論文で使われたレジームスイッチングの古典的ベンチマーク。景気拡大/後退のレジーム構造が文書化されています。
+
+| データセット | 標準GBDT | MoE GBDT | 勝者 | 改善率 |
+|-------------|----------|----------|------|--------|
+| Hamilton GNP | 0.7117 | **0.6733** | MoE | **+5.4%** |
+| VIX ボラティリティレジーム | 0.01117 | **0.01112** | MoE | +0.4% |
+
+**MoE最適パラメータ**: K=3, α=1.53 (GNP); K=3, α=0.11 (VIX)
+
 #### 実金融データ（弱いレジーム構造）
 
 **Optunaハイパラチューニング使用**（各50トライアル、時系列CV）:
@@ -328,14 +348,12 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 差は最小限（-0.43%）であり、このタスクでは**どちらも有意な優位性なし**。
 
-**MoE最適パラメータ**: K=2, α=0.67, warmup=16
-
 **重要な知見**: MoEは**万能ではありません**。以下の条件で有効：
-- データに明確で分離可能なレジーム構造がある
+- データに明確で分離可能なレジーム構造がある（例: Hamilton's GNPで+5.4%改善）
 - 異なるレジームが根本的に異なる関数に従う
 - レジームが特徴量から学習可能（純粋に潜在的ではない）
 
-明確なレジーム構造のない一般的な予測タスクでは、モデルの複雑さが低い標準GBDTの方が良い性能を発揮する可能性があります。
+明確なレジーム構造のない一般的な予測タスクでは、モデルの複雑さが低い標準GBDTと同等かそれ以上の性能を発揮する可能性があります。
 
 ---
 
