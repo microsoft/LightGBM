@@ -220,9 +220,9 @@ try:
 # like loading configuration from environment variables and files, and catching
 # ValueError here might hide issues with that config-loading.
 #
-# But in exchange, it's less likely that 'import lightgbm' will fail for
+# But in exchange, it's less likely that 'import lightgbm_moe' will fail for
 # dask-related reasons, which is beneficial for any workloads that are using
-# lightgbm but not its Dask functionality.
+# lightgbm_moe but not its Dask functionality.
 except (ImportError, ValueError):
     DASK_INSTALLED = False
 

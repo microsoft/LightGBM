@@ -21,12 +21,12 @@ dependencies = [
     "numpy>=1.17.0",
     "scipy"
 ]
-description = "LightGBM Python-package"
+description = "LightGBM-MoE: A regime-switching / mixture-of-experts extension of LightGBM"
 license = {file = "LICENSE"}
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}
 ]
-name = "lightgbm"
+name = "lightgbm-moe"
 readme = "README.rst"
 requires-python = ">=3.9"
 version = "4.6.0.99"
@@ -198,7 +198,7 @@ raises-extend-require-match-for = ["*Exception", "*Error"]
     # flake8-print
     "T"
 ]
-"python-package/lightgbm/basic.py" = [
+"python-package/lightgbm_moe/basic.py" = [
     # (pylint) Using the global statement is discouraged
     "PLW0603"
 ]
@@ -215,4 +215,4 @@ raises-extend-require-match-for = ["*Exception", "*Error"]
 convention = "numpy"
 
 [tool.ruff.lint.isort]
-known-first-party = ["lightgbm"]
+known-first-party = ["lightgbm_moe"]

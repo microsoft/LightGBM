@@ -1,7 +1,8 @@
 # coding: utf-8
-"""LightGBM, Light Gradient Boosting Machine.
+"""LightGBM-MoE: A regime-switching / mixture-of-experts extension of LightGBM.
 
-Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
+Based on LightGBM, Light Gradient Boosting Machine.
+Original contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 """
 
 from pathlib import Path

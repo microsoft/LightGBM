@@ -1,7 +1,19 @@
 <img src=https://github.com/microsoft/LightGBM/blob/master/docs/logo/LightGBM_logo_black_text.svg width=300 />
 
-Light Gradient Boosting Machine
-===============================
+LightGBM-MoE
+============
+
+**A regime-switching / mixture-of-experts extension of LightGBM.**
+
+This is a fork of LightGBM that adds Mixture-of-Experts (MoE) / regime-switching capabilities:
+- K expert GBDTs with a gate GBDT for soft-routing
+- Predict regime assignments alongside predictions
+- EM-style training for expert specialization
+
+---
+
+Light Gradient Boosting Machine (Original)
+==========================================
 
 [![C++ GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/cpp.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/cpp.yml)
 [![Python-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/python_package.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/python_package.yml)
