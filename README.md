@@ -183,52 +183,65 @@ For general prediction tasks without clear regime structure, standard GBDT may p
 
 ### Comprehensive Benchmark Analysis
 
-**100 Optuna trials, time-series cross-validation, EMA ON/OFF optimized**
+**Key Finding: MoE excels when regime is determinable from features (X)**
 
-#### Results Summary
+#### Results Summary (EMA OFF, 50 Optuna trials)
 
-| Dataset | Features | Std RMSE | MoE RMSE | Improve | K | α | EMA |
-|---------|----------|----------|----------|---------|---|------|-----|
-| Hamilton GNP | Few (4) | 0.7301 | **0.6751** | **+7.5%** | 2 | 1.68 | ON |
-| Hamilton GNP | Many (26) | 0.7234 | **0.7114** | +1.6% | 3 | 0.42 | OFF |
-| Synthetic | Few (4) | **0.7273** | 0.7731 | -6.3% | 2 | 0.11 | ON |
-| Synthetic | Many (26) | **0.7309** | 0.7483 | -2.4% | 3 | 0.58 | ON |
-| VIX Regime | Few (4) | 0.0111 | **0.0111** | +0.3% | 2 | 0.85 | ON |
-| VIX Regime | Many (26) | **0.0112** | 0.0112 | -0.7% | 4 | 1.87 | ON |
+| Dataset | #Feat | Std RMSE | MoE RMSE | Diff | True K | Sel K | Expert Distribution |
+|---------|-------|----------|----------|------|--------|-------|---------------------|
+| Hamilton GNP | 4 | 0.7452 | 0.7488 | -0.5% | 2 | 2 | 33:67 |
+| Hamilton GNP | 32 | 1.0922 | 1.1261 | -3.1% | 2 | 2 | 66:34 |
+| **Synthetic (X→Regime)** | 4 | 3.1339 | **2.7941** | **+10.8%** | 2 | 2 | 51:49 |
+| **Synthetic (X→Regime)** | 32 | 3.4287 | **3.0870** | **+10.0%** | 2 | 2 | 53:47 |
+| VIX Regime | 4 | 0.0053 | 0.0055 | -3.8% | 2 | 4 | 17:35:6:42 |
+| VIX Regime | 32 | 0.0052 | 0.0053 | -1.2% | 2 | 4 | 12:74:9:4 |
 
-**MoE wins**: 3/6 cases (Hamilton GNP both, VIX Few)
+**MoE wins**: Only on Synthetic dataset where regime IS determinable from X
 
-#### When MoE Excels
+#### Regime Confusion Matrices (True Regime vs Predicted Expert)
 
-1. **Hamilton GNP (Few features)**: +7.5% improvement - Best case for MoE
-   - Classic regime-switching data with clear expansion/recession structure
-   - Simple features allow gate to learn regime boundaries effectively
+**Synthetic (X→Regime) - Few Features** ✅ SUCCESS
+```
+True\Pred | Expert0 | Expert1
+----------|---------|--------
+Regime 0  |  19.2%  |  80.8%  ← Regime 0 → Expert 1
+Regime 1  |  84.7%  |  15.3%  ← Regime 1 → Expert 0
+```
+**Experts successfully differentiate regimes!** (R0→E1:81%, R1→E0:85%)
 
-2. **Real-world economic data**: MoE shows consistent advantage on Hamilton GNP across both feature sets
+**Hamilton GNP - Few Features** ❌ COLLAPSED
+```
+True\Pred | Expert0 | Expert1
+----------|---------|--------
+Regime 0  |  33.7%  |  66.3%
+Regime 1  |  28.6%  |  71.4%  ← Both regimes → Expert 1
+```
 
-3. **Low-noise, clear regime structure**: MoE benefits when regimes are separable
+**VIX Regime - Few Features** ❌ COLLAPSED
+```
+True\Pred | Expert0 | Expert1 | Expert2 | Expert3
+----------|---------|---------|---------|--------
+Regime 0  |  95.0%  |   0.0%  |   0.0%  |   5.0%
+Regime 1  |   1.0%  |  42.0%  |   7.0%  |  50.0%
+```
 
-#### Expert Differentiation Analysis
+#### Key Conclusion
 
-A key advantage of MoE is interpretability - experts should specialize for different regimes.
+| Dataset Type | Regime Source | MoE Advantage | Expert Differentiation |
+|--------------|--------------|---------------|----------------------|
+| **Synthetic** | Determinable from X | ✅ **+10%** | ✅ Success |
+| Hamilton GNP | Markov switching (latent) | ❌ -0.5~3% | ❌ Collapsed |
+| VIX Regime | VIX threshold (random walk) | ❌ -1~4% | ❌ Collapsed |
 
-| Dataset | Features | Expert Differentiation | Notes |
-|---------|----------|----------------------|-------|
-| Synthetic | Few (4) | ✅ **Success** | Regime 0→Expert 1 (95%), Regime 1→Expert 0 (94%) |
-| All others | - | ❌ Collapsed | All samples routed to single expert |
+**MoE is effective when:**
+1. **Regime is determinable from features (X)** - The gate can learn to classify regimes
+2. Different regimes follow **fundamentally different functions**
+3. Expert distribution is balanced (not 100:0)
 
-**Key Finding**: Expert differentiation only succeeded on Synthetic data with few features. In all other cases, EMA smoothing caused "expert collapse" where one expert dominates.
-
-#### EMA Smoothing Trade-off
-
-| Setting | RMSE | Expert Differentiation |
-|---------|------|----------------------|
-| EMA ON | Better | Poor (expert collapse) |
-| EMA OFF | Worse | Better (experts specialize) |
-
-**Recommendation**:
-- For **pure prediction accuracy**: Use EMA smoothing (selected in 5/6 optimized models)
-- For **interpretability/regime analysis**: Disable EMA to allow expert specialization
+**MoE is NOT effective when:**
+1. Regime is **latent** (Markov switching, hidden states)
+2. Regime depends on **unobserved variables** (not in X)
+3. Standard GBDT can already capture the pattern with a single model
 
 ---
 
@@ -406,52 +419,65 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 ### 包括的ベンチマーク分析
 
-**100 Optunaトライアル、時系列交差検証、EMA ON/OFF最適化**
+**重要な発見: MoEはレジームが特徴量(X)から推定可能な場合に有効**
 
-#### 結果サマリー
+#### 結果サマリー (EMA OFF, 50 Optunaトライアル)
 
-| データセット | 特徴量 | 標準RMSE | MoE RMSE | 改善率 | K | α | EMA |
-|-------------|--------|----------|----------|--------|---|------|-----|
-| Hamilton GNP | 少 (4) | 0.7301 | **0.6751** | **+7.5%** | 2 | 1.68 | ON |
-| Hamilton GNP | 多 (26) | 0.7234 | **0.7114** | +1.6% | 3 | 0.42 | OFF |
-| 合成データ | 少 (4) | **0.7273** | 0.7731 | -6.3% | 2 | 0.11 | ON |
-| 合成データ | 多 (26) | **0.7309** | 0.7483 | -2.4% | 3 | 0.58 | ON |
-| VIX レジーム | 少 (4) | 0.0111 | **0.0111** | +0.3% | 2 | 0.85 | ON |
-| VIX レジーム | 多 (26) | **0.0112** | 0.0112 | -0.7% | 4 | 1.87 | ON |
+| データセット | 特徴量数 | 標準RMSE | MoE RMSE | 差分 | 真K | 選択K | 専門家分布 |
+|-------------|---------|----------|----------|------|-----|-------|-----------|
+| Hamilton GNP | 4 | 0.7452 | 0.7488 | -0.5% | 2 | 2 | 33:67 |
+| Hamilton GNP | 32 | 1.0922 | 1.1261 | -3.1% | 2 | 2 | 66:34 |
+| **合成 (X→Regime)** | 4 | 3.1339 | **2.7941** | **+10.8%** | 2 | 2 | 51:49 |
+| **合成 (X→Regime)** | 32 | 3.4287 | **3.0870** | **+10.0%** | 2 | 2 | 53:47 |
+| VIX レジーム | 4 | 0.0053 | 0.0055 | -3.8% | 2 | 4 | 17:35:6:42 |
+| VIX レジーム | 32 | 0.0052 | 0.0053 | -1.2% | 2 | 4 | 12:74:9:4 |
 
-**MoE勝利**: 6ケース中3ケース（Hamilton GNP両方、VIX少特徴量）
+**MoE勝利**: 合成データのみ（レジームがXから推定可能な場合）
 
-#### MoEが優れる条件
+#### レジーム混合行列 (真のレジーム vs 予測エキスパート)
 
-1. **Hamilton GNP（少ない特徴量）**: +7.5%改善 - MoEに最適なケース
-   - 明確な景気拡大/後退構造を持つ古典的レジームスイッチングデータ
-   - シンプルな特徴量によりゲートがレジーム境界を効果的に学習
+**合成 (X→Regime) - 少特徴量** ✅ 成功
+```
+真\予測   | Expert0 | Expert1
+----------|---------|--------
+Regime 0  |  19.2%  |  80.8%  ← レジーム0 → エキスパート1
+Regime 1  |  84.7%  |  15.3%  ← レジーム1 → エキスパート0
+```
+**エキスパートがレジームを正しく分化！** (R0→E1:81%, R1→E0:85%)
 
-2. **実経済データ**: Hamilton GNPでは特徴量数に関わらずMoEが一貫して優位
+**Hamilton GNP - 少特徴量** ❌ 崩壊
+```
+真\予測   | Expert0 | Expert1
+----------|---------|--------
+Regime 0  |  33.7%  |  66.3%
+Regime 1  |  28.6%  |  71.4%  ← 両レジーム → エキスパート1
+```
 
-3. **低ノイズ、明確なレジーム構造**: レジームが分離可能な場合にMoEが有効
+**VIX レジーム - 少特徴量** ❌ 崩壊
+```
+真\予測   | Expert0 | Expert1 | Expert2 | Expert3
+----------|---------|---------|---------|--------
+Regime 0  |  95.0%  |   0.0%  |   0.0%  |   5.0%
+Regime 1  |   1.0%  |  42.0%  |   7.0%  |  50.0%
+```
 
-#### エキスパート分化分析
+#### 主要な結論
 
-MoEの主要な利点は解釈可能性 - エキスパートは異なるレジームに特化すべき。
+| データタイプ | レジーム源 | MoE優位性 | 専門家分化 |
+|-------------|-----------|----------|-----------|
+| **合成データ** | Xから決定可能 | ✅ **+10%** | ✅ 成功 |
+| Hamilton GNP | マルコフスイッチング（潜在） | ❌ -0.5~3% | ❌ 崩壊 |
+| VIX レジーム | VIX閾値（ランダムウォーク） | ❌ -1~4% | ❌ 崩壊 |
 
-| データセット | 特徴量 | エキスパート分化 | 詳細 |
-|-------------|--------|-----------------|------|
-| 合成データ | 少 (4) | ✅ **成功** | レジーム0→E1 (95%), レジーム1→E0 (94%) |
-| その他全て | - | ❌ 崩壊 | 全サンプルが単一エキスパートにルーティング |
+**MoEが有効な条件:**
+1. **レジームが特徴量(X)から決定可能** - ゲートがレジームを分類学習できる
+2. 異なるレジームが**根本的に異なる関数**に従う
+3. 専門家分布が均衡（100:0でない）
 
-**重要な発見**: エキスパート分化は少ない特徴量の合成データでのみ成功。他の全ケースでは、EMA平滑化により「エキスパート崩壊」（1つのエキスパートが支配）が発生。
-
-#### EMA平滑化のトレードオフ
-
-| 設定 | RMSE | エキスパート分化 |
-|------|------|-----------------|
-| EMA ON | 良い | 悪い（エキスパート崩壊） |
-| EMA OFF | 悪い | 良い（エキスパート特化） |
-
-**推奨**:
-- **純粋な予測精度向け**: EMA平滑化を使用（最適化された6モデル中5モデルで選択）
-- **解釈可能性/レジーム分析向け**: EMAを無効にしてエキスパート特化を促進
+**MoEが有効でない条件:**
+1. レジームが**潜在的**（マルコフスイッチング、隠れ状態）
+2. レジームが**観測されない変数**に依存（Xに含まれない）
+3. 標準GBDTが単一モデルで既にパターンを捕捉できる
 
 ---
 
