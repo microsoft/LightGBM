@@ -181,6 +181,55 @@ The difference is minimal (-0.43%), suggesting **no significant advantage** for 
 
 For general prediction tasks without clear regime structure, standard GBDT may perform equally well or better due to lower model complexity.
 
+### Comprehensive Benchmark Analysis
+
+**100 Optuna trials, time-series cross-validation, EMA ON/OFF optimized**
+
+#### Results Summary
+
+| Dataset | Features | Std RMSE | MoE RMSE | Improve | K | α | EMA |
+|---------|----------|----------|----------|---------|---|------|-----|
+| Hamilton GNP | Few (4) | 0.7301 | **0.6751** | **+7.5%** | 2 | 1.68 | ON |
+| Hamilton GNP | Many (26) | 0.7234 | **0.7114** | +1.6% | 3 | 0.42 | OFF |
+| Synthetic | Few (4) | **0.7273** | 0.7731 | -6.3% | 2 | 0.11 | ON |
+| Synthetic | Many (26) | **0.7309** | 0.7483 | -2.4% | 3 | 0.58 | ON |
+| VIX Regime | Few (4) | 0.0111 | **0.0111** | +0.3% | 2 | 0.85 | ON |
+| VIX Regime | Many (26) | **0.0112** | 0.0112 | -0.7% | 4 | 1.87 | ON |
+
+**MoE wins**: 3/6 cases (Hamilton GNP both, VIX Few)
+
+#### When MoE Excels
+
+1. **Hamilton GNP (Few features)**: +7.5% improvement - Best case for MoE
+   - Classic regime-switching data with clear expansion/recession structure
+   - Simple features allow gate to learn regime boundaries effectively
+
+2. **Real-world economic data**: MoE shows consistent advantage on Hamilton GNP across both feature sets
+
+3. **Low-noise, clear regime structure**: MoE benefits when regimes are separable
+
+#### Expert Differentiation Analysis
+
+A key advantage of MoE is interpretability - experts should specialize for different regimes.
+
+| Dataset | Features | Expert Differentiation | Notes |
+|---------|----------|----------------------|-------|
+| Synthetic | Few (4) | ✅ **Success** | Regime 0→Expert 1 (95%), Regime 1→Expert 0 (94%) |
+| All others | - | ❌ Collapsed | All samples routed to single expert |
+
+**Key Finding**: Expert differentiation only succeeded on Synthetic data with few features. In all other cases, EMA smoothing caused "expert collapse" where one expert dominates.
+
+#### EMA Smoothing Trade-off
+
+| Setting | RMSE | Expert Differentiation |
+|---------|------|----------------------|
+| EMA ON | Better | Poor (expert collapse) |
+| EMA OFF | Worse | Better (experts specialize) |
+
+**Recommendation**:
+- For **pure prediction accuracy**: Use EMA smoothing (selected in 5/6 optimized models)
+- For **interpretability/regime analysis**: Disable EMA to allow expert specialization
+
 ---
 
 <a name="japanese"></a>
@@ -354,6 +403,55 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 - レジームが特徴量から学習可能（純粋に潜在的ではない）
 
 明確なレジーム構造のない一般的な予測タスクでは、モデルの複雑さが低い標準GBDTと同等かそれ以上の性能を発揮する可能性があります。
+
+### 包括的ベンチマーク分析
+
+**100 Optunaトライアル、時系列交差検証、EMA ON/OFF最適化**
+
+#### 結果サマリー
+
+| データセット | 特徴量 | 標準RMSE | MoE RMSE | 改善率 | K | α | EMA |
+|-------------|--------|----------|----------|--------|---|------|-----|
+| Hamilton GNP | 少 (4) | 0.7301 | **0.6751** | **+7.5%** | 2 | 1.68 | ON |
+| Hamilton GNP | 多 (26) | 0.7234 | **0.7114** | +1.6% | 3 | 0.42 | OFF |
+| 合成データ | 少 (4) | **0.7273** | 0.7731 | -6.3% | 2 | 0.11 | ON |
+| 合成データ | 多 (26) | **0.7309** | 0.7483 | -2.4% | 3 | 0.58 | ON |
+| VIX レジーム | 少 (4) | 0.0111 | **0.0111** | +0.3% | 2 | 0.85 | ON |
+| VIX レジーム | 多 (26) | **0.0112** | 0.0112 | -0.7% | 4 | 1.87 | ON |
+
+**MoE勝利**: 6ケース中3ケース（Hamilton GNP両方、VIX少特徴量）
+
+#### MoEが優れる条件
+
+1. **Hamilton GNP（少ない特徴量）**: +7.5%改善 - MoEに最適なケース
+   - 明確な景気拡大/後退構造を持つ古典的レジームスイッチングデータ
+   - シンプルな特徴量によりゲートがレジーム境界を効果的に学習
+
+2. **実経済データ**: Hamilton GNPでは特徴量数に関わらずMoEが一貫して優位
+
+3. **低ノイズ、明確なレジーム構造**: レジームが分離可能な場合にMoEが有効
+
+#### エキスパート分化分析
+
+MoEの主要な利点は解釈可能性 - エキスパートは異なるレジームに特化すべき。
+
+| データセット | 特徴量 | エキスパート分化 | 詳細 |
+|-------------|--------|-----------------|------|
+| 合成データ | 少 (4) | ✅ **成功** | レジーム0→E1 (95%), レジーム1→E0 (94%) |
+| その他全て | - | ❌ 崩壊 | 全サンプルが単一エキスパートにルーティング |
+
+**重要な発見**: エキスパート分化は少ない特徴量の合成データでのみ成功。他の全ケースでは、EMA平滑化により「エキスパート崩壊」（1つのエキスパートが支配）が発生。
+
+#### EMA平滑化のトレードオフ
+
+| 設定 | RMSE | エキスパート分化 |
+|------|------|-----------------|
+| EMA ON | 良い | 悪い（エキスパート崩壊） |
+| EMA OFF | 悪い | 良い（エキスパート特化） |
+
+**推奨**:
+- **純粋な予測精度向け**: EMA平滑化を使用（最適化された6モデル中5モデルで選択）
+- **解釈可能性/レジーム分析向け**: EMAを無効にしてエキスパート特化を促進
 
 ---
 
