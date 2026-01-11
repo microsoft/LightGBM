@@ -137,7 +137,9 @@ The overhead is **near-optimal**: with K=4 experts + 1 gate = 5 models, ~4-5x ov
 
 ### Regime-Switching Benchmark
 
-When data has underlying regime structure, MoE significantly outperforms standard GBDT:
+**When to use MoE**: MoE excels when data has **clear, distinct regime structure** where different regimes follow fundamentally different functions.
+
+#### Synthetic Data (Clear Regime Structure)
 
 **Setup**: 2,000 samples with 2 regimes (Bull/Bear), 5 features, 150 boosting rounds
 
@@ -146,11 +148,24 @@ When data has underlying regime structure, MoE significantly outperforms standar
 | Standard GBDT | 5.19 | 0.821 | - |
 | MoE (K=2, α=1.0) | 4.49 | 0.867 | **+13.6%** |
 
-**Key insight**: Standard GBDT learns a single compromised function. MoE learns specialized experts for each regime, providing both better accuracy and interpretability through regime probability outputs.
-
 ![Regime Switching Comparison](examples/regime_switching_comparison.png)
 
 Run the demo: `python examples/regime_switching_demo.py`
+
+#### Real Financial Data (Weak Regime Structure)
+
+| Task | Standard GBDT | MoE (K=2) | Result |
+|------|---------------|-----------|--------|
+| Daily Return Prediction (6 tickers) | baseline | -1.6% | Standard wins |
+| 5-day Return (S&P 500 + VIX) | baseline | -2.9% | Standard wins |
+| Volatility Prediction | R²=0.333 | R²=0.312 | Standard wins |
+
+**Key insight**: MoE is **not universally better**. It excels when:
+- Data has clear, separable regime structure
+- Different regimes follow fundamentally different functions
+- Regimes can be learned from features (not purely latent)
+
+For general prediction tasks without clear regime structure, standard GBDT may perform better due to lower model complexity.
 
 ---
 
@@ -282,7 +297,9 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 ### レジームスイッチング・ベンチマーク
 
-データに潜在的なレジーム構造がある場合、MoEは標準GBDTを大きく上回ります:
+**MoEを使うべき場面**: MoEは、異なるレジームが根本的に異なる関数に従う**明確なレジーム構造**を持つデータで優れた性能を発揮します。
+
+#### 合成データ（明確なレジーム構造あり）
 
 **設定**: 2,000サンプル、2レジーム（強気/弱気）、5特徴量、150ブースティングラウンド
 
@@ -291,11 +308,24 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 | 標準GBDT | 5.19 | 0.821 | - |
 | MoE (K=2, α=1.0) | 4.49 | 0.867 | **+13.6%** |
 
-**重要な知見**: 標準GBDTは妥協した単一の関数を学習します。MoEは各レジームに特化したエキスパートを学習し、より高い精度とレジーム確率出力による解釈可能性の両方を提供します。
-
 ![レジームスイッチング比較](examples/regime_switching_comparison.png)
 
 デモ実行: `python examples/regime_switching_demo.py`
+
+#### 実金融データ（弱いレジーム構造）
+
+| タスク | 標準GBDT | MoE (K=2) | 結果 |
+|--------|----------|-----------|------|
+| 日次リターン予測（6銘柄） | 基準 | -1.6% | 標準が勝利 |
+| 5日リターン（S&P 500 + VIX） | 基準 | -2.9% | 標準が勝利 |
+| ボラティリティ予測 | R²=0.333 | R²=0.312 | 標準が勝利 |
+
+**重要な知見**: MoEは**万能ではありません**。以下の条件で有効：
+- データに明確で分離可能なレジーム構造がある
+- 異なるレジームが根本的に異なる関数に従う
+- レジームが特徴量から学習可能（純粋に潜在的ではない）
+
+明確なレジーム構造のない一般的な予測タスクでは、モデルの複雑さが低い標準GBDTの方が良い性能を発揮する可能性があります。
 
 ---
 
