@@ -185,54 +185,60 @@ For general prediction tasks without clear regime structure, standard GBDT may p
 
 **Key Finding: MoE excels when regime is determinable from features (X)**
 
-#### Fair Comparison (Both models search num_leaves & learning_rate, 50 Optuna trials each)
+#### Full Hyperparameter Search (50 Optuna trials each)
 
-| Dataset | #Feat | Std RMSE | Std Leaves | MoE RMSE | MoE Leaves | K | Diff |
-|---------|-------|----------|------------|----------|------------|---|------|
-| Hamilton GNP | 4 | **0.6706** | 28 | 0.7438 | 37 | 3 | -10.9% |
-| Hamilton GNP | 32 | **0.8478** | 54 | 1.0471 | 51 | 4 | -23.5% |
-| **Synthetic (X→Regime)** | 4 | 2.9211 | 9 | **2.6808** | 29 | 3 | **+8.2%** |
-| **Synthetic (X→Regime)** | 32 | 3.3327 | 23 | **2.9231** | 60 | 3 | **+12.3%** |
-| VIX Regime | 4 | 0.0050 | 47 | 0.0050 | 30 | 2 | -0.1% |
-| VIX Regime | 32 | **0.0049** | 32 | 0.0053 | 41 | 2 | -6.8% |
+Both Standard GBDT and MoE search ALL typical GBDT hyperparameters:
+- `num_leaves` (8-128), `max_depth` (3-12), `learning_rate` (0.01-0.3)
+- `min_data_in_leaf` (5-100), `feature_fraction` (0.5-1.0)
+- `bagging_fraction` (0.5-1.0), `bagging_freq` (0-7)
+- `lambda_l1` (1e-8 to 10, log), `lambda_l2` (1e-8 to 10, log)
+
+MoE additionally searches: `K` (2-4), `alpha` (0.1-2.0), `warmup` (5-30)
+
+| Dataset | Std RMSE | MoE RMSE | K | Diff |
+|---------|----------|----------|---|------|
+| Hamilton GNP | **0.6427** | 0.6616 | 4 | -3.0% |
+| **Synthetic (X→Regime)** | 3.0479 | **2.6565** | 4 | **+12.8%** |
+| VIX Regime | 0.0048 | 0.0048 | 2 | -0.1% |
 
 **MoE wins**: Only on Synthetic dataset where regime IS determinable from X
 
 #### Regime Confusion Matrices (True Regime vs Predicted Expert)
 
-**Synthetic (X→Regime) - Few Features** ✅ MoE wins +8.2%
-```
-True\Pred | E0    | E1    | E2
-----------|-------|-------|-------
-Regime 0  |  6.4% | 23.1% | 70.5%  ← R0 → E2
-Regime 1  | 68.1% | 11.1% | 20.8%  ← R1 → E0
-```
-Experts differentiate regimes (R0→E2:71%, R1→E0:68%)
-
-**VIX Regime - Few Features** ✅ Good differentiation (but no RMSE advantage)
+**VIX Regime (K=2)** ✅ Excellent differentiation
 ```
 True\Pred | E0    | E1
 ----------|-------|-------
-Regime 0  | 85.0% | 15.0%  ← R0 → E0
-Regime 1  | 29.0% | 71.0%  ← R1 → E1
+Regime 0  | 91.0% |  9.0%  ← R0 → E0
+Regime 1  |  4.0% | 96.0%  ← R1 → E1
 ```
-(R0→E0:85%, R1→E1:71%)
+(R0→E0:91%, R1→E1:96%) - Near-perfect regime identification despite no RMSE advantage
 
-**Hamilton GNP - Few Features** ❌ COLLAPSED
+**Synthetic (X→Regime) (K=4)** ✅ MoE wins +12.8%
 ```
-True\Pred | E0   | E1    | E2
-----------|------|-------|-------
-Regime 0  | 6.0% | 55.4% | 38.6%
-Regime 1  | 0.0% | 57.1% | 42.9%  ← Both → E1
+True\Pred | E0    | E1    | E2    | E3
+----------|-------|-------|-------|-------
+Regime 0  | 21.0% | 13.0% | 13.0% | 53.0%  ← R0 → E3
+Regime 1  | 60.0% | 14.0% | 10.0% | 16.0%  ← R1 → E0
 ```
+Experts differentiate regimes (R0→E3:53%, R1→E0:60%)
+
+**Hamilton GNP (K=4)** ❌ COLLAPSED
+```
+True\Pred | E0   | E1   | E2   | E3
+----------|------|------|------|-------
+Regime 0  | 3.0% | 4.0% | 5.0% | 88.0%  ← R0 → E3
+Regime 1  | 0.0% | 0.0% | 0.0% | 100.0% ← R1 → E3
+```
+All samples routed to single expert (collapse)
 
 #### Key Conclusion
 
 | Dataset Type | Regime Source | MoE Advantage | Expert Differentiation |
 |--------------|--------------|---------------|----------------------|
-| **Synthetic** | Determinable from X | ✅ **+8~12%** | ✅ Success |
-| VIX Regime | Observable (VIX in X) | ≈ 0% | ✅ Success |
-| Hamilton GNP | Markov switching (latent) | ❌ **-11~24%** | ❌ Collapsed |
+| **Synthetic** | Determinable from X | ✅ **+12.8%** | ✅ Success |
+| VIX Regime | Observable (VIX in X) | ≈ 0% | ✅ **Excellent** (91%/96%) |
+| Hamilton GNP | Markov switching (latent) | ❌ **-3.0%** | ❌ Collapsed |
 
 **MoE is effective when:**
 1. **Regime is determinable from features (X)** - The gate can learn to classify regimes
@@ -422,54 +428,60 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 **重要な発見: MoEはレジームが特徴量(X)から推定可能な場合に有効**
 
-#### 公平な比較 (両モデルがnum_leaves & learning_rateを探索、各50トライアル)
+#### 完全ハイパーパラメータ探索 (各50 Optunaトライアル)
 
-| データセット | 特徴量 | Std RMSE | Std葉数 | MoE RMSE | MoE葉数 | K | 差分 |
-|-------------|--------|----------|---------|----------|---------|---|------|
-| Hamilton GNP | 4 | **0.6706** | 28 | 0.7438 | 37 | 3 | -10.9% |
-| Hamilton GNP | 32 | **0.8478** | 54 | 1.0471 | 51 | 4 | -23.5% |
-| **合成 (X→Regime)** | 4 | 2.9211 | 9 | **2.6808** | 29 | 3 | **+8.2%** |
-| **合成 (X→Regime)** | 32 | 3.3327 | 23 | **2.9231** | 60 | 3 | **+12.3%** |
-| VIX レジーム | 4 | 0.0050 | 47 | 0.0050 | 30 | 2 | -0.1% |
-| VIX レジーム | 32 | **0.0049** | 32 | 0.0053 | 41 | 2 | -6.8% |
+標準GBDTとMoEの両方が全ての一般的なGBDTハイパーパラメータを探索:
+- `num_leaves` (8-128), `max_depth` (3-12), `learning_rate` (0.01-0.3)
+- `min_data_in_leaf` (5-100), `feature_fraction` (0.5-1.0)
+- `bagging_fraction` (0.5-1.0), `bagging_freq` (0-7)
+- `lambda_l1` (1e-8〜10, log), `lambda_l2` (1e-8〜10, log)
+
+MoEは追加で探索: `K` (2-4), `alpha` (0.1-2.0), `warmup` (5-30)
+
+| データセット | Std RMSE | MoE RMSE | K | 差分 |
+|-------------|----------|----------|---|------|
+| Hamilton GNP | **0.6427** | 0.6616 | 4 | -3.0% |
+| **合成 (X→Regime)** | 3.0479 | **2.6565** | 4 | **+12.8%** |
+| VIX レジーム | 0.0048 | 0.0048 | 2 | -0.1% |
 
 **MoE勝利**: 合成データのみ（レジームがXから推定可能な場合）
 
 #### レジーム混合行列 (真のレジーム vs 予測エキスパート)
 
-**合成 (X→Regime) - 少特徴量** ✅ MoE勝利 +8.2%
-```
-真\予測   | E0    | E1    | E2
-----------|-------|-------|-------
-Regime 0  |  6.4% | 23.1% | 70.5%  ← R0 → E2
-Regime 1  | 68.1% | 11.1% | 20.8%  ← R1 → E0
-```
-エキスパートがレジームを分化 (R0→E2:71%, R1→E0:68%)
-
-**VIX レジーム - 少特徴量** ✅ 分化成功（ただしRMSE優位なし）
+**VIX レジーム (K=2)** ✅ 優れた分化
 ```
 真\予測   | E0    | E1
 ----------|-------|-------
-Regime 0  | 85.0% | 15.0%  ← R0 → E0
-Regime 1  | 29.0% | 71.0%  ← R1 → E1
+Regime 0  | 91.0% |  9.0%  ← R0 → E0
+Regime 1  |  4.0% | 96.0%  ← R1 → E1
 ```
-(R0→E0:85%, R1→E1:71%)
+(R0→E0:91%, R1→E1:96%) - RMSE優位がなくてもほぼ完璧なレジーム識別
 
-**Hamilton GNP - 少特徴量** ❌ 崩壊
+**合成 (X→Regime) (K=4)** ✅ MoE勝利 +12.8%
 ```
-真\予測   | E0   | E1    | E2
-----------|------|-------|-------
-Regime 0  | 6.0% | 55.4% | 38.6%
-Regime 1  | 0.0% | 57.1% | 42.9%  ← 両方 → E1
+真\予測   | E0    | E1    | E2    | E3
+----------|-------|-------|-------|-------
+Regime 0  | 21.0% | 13.0% | 13.0% | 53.0%  ← R0 → E3
+Regime 1  | 60.0% | 14.0% | 10.0% | 16.0%  ← R1 → E0
 ```
+エキスパートがレジームを分化 (R0→E3:53%, R1→E0:60%)
+
+**Hamilton GNP (K=4)** ❌ 崩壊
+```
+真\予測   | E0   | E1   | E2   | E3
+----------|------|------|------|-------
+Regime 0  | 3.0% | 4.0% | 5.0% | 88.0%  ← R0 → E3
+Regime 1  | 0.0% | 0.0% | 0.0% | 100.0% ← R1 → E3
+```
+全サンプルが単一エキスパートにルーティング（崩壊）
 
 #### 主要な結論
 
 | データタイプ | レジーム源 | MoE優位性 | 専門家分化 |
 |-------------|-----------|----------|-----------|
-| **合成データ** | Xから決定可能 | ✅ **+8~12%** | ✅ 成功 |
-| VIX レジーム | 観測可能（VIXがXに含まれる） | ≈ 0% | ✅ 成功 |
-| Hamilton GNP | マルコフスイッチング（潜在） | ❌ **-11~24%** | ❌ 崩壊 |
+| **合成データ** | Xから決定可能 | ✅ **+12.8%** | ✅ 成功 |
+| VIX レジーム | 観測可能（VIXがXに含まれる） | ≈ 0% | ✅ **優秀** (91%/96%) |
+| Hamilton GNP | マルコフスイッチング（潜在） | ❌ **-3.0%** | ❌ 崩壊 |
 
 **MoEが有効な条件:**
 1. **レジームが特徴量(X)から決定可能** - ゲートがレジームを分類学習できる
@@ -480,6 +492,72 @@ Regime 1  | 0.0% | 57.1% | 42.9%  ← 両方 → E1
 1. レジームが**潜在的**（マルコフスイッチング、隠れ状態）
 2. レジームが**観測されない変数**に依存（Xに含まれない）
 3. 標準GBDTが単一モデルで既にパターンを捕捉できる
+
+---
+
+### Appendix: EMA Smoothing Benchmark
+
+**EMA (Exponential Moving Average) smoothing** for responsibility weights can help stabilize training for time-series data.
+
+#### EMA ON Results (Full Hyperparameter Search, 50 Optuna trials)
+
+MoE additionally searches: `mixture_r_ema_lambda` (0.1-0.9) with `mixture_r_smoothing="ema"`
+
+| Dataset | Std RMSE | MoE RMSE (EMA) | K | λ_EMA | Diff |
+|---------|----------|----------------|---|-------|------|
+| Hamilton GNP | 1.6193 | **1.5177** | 3 | 0.64 | **+6.3%** |
+| Synthetic (X→Regime) | 1.7433 | **1.6545** | 4 | 0.14 | **+5.1%** |
+| VIX Regime | 0.0094 | 0.0094 | 2 | 0.52 | -0.1% |
+
+#### EMA vs No-EMA Comparison
+
+| Dataset | No-EMA Diff | EMA Diff | Effect |
+|---------|-------------|----------|--------|
+| Hamilton GNP | -3.0% | **+6.3%** | EMA helps significantly |
+| Synthetic (X→Regime) | **+12.8%** | +5.1% | No-EMA better |
+| VIX Regime | -0.1% | -0.1% | No difference |
+
+**Key Insights:**
+- **Hamilton GNP (latent regime)**: EMA helps MoE outperform Standard GBDT by stabilizing responsibilities over time
+- **Synthetic (X→Regime)**: No-EMA performs better; EMA may over-smooth when regime is clearly determinable from features
+- **VIX**: No significant effect either way
+
+**Recommendation:**
+- Use `mixture_r_smoothing="ema"` for time-series with **temporal regime persistence** (regimes don't switch rapidly)
+- Use `mixture_r_smoothing="none"` (default) when regimes can be **instantly determined from features**
+
+---
+
+### Appendix: EMA平滑化ベンチマーク
+
+**EMA（指数移動平均）平滑化**は、時系列データの学習を安定させるために責務の重みに適用できます。
+
+#### EMA ON結果 (完全ハイパーパラメータ探索、各50 Optunaトライアル)
+
+MoEは追加で探索: `mixture_r_ema_lambda` (0.1-0.9)、`mixture_r_smoothing="ema"`設定
+
+| データセット | Std RMSE | MoE RMSE (EMA) | K | λ_EMA | 差分 |
+|-------------|----------|----------------|---|-------|------|
+| Hamilton GNP | 1.6193 | **1.5177** | 3 | 0.64 | **+6.3%** |
+| 合成 (X→Regime) | 1.7433 | **1.6545** | 4 | 0.14 | **+5.1%** |
+| VIX レジーム | 0.0094 | 0.0094 | 2 | 0.52 | -0.1% |
+
+#### EMA vs No-EMA比較
+
+| データセット | No-EMA差分 | EMA差分 | 効果 |
+|-------------|-----------|---------|------|
+| Hamilton GNP | -3.0% | **+6.3%** | EMAが大幅に改善 |
+| 合成 (X→Regime) | **+12.8%** | +5.1% | No-EMAの方が良い |
+| VIX レジーム | -0.1% | -0.1% | 差なし |
+
+**重要な知見:**
+- **Hamilton GNP（潜在レジーム）**: EMAは時間方向での責務を安定化させ、MoEが標準GBDTを上回る
+- **合成 (X→Regime)**: No-EMAの方が性能が良い；レジームが特徴量から明確に決定できる場合、EMAは過度に平滑化する可能性
+- **VIX**: どちらでも顕著な効果なし
+
+**推奨事項:**
+- **時間的なレジーム持続性**がある時系列（レジームが急速に切り替わらない）には `mixture_r_smoothing="ema"` を使用
+- レジームが**特徴量から即座に決定可能**な場合は `mixture_r_smoothing="none"`（デフォルト）を使用
 
 ---
 
