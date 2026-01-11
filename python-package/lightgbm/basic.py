@@ -4873,7 +4873,7 @@ class Booster:
             if lazy_init_args in refit_signature:
                 default_val = refit_signature[lazy_init_args].default
                 current_val = locals().get(lazy_init_args)
-                is_default = (current_val is default_val)
+                is_default = current_val is default_val
 
                 if is_default:
                     locals()[lazy_init_args] = new_params.get(lazy_init_args, current_val)
