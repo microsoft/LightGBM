@@ -37,6 +37,7 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
 
 Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
   if (filename == nullptr || filename[0] == '\0') {
+    Log::Info("CreateBoosting: type=%s, no filename", type.c_str());
     if (type == std::string("gbdt")) {
       return new GBDT();
     } else if (type == std::string("dart")) {
@@ -53,6 +54,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
   } else {
     std::unique_ptr<Boosting> ret;
     std::string model_type = GetBoostingTypeFromModelFile(filename);
+    Log::Warning("CreateBoosting: type=%s, model_type=%s, file=%s", type.c_str(), model_type.c_str(), filename);
     if (model_type == std::string("tree")) {
       if (type == std::string("gbdt")) {
         ret.reset(new GBDT());
@@ -67,8 +69,10 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       }
       LoadFileToBoosting(ret.get(), filename);
     } else if (model_type == std::string("mixture")) {
+      Log::Warning("CreateBoosting: Creating MixtureGBDT for mixture model");
       ret.reset(new MixtureGBDT());
       LoadFileToBoosting(ret.get(), filename);
+      Log::Warning("CreateBoosting: MixtureGBDT loaded successfully");
     } else {
       Log::Fatal("Unknown model format or submodel type in model file %s", filename);
     }

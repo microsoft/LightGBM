@@ -793,6 +793,18 @@ class Booster {
 
   void LoadModelFromString(const char* model_str) {
     size_t len = std::strlen(model_str);
+    // Detect model type from the first line of the model string
+    std::string model_type;
+    const char* first_newline = std::strchr(model_str, '\n');
+    if (first_newline != nullptr) {
+      model_type = std::string(model_str, first_newline - model_str);
+    } else {
+      model_type = std::string(model_str);
+    }
+    // If it's a mixture model, recreate boosting_ as MixtureGBDT
+    if (model_type == "mixture") {
+      boosting_.reset(new MixtureGBDT());
+    }
     boosting_->LoadModelFromString(model_str, len);
   }
 
@@ -2819,7 +2831,7 @@ int LGBM_GetMaxThreads(int* out) {
 int LGBM_BoosterGetNumExperts(BoosterHandle handle, int* out_num_experts) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  auto mixture = dynamic_cast<const LightGBM::MixtureGBDT*>(ref_booster->GetBoosting());
   if (mixture != nullptr) {
     *out_num_experts = mixture->NumExperts();
   } else {
@@ -2831,7 +2843,7 @@ int LGBM_BoosterGetNumExperts(BoosterHandle handle, int* out_num_experts) {
 int LGBM_BoosterIsMixture(BoosterHandle handle, int* out_is_mixture) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  auto mixture = dynamic_cast<const LightGBM::MixtureGBDT*>(ref_booster->GetBoosting());
   *out_is_mixture = (mixture != nullptr) ? 1 : 0;
   API_END();
 }
@@ -2847,7 +2859,7 @@ int LGBM_BoosterPredictRegime(BoosterHandle handle,
                                int32_t* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  auto mixture = dynamic_cast<const LightGBM::MixtureGBDT*>(ref_booster->GetBoosting());
   if (mixture == nullptr) {
     Log::Fatal("LGBM_BoosterPredictRegime can only be used with MoE models");
   }
@@ -2919,7 +2931,7 @@ int LGBM_BoosterPredictRegimeProba(BoosterHandle handle,
                                     double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  auto mixture = dynamic_cast<const LightGBM::MixtureGBDT*>(ref_booster->GetBoosting());
   if (mixture == nullptr) {
     Log::Fatal("LGBM_BoosterPredictRegimeProba can only be used with MoE models");
   }
@@ -2991,7 +3003,7 @@ int LGBM_BoosterPredictExpertPred(BoosterHandle handle,
                                    double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  auto mixture = dynamic_cast<const LightGBM::MixtureGBDT*>(ref_booster->GetBoosting());
   if (mixture == nullptr) {
     Log::Fatal("LGBM_BoosterPredictExpertPred can only be used with MoE models");
   }

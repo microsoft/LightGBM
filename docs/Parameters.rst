@@ -1387,6 +1387,105 @@ GPU Parameters
 
    -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
 
+Mixture-of-Experts Parameters
+-----------------------------
+
+-  ``mixture_enable`` :raw-html:`<a id="mixture_enable" title="Permalink to this parameter" href="#mixture_enable">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set this to ``true`` to enable Mixture-of-Experts (MoE) mode
+
+   -  when enabled, LightGBM trains K expert GBDTs and 1 gate GBDT
+
+   -  the final prediction is a weighted combination of expert predictions
+
+-  ``mixture_num_experts`` :raw-html:`<a id="mixture_num_experts" title="Permalink to this parameter" href="#mixture_num_experts">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int, constraints: ``mixture_num_experts >= 2``
+
+   -  number of expert models in Mixture-of-Experts mode
+
+   -  each expert is a separate GBDT that specializes in different regimes
+
+-  ``mixture_r_min`` :raw-html:`<a id="mixture_r_min" title="Permalink to this parameter" href="#mixture_r_min">&#x1F517;&#xFE0E;</a>`, default = ``1e-3``, type = double, constraints: ``mixture_r_min > 0.0``
+
+   -  minimum responsibility value for each expert (prevents expert collapse)
+
+   -  responsibilities are clipped to this minimum value and renormalized
+
+-  ``mixture_gate_iters_per_round`` :raw-html:`<a id="mixture_gate_iters_per_round" title="Permalink to this parameter" href="#mixture_gate_iters_per_round">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``mixture_gate_iters_per_round >= 1``
+
+   -  number of gate training iterations per boosting round
+
+-  ``mixture_init`` :raw-html:`<a id="mixture_init" title="Permalink to this parameter" href="#mixture_init">&#x1F517;&#xFE0E;</a>`, default = ``uniform``, type = enum, options: ``uniform``, ``kmeans``, ``residual_kmeans``
+
+   -  initialization method for expert responsibilities
+
+   -  ``uniform``: all experts start with equal responsibility
+
+   -  ``kmeans``: initialize using k-means clustering on features
+
+   -  ``residual_kmeans``: initialize using k-means on residuals
+
+-  ``mixture_e_step_alpha`` :raw-html:`<a id="mixture_e_step_alpha" title="Permalink to this parameter" href="#mixture_e_step_alpha">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``mixture_e_step_alpha >= 0.0``
+
+   -  alpha parameter for E-step responsibility calculation
+
+   -  controls the balance between gate probability and expert fit
+
+   -  higher values give more weight to expert fit (likelihood)
+
+-  ``mixture_e_step_loss`` :raw-html:`<a id="mixture_e_step_loss" title="Permalink to this parameter" href="#mixture_e_step_loss">&#x1F517;&#xFE0E;</a>`, default = ``auto``, type = enum, options: ``l2``, ``l1``, ``quantile``, ``auto``
+
+   -  loss function for E-step responsibility calculation
+
+   -  ``auto``: infer from objective function, fallback to l2
+
+   -  ``l2``: squared error loss
+
+   -  ``l1``: absolute error loss
+
+   -  ``quantile``: pinball loss (for quantile regression)
+
+-  ``mixture_r_smoothing`` :raw-html:`<a id="mixture_r_smoothing" title="Permalink to this parameter" href="#mixture_r_smoothing">&#x1F517;&#xFE0E;</a>`, default = ``none``, type = enum, options: ``none``, ``ema``
+
+   -  time-series smoothing method for responsibilities
+
+   -  ``none``: no smoothing
+
+   -  ``ema``: exponential moving average (assumes row order is time order)
+
+-  ``mixture_r_ema_lambda`` :raw-html:`<a id="mixture_r_ema_lambda" title="Permalink to this parameter" href="#mixture_r_ema_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= mixture_r_ema_lambda <= 1.0``
+
+   -  EMA decay factor for responsibility smoothing
+
+   -  r[i] = (1-lambda)*r[i] + lambda*r[i-1]
+
+   -  0 means no smoothing, 1 means complete carry-forward
+
+-  ``mixture_predict_output`` :raw-html:`<a id="mixture_predict_output" title="Permalink to this parameter" href="#mixture_predict_output">&#x1F517;&#xFE0E;</a>`, default = ``value``, type = enum, options: ``value``, ``value_and_regime``, ``all``
+
+   -  output mode for mixture prediction
+
+   -  ``value``: only output predicted value (yhat)
+
+   -  ``value_and_regime``: output value and argmax regime
+
+   -  ``all``: output value, regime probabilities, and expert predictions
+
+-  ``mixture_gate_max_depth`` :raw-html:`<a id="mixture_gate_max_depth" title="Permalink to this parameter" href="#mixture_gate_max_depth">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, constraints: ``mixture_gate_max_depth > 0``
+
+   -  max depth for gate GBDT (shallower than experts for regularization)
+
+-  ``mixture_gate_num_leaves`` :raw-html:`<a id="mixture_gate_num_leaves" title="Permalink to this parameter" href="#mixture_gate_num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``8``, type = int, constraints: ``mixture_gate_num_leaves > 1``
+
+   -  number of leaves for gate GBDT
+
+-  ``mixture_gate_learning_rate`` :raw-html:`<a id="mixture_gate_learning_rate" title="Permalink to this parameter" href="#mixture_gate_learning_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, constraints: ``mixture_gate_learning_rate > 0.0``
+
+   -  learning rate for gate GBDT
+
+-  ``mixture_gate_lambda_l2`` :raw-html:`<a id="mixture_gate_lambda_l2" title="Permalink to this parameter" href="#mixture_gate_lambda_l2">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``mixture_gate_lambda_l2 >= 0.0``
+
+   -  L2 regularization for gate GBDT
+
 .. end params list
 
 Others

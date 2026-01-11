@@ -8,6 +8,7 @@
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -23,7 +24,7 @@
 
 namespace LightGBM {
 
-constexpr double kEpsilon = 1e-12;
+constexpr double kMixtureEpsilon = 1e-12;
 
 MixtureGBDT::MixtureGBDT()
     : num_experts_(4),
@@ -89,17 +90,27 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
   gate_config_->lambda_l2 = config_->mixture_gate_lambda_l2;
 
   // Initialize experts
+  // Note: We pass nullptr for objective_function because we use custom gradients
+  // (responsibility-weighted) in MStepExperts. The main objective is stored in
+  // objective_function_ and used to compute gradients on yhat.
+  Log::Debug("MixtureGBDT::Init - creating %d experts", num_experts_);
   experts_.clear();
   experts_.reserve(num_experts_);
   for (int k = 0; k < num_experts_; ++k) {
+    Log::Debug("MixtureGBDT::Init - creating expert %d", k);
     experts_.emplace_back(new GBDT());
-    experts_[k]->Init(expert_config_.get(), train_data_, objective_function_, training_metrics_);
+    Log::Debug("MixtureGBDT::Init - initializing expert %d", k);
+    experts_[k]->Init(expert_config_.get(), train_data_, nullptr, {});
+    Log::Debug("MixtureGBDT::Init - expert %d initialized", k);
   }
 
   // Initialize gate
   // Note: Gate uses pseudo-labels, so we pass nullptr for objective
+  Log::Debug("MixtureGBDT::Init - creating gate");
   gate_.reset(new GBDT());
+  Log::Debug("MixtureGBDT::Init - initializing gate");
   gate_->Init(gate_config_.get(), train_data_, nullptr, {});
+  Log::Debug("MixtureGBDT::Init - gate initialized");
 
   // Allocate buffers
   size_t nk = static_cast<size_t>(num_data_) * num_experts_;
@@ -201,16 +212,17 @@ void MixtureGBDT::EStep() {
   const double alpha = config_->mixture_e_step_alpha;
   const double r_min = config_->mixture_r_min;
 
-  std::vector<double> scores(num_experts_);
-
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(scores)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
+    // Create local scores vector for each thread
+    std::vector<double> scores(num_experts_);
+
     // Compute scores: s_ik = log(gate_proba_ik + eps) - alpha * loss(y_i, expert_pred_ik)
     for (int k = 0; k < num_experts_; ++k) {
       double gate_prob = gate_proba_[i * num_experts_ + k];
       double expert_p = expert_pred_[k * num_data_ + i];
       double loss = ComputePointwiseLoss(labels[i], expert_p);
-      scores[k] = std::log(gate_prob + kEpsilon) - alpha * loss;
+      scores[k] = std::log(gate_prob + kMixtureEpsilon) - alpha * loss;
     }
 
     // Apply softmax to get responsibilities
@@ -332,7 +344,7 @@ void MixtureGBDT::MStepGate() {
         gate_grad[idx] = static_cast<score_t>(p);
       }
       // Hessian for softmax cross-entropy: p * (1 - p)
-      gate_hess[idx] = static_cast<score_t>(std::max(p * (1.0 - p), kEpsilon));
+      gate_hess[idx] = static_cast<score_t>(std::max(p * (1.0 - p), kMixtureEpsilon));
     }
   }
 
@@ -347,6 +359,8 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
   // (custom objective is handled internally via responsibility weighting)
   (void)gradients;
   (void)hessians;
+
+  Log::Debug("MixtureGBDT::TrainOneIter - starting iteration %d", iter_);
 
   // Forward pass
   Forward();
@@ -364,6 +378,7 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
   MStepGate();
 
   ++iter_;
+  Log::Debug("MixtureGBDT::TrainOneIter - completed iteration %d", iter_);
 
   // Check if we should continue
   // For now, always continue
@@ -439,17 +454,20 @@ int MixtureGBDT::NumPredictOneRow(int start_iteration, int num_iteration,
 
 void MixtureGBDT::Predict(const double* features, double* output,
                           const PredictionEarlyStopInstance* earlyStop) const {
-  (void)earlyStop;
+  // Create a no-op early stop instance if none provided
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+  const PredictionEarlyStopInstance* early_stop_ptr = earlyStop ? earlyStop : &no_early_stop;
 
   // Get expert predictions
   std::vector<double> expert_preds(num_experts_);
   for (int k = 0; k < num_experts_; ++k) {
-    experts_[k]->Predict(features, &expert_preds[k], nullptr);
+    experts_[k]->Predict(features, &expert_preds[k], early_stop_ptr);
   }
 
   // Get gate probabilities
   std::vector<double> gate_raw(num_experts_);
-  gate_->PredictRaw(features, gate_raw.data(), nullptr);
+  gate_->PredictRaw(features, gate_raw.data(), early_stop_ptr);
 
   std::vector<double> gate_prob(num_experts_);
   Softmax(gate_raw.data(), num_experts_, gate_prob.data());
@@ -469,15 +487,18 @@ void MixtureGBDT::PredictRaw(const double* features, double* output,
 
 void MixtureGBDT::PredictByMap(const std::unordered_map<int, double>& features, double* output,
                                const PredictionEarlyStopInstance* early_stop) const {
-  (void)early_stop;
+  // Create a no-op early stop instance if none provided
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+  const PredictionEarlyStopInstance* early_stop_ptr = early_stop ? early_stop : &no_early_stop;
 
   std::vector<double> expert_preds(num_experts_);
   for (int k = 0; k < num_experts_; ++k) {
-    experts_[k]->PredictByMap(features, &expert_preds[k], nullptr);
+    experts_[k]->PredictByMap(features, &expert_preds[k], early_stop_ptr);
   }
 
   std::vector<double> gate_raw(num_experts_);
-  gate_->PredictRawByMap(features, gate_raw.data(), nullptr);
+  gate_->PredictRawByMap(features, gate_raw.data(), early_stop_ptr);
 
   std::vector<double> gate_prob(num_experts_);
   Softmax(gate_raw.data(), num_experts_, gate_prob.data());
@@ -495,8 +516,12 @@ void MixtureGBDT::PredictRawByMap(const std::unordered_map<int, double>& feature
 }
 
 void MixtureGBDT::PredictRegime(const double* features, int* output) const {
+  // Create a no-op early stop instance
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+
   std::vector<double> gate_raw(num_experts_);
-  gate_->PredictRaw(features, gate_raw.data(), nullptr);
+  gate_->PredictRaw(features, gate_raw.data(), &no_early_stop);
 
   std::vector<double> gate_prob(num_experts_);
   Softmax(gate_raw.data(), num_experts_, gate_prob.data());
@@ -514,14 +539,22 @@ void MixtureGBDT::PredictRegime(const double* features, int* output) const {
 }
 
 void MixtureGBDT::PredictRegimeProba(const double* features, double* output) const {
+  // Create a no-op early stop instance
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+
   std::vector<double> gate_raw(num_experts_);
-  gate_->PredictRaw(features, gate_raw.data(), nullptr);
+  gate_->PredictRaw(features, gate_raw.data(), &no_early_stop);
   Softmax(gate_raw.data(), num_experts_, output);
 }
 
 void MixtureGBDT::PredictExpertPred(const double* features, double* output) const {
+  // Create a no-op early stop instance
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+
   for (int k = 0; k < num_experts_; ++k) {
-    experts_[k]->Predict(features, &output[k], nullptr);
+    experts_[k]->Predict(features, &output[k], &no_early_stop);
   }
 }
 
@@ -675,11 +708,136 @@ std::string MixtureGBDT::SaveModelToString(int start_iteration, int num_iteratio
 }
 
 bool MixtureGBDT::LoadModelFromString(const char* buffer, size_t len) {
-  // TODO: Implement proper parsing
-  (void)buffer;
-  (void)len;
-  Log::Fatal("MixtureGBDT::LoadModelFromString is not fully implemented");
-  return false;
+  std::string model_str(buffer, len);
+  std::istringstream ss(model_str);
+  std::string line;
+
+  // Read header
+  if (!std::getline(ss, line) || line != "mixture") {
+    Log::Fatal("Invalid mixture model format: expected 'mixture' header");
+    return false;
+  }
+
+  // Parse mixture parameters
+  std::unordered_map<std::string, std::string> params;
+  while (std::getline(ss, line)) {
+    if (line.empty() || line[0] == '[') {
+      break;
+    }
+    size_t eq_pos = line.find('=');
+    if (eq_pos != std::string::npos) {
+      std::string key = line.substr(0, eq_pos);
+      std::string value = line.substr(eq_pos + 1);
+      params[key] = value;
+    }
+  }
+
+  // Extract parameters
+  if (params.count("mixture_num_experts")) {
+    num_experts_ = std::stoi(params["mixture_num_experts"]);
+  }
+  if (params.count("mixture_e_step_loss")) {
+    e_step_loss_type_ = params["mixture_e_step_loss"];
+  }
+
+  // Store loaded parameters for GetLoadedParam (must be valid JSON)
+  std::stringstream param_ss;
+  param_ss << "{";
+  bool first = true;
+  for (const auto& kv : params) {
+    if (!first) {
+      param_ss << ", ";
+    }
+    first = false;
+    param_ss << "\"" << kv.first << "\": ";
+    // Try to detect numeric values
+    bool is_numeric = !kv.second.empty() && (std::isdigit(kv.second[0]) || kv.second[0] == '-' || kv.second[0] == '.');
+    if (is_numeric) {
+      param_ss << kv.second;
+    } else {
+      param_ss << "\"" << kv.second << "\"";
+    }
+  }
+  param_ss << "}";
+  loaded_parameter_ = param_ss.str();
+
+  // Find sections
+  std::string gate_model_str;
+  std::vector<std::string> expert_model_strs(num_experts_);
+
+  // We need to re-parse from the section markers
+  std::string remaining = model_str.substr(ss.tellg() > 0 ? static_cast<size_t>(ss.tellg()) - line.size() - 1 : 0);
+
+  // Find [gate_model]
+  size_t gate_start = remaining.find("[gate_model]");
+  if (gate_start == std::string::npos) {
+    Log::Fatal("Invalid mixture model format: [gate_model] section not found");
+    return false;
+  }
+  gate_start += std::string("[gate_model]\n").length();
+
+  // Find first expert
+  size_t expert0_start = remaining.find("[expert_model_0]");
+  if (expert0_start == std::string::npos) {
+    Log::Fatal("Invalid mixture model format: [expert_model_0] section not found");
+    return false;
+  }
+
+  gate_model_str = remaining.substr(gate_start, expert0_start - gate_start);
+
+  // Parse expert models
+  for (int k = 0; k < num_experts_; ++k) {
+    std::string section_name = "[expert_model_" + std::to_string(k) + "]";
+    size_t section_start = remaining.find(section_name);
+    if (section_start == std::string::npos) {
+      Log::Fatal("Invalid mixture model format: %s section not found", section_name.c_str());
+      return false;
+    }
+    section_start += section_name.length() + 1;  // +1 for newline
+
+    // Find next section or end
+    size_t section_end;
+    if (k < num_experts_ - 1) {
+      std::string next_section = "[expert_model_" + std::to_string(k + 1) + "]";
+      section_end = remaining.find(next_section);
+    } else {
+      section_end = remaining.length();
+    }
+
+    expert_model_strs[k] = remaining.substr(section_start, section_end - section_start);
+  }
+
+  // Create config for loading (minimal config)
+  config_ = std::unique_ptr<Config>(new Config());
+  config_->mixture_num_experts = num_experts_;
+
+  // Initialize experts
+  experts_.clear();
+  experts_.reserve(num_experts_);
+  for (int k = 0; k < num_experts_; ++k) {
+    experts_.emplace_back(new GBDT());
+    if (!experts_[k]->LoadModelFromString(expert_model_strs[k].c_str(), expert_model_strs[k].size())) {
+      Log::Fatal("Failed to load expert model %d", k);
+      return false;
+    }
+  }
+
+  // Initialize gate
+  gate_.reset(new GBDT());
+  if (!gate_->LoadModelFromString(gate_model_str.c_str(), gate_model_str.size())) {
+    Log::Fatal("Failed to load gate model");
+    return false;
+  }
+
+  // Set feature info from first expert
+  if (!experts_.empty()) {
+    max_feature_idx_ = experts_[0]->MaxFeatureIdx();
+    feature_names_ = experts_[0]->FeatureNames();
+    label_idx_ = experts_[0]->LabelIdx();
+  }
+
+  Log::Info("MixtureGBDT: Loaded model with %d experts", num_experts_);
+  return true;
 }
 
 std::vector<double> MixtureGBDT::FeatureImportance(int num_iteration, int importance_type) const {
@@ -768,6 +926,7 @@ void MixtureGBDT::SetLeafValue(int tree_idx, int leaf_idx, double val) {
 }
 
 std::string MixtureGBDT::GetLoadedParam() const {
+  Log::Warning("MixtureGBDT::GetLoadedParam called, loaded_parameter_=%s", loaded_parameter_.c_str());
   return loaded_parameter_;
 }
 
