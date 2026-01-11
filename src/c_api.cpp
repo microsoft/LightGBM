@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+#include "boosting/mixture_gbdt.h"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -2810,6 +2811,244 @@ int LGBM_SetMaxThreads(int num_threads) {
 int LGBM_GetMaxThreads(int* out) {
   API_BEGIN();
   *out = LGBM_MAX_NUM_THREADS;
+  API_END();
+}
+
+// ---- Mixture-of-Experts (MoE) API ----
+
+int LGBM_BoosterGetNumExperts(BoosterHandle handle, int* out_num_experts) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  if (mixture != nullptr) {
+    *out_num_experts = mixture->NumExperts();
+  } else {
+    *out_num_experts = 0;
+  }
+  API_END();
+}
+
+int LGBM_BoosterIsMixture(BoosterHandle handle, int* out_is_mixture) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  *out_is_mixture = (mixture != nullptr) ? 1 : 0;
+  API_END();
+}
+
+int LGBM_BoosterPredictRegime(BoosterHandle handle,
+                               const void* data,
+                               int data_type,
+                               int32_t nrow,
+                               int32_t ncol,
+                               int is_row_major,
+                               const char* parameter,
+                               int64_t* out_len,
+                               int32_t* out_result) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  if (mixture == nullptr) {
+    Log::Fatal("LGBM_BoosterPredictRegime can only be used with MoE models");
+  }
+
+  // Get row accessor based on data type
+  std::function<std::vector<double>(int)> get_row;
+  if (data_type == C_API_DTYPE_FLOAT32) {
+    const float* data_ptr = reinterpret_cast<const float*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(tmp_ptr[i]);
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(data_ptr[static_cast<size_t>(nrow) * i + row_idx]);
+        }
+        return ret;
+      };
+    }
+  } else {
+    const double* data_ptr = reinterpret_cast<const double*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = tmp_ptr[i];
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = data_ptr[static_cast<size_t>(nrow) * i + row_idx];
+        }
+        return ret;
+      };
+    }
+  }
+
+  // Predict regime for each row
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (int32_t i = 0; i < nrow; ++i) {
+    auto row = get_row(i);
+    int regime;
+    mixture->PredictRegime(row.data(), &regime);
+    out_result[i] = regime;
+  }
+  *out_len = nrow;
+  API_END();
+}
+
+int LGBM_BoosterPredictRegimeProba(BoosterHandle handle,
+                                    const void* data,
+                                    int data_type,
+                                    int32_t nrow,
+                                    int32_t ncol,
+                                    int is_row_major,
+                                    const char* parameter,
+                                    int64_t* out_len,
+                                    double* out_result) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  if (mixture == nullptr) {
+    Log::Fatal("LGBM_BoosterPredictRegimeProba can only be used with MoE models");
+  }
+
+  int num_experts = mixture->NumExperts();
+
+  // Get row accessor based on data type
+  std::function<std::vector<double>(int)> get_row;
+  if (data_type == C_API_DTYPE_FLOAT32) {
+    const float* data_ptr = reinterpret_cast<const float*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(tmp_ptr[i]);
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(data_ptr[static_cast<size_t>(nrow) * i + row_idx]);
+        }
+        return ret;
+      };
+    }
+  } else {
+    const double* data_ptr = reinterpret_cast<const double*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = tmp_ptr[i];
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = data_ptr[static_cast<size_t>(nrow) * i + row_idx];
+        }
+        return ret;
+      };
+    }
+  }
+
+  // Predict regime probabilities for each row
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (int32_t i = 0; i < nrow; ++i) {
+    auto row = get_row(i);
+    mixture->PredictRegimeProba(row.data(), out_result + static_cast<size_t>(i) * num_experts);
+  }
+  *out_len = static_cast<int64_t>(nrow) * num_experts;
+  API_END();
+}
+
+int LGBM_BoosterPredictExpertPred(BoosterHandle handle,
+                                   const void* data,
+                                   int data_type,
+                                   int32_t nrow,
+                                   int32_t ncol,
+                                   int is_row_major,
+                                   const char* parameter,
+                                   int64_t* out_len,
+                                   double* out_result) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto mixture = dynamic_cast<MixtureGBDT*>(ref_booster->GetBoosting());
+  if (mixture == nullptr) {
+    Log::Fatal("LGBM_BoosterPredictExpertPred can only be used with MoE models");
+  }
+
+  int num_experts = mixture->NumExperts();
+
+  // Get row accessor based on data type
+  std::function<std::vector<double>(int)> get_row;
+  if (data_type == C_API_DTYPE_FLOAT32) {
+    const float* data_ptr = reinterpret_cast<const float*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(tmp_ptr[i]);
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = static_cast<double>(data_ptr[static_cast<size_t>(nrow) * i + row_idx]);
+        }
+        return ret;
+      };
+    }
+  } else {
+    const double* data_ptr = reinterpret_cast<const double*>(data);
+    if (is_row_major) {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        auto tmp_ptr = data_ptr + static_cast<size_t>(ncol) * row_idx;
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = tmp_ptr[i];
+        }
+        return ret;
+      };
+    } else {
+      get_row = [=](int row_idx) {
+        std::vector<double> ret(ncol);
+        for (int i = 0; i < ncol; ++i) {
+          ret[i] = data_ptr[static_cast<size_t>(nrow) * i + row_idx];
+        }
+        return ret;
+      };
+    }
+  }
+
+  // Predict expert predictions for each row
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (int32_t i = 0; i < nrow; ++i) {
+    auto row = get_row(i);
+    mixture->PredictExpertPred(row.data(), out_result + static_cast<size_t>(i) * num_experts);
+  }
+  *out_len = static_cast<int64_t>(nrow) * num_experts;
   API_END();
 }
 

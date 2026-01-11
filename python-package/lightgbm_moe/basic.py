@@ -4745,6 +4745,212 @@ class Booster:
             validate_features=validate_features,
         )
 
+    def is_mixture(self) -> bool:
+        """Check if this booster is a Mixture-of-Experts model.
+
+        Returns
+        -------
+        is_mixture : bool
+            True if this is a MoE model, False otherwise.
+        """
+        out = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterIsMixture(
+                self._handle,
+                ctypes.byref(out),
+            )
+        )
+        return out.value == 1
+
+    def num_experts(self) -> int:
+        """Get number of experts in a Mixture-of-Experts model.
+
+        Returns
+        -------
+        num_experts : int
+            Number of experts (0 if not a MoE model).
+        """
+        out = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumExperts(
+                self._handle,
+                ctypes.byref(out),
+            )
+        )
+        return out.value
+
+    def predict_regime(
+        self,
+        data: _LGBM_PredictDataType,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """Predict regime (argmax of gate probabilities) for MoE model.
+
+        Parameters
+        ----------
+        data : numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+            Data source for prediction.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        result : numpy array of shape (n_samples,)
+            Regime indices (int32) for each sample.
+
+        Raises
+        ------
+        LightGBMError
+            If this is not a MoE model.
+        """
+        if not self.is_mixture():
+            raise LightGBMError("predict_regime can only be used with MoE models")
+
+        # Convert data to numpy array
+        if isinstance(data, np.ndarray):
+            data_array = np.ascontiguousarray(data, dtype=np.float64)
+        elif PANDAS_INSTALLED and isinstance(data, pd_DataFrame):
+            data_array = np.ascontiguousarray(data.values, dtype=np.float64)
+        else:
+            raise TypeError(f"Unsupported data type: {type(data)}")
+
+        nrow, ncol = data_array.shape
+
+        out_len = ctypes.c_int64(0)
+        out_result = np.empty(nrow, dtype=np.int32)
+
+        _safe_call(
+            _LIB.LGBM_BoosterPredictRegime(
+                self._handle,
+                data_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                ctypes.c_int(1),  # C_API_DTYPE_FLOAT64
+                ctypes.c_int32(nrow),
+                ctypes.c_int32(ncol),
+                ctypes.c_int(1),  # is_row_major
+                ctypes.c_char_p(b""),
+                ctypes.byref(out_len),
+                out_result.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            )
+        )
+
+        return out_result
+
+    def predict_regime_proba(
+        self,
+        data: _LGBM_PredictDataType,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """Predict regime probabilities (gate output) for MoE model.
+
+        Parameters
+        ----------
+        data : numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+            Data source for prediction.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        result : numpy array of shape (n_samples, n_experts)
+            Regime probabilities for each sample.
+
+        Raises
+        ------
+        LightGBMError
+            If this is not a MoE model.
+        """
+        if not self.is_mixture():
+            raise LightGBMError("predict_regime_proba can only be used with MoE models")
+
+        num_experts = self.num_experts()
+
+        # Convert data to numpy array
+        if isinstance(data, np.ndarray):
+            data_array = np.ascontiguousarray(data, dtype=np.float64)
+        elif PANDAS_INSTALLED and isinstance(data, pd_DataFrame):
+            data_array = np.ascontiguousarray(data.values, dtype=np.float64)
+        else:
+            raise TypeError(f"Unsupported data type: {type(data)}")
+
+        nrow, ncol = data_array.shape
+
+        out_len = ctypes.c_int64(0)
+        out_result = np.empty((nrow, num_experts), dtype=np.float64)
+
+        _safe_call(
+            _LIB.LGBM_BoosterPredictRegimeProba(
+                self._handle,
+                data_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                ctypes.c_int(1),  # C_API_DTYPE_FLOAT64
+                ctypes.c_int32(nrow),
+                ctypes.c_int32(ncol),
+                ctypes.c_int(1),  # is_row_major
+                ctypes.c_char_p(b""),
+                ctypes.byref(out_len),
+                out_result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
+
+        return out_result
+
+    def predict_expert_pred(
+        self,
+        data: _LGBM_PredictDataType,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """Predict individual expert predictions for MoE model.
+
+        Parameters
+        ----------
+        data : numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+            Data source for prediction.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        result : numpy array of shape (n_samples, n_experts)
+            Predictions from each expert for each sample.
+
+        Raises
+        ------
+        LightGBMError
+            If this is not a MoE model.
+        """
+        if not self.is_mixture():
+            raise LightGBMError("predict_expert_pred can only be used with MoE models")
+
+        num_experts = self.num_experts()
+
+        # Convert data to numpy array
+        if isinstance(data, np.ndarray):
+            data_array = np.ascontiguousarray(data, dtype=np.float64)
+        elif PANDAS_INSTALLED and isinstance(data, pd_DataFrame):
+            data_array = np.ascontiguousarray(data.values, dtype=np.float64)
+        else:
+            raise TypeError(f"Unsupported data type: {type(data)}")
+
+        nrow, ncol = data_array.shape
+
+        out_len = ctypes.c_int64(0)
+        out_result = np.empty((nrow, num_experts), dtype=np.float64)
+
+        _safe_call(
+            _LIB.LGBM_BoosterPredictExpertPred(
+                self._handle,
+                data_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                ctypes.c_int(1),  # C_API_DTYPE_FLOAT64
+                ctypes.c_int32(nrow),
+                ctypes.c_int32(ncol),
+                ctypes.c_int(1),  # is_row_major
+                ctypes.c_char_p(b""),
+                ctypes.byref(out_len),
+                out_result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
+
+        return out_result
+
     def refit(
         self,
         data: _LGBM_TrainDataType,

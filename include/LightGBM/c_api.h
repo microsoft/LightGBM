@@ -37,10 +37,13 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 #define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
 
-#define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
-#define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
-#define C_API_PREDICT_LEAF_INDEX (2)  /*!< \brief Predict leaf index. */
-#define C_API_PREDICT_CONTRIB    (3)  /*!< \brief Predict feature contributions (SHAP values). */
+#define C_API_PREDICT_NORMAL        (0)  /*!< \brief Normal prediction, with transform (if needed). */
+#define C_API_PREDICT_RAW_SCORE     (1)  /*!< \brief Predict raw score. */
+#define C_API_PREDICT_LEAF_INDEX    (2)  /*!< \brief Predict leaf index. */
+#define C_API_PREDICT_CONTRIB       (3)  /*!< \brief Predict feature contributions (SHAP values). */
+#define C_API_PREDICT_REGIME        (4)  /*!< \brief Predict regime (argmax of gate probabilities) for MoE. */
+#define C_API_PREDICT_REGIME_PROBA  (5)  /*!< \brief Predict regime probabilities (gate output) for MoE. */
+#define C_API_PREDICT_EXPERT_PRED   (6)  /*!< \brief Predict individual expert predictions for MoE. */
 
 #define C_API_MATRIX_TYPE_CSR (0)  /*!< \brief CSR sparse matrix type. */
 #define C_API_MATRIX_TYPE_CSC (1)  /*!< \brief CSC sparse matrix type. */
@@ -1616,6 +1619,101 @@ LIGHTGBM_C_EXPORT int LGBM_SetMaxThreads(int num_threads);
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_GetMaxThreads(int* out);
+
+/* --- Mixture-of-Experts (MoE) API --- */
+
+/*!
+ * \brief Get the number of experts in a MoE booster.
+ * \param handle Handle of booster
+ * \param[out] out_num_experts Number of experts (0 if not a MoE model)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumExperts(BoosterHandle handle,
+                                                 int* out_num_experts);
+
+/*!
+ * \brief Check if a booster is a MoE model.
+ * \param handle Handle of booster
+ * \param[out] out_is_mixture 1 if MoE model, 0 otherwise
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterIsMixture(BoosterHandle handle,
+                                             int* out_is_mixture);
+
+/*!
+ * \brief Predict regime (argmax of gate probabilities) for MoE model.
+ * \note
+ * You should pre-allocate memory for ``out_result`` with size ``nrow``.
+ * \param handle Handle of booster
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param is_row_major 1 for row-major, 0 for column-major
+ * \param parameter Other parameters for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with regime indices (int32)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictRegime(BoosterHandle handle,
+                                                 const void* data,
+                                                 int data_type,
+                                                 int32_t nrow,
+                                                 int32_t ncol,
+                                                 int is_row_major,
+                                                 const char* parameter,
+                                                 int64_t* out_len,
+                                                 int32_t* out_result);
+
+/*!
+ * \brief Predict regime probabilities (gate output) for MoE model.
+ * \note
+ * You should pre-allocate memory for ``out_result`` with size ``nrow * num_experts``.
+ * \param handle Handle of booster
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param is_row_major 1 for row-major, 0 for column-major
+ * \param parameter Other parameters for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with regime probabilities (nrow x num_experts)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictRegimeProba(BoosterHandle handle,
+                                                      const void* data,
+                                                      int data_type,
+                                                      int32_t nrow,
+                                                      int32_t ncol,
+                                                      int is_row_major,
+                                                      const char* parameter,
+                                                      int64_t* out_len,
+                                                      double* out_result);
+
+/*!
+ * \brief Predict individual expert predictions for MoE model.
+ * \note
+ * You should pre-allocate memory for ``out_result`` with size ``nrow * num_experts``.
+ * \param handle Handle of booster
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param is_row_major 1 for row-major, 0 for column-major
+ * \param parameter Other parameters for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with expert predictions (nrow x num_experts)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictExpertPred(BoosterHandle handle,
+                                                     const void* data,
+                                                     int data_type,
+                                                     int32_t nrow,
+                                                     int32_t ncol,
+                                                     int is_row_major,
+                                                     const char* parameter,
+                                                     int64_t* out_len,
+                                                     double* out_result);
 
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
 /*! \brief Inline specifier no-op in C using standards before C99. */
