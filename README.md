@@ -154,11 +154,16 @@ Run the demo: `python examples/regime_switching_demo.py`
 
 #### Real Financial Data (Weak Regime Structure)
 
-| Task | Standard GBDT | MoE (K=2) | Result |
-|------|---------------|-----------|--------|
-| Daily Return Prediction (6 tickers) | baseline | -1.6% | Standard wins |
-| 5-day Return (S&P 500 + VIX) | baseline | -2.9% | Standard wins |
-| Volatility Prediction | R²=0.333 | R²=0.312 | Standard wins |
+**With Optuna Hyperparameter Tuning** (50 trials each, time-series CV):
+
+| Stage | Standard GBDT | MoE GBDT | Winner |
+|-------|---------------|----------|--------|
+| CV RMSE | 0.02998 | **0.02975** | MoE |
+| Test RMSE | **0.01793** | 0.01801 | Standard |
+
+The difference is minimal (-0.43%), suggesting **no significant advantage** for either method on this task.
+
+**MoE optimal params found**: K=2, α=0.67, warmup=16
 
 **Key insight**: MoE is **not universally better**. It excels when:
 - Data has clear, separable regime structure
@@ -314,11 +319,16 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 #### 実金融データ（弱いレジーム構造）
 
-| タスク | 標準GBDT | MoE (K=2) | 結果 |
-|--------|----------|-----------|------|
-| 日次リターン予測（6銘柄） | 基準 | -1.6% | 標準が勝利 |
-| 5日リターン（S&P 500 + VIX） | 基準 | -2.9% | 標準が勝利 |
-| ボラティリティ予測 | R²=0.333 | R²=0.312 | 標準が勝利 |
+**Optunaハイパラチューニング使用**（各50トライアル、時系列CV）:
+
+| 段階 | 標準GBDT | MoE GBDT | 勝者 |
+|------|----------|----------|------|
+| CV RMSE | 0.02998 | **0.02975** | MoE |
+| Test RMSE | **0.01793** | 0.01801 | 標準 |
+
+差は最小限（-0.43%）であり、このタスクでは**どちらも有意な優位性なし**。
+
+**MoE最適パラメータ**: K=2, α=0.67, warmup=16
 
 **重要な知見**: MoEは**万能ではありません**。以下の条件で有効：
 - データに明確で分離可能なレジーム構造がある
