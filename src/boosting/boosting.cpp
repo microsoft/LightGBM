@@ -9,6 +9,7 @@
 
 #include "dart.hpp"
 #include "gbdt.h"
+#include "mixture_gbdt.h"
 #include "rf.hpp"
 
 namespace LightGBM {
@@ -44,12 +45,15 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       return new GBDT();
     } else if (type == std::string("rf")) {
       return new RF();
+    } else if (type == std::string("mixture")) {
+      return new MixtureGBDT();
     } else {
       return nullptr;
     }
   } else {
     std::unique_ptr<Boosting> ret;
-    if (GetBoostingTypeFromModelFile(filename) == std::string("tree")) {
+    std::string model_type = GetBoostingTypeFromModelFile(filename);
+    if (model_type == std::string("tree")) {
       if (type == std::string("gbdt")) {
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
@@ -61,6 +65,9 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else {
         Log::Fatal("Unknown boosting type %s", type.c_str());
       }
+      LoadFileToBoosting(ret.get(), filename);
+    } else if (model_type == std::string("mixture")) {
+      ret.reset(new MixtureGBDT());
       LoadFileToBoosting(ret.get(), filename);
     } else {
       Log::Fatal("Unknown model format or submodel type in model file %s", filename);

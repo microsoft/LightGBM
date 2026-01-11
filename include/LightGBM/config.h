@@ -1140,6 +1140,92 @@ struct Config {
   #ifndef __NVCC__
   #pragma endregion
 
+  #pragma region Mixture-of-Experts Parameters
+  #endif  // __NVCC__
+
+  // desc = set this to ``true`` to enable Mixture-of-Experts (MoE) mode
+  // desc = when enabled, LightGBM trains K expert GBDTs and 1 gate GBDT
+  // desc = the final prediction is a weighted combination of expert predictions
+  bool mixture_enable = false;
+
+  // check = >=2
+  // desc = number of expert models in Mixture-of-Experts mode
+  // desc = each expert is a separate GBDT that specializes in different regimes
+  int mixture_num_experts = 4;
+
+  // check = >0.0
+  // desc = minimum responsibility value for each expert (prevents expert collapse)
+  // desc = responsibilities are clipped to this minimum value and renormalized
+  double mixture_r_min = 1e-3;
+
+  // check = >=1
+  // desc = number of gate training iterations per boosting round
+  int mixture_gate_iters_per_round = 1;
+
+  // type = enum
+  // options = uniform, kmeans, residual_kmeans
+  // desc = initialization method for expert responsibilities
+  // desc = ``uniform``: all experts start with equal responsibility
+  // desc = ``kmeans``: initialize using k-means clustering on features
+  // desc = ``residual_kmeans``: initialize using k-means on residuals
+  std::string mixture_init = "uniform";
+
+  // check = >=0.0
+  // desc = alpha parameter for E-step responsibility calculation
+  // desc = controls the balance between gate probability and expert fit
+  // desc = higher values give more weight to expert fit (likelihood)
+  double mixture_e_step_alpha = 1.0;
+
+  // type = enum
+  // options = l2, l1, quantile, auto
+  // desc = loss function for E-step responsibility calculation
+  // desc = ``auto``: infer from objective function, fallback to l2
+  // desc = ``l2``: squared error loss
+  // desc = ``l1``: absolute error loss
+  // desc = ``quantile``: pinball loss (for quantile regression)
+  std::string mixture_e_step_loss = "auto";
+
+  // type = enum
+  // options = none, ema
+  // desc = time-series smoothing method for responsibilities
+  // desc = ``none``: no smoothing
+  // desc = ``ema``: exponential moving average (assumes row order is time order)
+  std::string mixture_r_smoothing = "none";
+
+  // check = >=0.0
+  // check = <=1.0
+  // desc = EMA decay factor for responsibility smoothing
+  // desc = r[i] = (1-lambda)*r[i] + lambda*r[i-1]
+  // desc = 0 means no smoothing, 1 means complete carry-forward
+  double mixture_r_ema_lambda = 0.0;
+
+  // type = enum
+  // options = value, value_and_regime, all
+  // desc = output mode for mixture prediction
+  // desc = ``value``: only output predicted value (yhat)
+  // desc = ``value_and_regime``: output value and argmax regime
+  // desc = ``all``: output value, regime probabilities, and expert predictions
+  std::string mixture_predict_output = "value";
+
+  // desc = max depth for gate GBDT (shallower than experts for regularization)
+  // check = >0
+  int mixture_gate_max_depth = 3;
+
+  // desc = number of leaves for gate GBDT
+  // check = >1
+  int mixture_gate_num_leaves = 8;
+
+  // desc = learning rate for gate GBDT
+  // check = >0.0
+  double mixture_gate_learning_rate = 0.1;
+
+  // desc = L2 regularization for gate GBDT
+  // check = >=0.0
+  double mixture_gate_lambda_l2 = 1.0;
+
+  #ifndef __NVCC__
+  #pragma endregion
+
   #pragma endregion
   #endif  // __NVCC__
 

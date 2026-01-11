@@ -403,6 +403,7 @@ set(
       src/boosting/gbdt_model_text.cpp
       src/boosting/gbdt_prediction.cpp
       src/boosting/gbdt.cpp
+      src/boosting/mixture_gbdt.cpp
       src/boosting/prediction_early_stop.cpp
       src/boosting/sample_strategy.cpp
       src/io/bin.cpp
