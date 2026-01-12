@@ -36,7 +36,11 @@ MixtureGBDT::MixtureGBDT()
       max_feature_idx_(0),
       label_idx_(0),
       use_markov_(false),
-      num_original_features_(0) {
+      num_original_features_(0),
+      use_transition_(false),
+      use_hamilton_(false),
+      regime_stickiness_(0.0),
+      transition_prior_(0.1) {
 }
 
 MixtureGBDT::~MixtureGBDT() {
@@ -107,9 +111,15 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     Log::Debug("MixtureGBDT::Init - expert %d initialized", k);
   }
 
-  // Check if Markov mode is enabled
+  // Check smoothing modes
   use_markov_ = (config_->mixture_r_smoothing == "markov");
+  use_transition_ = (config_->mixture_r_smoothing == "transition");
+  use_hamilton_ = (config_->mixture_r_smoothing == "hamilton");
   num_original_features_ = train_data_->num_total_features();
+
+  // Initialize stickiness and transition prior
+  regime_stickiness_ = config_->mixture_regime_stickiness;
+  transition_prior_ = config_->mixture_transition_prior;
 
   // Initialize gate
   // Note: Gate uses pseudo-labels, so we pass nullptr for objective
@@ -143,11 +153,36 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
   }
 
+  // Initialize transition matrix (K x K)
+  if (use_transition_ || use_hamilton_) {
+    size_t kk = static_cast<size_t>(num_experts_) * num_experts_;
+    transition_matrix_.resize(kk);
+    transition_counts_.resize(kk);
+    // Initialize with uniform transition probabilities
+    const double uniform_trans = 1.0 / num_experts_;
+    std::fill(transition_matrix_.begin(), transition_matrix_.end(), uniform_trans);
+    std::fill(transition_counts_.begin(), transition_counts_.end(), transition_prior_);
+
+    // Also need prev_gate_proba_ for these modes
+    prev_gate_proba_.resize(nk);
+    const double uniform_prob = 1.0 / num_experts_;
+    std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
+
+    Log::Info("MixtureGBDT: Transition matrix mode enabled (prior=%.2f)", transition_prior_);
+  }
+
+  // Initialize regime duration tracking
+  if (regime_stickiness_ > 0.0) {
+    regime_duration_.resize(num_data_, 0);
+    prev_regime_.resize(num_data_, -1);
+    Log::Info("MixtureGBDT: Regime stickiness enabled (factor=%.2f)", regime_stickiness_);
+  }
+
   // Initialize responsibilities
   InitResponsibilities();
 
-  Log::Info("MixtureGBDT: Initialization complete (Markov mode: %s)",
-            use_markov_ ? "ON" : "OFF");
+  Log::Info("MixtureGBDT: Initialization complete (smoothing=%s, stickiness=%.2f)",
+            config_->mixture_r_smoothing.c_str(), regime_stickiness_);
 }
 
 void MixtureGBDT::InitResponsibilities() {
@@ -406,6 +441,202 @@ void MixtureGBDT::SmoothResponsibilities() {
   // and updates prev_gate_proba_ after Forward() in TrainOneIter()
 }
 
+void MixtureGBDT::LearnTransitionMatrix() {
+  // Learn K×K transition matrix from consecutive samples' regime assignments
+  // P(regime[t]=j | regime[t-1]=i) = count(i→j) / count(i→*)
+
+  // Reset counts with prior (Dirichlet smoothing)
+  const size_t kk = static_cast<size_t>(num_experts_) * num_experts_;
+  std::fill(transition_counts_.begin(), transition_counts_.end(), transition_prior_);
+
+  // Count transitions based on responsibilities
+  // Use soft transitions: count_ij += r[t-1, i] * r[t, j]
+  for (data_size_t t = 1; t < num_data_; ++t) {
+    for (int i = 0; i < num_experts_; ++i) {
+      double r_prev_i = responsibilities_[(t - 1) * num_experts_ + i];
+      for (int j = 0; j < num_experts_; ++j) {
+        double r_curr_j = responsibilities_[t * num_experts_ + j];
+        transition_counts_[i * num_experts_ + j] += r_prev_i * r_curr_j;
+      }
+    }
+  }
+
+  // Normalize to get probabilities: P(j|i) = count_ij / sum_j(count_ij)
+  for (int i = 0; i < num_experts_; ++i) {
+    double row_sum = 0.0;
+    for (int j = 0; j < num_experts_; ++j) {
+      row_sum += transition_counts_[i * num_experts_ + j];
+    }
+    for (int j = 0; j < num_experts_; ++j) {
+      transition_matrix_[i * num_experts_ + j] =
+          transition_counts_[i * num_experts_ + j] / (row_sum + kMixtureEpsilon);
+    }
+  }
+}
+
+void MixtureGBDT::ApplyTransitionMatrix() {
+  // Apply transition matrix to gate probabilities
+  // new_proba[t] = transition_matrix^T @ prev_proba[t-1] (element-wise blend)
+  // Actually: proba[t, j] = sum_i( P(j|i) * prev_proba[t-1, i] )
+
+  const double lambda = config_->mixture_smoothing_lambda;
+  if (lambda <= 0.0) {
+    return;
+  }
+
+  for (data_size_t t = 1; t < num_data_; ++t) {
+    // Compute transition-based proba
+    std::vector<double> trans_proba(num_experts_, 0.0);
+    for (int j = 0; j < num_experts_; ++j) {
+      for (int i = 0; i < num_experts_; ++i) {
+        trans_proba[j] += transition_matrix_[i * num_experts_ + j] *
+                         prev_gate_proba_[(t - 1) * num_experts_ + i];
+      }
+    }
+
+    // Blend with current gate probability
+    double sum = 0.0;
+    for (int k = 0; k < num_experts_; ++k) {
+      size_t idx = t * num_experts_ + k;
+      gate_proba_[idx] = (1.0 - lambda) * gate_proba_[idx] + lambda * trans_proba[k];
+      sum += gate_proba_[idx];
+    }
+
+    // Renormalize
+    for (int k = 0; k < num_experts_; ++k) {
+      gate_proba_[t * num_experts_ + k] /= (sum + kMixtureEpsilon);
+    }
+  }
+
+  // Update prev_gate_proba_ for next iteration
+  std::copy(gate_proba_.begin(), gate_proba_.end(), prev_gate_proba_.begin());
+}
+
+void MixtureGBDT::ApplyHamiltonFilter() {
+  // Hamilton filter: Bayesian update combining likelihood and transition
+  // posterior[t] ∝ likelihood[t] * (transition_matrix^T @ posterior[t-1])
+
+  const label_t* labels = train_data_->metadata().label();
+  const double alpha = config_->mixture_e_step_alpha;
+  const double lambda = config_->mixture_smoothing_lambda;
+
+  if (lambda <= 0.0) {
+    return;
+  }
+
+  for (data_size_t t = 1; t < num_data_; ++t) {
+    // Step 1: Compute prior from transition matrix
+    std::vector<double> prior(num_experts_, 0.0);
+    for (int j = 0; j < num_experts_; ++j) {
+      for (int i = 0; i < num_experts_; ++i) {
+        prior[j] += transition_matrix_[i * num_experts_ + j] *
+                   prev_gate_proba_[(t - 1) * num_experts_ + i];
+      }
+    }
+
+    // Step 2: Compute likelihood from expert predictions
+    std::vector<double> likelihood(num_experts_);
+    double max_ll = -std::numeric_limits<double>::infinity();
+    for (int k = 0; k < num_experts_; ++k) {
+      double expert_p = expert_pred_[k * num_data_ + t];
+      double loss = ComputePointwiseLoss(labels[t], expert_p);
+      likelihood[k] = -alpha * loss;  // log-likelihood (unnormalized)
+      if (likelihood[k] > max_ll) max_ll = likelihood[k];
+    }
+
+    // Convert to actual likelihood with numerical stability
+    for (int k = 0; k < num_experts_; ++k) {
+      likelihood[k] = std::exp(likelihood[k] - max_ll);
+    }
+
+    // Step 3: Compute posterior = prior * likelihood (unnormalized)
+    std::vector<double> posterior(num_experts_);
+    double sum = 0.0;
+    for (int k = 0; k < num_experts_; ++k) {
+      posterior[k] = prior[k] * likelihood[k];
+      sum += posterior[k];
+    }
+
+    // Normalize posterior
+    for (int k = 0; k < num_experts_; ++k) {
+      posterior[k] /= (sum + kMixtureEpsilon);
+    }
+
+    // Step 4: Blend with current gate probability
+    sum = 0.0;
+    for (int k = 0; k < num_experts_; ++k) {
+      size_t idx = t * num_experts_ + k;
+      gate_proba_[idx] = (1.0 - lambda) * gate_proba_[idx] + lambda * posterior[k];
+      sum += gate_proba_[idx];
+    }
+
+    // Renormalize
+    for (int k = 0; k < num_experts_; ++k) {
+      gate_proba_[t * num_experts_ + k] /= (sum + kMixtureEpsilon);
+    }
+  }
+
+  // Update prev_gate_proba_ for next iteration
+  std::copy(gate_proba_.begin(), gate_proba_.end(), prev_gate_proba_.begin());
+}
+
+void MixtureGBDT::UpdateRegimeDurations() {
+  // Update how long each sample has been in its current regime
+  // This tracks consecutive assignments to the same regime
+
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    // Find current regime (argmax of responsibilities)
+    int curr_regime = 0;
+    double max_r = responsibilities_[i * num_experts_];
+    for (int k = 1; k < num_experts_; ++k) {
+      double r = responsibilities_[i * num_experts_ + k];
+      if (r > max_r) {
+        max_r = r;
+        curr_regime = k;
+      }
+    }
+
+    // Update duration
+    if (prev_regime_[i] == curr_regime) {
+      regime_duration_[i]++;
+    } else {
+      regime_duration_[i] = 1;
+      prev_regime_[i] = curr_regime;
+    }
+  }
+}
+
+void MixtureGBDT::ApplyRegimeStickiness() {
+  // Apply duration-based bonus to responsibilities
+  // Bonus for staying in current regime: stickiness * log(1 + duration)
+
+  if (regime_stickiness_ <= 0.0) {
+    return;
+  }
+
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    int curr_regime = prev_regime_[i];
+    if (curr_regime < 0) continue;  // Not yet initialized
+
+    // Compute bonus
+    double bonus = regime_stickiness_ * std::log(1.0 + regime_duration_[i]);
+
+    // Apply bonus to current regime's responsibility (in log space, then softmax)
+    std::vector<double> scores(num_experts_);
+    for (int k = 0; k < num_experts_; ++k) {
+      scores[k] = std::log(responsibilities_[i * num_experts_ + k] + kMixtureEpsilon);
+      if (k == curr_regime) {
+        scores[k] += bonus;
+      }
+    }
+
+    // Re-apply softmax
+    Softmax(scores.data(), num_experts_, responsibilities_.data() + i * num_experts_);
+  }
+}
+
 void MixtureGBDT::CreateGateDataset() {
   // For Markov mode, gate training uses original dataset but
   // gate probabilities are blended with previous probabilities
@@ -526,6 +757,13 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
   // Forward pass - compute expert predictions and gate probabilities
   Forward();
 
+  // Apply transition/Hamilton smoothing to gate probabilities after Forward
+  if (use_transition_) {
+    ApplyTransitionMatrix();
+  } else if (use_hamilton_) {
+    ApplyHamiltonFilter();
+  }
+
   // E-step: update responsibilities
   // Skip E-step for first few iterations to allow experts to differentiate
   // with the initial (non-uniform) responsibilities.
@@ -534,8 +772,24 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
   const int warmup_iters = config_->mixture_warmup_iters;
   if (iter_ >= warmup_iters) {
     EStep();
+
+    // Apply regime stickiness (duration-based bonus) if enabled
+    if (regime_stickiness_ > 0.0) {
+      ApplyRegimeStickiness();
+    }
+
     // Apply time-series smoothing if enabled
     SmoothResponsibilities();
+
+    // Learn transition matrix from updated responsibilities (for next iteration)
+    if (use_transition_ || use_hamilton_) {
+      LearnTransitionMatrix();
+    }
+
+    // Update regime durations for stickiness tracking
+    if (regime_stickiness_ > 0.0) {
+      UpdateRegimeDurations();
+    }
   }
 
   // M-step: update experts
