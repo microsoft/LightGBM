@@ -268,6 +268,13 @@ class MixtureGBDT : public GBDTBase {
 
   /*! \brief Whether momentum mode is enabled */
   bool use_momentum_;
+
+  // Loss-free load balancing members
+  /*! \brief Expert bias for load balancing (size K) */
+  std::vector<double> expert_bias_;
+
+  /*! \brief Update expert bias based on recent load */
+  void UpdateExpertBias();
 };
 
 }  // namespace LightGBM

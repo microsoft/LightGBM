@@ -142,6 +142,9 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
   }
 
+  // Initialize expert bias for loss-free load balancing
+  expert_bias_.resize(num_experts_, 0.0);
+
   // Initialize responsibilities
   InitResponsibilities();
 
@@ -282,15 +285,16 @@ void MixtureGBDT::Forward() {
   int64_t out_len;
   gate_->GetPredictAt(0, gate_raw.data(), &out_len);
 
-  // Apply softmax per sample
+  // Apply softmax per sample with expert bias for load balancing
   // gate_raw is in class-major order: gate_raw[k * num_data_ + i] = score for sample i, class k
   // gate_proba_ is in sample-major order: gate_proba_[i * num_experts_ + k]
+  // expert_bias_ is added to encourage balanced expert usage (Loss-Free Balancing)
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
-    // Copy to sample-major order for this sample
+    // Copy to sample-major order for this sample, adding expert bias
     std::vector<double> scores(num_experts_);
     for (int k = 0; k < num_experts_; ++k) {
-      scores[k] = gate_raw[k * num_data_ + i];  // class-major indexing
+      scores[k] = gate_raw[k * num_data_ + i] + expert_bias_[k];  // Add bias for load balancing
     }
     Softmax(scores.data(), num_experts_,
             gate_proba_.data() + i * num_experts_);
@@ -439,6 +443,47 @@ void MixtureGBDT::SmoothResponsibilities() {
   }
 }
 
+void MixtureGBDT::UpdateExpertBias() {
+  // Loss-Free Load Balancing: adjust expert bias based on actual vs target load
+  // Reference: "Auxiliary-Loss-Free Load Balancing Strategy for Mixture-of-Experts" (2024)
+  //
+  // Algorithm:
+  // 1. Compute actual load for each expert (sum of responsibilities)
+  // 2. Compare with target load (uniform: N/K per expert)
+  // 3. Increase bias for underloaded experts, decrease for overloaded
+
+  const double target_load = 1.0 / num_experts_;  // Each expert should get 1/K of total load
+  const double bias_update_rate = 0.1;  // η: how quickly to adjust bias
+
+  // Compute actual load per expert (mean responsibility)
+  std::vector<double> actual_load(num_experts_, 0.0);
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    for (int k = 0; k < num_experts_; ++k) {
+      actual_load[k] += responsibilities_[i * num_experts_ + k];
+    }
+  }
+  for (int k = 0; k < num_experts_; ++k) {
+    actual_load[k] /= num_data_;  // Normalize to [0, 1]
+  }
+
+  // Update bias: increase for underloaded experts, decrease for overloaded
+  for (int k = 0; k < num_experts_; ++k) {
+    double load_diff = target_load - actual_load[k];
+    expert_bias_[k] += bias_update_rate * load_diff;
+  }
+
+  // Log for debugging (only occasionally to avoid spam)
+  if (iter_ % 10 == 0) {
+    std::string load_str = "";
+    for (int k = 0; k < num_experts_; ++k) {
+      load_str += std::to_string(actual_load[k]).substr(0, 5) + " ";
+    }
+    Log::Debug("MixtureGBDT: Expert loads = [%s], bias = [%.3f, %.3f, ...]",
+               load_str.c_str(), expert_bias_[0],
+               num_experts_ > 1 ? expert_bias_[1] : 0.0);
+  }
+}
+
 void MixtureGBDT::MStepExperts() {
   const label_t* labels = train_data_->metadata().label();
 
@@ -555,6 +600,9 @@ bool MixtureGBDT::TrainOneIter(const score_t* gradients, const score_t* hessians
 
     // Apply time-series smoothing if enabled
     SmoothResponsibilities();
+
+    // Update expert bias for loss-free load balancing
+    UpdateExpertBias();
   }
 
   // M-step: update experts
@@ -878,6 +926,9 @@ void MixtureGBDT::ResetTrainingData(const Dataset* train_data,
   yhat_.resize(num_data_);
   gradients_.resize(num_data_);
   hessians_.resize(num_data_);
+
+  // Reset expert bias for loss-free load balancing
+  std::fill(expert_bias_.begin(), expert_bias_.end(), 0.0);
 
   InitResponsibilities();
 }
