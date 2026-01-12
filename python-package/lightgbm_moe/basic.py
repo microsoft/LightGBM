@@ -4951,6 +4951,119 @@ class Booster:
 
         return out_result
 
+    def predict_regime_proba_markov(
+        self,
+        data: _LGBM_PredictDataType,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """Predict regime probabilities with Markov smoothing for MoE model.
+
+        For time-series data, this method processes samples sequentially and
+        uses the previous sample's gate probabilities to influence the current
+        prediction, providing Markov-style regime switching.
+
+        Parameters
+        ----------
+        data : numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+            Data source for prediction. Should be sorted in time order.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        result : numpy array of shape (n_samples, n_experts)
+            Regime probabilities for each sample, with Markov smoothing applied.
+
+        Raises
+        ------
+        LightGBMError
+            If this is not a MoE model.
+
+        Notes
+        -----
+        The Markov smoothing uses the mixture_r_ema_lambda parameter to blend
+        the current gate probabilities with the previous sample's probabilities:
+        proba[t] = (1-lambda) * gate_proba[t] + lambda * proba[t-1]
+        """
+        if not self.is_mixture():
+            raise LightGBMError("predict_regime_proba_markov can only be used with MoE models")
+
+        num_experts = self.num_experts()
+
+        # Convert data to numpy array
+        if isinstance(data, np.ndarray):
+            data_array = np.ascontiguousarray(data, dtype=np.float64)
+        elif PANDAS_INSTALLED and isinstance(data, pd_DataFrame):
+            data_array = np.ascontiguousarray(data.values, dtype=np.float64)
+        else:
+            raise TypeError(f"Unsupported data type: {type(data)}")
+
+        nrow, ncol = data_array.shape
+
+        # Get base regime probabilities
+        base_proba = self.predict_regime_proba(data)
+
+        # Get lambda from model params
+        params = self.params
+        lambda_val = float(params.get('mixture_r_ema_lambda', 0.0))
+        smoothing = params.get('mixture_r_smoothing', 'none')
+
+        # Apply Markov smoothing if in markov mode
+        if smoothing == 'markov' and lambda_val > 0.0:
+            out_result = np.empty((nrow, num_experts), dtype=np.float64)
+            # First sample: use base probabilities
+            out_result[0] = base_proba[0]
+            # Subsequent samples: blend with previous
+            for i in range(1, nrow):
+                blended = (1.0 - lambda_val) * base_proba[i] + lambda_val * out_result[i - 1]
+                blended /= blended.sum()  # Renormalize
+                out_result[i] = blended
+            return out_result
+        else:
+            return base_proba
+
+    def predict_markov(
+        self,
+        data: _LGBM_PredictDataType,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """Make predictions with Markov-style regime switching for MoE model.
+
+        For time-series data, this method processes samples sequentially and
+        uses the previous sample's gate probabilities to influence the current
+        prediction, providing Markov-style regime switching.
+
+        Parameters
+        ----------
+        data : numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+            Data source for prediction. Should be sorted in time order.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        result : numpy array of shape (n_samples,)
+            Predictions with Markov-smoothed regime switching.
+
+        Raises
+        ------
+        LightGBMError
+            If this is not a MoE model.
+        """
+        if not self.is_mixture():
+            raise LightGBMError("predict_markov can only be used with MoE models")
+
+        # Get expert predictions
+        expert_preds = self.predict_expert_pred(data)  # (nrow, n_experts)
+
+        # Get Markov-smoothed regime probabilities
+        regime_proba = self.predict_regime_proba_markov(data)  # (nrow, n_experts)
+
+        # Weighted sum: prediction = sum_k(proba[k] * expert[k])
+        result = (regime_proba * expert_preds).sum(axis=1)
+
+        return result
+
     def refit(
         self,
         data: _LGBM_TrainDataType,

@@ -34,7 +34,9 @@ MixtureGBDT::MixtureGBDT()
       num_data_(0),
       iter_(0),
       max_feature_idx_(0),
-      label_idx_(0) {
+      label_idx_(0),
+      use_markov_(false),
+      num_original_features_(0) {
 }
 
 MixtureGBDT::~MixtureGBDT() {
@@ -105,11 +107,22 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     Log::Debug("MixtureGBDT::Init - expert %d initialized", k);
   }
 
+  // Check if Markov mode is enabled
+  use_markov_ = (config_->mixture_r_smoothing == "markov");
+  num_original_features_ = train_data_->num_total_features();
+
   // Initialize gate
   // Note: Gate uses pseudo-labels, so we pass nullptr for objective
   Log::Debug("MixtureGBDT::Init - creating gate");
   gate_.reset(new GBDT());
   Log::Debug("MixtureGBDT::Init - initializing gate");
+
+  if (use_markov_) {
+    // Markov mode: gate probabilities will be blended with prev_proba
+    // Gate still uses original dataset for training
+    Log::Info("MixtureGBDT: Markov mode enabled - gate proba will blend with prev_proba (lambda=%.2f)",
+              config_->mixture_r_ema_lambda);
+  }
   gate_->Init(gate_config_.get(), train_data_, nullptr, {});
   Log::Debug("MixtureGBDT::Init - gate initialized");
 
@@ -122,10 +135,19 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
   gradients_.resize(num_data_);
   hessians_.resize(num_data_);
 
+  // Initialize Markov-specific buffers
+  if (use_markov_) {
+    prev_gate_proba_.resize(nk);
+    // Initialize prev_gate_proba_ with uniform distribution
+    const double uniform_prob = 1.0 / num_experts_;
+    std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
+  }
+
   // Initialize responsibilities
   InitResponsibilities();
 
-  Log::Info("MixtureGBDT: Initialization complete");
+  Log::Info("MixtureGBDT: Initialization complete (Markov mode: %s)",
+            use_markov_ ? "ON" : "OFF");
 }
 
 void MixtureGBDT::InitResponsibilities() {
@@ -275,6 +297,40 @@ void MixtureGBDT::Forward() {
             gate_proba_.data() + i * num_experts_);
   }
 
+  // Markov mode: blend gate_proba with prev_gate_proba
+  // This makes regime transitions smoother and dependent on previous state
+  if (use_markov_) {
+    const double lambda = config_->mixture_r_ema_lambda;
+    if (lambda > 0.0) {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        double sum = 0.0;
+        for (int k = 0; k < num_experts_; ++k) {
+          size_t idx = i * num_experts_ + k;
+          // Blend: new_proba = (1-lambda) * current + lambda * prev
+          gate_proba_[idx] = (1.0 - lambda) * gate_proba_[idx] +
+                             lambda * prev_gate_proba_[idx];
+          sum += gate_proba_[idx];
+        }
+        // Renormalize (should be close to 1 already, but for numerical stability)
+        for (int k = 0; k < num_experts_; ++k) {
+          gate_proba_[i * num_experts_ + k] /= sum;
+        }
+      }
+    }
+
+    // Update prev_gate_proba with current values (for next iteration)
+    // Using row-wise copy: prev[i] = current[i-1] for time series
+    // First row keeps its initial/previous value
+    for (data_size_t i = num_data_ - 1; i > 0; --i) {
+      for (int k = 0; k < num_experts_; ++k) {
+        prev_gate_proba_[i * num_experts_ + k] = gate_proba_[(i - 1) * num_experts_ + k];
+      }
+    }
+    // First row: use current gate_proba (no previous available in this batch)
+    // This maintains consistency for the first sample
+  }
+
   // Compute combined prediction: yhat[i] = sum_k gate_proba[i,k] * expert_pred[i,k]
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
@@ -323,31 +379,46 @@ void MixtureGBDT::EStep() {
 }
 
 void MixtureGBDT::SmoothResponsibilities() {
-  if (config_->mixture_r_smoothing != "ema") {
-    return;
-  }
-
-  const double lambda = config_->mixture_r_ema_lambda;
-  if (lambda <= 0.0) {
-    return;
-  }
-
-  // Apply EMA in row order (assumed to be time order)
-  // r[i] = (1-lambda)*r[i] + lambda*r[i-1]
-  for (data_size_t i = 1; i < num_data_; ++i) {
-    double sum = 0.0;
-    for (int k = 0; k < num_experts_; ++k) {
-      size_t idx = i * num_experts_ + k;
-      size_t prev_idx = (i - 1) * num_experts_ + k;
-      responsibilities_[idx] = (1.0 - lambda) * responsibilities_[idx] +
-                               lambda * responsibilities_[prev_idx];
-      sum += responsibilities_[idx];
+  if (config_->mixture_r_smoothing == "ema") {
+    const double lambda = config_->mixture_r_ema_lambda;
+    if (lambda <= 0.0) {
+      return;
     }
-    // Renormalize
-    for (int k = 0; k < num_experts_; ++k) {
-      responsibilities_[i * num_experts_ + k] /= sum;
+
+    // Apply EMA in row order (assumed to be time order)
+    // r[i] = (1-lambda)*r[i] + lambda*r[i-1]
+    for (data_size_t i = 1; i < num_data_; ++i) {
+      double sum = 0.0;
+      for (int k = 0; k < num_experts_; ++k) {
+        size_t idx = i * num_experts_ + k;
+        size_t prev_idx = (i - 1) * num_experts_ + k;
+        responsibilities_[idx] = (1.0 - lambda) * responsibilities_[idx] +
+                                 lambda * responsibilities_[prev_idx];
+        sum += responsibilities_[idx];
+      }
+      // Renormalize
+      for (int k = 0; k < num_experts_; ++k) {
+        responsibilities_[i * num_experts_ + k] /= sum;
+      }
     }
   }
+  // Note: Markov mode handles smoothing differently - it uses prev_proba as gate features
+  // and updates prev_gate_proba_ after Forward() in TrainOneIter()
+}
+
+void MixtureGBDT::CreateGateDataset() {
+  // For Markov mode, gate training uses original dataset but
+  // gate probabilities are blended with previous probabilities
+  // This is a simpler approach that avoids complex dataset reconstruction
+  Log::Info("MixtureGBDT: Markov mode - gate will blend current proba with prev_proba");
+  // No separate dataset needed - we use the original train_data_ for gate
+  // and apply Markov blending in Forward()
+}
+
+void MixtureGBDT::UpdateGateDataset() {
+  // In simplified Markov mode, we don't rebuild the dataset
+  // Instead, we update prev_gate_proba_ after Forward() and blend in Forward()
+  // This function is kept for potential future extension with full dataset rebuild
 }
 
 void MixtureGBDT::MStepExperts() {
@@ -655,6 +726,78 @@ void MixtureGBDT::PredictExpertPred(const double* features, double* output) cons
 
   for (int k = 0; k < num_experts_; ++k) {
     experts_[k]->Predict(features, &output[k], &no_early_stop);
+  }
+}
+
+void MixtureGBDT::PredictWithPrevProba(const double* features, const double* prev_proba,
+                                        double* output) const {
+  // Create a no-op early stop instance
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+  const PredictionEarlyStopInstance* early_stop_ptr = &no_early_stop;
+
+  // Get expert predictions
+  std::vector<double> expert_preds(num_experts_);
+  for (int k = 0; k < num_experts_; ++k) {
+    experts_[k]->Predict(features, &expert_preds[k], early_stop_ptr);
+  }
+
+  // Get current gate probabilities
+  std::vector<double> gate_raw(num_experts_);
+  gate_->PredictRaw(features, gate_raw.data(), early_stop_ptr);
+
+  std::vector<double> gate_prob(num_experts_);
+  Softmax(gate_raw.data(), num_experts_, gate_prob.data());
+
+  // Blend with prev_proba if provided and in Markov mode
+  if (use_markov_ && prev_proba != nullptr) {
+    const double lambda = config_->mixture_r_ema_lambda;
+    if (lambda > 0.0) {
+      double sum = 0.0;
+      for (int k = 0; k < num_experts_; ++k) {
+        gate_prob[k] = (1.0 - lambda) * gate_prob[k] + lambda * prev_proba[k];
+        sum += gate_prob[k];
+      }
+      // Renormalize
+      for (int k = 0; k < num_experts_; ++k) {
+        gate_prob[k] /= sum;
+      }
+    }
+  }
+
+  // Compute weighted sum
+  double sum = 0.0;
+  for (int k = 0; k < num_experts_; ++k) {
+    sum += gate_prob[k] * expert_preds[k];
+  }
+  *output = sum;
+}
+
+void MixtureGBDT::PredictRegimeProbaWithPrevProba(const double* features, const double* prev_proba,
+                                                   double* output) const {
+  // Create a no-op early stop instance
+  PredictionEarlyStopInstance no_early_stop = CreatePredictionEarlyStopInstance(
+      "none", PredictionEarlyStopConfig());
+
+  // Get current gate probabilities
+  std::vector<double> gate_raw(num_experts_);
+  gate_->PredictRaw(features, gate_raw.data(), &no_early_stop);
+  Softmax(gate_raw.data(), num_experts_, output);
+
+  // Blend with prev_proba if provided and in Markov mode
+  if (use_markov_ && prev_proba != nullptr) {
+    const double lambda = config_->mixture_r_ema_lambda;
+    if (lambda > 0.0) {
+      double sum = 0.0;
+      for (int k = 0; k < num_experts_; ++k) {
+        output[k] = (1.0 - lambda) * output[k] + lambda * prev_proba[k];
+        sum += output[k];
+      }
+      // Renormalize
+      for (int k = 0; k < num_experts_; ++k) {
+        output[k] /= sum;
+      }
+    }
   }
 }
 

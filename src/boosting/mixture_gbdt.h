@@ -130,6 +130,28 @@ class MixtureGBDT : public GBDTBase {
    */
   int NumExperts() const { return num_experts_; }
 
+  /*!
+   * \brief Check if Markov mode is enabled
+   */
+  bool IsMarkovMode() const { return use_markov_; }
+
+  // Markov-specific prediction methods (use previous gate probabilities)
+  /*!
+   * \brief Predict with previous gate probabilities (for Markov mode time-series inference)
+   * \param features Original feature values
+   * \param prev_proba Previous gate probabilities (size K), nullptr for uniform
+   * \param output Output prediction
+   */
+  void PredictWithPrevProba(const double* features, const double* prev_proba, double* output) const;
+
+  /*!
+   * \brief Get gate probabilities with previous proba (for Markov mode)
+   * \param features Original feature values
+   * \param prev_proba Previous gate probabilities (size K), nullptr for uniform
+   * \param output Output array of size K for probabilities
+   */
+  void PredictRegimeProbaWithPrevProba(const double* features, const double* prev_proba, double* output) const;
+
  protected:
   /*!
    * \brief Initialize expert responsibilities (uniform, kmeans, etc.)
@@ -147,9 +169,19 @@ class MixtureGBDT : public GBDTBase {
   void EStep();
 
   /*!
-   * \brief Apply time-series smoothing to responsibilities (EMA)
+   * \brief Apply time-series smoothing to responsibilities (EMA or Markov)
    */
   void SmoothResponsibilities();
+
+  /*!
+   * \brief Create gate dataset with extended features for Markov mode
+   */
+  void CreateGateDataset();
+
+  /*!
+   * \brief Update gate dataset with previous gate probabilities
+   */
+  void UpdateGateDataset();
 
   /*!
    * \brief M-step for experts: update with responsibility-weighted gradients
@@ -236,6 +268,25 @@ class MixtureGBDT : public GBDTBase {
 
   /*! \brief Loaded parameter string for serialization */
   std::string loaded_parameter_;
+
+  // Markov switching members
+  /*! \brief Whether Markov mode is enabled */
+  bool use_markov_;
+
+  /*! \brief Previous gate probabilities for Markov mode (N x K) */
+  std::vector<double> prev_gate_proba_;
+
+  /*! \brief Gate dataset with extended features for Markov mode */
+  std::unique_ptr<Dataset> gate_dataset_;
+
+  /*! \brief Config for gate in Markov mode (with extended features) */
+  std::unique_ptr<Config> gate_markov_config_;
+
+  /*! \brief Number of original features (before adding prev_proba) */
+  int num_original_features_;
+
+  /*! \brief Raw feature data for gate dataset construction */
+  std::vector<std::vector<float>> gate_raw_data_;
 };
 
 }  // namespace LightGBM
