@@ -155,6 +155,7 @@ def create_objective(X, y, smoothing_mode):
             'mixture_num_experts': trial.suggest_int('mixture_num_experts', 2, 4),
             'mixture_e_step_alpha': trial.suggest_float('mixture_e_step_alpha', 0.1, 2.0),
             'mixture_warmup_iters': trial.suggest_int('mixture_warmup_iters', 5, 30),
+            'mixture_balance_factor': trial.suggest_int('mixture_balance_factor', 2, 10),
 
             # Smoothing parameters
             'mixture_r_smoothing': smoothing_mode,
@@ -253,25 +254,50 @@ def run_benchmark(dataset_name, X, y, n_trials=50):
     return results
 
 
+def compute_regime_confusion(X, y, regime_true, params):
+    """Train model and compute regime confusion matrix."""
+    train_data = lgb.Dataset(X, label=y)
+    model = lgb.train(params, train_data, num_boost_round=100)
+
+    # Get predicted regime (argmax of gate probabilities)
+    regime_pred = model.predict_regime(X)
+
+    K = params.get('mixture_num_experts', 4)
+    n_regimes = len(np.unique(regime_true))
+
+    # Confusion matrix: rows = true regime, cols = predicted expert
+    confusion = np.zeros((n_regimes, K))
+    for r in range(n_regimes):
+        mask = regime_true == r
+        for k in range(K):
+            confusion[r, k] = (regime_pred[mask] == k).mean() * 100
+
+    return confusion, K
+
+
 def main():
     print("="*60)
     print("EMA vs Markov Smoothing Benchmark")
-    print("Full Optuna Hyperparameter Optimization (50 trials)")
+    print("Full Optuna Hyperparameter Optimization (100 trials)")
     print("="*60)
 
-    n_trials = 50
+    n_trials = 100
     all_results = {}
+    all_data = {}  # Store data for regime confusion
 
     # Dataset 1: Synthetic (X → Regime)
-    X, y, _ = generate_synthetic_data(n_samples=2000)
+    X, y, regime = generate_synthetic_data(n_samples=2000)
+    all_data['Synthetic (X→Regime)'] = (X, y, regime)
     all_results['Synthetic (X→Regime)'] = run_benchmark('Synthetic (X→Regime)', X, y, n_trials)
 
     # Dataset 2: Hamilton GNP-like
-    X, y, _ = generate_hamilton_gnp_data(n_samples=500)
+    X, y, regime = generate_hamilton_gnp_data(n_samples=500)
+    all_data['Hamilton GNP-like'] = (X, y, regime)
     all_results['Hamilton GNP-like'] = run_benchmark('Hamilton GNP-like', X, y, n_trials)
 
     # Dataset 3: VIX-like
-    X, y, _ = generate_vix_data(n_samples=1000)
+    X, y, regime = generate_vix_data(n_samples=1000)
+    all_data['VIX Volatility'] = (X, y, regime)
     all_results['VIX Volatility'] = run_benchmark('VIX Volatility', X, y, n_trials)
 
     # Summary table
@@ -296,26 +322,95 @@ def main():
 
         print(f"{dataset:<25} {std_str:>12} {none_str:>12} {ema_str:>12} {markov_str:>12}")
 
-    # EMA vs Markov comparison
+    # Standard vs Best MoE comparison
     print("\n" + "="*80)
-    print("EMA vs Markov Comparison")
+    print("Standard GBDT vs Best MoE (with True Regime K)")
+    print("="*80)
+    print(f"{'Dataset':<25} {'True K':>8} {'Std RMSE':>12} {'Best MoE':>12} {'MoE K':>8} {'Diff':>10}")
+    print("-"*80)
+
+    for dataset, results in all_results.items():
+        X, y, regime = all_data[dataset]
+        true_k = len(np.unique(regime))
+
+        std_rmse = results['Standard GBDT']['rmse']
+
+        # Find best MoE method
+        moe_methods = ['MoE (none)', 'MoE (EMA)', 'MoE (Markov)']
+        best_moe = min(moe_methods, key=lambda m: results[m]['rmse'])
+        best_rmse = results[best_moe]['rmse']
+        best_k = results[best_moe]['params'].get('mixture_num_experts', 4)
+        best_bf = results[best_moe]['params'].get('mixture_balance_factor', 10)
+
+        diff_pct = (std_rmse - best_rmse) / std_rmse * 100
+        diff_str = f"+{diff_pct:.1f}%" if diff_pct > 0 else f"{diff_pct:.1f}%"
+
+        print(f"{dataset:<25} {true_k:>8} {std_rmse:>12.4f} {best_rmse:>12.4f} {best_k:>8} {diff_str:>10}")
+
+    # Best MoE hyperparameters
+    print("\n" + "="*80)
+    print("Best MoE Hyperparameters (per dataset)")
     print("="*80)
     for dataset, results in all_results.items():
-        ema_rmse = results['MoE (EMA)']['rmse']
-        markov_rmse = results['MoE (Markov)']['rmse']
-        diff_pct = (ema_rmse - markov_rmse) / ema_rmse * 100
+        X, y, regime = all_data[dataset]
+        true_k = len(np.unique(regime))
 
-        ema_lambda = results['MoE (EMA)']['params'].get('mixture_smoothing_lambda', None)
-        markov_lambda = results['MoE (Markov)']['params'].get('mixture_smoothing_lambda', None)
+        moe_methods = ['MoE (none)', 'MoE (EMA)', 'MoE (Markov)']
+        best_moe = min(moe_methods, key=lambda m: results[m]['rmse'])
+        params = results[best_moe]['params']
 
-        ema_lambda_str = f"{ema_lambda:.3f}" if ema_lambda is not None else "N/A"
-        markov_lambda_str = f"{markov_lambda:.3f}" if markov_lambda is not None else "N/A"
+        print(f"\n{dataset} (True K={true_k}):")
+        print(f"  Best method: {best_moe}")
+        print(f"  K={params.get('mixture_num_experts')}, "
+              f"alpha={params.get('mixture_e_step_alpha', 0):.2f}, "
+              f"balance_factor={params.get('mixture_balance_factor', 10)}")
+        if 'mixture_smoothing_lambda' in params:
+            print(f"  smoothing_lambda={params['mixture_smoothing_lambda']:.3f}")
 
-        winner = "Markov" if markov_rmse < ema_rmse else "EMA"
-        print(f"\n{dataset}:")
-        print(f"  EMA:    RMSE={ema_rmse:.4f}, lambda={ema_lambda_str}")
-        print(f"  Markov: RMSE={markov_rmse:.4f}, lambda={markov_lambda_str}")
-        print(f"  Winner: {winner} ({abs(diff_pct):.1f}% {'better' if diff_pct > 0 else 'worse'})")
+    # Regime confusion matrices
+    print("\n" + "="*80)
+    print("Regime Confusion Matrices (True Regime vs Predicted Expert)")
+    print("="*80)
+
+    for dataset, results in all_results.items():
+        X, y, regime = all_data[dataset]
+        true_k = len(np.unique(regime))
+
+        # Use best MoE params
+        moe_methods = ['MoE (none)', 'MoE (EMA)', 'MoE (Markov)']
+        best_moe = min(moe_methods, key=lambda m: results[m]['rmse'])
+        best_params = results[best_moe]['params']
+
+        # Build full params
+        full_params = {
+            'objective': 'regression',
+            'boosting': 'mixture',
+            'verbose': -1,
+            'num_threads': 4,
+            'seed': 42,
+        }
+        full_params.update(best_params)
+        if 'EMA' in best_moe:
+            full_params['mixture_r_smoothing'] = 'ema'
+        elif 'Markov' in best_moe:
+            full_params['mixture_r_smoothing'] = 'markov'
+        else:
+            full_params['mixture_r_smoothing'] = 'none'
+
+        try:
+            confusion, K = compute_regime_confusion(X, y, regime, full_params)
+
+            print(f"\n{dataset} (K={K}):")
+            header = "True\\Pred | " + " | ".join([f"E{k:>4}" for k in range(K)])
+            print(header)
+            print("-" * len(header))
+            for r in range(true_k):
+                row = f"Regime {r}  | " + " | ".join([f"{confusion[r, k]:>5.1f}%" for k in range(K)])
+                # Mark dominant expert
+                dominant = np.argmax(confusion[r])
+                print(row + f"  ← R{r} → E{dominant}")
+        except Exception as e:
+            print(f"\n{dataset}: Error computing confusion matrix: {e}")
 
 
 if __name__ == '__main__':

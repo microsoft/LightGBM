@@ -1,7 +1,8 @@
 [project]
+dynamic = ["version"]
 
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
@@ -29,7 +30,6 @@ maintainers = [
 name = "lightgbm-moe"
 readme = "README.rst"
 requires-python = ">=3.9"
-version = "4.6.0.99"
 
 [project.optional-dependencies]
 arrow = [
@@ -52,19 +52,24 @@ scikit-learn = [
 ]
 
 [project.urls]
-homepage = "https://github.com/microsoft/LightGBM"
-documentation = "https://lightgbm.readthedocs.io/en/latest/"
-repository = "https://github.com/microsoft/LightGBM.git"
-changelog = "https://github.com/microsoft/LightGBM/releases"
+homepage = "https://github.com/kyo219/LightGBM-MoE"
+repository = "https://github.com/kyo219/LightGBM-MoE.git"
+changelog = "https://github.com/kyo219/LightGBM-MoE/releases"
+upstream = "https://github.com/microsoft/LightGBM"
 
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.10.1"]
+requires = ["scikit-build-core>=0.10.1", "setuptools-scm>=8.0"]
 build-backend = "scikit_build_core.build"
+
+[tool.setuptools_scm]
+# Get version from git tags (e.g., v0.1.0 -> 0.1.0)
+root = ".."
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 ninja.version = ">=1.11"
 ninja.make-fallback = true
 build.verbose = false

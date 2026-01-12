@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+
+jobs:
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+        working-directory: python-package
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: python-package/dist/*.tar.gz
+
+  build-wheels-linux:
+    name: Build wheels (Linux ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+            container: quay.io/pypa/manylinux_2_28_x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+            container: quay.io/pypa/manylinux_2_28_aarch64
+    container: ${{ matrix.container }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Build wheel
+        run: |
+          /opt/python/cp311-cp311/bin/pip install build scikit-build-core cmake ninja
+          /opt/python/cp311-cp311/bin/python -m build --wheel
+        working-directory: python-package
+
+      - name: Repair wheel
+        run: |
+          mkdir -p repaired
+          auditwheel repair python-package/dist/*.whl -w repaired/
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-linux-${{ matrix.arch }}
+          path: repaired/*.whl
+
+  build-wheels-macos:
+    name: Build wheels (macOS ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          brew install libomp cmake
+          pip install build scikit-build-core ninja
+
+      - name: Build wheel
+        run: python -m build --wheel
+        working-directory: python-package
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '11.0'
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-macos-${{ matrix.arch }}
+          path: python-package/dist/*.whl
+
+  build-wheels-windows:
+    name: Build wheels (Windows x86_64)
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install build scikit-build-core cmake ninja
+
+      - name: Build wheel
+        run: python -m build --wheel
+        working-directory: python-package
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-windows-x86_64
+          path: python-package/dist/*.whl
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-sdist, build-wheels-linux, build-wheels-macos, build-wheels-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

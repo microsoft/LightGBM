@@ -57,6 +57,20 @@ Each boosting iteration performs:
 
 ### Installation
 
+#### Option 1: Install from GitHub Releases (Recommended)
+
+```bash
+# Install pre-built wheel (replace VERSION with actual version, e.g., v4.6.0)
+pip install https://github.com/kyo219/LightGBM-MoE/releases/download/VERSION/lightgbm_moe-VERSION-py3-none-any.whl
+
+# Or download from Releases page and install locally
+pip install lightgbm_moe-*.whl
+```
+
+Check the [Releases page](https://github.com/kyo219/LightGBM-MoE/releases) for available versions.
+
+#### Option 2: Build from Source
+
 ```bash
 # Clone
 git clone https://github.com/kyo219/LightGBM-MoE.git
@@ -105,9 +119,9 @@ expert_preds = model.predict_expert_pred(X_test)  # Individual expert prediction
 | `boosting` | string | `"gbdt"` | Set to `"mixture"` for MoE mode |
 | `mixture_num_experts` | int | 4 | Number of expert models (K) |
 | `mixture_e_step_alpha` | float | 1.0 | Weight for loss term in E-step |
-| `mixture_r_min` | float | 1e-3 | Minimum responsibility (prevents collapse) |
-| `mixture_r_smoothing` | string | `"none"` | `"none"` or `"ema"` for temporal smoothing |
-| `mixture_smoothing_lambda` | float | 0.0 | EMA coefficient (0-1) for responsibility smoothing |
+| `mixture_balance_factor` | int | 10 | Load balancing factor (2-10). Min usage = 1/(factor×K) |
+| `mixture_r_smoothing` | string | `"none"` | `"none"`, `"ema"`, `"markov"`, or `"momentum"` |
+| `mixture_smoothing_lambda` | float | 0.0 | Smoothing coefficient (0-1) for EMA/Markov/Momentum |
 
 ### New Prediction APIs
 
@@ -185,7 +199,7 @@ For general prediction tasks without clear regime structure, standard GBDT may p
 
 **Key Finding: MoE excels when regime is determinable from features (X)**
 
-#### Full Hyperparameter Search (50 Optuna trials each)
+#### Full Hyperparameter Search (100 Optuna trials each)
 
 Both Standard GBDT and MoE search ALL typical GBDT hyperparameters:
 - `num_leaves` (8-128), `max_depth` (3-12), `learning_rate` (0.01-0.3)
@@ -193,57 +207,67 @@ Both Standard GBDT and MoE search ALL typical GBDT hyperparameters:
 - `bagging_fraction` (0.5-1.0), `bagging_freq` (0-7)
 - `lambda_l1` (1e-8 to 10, log), `lambda_l2` (1e-8 to 10, log)
 
-MoE additionally searches: `K` (2-4), `alpha` (0.1-2.0), `warmup` (5-30)
+MoE additionally searches: `K` (2-4), `alpha` (0.1-2.0), `balance_factor` (2-10), `smoothing` (none/ema/markov), `lambda` (0.1-0.9)
 
-| Dataset | Std RMSE | MoE RMSE | K | Diff |
-|---------|----------|----------|---|------|
-| Hamilton GNP | **0.6427** | 0.6616 | 4 | -3.0% |
-| **Synthetic (X→Regime)** | 3.0479 | **2.6565** | 4 | **+12.8%** |
-| VIX Regime | 0.0048 | 0.0048 | 2 | -0.1% |
+| Dataset | True K | Std RMSE | Best MoE | MoE K | Best Method | Diff |
+|---------|--------|----------|----------|-------|-------------|------|
+| **Synthetic (X→Regime)** | 2 | 5.2168 | **4.3478** | 2 | EMA | **+16.7%** |
+| Hamilton GNP | 2 | 0.7379 | **0.7376** | 2 | Markov | +0.0% |
+| VIX Regime | 2 | **0.0118** | 0.0118 | 2 | Markov | -0.7% |
 
-**MoE wins**: Only on Synthetic dataset where regime IS determinable from X
+**MoE wins**: On Synthetic dataset where regime IS determinable from X (+16.7%)
+
+#### Best MoE Hyperparameters
+
+| Dataset | Method | K | α | balance_factor | λ |
+|---------|--------|---|---|----------------|---|
+| Synthetic | EMA | 2 | 0.20 | 6 | 0.72 |
+| Hamilton | Markov | 2 | 0.38 | 7 | 0.56 |
+| VIX | Markov | 2 | 0.15 | 5 | 0.43 |
+
+**Key insight**: `balance_factor` of 5-7 was optimal (more aggressive balancing than default 10)
 
 #### Regime Confusion Matrices (True Regime vs Predicted Expert)
 
-**VIX Regime (K=2)** ✅ Excellent differentiation
+**Synthetic (X→Regime) (K=2)** ✅ Perfect differentiation
 ```
-True\Pred | E0    | E1
+True\Pred |  E0   |  E1
 ----------|-------|-------
-Regime 0  | 91.0% |  9.0%  ← R0 → E0
-Regime 1  |  4.0% | 96.0%  ← R1 → E1
+Regime 0  |  2.1% | 97.9%  ← R0 → E1
+Regime 1  | 98.4% |  1.6%  ← R1 → E0
 ```
-(R0→E0:91%, R1→E1:96%) - Near-perfect regime identification despite no RMSE advantage
+Near-perfect regime separation (98%/98%)
 
-**Synthetic (X→Regime) (K=4)** ✅ MoE wins +12.8%
+**Hamilton GNP (K=2)** ⚠️ Partial differentiation
 ```
-True\Pred | E0    | E1    | E2    | E3
-----------|-------|-------|-------|-------
-Regime 0  | 21.0% | 13.0% | 13.0% | 53.0%  ← R0 → E3
-Regime 1  | 60.0% | 14.0% | 10.0% | 16.0%  ← R1 → E0
+True\Pred |  E0   |  E1
+----------|-------|-------
+Regime 0  | 26.1% | 73.9%  ← R0 → E1
+Regime 1  | 44.2% | 55.8%  ← R1 → E1
 ```
-Experts differentiate regimes (R0→E3:53%, R1→E0:60%)
+Some regime signal captured but not clearly separated
 
-**Hamilton GNP (K=4)** ❌ COLLAPSED
+**VIX Regime (K=2)** ❌ Collapsed
 ```
-True\Pred | E0   | E1   | E2   | E3
-----------|------|------|------|-------
-Regime 0  | 3.0% | 4.0% | 5.0% | 88.0%  ← R0 → E3
-Regime 1  | 0.0% | 0.0% | 0.0% | 100.0% ← R1 → E3
+True\Pred |  E0   |  E1
+----------|-------|-------
+Regime 0  | 67.3% | 32.7%  ← R0 → E0
+Regime 1  | 59.1% | 40.9%  ← R1 → E0
 ```
-All samples routed to single expert (collapse)
+Both regimes routed to same expert
 
 #### Key Conclusion
 
 | Dataset Type | Regime Source | MoE Advantage | Expert Differentiation |
 |--------------|--------------|---------------|----------------------|
-| **Synthetic** | Determinable from X | ✅ **+12.8%** | ✅ Success |
-| VIX Regime | Observable (VIX in X) | ≈ 0% | ✅ **Excellent** (91%/96%) |
-| Hamilton GNP | Markov switching (latent) | ❌ **-3.0%** | ❌ Collapsed |
+| **Synthetic** | Determinable from X | ✅ **+16.7%** | ✅ **Perfect** (98%/98%) |
+| Hamilton GNP | Markov switching (latent) | ≈ 0% | ⚠️ Partial |
+| VIX Regime | Latent volatility state | ❌ -0.7% | ❌ Collapsed |
 
 **MoE is effective when:**
 1. **Regime is determinable from features (X)** - The gate can learn to classify regimes
 2. Different regimes follow **fundamentally different functions**
-3. Expert distribution is balanced (not 100:0)
+3. Expert distribution is balanced (Loss-Free Load Balancing helps)
 
 **MoE is NOT effective when:**
 1. Regime is **latent** (Markov switching, hidden states)
@@ -300,6 +324,20 @@ LightGBM-MoE は [Microsoft LightGBM](https://github.com/microsoft/LightGBM) の
 
 ### インストール
 
+#### 方法1: GitHub Releases からインストール（推奨）
+
+```bash
+# ビルド済み wheel をインストール（VERSIONを実際のバージョンに置換、例: v4.6.0）
+pip install https://github.com/kyo219/LightGBM-MoE/releases/download/VERSION/lightgbm_moe-VERSION-py3-none-any.whl
+
+# または Releases ページからダウンロードしてインストール
+pip install lightgbm_moe-*.whl
+```
+
+利用可能なバージョンは [Releases ページ](https://github.com/kyo219/LightGBM-MoE/releases) を確認してください。
+
+#### 方法2: ソースからビルド
+
 ```bash
 # クローン
 git clone https://github.com/kyo219/LightGBM-MoE.git
@@ -348,9 +386,9 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 | `boosting` | string | `"gbdt"` | MoEモードには `"mixture"` を指定 |
 | `mixture_num_experts` | int | 4 | エキスパートモデル数（K） |
 | `mixture_e_step_alpha` | float | 1.0 | E-stepでの損失項の重み |
-| `mixture_r_min` | float | 1e-3 | 最小責務（崩壊防止） |
-| `mixture_r_smoothing` | string | `"none"` | `"none"` または時系列平滑化用 `"ema"` |
-| `mixture_smoothing_lambda` | float | 0.0 | 責務平滑化のEMA係数（0-1） |
+| `mixture_balance_factor` | int | 10 | 負荷分散係数 (2-10)。最小使用率 = 1/(factor×K) |
+| `mixture_r_smoothing` | string | `"none"` | `"none"`, `"ema"`, `"markov"`, `"momentum"` |
+| `mixture_smoothing_lambda` | float | 0.0 | EMA/Markov/Momentumの平滑化係数（0-1） |
 
 ### 新しい予測API
 
@@ -428,7 +466,7 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 
 **重要な発見: MoEはレジームが特徴量(X)から推定可能な場合に有効**
 
-#### 完全ハイパーパラメータ探索 (各50 Optunaトライアル)
+#### 完全ハイパーパラメータ探索 (各100 Optunaトライアル)
 
 標準GBDTとMoEの両方が全ての一般的なGBDTハイパーパラメータを探索:
 - `num_leaves` (8-128), `max_depth` (3-12), `learning_rate` (0.01-0.3)
@@ -436,57 +474,67 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 - `bagging_fraction` (0.5-1.0), `bagging_freq` (0-7)
 - `lambda_l1` (1e-8〜10, log), `lambda_l2` (1e-8〜10, log)
 
-MoEは追加で探索: `K` (2-4), `alpha` (0.1-2.0), `warmup` (5-30)
+MoEは追加で探索: `K` (2-4), `alpha` (0.1-2.0), `balance_factor` (2-10), `smoothing` (none/ema/markov), `lambda` (0.1-0.9)
 
-| データセット | Std RMSE | MoE RMSE | K | 差分 |
-|-------------|----------|----------|---|------|
-| Hamilton GNP | **0.6427** | 0.6616 | 4 | -3.0% |
-| **合成 (X→Regime)** | 3.0479 | **2.6565** | 4 | **+12.8%** |
-| VIX レジーム | 0.0048 | 0.0048 | 2 | -0.1% |
+| データセット | True K | Std RMSE | Best MoE | MoE K | Best Method | 差分 |
+|-------------|--------|----------|----------|-------|-------------|------|
+| **合成 (X→Regime)** | 2 | 5.2168 | **4.3478** | 2 | EMA | **+16.7%** |
+| Hamilton GNP | 2 | 0.7379 | **0.7376** | 2 | Markov | +0.0% |
+| VIX レジーム | 2 | **0.0118** | 0.0118 | 2 | Markov | -0.7% |
 
-**MoE勝利**: 合成データのみ（レジームがXから推定可能な場合）
+**MoE勝利**: 合成データ（レジームがXから推定可能な場合）で+16.7%
 
-#### レジーム混合行列 (真のレジーム vs 予測エキスパート)
+#### 最適MoEハイパーパラメータ
 
-**VIX レジーム (K=2)** ✅ 優れた分化
+| データセット | Method | K | α | balance_factor | λ |
+|-------------|--------|---|---|----------------|---|
+| 合成 | EMA | 2 | 0.20 | 6 | 0.72 |
+| Hamilton | Markov | 2 | 0.38 | 7 | 0.56 |
+| VIX | Markov | 2 | 0.15 | 5 | 0.43 |
+
+**重要な発見**: `balance_factor` は5-7が最適（デフォルト10よりアグレッシブなバランシング）
+
+#### レジーム混同行列 (真のレジーム vs 予測エキスパート)
+
+**合成 (X→Regime) (K=2)** ✅ 完璧な分離
 ```
-真\予測   | E0    | E1
+真\予測   |  E0   |  E1
 ----------|-------|-------
-Regime 0  | 91.0% |  9.0%  ← R0 → E0
-Regime 1  |  4.0% | 96.0%  ← R1 → E1
+Regime 0  |  2.1% | 97.9%  ← R0 → E1
+Regime 1  | 98.4% |  1.6%  ← R1 → E0
 ```
-(R0→E0:91%, R1→E1:96%) - RMSE優位がなくてもほぼ完璧なレジーム識別
+ほぼ完璧なレジーム分離 (98%/98%)
 
-**合成 (X→Regime) (K=4)** ✅ MoE勝利 +12.8%
+**Hamilton GNP (K=2)** ⚠️ 部分的分離
 ```
-真\予測   | E0    | E1    | E2    | E3
-----------|-------|-------|-------|-------
-Regime 0  | 21.0% | 13.0% | 13.0% | 53.0%  ← R0 → E3
-Regime 1  | 60.0% | 14.0% | 10.0% | 16.0%  ← R1 → E0
+真\予測   |  E0   |  E1
+----------|-------|-------
+Regime 0  | 26.1% | 73.9%  ← R0 → E1
+Regime 1  | 44.2% | 55.8%  ← R1 → E1
 ```
-エキスパートがレジームを分化 (R0→E3:53%, R1→E0:60%)
+レジーム信号は捕捉されているが明確な分離ではない
 
-**Hamilton GNP (K=4)** ❌ 崩壊
+**VIX レジーム (K=2)** ❌ 崩壊
 ```
-真\予測   | E0   | E1   | E2   | E3
-----------|------|------|------|-------
-Regime 0  | 3.0% | 4.0% | 5.0% | 88.0%  ← R0 → E3
-Regime 1  | 0.0% | 0.0% | 0.0% | 100.0% ← R1 → E3
+真\予測   |  E0   |  E1
+----------|-------|-------
+Regime 0  | 67.3% | 32.7%  ← R0 → E0
+Regime 1  | 59.1% | 40.9%  ← R1 → E0
 ```
-全サンプルが単一エキスパートにルーティング（崩壊）
+両レジームが同一エキスパートにルーティング
 
 #### 主要な結論
 
 | データタイプ | レジーム源 | MoE優位性 | 専門家分化 |
 |-------------|-----------|----------|-----------|
-| **合成データ** | Xから決定可能 | ✅ **+12.8%** | ✅ 成功 |
-| VIX レジーム | 観測可能（VIXがXに含まれる） | ≈ 0% | ✅ **優秀** (91%/96%) |
-| Hamilton GNP | マルコフスイッチング（潜在） | ❌ **-3.0%** | ❌ 崩壊 |
+| **合成データ** | Xから決定可能 | ✅ **+16.7%** | ✅ **完璧** (98%/98%) |
+| Hamilton GNP | マルコフスイッチング（潜在） | ≈ 0% | ⚠️ 部分的 |
+| VIX レジーム | 潜在的ボラティリティ状態 | ❌ -0.7% | ❌ 崩壊 |
 
 **MoEが有効な条件:**
 1. **レジームが特徴量(X)から決定可能** - ゲートがレジームを分類学習できる
 2. 異なるレジームが**根本的に異なる関数**に従う
-3. 専門家分布が均衡（100:0でない）
+3. 専門家分布が均衡（Loss-Free Load Balancingが有効）
 
 **MoEが有効でない条件:**
 1. レジームが**潜在的**（マルコフスイッチング、隠れ状態）
