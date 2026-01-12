@@ -36,8 +36,7 @@ MixtureGBDT::MixtureGBDT()
       max_feature_idx_(0),
       label_idx_(0),
       use_markov_(false),
-      use_momentum_(false),
-      num_original_features_(0) {
+      use_momentum_(false) {
 }
 
 MixtureGBDT::~MixtureGBDT() {
@@ -111,10 +110,8 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
   // Check smoothing modes
   use_markov_ = (config_->mixture_r_smoothing == "markov");
   use_momentum_ = (config_->mixture_r_smoothing == "momentum");
-  num_original_features_ = train_data_->num_total_features();
 
   // Initialize gate
-  // Note: Gate uses pseudo-labels, so we pass nullptr for objective
   Log::Debug("MixtureGBDT::Init - creating gate");
   gate_.reset(new GBDT());
   Log::Debug("MixtureGBDT::Init - initializing gate");
@@ -143,15 +140,6 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     prev_gate_proba_.resize(nk);
     const double uniform_prob = 1.0 / num_experts_;
     std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
-  }
-
-  // Initialize Momentum-specific buffers
-  if (use_momentum_) {
-    prev_responsibilities_.resize(nk);
-    momentum_trend_.resize(nk);
-    const double uniform_prob = 1.0 / num_experts_;
-    std::fill(prev_responsibilities_.begin(), prev_responsibilities_.end(), uniform_prob);
-    std::fill(momentum_trend_.begin(), momentum_trend_.end(), 0.0);
   }
 
   // Initialize responsibilities
@@ -449,23 +437,6 @@ void MixtureGBDT::SmoothResponsibilities() {
       }
     }
   }
-  // Note: Markov mode handles smoothing differently - it uses prev_proba as gate features
-  // and updates prev_gate_proba_ after Forward() in TrainOneIter()
-}
-
-void MixtureGBDT::CreateGateDataset() {
-  // For Markov mode, gate training uses original dataset but
-  // gate probabilities are blended with previous probabilities
-  // This is a simpler approach that avoids complex dataset reconstruction
-  Log::Info("MixtureGBDT: Markov mode - gate will blend current proba with prev_proba");
-  // No separate dataset needed - we use the original train_data_ for gate
-  // and apply Markov blending in Forward()
-}
-
-void MixtureGBDT::UpdateGateDataset() {
-  // In simplified Markov mode, we don't rebuild the dataset
-  // Instead, we update prev_gate_proba_ after Forward() and blend in Forward()
-  // This function is kept for potential future extension with full dataset rebuild
 }
 
 void MixtureGBDT::MStepExperts() {

@@ -174,16 +174,6 @@ class MixtureGBDT : public GBDTBase {
   void SmoothResponsibilities();
 
   /*!
-   * \brief Create gate dataset with extended features for Markov mode
-   */
-  void CreateGateDataset();
-
-  /*!
-   * \brief Update gate dataset with previous gate probabilities
-   */
-  void UpdateGateDataset();
-
-  /*!
    * \brief M-step for experts: update with responsibility-weighted gradients
    */
   void MStepExperts();
@@ -278,24 +268,6 @@ class MixtureGBDT : public GBDTBase {
 
   /*! \brief Whether momentum mode is enabled */
   bool use_momentum_;
-
-  /*! \brief Previous responsibilities for momentum calculation (N x K) */
-  std::vector<double> prev_responsibilities_;
-
-  /*! \brief Momentum trend for each sample/expert (N x K) */
-  std::vector<double> momentum_trend_;
-
-  /*! \brief Gate dataset with extended features for Markov mode */
-  std::unique_ptr<Dataset> gate_dataset_;
-
-  /*! \brief Config for gate in Markov mode (with extended features) */
-  std::unique_ptr<Config> gate_markov_config_;
-
-  /*! \brief Number of original features (before adding prev_proba) */
-  int num_original_features_;
-
-  /*! \brief Raw feature data for gate dataset construction */
-  std::vector<std::vector<float>> gate_raw_data_;
 };
 
 }  // namespace LightGBM
