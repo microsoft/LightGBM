@@ -612,16 +612,16 @@ const double* MixtureGBDT::GetTrainingScore(int64_t* out_len) {
 }
 
 std::vector<double> MixtureGBDT::GetEvalAt(int data_idx) const {
-  // TODO: Implement proper evaluation
-  std::vector<double> result;
-  return result;
+  (void)data_idx;
+  Log::Fatal("MixtureGBDT::GetEvalAt is not implemented");
+  return {};
 }
 
 int64_t MixtureGBDT::GetNumPredictAt(int data_idx) const {
   if (data_idx == 0) {
     return num_data_;
   }
-  // TODO: Handle validation data
+  Log::Fatal("MixtureGBDT: Validation data is not supported");
   return 0;
 }
 
@@ -821,32 +821,32 @@ void MixtureGBDT::PredictRegimeProbaWithPrevProba(const double* features, const 
 }
 
 void MixtureGBDT::PredictLeafIndex(const double* features, double* output) const {
-  // Return leaf indices from all experts and gate
-  // TODO: Implement properly
   (void)features;
   (void)output;
+  Log::Fatal("MixtureGBDT::PredictLeafIndex is not implemented");
 }
 
 void MixtureGBDT::PredictLeafIndexByMap(const std::unordered_map<int, double>& features,
                                         double* output) const {
   (void)features;
   (void)output;
+  Log::Fatal("MixtureGBDT::PredictLeafIndexByMap is not implemented");
 }
 
 void MixtureGBDT::PredictContrib(const double* features, double* output) const {
-  // TODO: Implement SHAP for mixture model
   (void)features;
   (void)output;
+  Log::Fatal("MixtureGBDT::PredictContrib (SHAP) is not implemented");
 }
 
 void MixtureGBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
                                        std::vector<std::unordered_map<int, double>>* output) const {
   (void)features;
   (void)output;
+  Log::Fatal("MixtureGBDT::PredictContribByMap is not implemented");
 }
 
 void MixtureGBDT::MergeFrom(const Boosting* other) {
-  // TODO: Implement merge
   (void)other;
   Log::Fatal("MixtureGBDT::MergeFrom is not implemented");
 }
@@ -892,9 +892,9 @@ void MixtureGBDT::ResetConfig(const Config* config) {
 
 void MixtureGBDT::AddValidDataset(const Dataset* valid_data,
                                   const std::vector<const Metric*>& valid_metrics) {
-  // TODO: Implement validation
   (void)valid_data;
   (void)valid_metrics;
+  Log::Fatal("MixtureGBDT::AddValidDataset is not implemented");
 }
 
 void MixtureGBDT::RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) {
@@ -909,7 +909,7 @@ std::string MixtureGBDT::DumpModel(int start_iteration, int num_iteration,
   (void)start_iteration;
   (void)num_iteration;
   (void)feature_importance_type;
-  // TODO: Implement JSON dump
+  Log::Fatal("MixtureGBDT::DumpModel is not implemented");
   return "{}";
 }
 
@@ -1174,17 +1174,17 @@ void MixtureGBDT::InitPredict(int start_iteration, int num_iteration, bool is_pr
 }
 
 double MixtureGBDT::GetLeafValue(int tree_idx, int leaf_idx) const {
-  // Determine which model and which tree
-  // TODO: Implement properly
   (void)tree_idx;
   (void)leaf_idx;
-  return 0.0;
+  Log::Fatal("MixtureGBDT::GetLeafValue is not implemented for mixture models");
+  return 0.0;  // Unreachable, but needed for compiler
 }
 
 void MixtureGBDT::SetLeafValue(int tree_idx, int leaf_idx, double val) {
   (void)tree_idx;
   (void)leaf_idx;
   (void)val;
+  Log::Fatal("MixtureGBDT::SetLeafValue is not implemented for mixture models");
 }
 
 std::string MixtureGBDT::GetLoadedParam() const {
