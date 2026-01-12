@@ -107,7 +107,7 @@ expert_preds = model.predict_expert_pred(X_test)  # Individual expert prediction
 | `mixture_e_step_alpha` | float | 1.0 | Weight for loss term in E-step |
 | `mixture_r_min` | float | 1e-3 | Minimum responsibility (prevents collapse) |
 | `mixture_r_smoothing` | string | `"none"` | `"none"` or `"ema"` for temporal smoothing |
-| `mixture_r_ema_lambda` | float | 0.0 | EMA coefficient (0-1) for responsibility smoothing |
+| `mixture_smoothing_lambda` | float | 0.0 | EMA coefficient (0-1) for responsibility smoothing |
 
 ### New Prediction APIs
 
@@ -350,7 +350,7 @@ expert_preds = model.predict_expert_pred(X_test)  # 各エキスパートの予�
 | `mixture_e_step_alpha` | float | 1.0 | E-stepでの損失項の重み |
 | `mixture_r_min` | float | 1e-3 | 最小責務（崩壊防止） |
 | `mixture_r_smoothing` | string | `"none"` | `"none"` または時系列平滑化用 `"ema"` |
-| `mixture_r_ema_lambda` | float | 0.0 | 責務平滑化のEMA係数（0-1） |
+| `mixture_smoothing_lambda` | float | 0.0 | 責務平滑化のEMA係数（0-1） |
 
 ### 新しい予測API
 
@@ -501,7 +501,7 @@ Regime 1  | 0.0% | 0.0% | 0.0% | 100.0% ← R1 → E3
 
 #### EMA ON Results (Full Hyperparameter Search, 50 Optuna trials)
 
-MoE additionally searches: `mixture_r_ema_lambda` (0.1-0.9) with `mixture_r_smoothing="ema"`
+MoE additionally searches: `mixture_smoothing_lambda` (0.1-0.9) with `mixture_r_smoothing="ema"`
 
 | Dataset | Std RMSE | MoE RMSE (EMA) | K | λ_EMA | Diff |
 |---------|----------|----------------|---|-------|------|
@@ -534,7 +534,7 @@ MoE additionally searches: `mixture_r_ema_lambda` (0.1-0.9) with `mixture_r_smoo
 
 #### EMA ON結果 (完全ハイパーパラメータ探索、各50 Optunaトライアル)
 
-MoEは追加で探索: `mixture_r_ema_lambda` (0.1-0.9)、`mixture_r_smoothing="ema"`設定
+MoEは追加で探索: `mixture_smoothing_lambda` (0.1-0.9)、`mixture_r_smoothing="ema"`設定
 
 | データセット | Std RMSE | MoE RMSE (EMA) | K | λ_EMA | 差分 |
 |-------------|----------|----------------|---|-------|------|

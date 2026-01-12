@@ -22,7 +22,7 @@ std::string mixture_e_step_loss = "auto";  // E-stepの損失関数
 
 // 時系列平滑化
 std::string mixture_r_smoothing = "none";  // 平滑化方法
-double mixture_r_ema_lambda = 0.0;         // EMA係数
+double mixture_smoothing_lambda = 0.0;         // EMA係数
 
 // 出力モード
 std::string mixture_predict_output = "value";

@@ -121,7 +121,7 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
     // Markov mode: gate probabilities will be blended with prev_proba
     // Gate still uses original dataset for training
     Log::Info("MixtureGBDT: Markov mode enabled - gate proba will blend with prev_proba (lambda=%.2f)",
-              config_->mixture_r_ema_lambda);
+              config_->mixture_smoothing_lambda);
   }
   gate_->Init(gate_config_.get(), train_data_, nullptr, {});
   Log::Debug("MixtureGBDT::Init - gate initialized");
@@ -300,7 +300,7 @@ void MixtureGBDT::Forward() {
   // Markov mode: blend gate_proba with prev_gate_proba
   // This makes regime transitions smoother and dependent on previous state
   if (use_markov_) {
-    const double lambda = config_->mixture_r_ema_lambda;
+    const double lambda = config_->mixture_smoothing_lambda;
     if (lambda > 0.0) {
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -380,7 +380,7 @@ void MixtureGBDT::EStep() {
 
 void MixtureGBDT::SmoothResponsibilities() {
   if (config_->mixture_r_smoothing == "ema") {
-    const double lambda = config_->mixture_r_ema_lambda;
+    const double lambda = config_->mixture_smoothing_lambda;
     if (lambda <= 0.0) {
       return;
     }
@@ -751,7 +751,7 @@ void MixtureGBDT::PredictWithPrevProba(const double* features, const double* pre
 
   // Blend with prev_proba if provided and in Markov mode
   if (use_markov_ && prev_proba != nullptr) {
-    const double lambda = config_->mixture_r_ema_lambda;
+    const double lambda = config_->mixture_smoothing_lambda;
     if (lambda > 0.0) {
       double sum = 0.0;
       for (int k = 0; k < num_experts_; ++k) {
@@ -786,7 +786,7 @@ void MixtureGBDT::PredictRegimeProbaWithPrevProba(const double* features, const 
 
   // Blend with prev_proba if provided and in Markov mode
   if (use_markov_ && prev_proba != nullptr) {
-    const double lambda = config_->mixture_r_ema_lambda;
+    const double lambda = config_->mixture_smoothing_lambda;
     if (lambda > 0.0) {
       double sum = 0.0;
       for (int k = 0; k < num_experts_; ++k) {
@@ -932,7 +932,7 @@ std::string MixtureGBDT::SaveModelToString(int start_iteration, int num_iteratio
   ss << "mixture_e_step_alpha=" << config_->mixture_e_step_alpha << "\n";
   ss << "mixture_e_step_loss=" << e_step_loss_type_ << "\n";
   ss << "mixture_r_smoothing=" << config_->mixture_r_smoothing << "\n";
-  ss << "mixture_r_ema_lambda=" << config_->mixture_r_ema_lambda << "\n";
+  ss << "mixture_smoothing_lambda=" << config_->mixture_smoothing_lambda << "\n";
   ss << "\n";
 
   // Gate model

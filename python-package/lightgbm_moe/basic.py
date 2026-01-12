@@ -4981,7 +4981,7 @@ class Booster:
 
         Notes
         -----
-        The Markov smoothing uses the mixture_r_ema_lambda parameter to blend
+        The Markov smoothing uses the mixture_smoothing_lambda parameter to blend
         the current gate probabilities with the previous sample's probabilities:
         proba[t] = (1-lambda) * gate_proba[t] + lambda * proba[t-1]
         """
@@ -5005,7 +5005,7 @@ class Booster:
 
         # Get lambda from model params
         params = self.params
-        lambda_val = float(params.get('mixture_r_ema_lambda', 0.0))
+        lambda_val = float(params.get('mixture_smoothing_lambda', 0.0))
         smoothing = params.get('mixture_r_smoothing', 'none')
 
         # Apply Markov smoothing if in markov mode

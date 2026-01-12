@@ -1452,7 +1452,7 @@ Mixture-of-Experts Parameters
 
    -  ``ema``: exponential moving average (assumes row order is time order)
 
--  ``mixture_r_ema_lambda`` :raw-html:`<a id="mixture_r_ema_lambda" title="Permalink to this parameter" href="#mixture_r_ema_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= mixture_r_ema_lambda <= 1.0``
+-  ``mixture_smoothing_lambda`` :raw-html:`<a id="mixture_smoothing_lambda" title="Permalink to this parameter" href="#mixture_smoothing_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= mixture_smoothing_lambda <= 1.0``
 
    -  EMA decay factor for responsibility smoothing
 

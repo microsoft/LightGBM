@@ -50,7 +50,7 @@ E-step（レジーム推定）:
 
 rの時系列平滑化（1銘柄・行順=時系列順 前提）:
 - mixture_r_smoothing (string: none|ema, default none)
-- mixture_r_ema_lambda (double, default 0.0)          # ハイパラ。0で平滑化なし
+- mixture_smoothing_lambda (double, default 0.0)          # ハイパラ。0で平滑化なし
 
 Predict出力:
 - mixture_predict_output (string: value|value_and_regime|all, default value)
@@ -107,7 +107,7 @@ MixtureGBDT::TrainOneIter() の中身:
 
 5.3 rの時系列平滑化（オプション / 1銘柄で行順適用）
 - mixture_r_smoothing == "ema" の場合:
-  - lam = mixture_r_ema_lambda（ハイパラ）
+  - lam = mixture_smoothing_lambda（ハイパラ）
   - 行順で適用（行順=timestamp昇順が外部で保証される前提）:
     for i=1..N-1:
       r[i] = (1-lam)*r[i] + lam*r[i-1]
@@ -155,7 +155,7 @@ CLI/C++出力モード（任意）:
   mixture_e_step_alpha=...
   mixture_e_step_loss=...
   mixture_r_smoothing=...
-  mixture_r_ema_lambda=...
+  mixture_smoothing_lambda=...
   [gate_model]
   ...（通常のLightGBMモデルdump）
   [expert_model_0]

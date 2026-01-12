@@ -336,7 +336,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "mixture_e_step_alpha",
   "mixture_e_step_loss",
   "mixture_r_smoothing",
-  "mixture_r_ema_lambda",
+  "mixture_smoothing_lambda",
   "mixture_predict_output",
   "mixture_gate_max_depth",
   "mixture_gate_num_leaves",
@@ -708,9 +708,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "mixture_r_smoothing", &mixture_r_smoothing);
 
-  GetDouble(params, "mixture_r_ema_lambda", &mixture_r_ema_lambda);
-  CHECK_GE(mixture_r_ema_lambda, 0.0);
-  CHECK_LE(mixture_r_ema_lambda, 1.0);
+  GetDouble(params, "mixture_smoothing_lambda", &mixture_smoothing_lambda);
+  CHECK_GE(mixture_smoothing_lambda, 0.0);
+  CHECK_LE(mixture_smoothing_lambda, 1.0);
 
   GetString(params, "mixture_predict_output", &mixture_predict_output);
 
@@ -852,7 +852,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[mixture_e_step_alpha: " << mixture_e_step_alpha << "]\n";
   str_buf << "[mixture_e_step_loss: " << mixture_e_step_loss << "]\n";
   str_buf << "[mixture_r_smoothing: " << mixture_r_smoothing << "]\n";
-  str_buf << "[mixture_r_ema_lambda: " << mixture_r_ema_lambda << "]\n";
+  str_buf << "[mixture_smoothing_lambda: " << mixture_smoothing_lambda << "]\n";
   str_buf << "[mixture_predict_output: " << mixture_predict_output << "]\n";
   str_buf << "[mixture_gate_max_depth: " << mixture_gate_max_depth << "]\n";
   str_buf << "[mixture_gate_num_leaves: " << mixture_gate_num_leaves << "]\n";
@@ -1011,7 +1011,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"mixture_e_step_alpha", {}},
     {"mixture_e_step_loss", {}},
     {"mixture_r_smoothing", {}},
-    {"mixture_r_ema_lambda", {}},
+    {"mixture_smoothing_lambda", {}},
     {"mixture_predict_output", {}},
     {"mixture_gate_max_depth", {}},
     {"mixture_gate_num_leaves", {}},
@@ -1170,7 +1170,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"mixture_e_step_alpha", "double"},
     {"mixture_e_step_loss", "string"},
     {"mixture_r_smoothing", "string"},
-    {"mixture_r_ema_lambda", "double"},
+    {"mixture_smoothing_lambda", "double"},
     {"mixture_predict_output", "string"},
     {"mixture_gate_max_depth", "int"},
     {"mixture_gate_num_leaves", "int"},

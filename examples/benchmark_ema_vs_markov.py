@@ -162,7 +162,7 @@ def create_objective(X, y, smoothing_mode):
 
         # Add lambda for EMA/Markov smoothing
         if smoothing_mode in ['ema', 'markov']:
-            params['mixture_r_ema_lambda'] = trial.suggest_float('mixture_r_ema_lambda', 0.1, 0.9)
+            params['mixture_smoothing_lambda'] = trial.suggest_float('mixture_smoothing_lambda', 0.1, 0.9)
 
         use_markov = (smoothing_mode == 'markov')
         return evaluate_cv(X, y, params, use_markov_predict=use_markov)
@@ -235,8 +235,8 @@ def run_benchmark(dataset_name, X, y, n_trials=50):
         'params': study_ema.best_params
     }
     print(f"  Best RMSE: {study_ema.best_value:.4f}")
-    if 'mixture_r_ema_lambda' in study_ema.best_params:
-        print(f"  Best lambda: {study_ema.best_params['mixture_r_ema_lambda']:.3f}")
+    if 'mixture_smoothing_lambda' in study_ema.best_params:
+        print(f"  Best lambda: {study_ema.best_params['mixture_smoothing_lambda']:.3f}")
 
     # MoE (Markov)
     print(f"\n[4/4] Optimizing MoE (Markov) ({n_trials} trials)...")
@@ -247,8 +247,8 @@ def run_benchmark(dataset_name, X, y, n_trials=50):
         'params': study_markov.best_params
     }
     print(f"  Best RMSE: {study_markov.best_value:.4f}")
-    if 'mixture_r_ema_lambda' in study_markov.best_params:
-        print(f"  Best lambda: {study_markov.best_params['mixture_r_ema_lambda']:.3f}")
+    if 'mixture_smoothing_lambda' in study_markov.best_params:
+        print(f"  Best lambda: {study_markov.best_params['mixture_smoothing_lambda']:.3f}")
 
     return results
 
@@ -305,8 +305,8 @@ def main():
         markov_rmse = results['MoE (Markov)']['rmse']
         diff_pct = (ema_rmse - markov_rmse) / ema_rmse * 100
 
-        ema_lambda = results['MoE (EMA)']['params'].get('mixture_r_ema_lambda', None)
-        markov_lambda = results['MoE (Markov)']['params'].get('mixture_r_ema_lambda', None)
+        ema_lambda = results['MoE (EMA)']['params'].get('mixture_smoothing_lambda', None)
+        markov_lambda = results['MoE (Markov)']['params'].get('mixture_smoothing_lambda', None)
 
         ema_lambda_str = f"{ema_lambda:.3f}" if ema_lambda is not None else "N/A"
         markov_lambda_str = f"{markov_lambda:.3f}" if markov_lambda is not None else "N/A"

@@ -1195,10 +1195,10 @@ struct Config {
 
   // check = >=0.0
   // check = <=1.0
-  // desc = EMA decay factor for responsibility smoothing
+  // desc = smoothing coefficient for responsibility/gate smoothing (used by both EMA and Markov modes)
   // desc = r[i] = (1-lambda)*r[i] + lambda*r[i-1]
   // desc = 0 means no smoothing, 1 means complete carry-forward
-  double mixture_r_ema_lambda = 0.0;
+  double mixture_smoothing_lambda = 0.0;
 
   // check = >=0
   // desc = number of warmup iterations before E-step begins
