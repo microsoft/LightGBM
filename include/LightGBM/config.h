@@ -1186,34 +1186,19 @@ struct Config {
   std::string mixture_e_step_loss = "auto";
 
   // type = enum
-  // options = none, ema, markov, transition, hamilton
+  // options = none, ema, markov
   // desc = time-series smoothing method for responsibilities
   // desc = ``none``: no smoothing
   // desc = ``ema``: exponential moving average (assumes row order is time order)
   // desc = ``markov``: use previous gate probabilities for blending
-  // desc = ``transition``: learn K×K transition matrix from training data
-  // desc = ``hamilton``: Hamilton filter style Bayesian update with transition matrix
   std::string mixture_r_smoothing = "none";
 
   // check = >=0.0
   // check = <=1.0
-  // desc = smoothing coefficient for responsibility/gate smoothing (used by EMA, Markov, Hamilton modes)
+  // desc = smoothing coefficient for responsibility/gate smoothing (used by EMA, Markov modes)
   // desc = r[i] = (1-lambda)*r[i] + lambda*r[i-1]
   // desc = 0 means no smoothing, 1 means complete carry-forward
   double mixture_smoothing_lambda = 0.0;
-
-  // check = >=0.0
-  // desc = regime stickiness factor for duration-based smoothing
-  // desc = adds bonus to current regime based on how long we've been in it
-  // desc = bonus = stickiness * log(1 + duration)
-  // desc = 0 means no stickiness
-  double mixture_regime_stickiness = 0.0;
-
-  // check = >=0.0
-  // check = <=1.0
-  // desc = transition matrix prior (Dirichlet smoothing)
-  // desc = higher values make transition matrix more uniform
-  double mixture_transition_prior = 0.1;
 
   // check = >=0
   // desc = number of warmup iterations before E-step begins

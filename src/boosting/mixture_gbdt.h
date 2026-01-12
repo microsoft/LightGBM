@@ -287,58 +287,6 @@ class MixtureGBDT : public GBDTBase {
 
   /*! \brief Raw feature data for gate dataset construction */
   std::vector<std::vector<float>> gate_raw_data_;
-
-  // Transition matrix members
-  /*! \brief Whether transition matrix mode is enabled */
-  bool use_transition_;
-
-  /*! \brief Whether Hamilton filter mode is enabled */
-  bool use_hamilton_;
-
-  /*! \brief Transition matrix (K x K): P(regime[t] | regime[t-1]) */
-  std::vector<double> transition_matrix_;
-
-  /*! \brief Transition counts for learning (K x K) */
-  std::vector<double> transition_counts_;
-
-  // Duration-based stickiness members
-  /*! \brief Current regime duration for each sample */
-  std::vector<int> regime_duration_;
-
-  /*! \brief Previous regime (argmax) for each sample */
-  std::vector<int> prev_regime_;
-
-  /*! \brief Regime stickiness factor */
-  double regime_stickiness_;
-
-  /*! \brief Transition matrix prior (Dirichlet smoothing) */
-  double transition_prior_;
-
- protected:
-  /*!
-   * \brief Learn transition matrix from responsibilities
-   */
-  void LearnTransitionMatrix();
-
-  /*!
-   * \brief Apply transition matrix to gate probabilities
-   */
-  void ApplyTransitionMatrix();
-
-  /*!
-   * \brief Apply Hamilton filter update
-   */
-  void ApplyHamiltonFilter();
-
-  /*!
-   * \brief Update regime durations based on current regime
-   */
-  void UpdateRegimeDurations();
-
-  /*!
-   * \brief Apply duration-based stickiness bonus to responsibilities
-   */
-  void ApplyRegimeStickiness();
 };
 
 }  // namespace LightGBM

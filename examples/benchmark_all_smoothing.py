@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-Comprehensive Benchmark: All Regime Smoothing Approaches
+Comprehensive Benchmark: Regime Smoothing Approaches
 
 Compares:
 1. No smoothing (none)
 2. EMA smoothing
 3. Markov smoothing
-4. Transition matrix learning
-5. Hamilton filter
-6. Regime stickiness
-7. Lagged features approach
+4. Lagged features approach
 
 All with Optuna hyperparameter optimization.
 """
@@ -163,74 +160,6 @@ def create_objective_markov(X, y):
     return objective
 
 
-def create_objective_transition(X, y):
-    """Objective for transition matrix learning."""
-    def objective(trial):
-        params = {
-            'objective': 'regression',
-            'boosting': 'mixture',
-            'verbose': -1,
-            'num_threads': 4,
-            'seed': 42,
-            'num_leaves': trial.suggest_int('num_leaves', 8, 64),
-            'max_depth': trial.suggest_int('max_depth', 3, 8),
-            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
-            'mixture_num_experts': trial.suggest_int('mixture_num_experts', 2, 4),
-            'mixture_e_step_alpha': trial.suggest_float('mixture_e_step_alpha', 0.1, 2.0),
-            'mixture_warmup_iters': trial.suggest_int('mixture_warmup_iters', 5, 20),
-            'mixture_r_smoothing': 'transition',
-            'mixture_smoothing_lambda': trial.suggest_float('mixture_smoothing_lambda', 0.1, 0.9),
-            'mixture_transition_prior': trial.suggest_float('mixture_transition_prior', 0.01, 0.5),
-        }
-        return evaluate_cv(X, y, params)
-    return objective
-
-
-def create_objective_hamilton(X, y):
-    """Objective for Hamilton filter."""
-    def objective(trial):
-        params = {
-            'objective': 'regression',
-            'boosting': 'mixture',
-            'verbose': -1,
-            'num_threads': 4,
-            'seed': 42,
-            'num_leaves': trial.suggest_int('num_leaves', 8, 64),
-            'max_depth': trial.suggest_int('max_depth', 3, 8),
-            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
-            'mixture_num_experts': trial.suggest_int('mixture_num_experts', 2, 4),
-            'mixture_e_step_alpha': trial.suggest_float('mixture_e_step_alpha', 0.1, 2.0),
-            'mixture_warmup_iters': trial.suggest_int('mixture_warmup_iters', 5, 20),
-            'mixture_r_smoothing': 'hamilton',
-            'mixture_smoothing_lambda': trial.suggest_float('mixture_smoothing_lambda', 0.1, 0.9),
-            'mixture_transition_prior': trial.suggest_float('mixture_transition_prior', 0.01, 0.5),
-        }
-        return evaluate_cv(X, y, params)
-    return objective
-
-
-def create_objective_stickiness(X, y):
-    """Objective for regime stickiness."""
-    def objective(trial):
-        params = {
-            'objective': 'regression',
-            'boosting': 'mixture',
-            'verbose': -1,
-            'num_threads': 4,
-            'seed': 42,
-            'num_leaves': trial.suggest_int('num_leaves', 8, 64),
-            'max_depth': trial.suggest_int('max_depth', 3, 8),
-            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
-            'mixture_num_experts': trial.suggest_int('mixture_num_experts', 2, 4),
-            'mixture_e_step_alpha': trial.suggest_float('mixture_e_step_alpha', 0.1, 2.0),
-            'mixture_warmup_iters': trial.suggest_int('mixture_warmup_iters', 5, 20),
-            'mixture_r_smoothing': 'none',
-            'mixture_regime_stickiness': trial.suggest_float('mixture_regime_stickiness', 0.1, 2.0),
-        }
-        return evaluate_cv(X, y, params)
-    return objective
-
-
 def create_objective_lagged(X_orig, y_orig):
     """Objective for lagged features approach."""
     def objective(trial):
@@ -267,9 +196,6 @@ def run_benchmark(dataset_name, X, y, n_trials=30):
         ('None', create_objective_none),
         ('EMA', create_objective_ema),
         ('Markov', create_objective_markov),
-        ('Transition', create_objective_transition),
-        ('Hamilton', create_objective_hamilton),
-        ('Stickiness', create_objective_stickiness),
         ('Lagged', create_objective_lagged),
     ]
 
@@ -314,10 +240,10 @@ def main():
     print("SUMMARY: Best RMSE by Method")
     print("="*90)
 
-    methods = ['None', 'EMA', 'Markov', 'Transition', 'Hamilton', 'Stickiness', 'Lagged']
+    methods = ['None', 'EMA', 'Markov', 'Lagged']
     header = f"{'Dataset':<15}" + "".join([f"{m:>12}" for m in methods])
     print(header)
-    print("-"*90)
+    print("-"*70)
 
     for dataset, results in all_results.items():
         row = f"{dataset:<15}"

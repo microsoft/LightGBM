@@ -337,8 +337,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "mixture_e_step_loss",
   "mixture_r_smoothing",
   "mixture_smoothing_lambda",
-  "mixture_regime_stickiness",
-  "mixture_transition_prior",
   "mixture_predict_output",
   "mixture_gate_max_depth",
   "mixture_gate_num_leaves",
@@ -714,13 +712,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK_GE(mixture_smoothing_lambda, 0.0);
   CHECK_LE(mixture_smoothing_lambda, 1.0);
 
-  GetDouble(params, "mixture_regime_stickiness", &mixture_regime_stickiness);
-  CHECK_GE(mixture_regime_stickiness, 0.0);
-
-  GetDouble(params, "mixture_transition_prior", &mixture_transition_prior);
-  CHECK_GE(mixture_transition_prior, 0.0);
-  CHECK_LE(mixture_transition_prior, 1.0);
-
   GetString(params, "mixture_predict_output", &mixture_predict_output);
 
   GetInt(params, "mixture_gate_max_depth", &mixture_gate_max_depth);
@@ -862,8 +853,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[mixture_e_step_loss: " << mixture_e_step_loss << "]\n";
   str_buf << "[mixture_r_smoothing: " << mixture_r_smoothing << "]\n";
   str_buf << "[mixture_smoothing_lambda: " << mixture_smoothing_lambda << "]\n";
-  str_buf << "[mixture_regime_stickiness: " << mixture_regime_stickiness << "]\n";
-  str_buf << "[mixture_transition_prior: " << mixture_transition_prior << "]\n";
   str_buf << "[mixture_predict_output: " << mixture_predict_output << "]\n";
   str_buf << "[mixture_gate_max_depth: " << mixture_gate_max_depth << "]\n";
   str_buf << "[mixture_gate_num_leaves: " << mixture_gate_num_leaves << "]\n";
@@ -1023,8 +1012,6 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"mixture_e_step_loss", {}},
     {"mixture_r_smoothing", {}},
     {"mixture_smoothing_lambda", {}},
-    {"mixture_regime_stickiness", {}},
-    {"mixture_transition_prior", {}},
     {"mixture_predict_output", {}},
     {"mixture_gate_max_depth", {}},
     {"mixture_gate_num_leaves", {}},
@@ -1184,8 +1171,6 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"mixture_e_step_loss", "string"},
     {"mixture_r_smoothing", "string"},
     {"mixture_smoothing_lambda", "double"},
-    {"mixture_regime_stickiness", "double"},
-    {"mixture_transition_prior", "double"},
     {"mixture_predict_output", "string"},
     {"mixture_gate_max_depth", "int"},
     {"mixture_gate_num_leaves", "int"},
