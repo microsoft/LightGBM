@@ -36,6 +36,7 @@ MixtureGBDT::MixtureGBDT()
       max_feature_idx_(0),
       label_idx_(0),
       use_markov_(false),
+      use_momentum_(false),
       num_original_features_(0) {
 }
 
@@ -109,6 +110,7 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
 
   // Check smoothing modes
   use_markov_ = (config_->mixture_r_smoothing == "markov");
+  use_momentum_ = (config_->mixture_r_smoothing == "momentum");
   num_original_features_ = train_data_->num_total_features();
 
   // Initialize gate
@@ -118,9 +120,10 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
   Log::Debug("MixtureGBDT::Init - initializing gate");
 
   if (use_markov_) {
-    // Markov mode: gate probabilities will be blended with prev_proba
-    // Gate still uses original dataset for training
-    Log::Info("MixtureGBDT: Markov mode enabled - gate proba will blend with prev_proba (lambda=%.2f)",
+    Log::Info("MixtureGBDT: Markov mode enabled (lambda=%.2f)",
+              config_->mixture_smoothing_lambda);
+  } else if (use_momentum_) {
+    Log::Info("MixtureGBDT: Momentum mode enabled (lambda=%.2f)",
               config_->mixture_smoothing_lambda);
   }
   gate_->Init(gate_config_.get(), train_data_, nullptr, {});
@@ -138,9 +141,17 @@ void MixtureGBDT::Init(const Config* config, const Dataset* train_data,
   // Initialize Markov-specific buffers
   if (use_markov_) {
     prev_gate_proba_.resize(nk);
-    // Initialize prev_gate_proba_ with uniform distribution
     const double uniform_prob = 1.0 / num_experts_;
     std::fill(prev_gate_proba_.begin(), prev_gate_proba_.end(), uniform_prob);
+  }
+
+  // Initialize Momentum-specific buffers
+  if (use_momentum_) {
+    prev_responsibilities_.resize(nk);
+    momentum_trend_.resize(nk);
+    const double uniform_prob = 1.0 / num_experts_;
+    std::fill(prev_responsibilities_.begin(), prev_responsibilities_.end(), uniform_prob);
+    std::fill(momentum_trend_.begin(), momentum_trend_.end(), 0.0);
   }
 
   // Initialize responsibilities
@@ -379,12 +390,12 @@ void MixtureGBDT::EStep() {
 }
 
 void MixtureGBDT::SmoothResponsibilities() {
-  if (config_->mixture_r_smoothing == "ema") {
-    const double lambda = config_->mixture_smoothing_lambda;
-    if (lambda <= 0.0) {
-      return;
-    }
+  const double lambda = config_->mixture_smoothing_lambda;
+  if (lambda <= 0.0) {
+    return;
+  }
 
+  if (config_->mixture_r_smoothing == "ema") {
     // Apply EMA in row order (assumed to be time order)
     // r[i] = (1-lambda)*r[i] + lambda*r[i-1]
     for (data_size_t i = 1; i < num_data_; ++i) {
@@ -399,6 +410,42 @@ void MixtureGBDT::SmoothResponsibilities() {
       // Renormalize
       for (int k = 0; k < num_experts_; ++k) {
         responsibilities_[i * num_experts_ + k] /= sum;
+      }
+    }
+  } else if (config_->mixture_r_smoothing == "momentum") {
+    // Momentum smoothing: EMA with trend (direction of change)
+    // extrapolated[i] = r[i-1] + lambda * (r[i-1] - r[i-2])
+    // r_smooth[i] = (1-lambda)*r[i] + lambda*extrapolated[i]
+    // This captures "inertia" - if regime is trending in a direction, continue that trend
+
+    for (data_size_t i = 1; i < num_data_; ++i) {
+      double sum = 0.0;
+      for (int k = 0; k < num_experts_; ++k) {
+        size_t idx = i * num_experts_ + k;
+        size_t prev_idx = (i - 1) * num_experts_ + k;
+
+        double extrapolated;
+        if (i >= 2) {
+          // Use trend from previous samples
+          size_t prev2_idx = (i - 2) * num_experts_ + k;
+          double trend = responsibilities_[prev_idx] - responsibilities_[prev2_idx];
+          extrapolated = responsibilities_[prev_idx] + lambda * trend;
+        } else {
+          // Not enough history, just use previous value
+          extrapolated = responsibilities_[prev_idx];
+        }
+
+        // Blend current with extrapolated
+        responsibilities_[idx] = (1.0 - lambda) * responsibilities_[idx] +
+                                 lambda * extrapolated;
+        // Clip to valid range
+        if (responsibilities_[idx] < 0.0) responsibilities_[idx] = 0.0;
+        if (responsibilities_[idx] > 1.0) responsibilities_[idx] = 1.0;
+        sum += responsibilities_[idx];
+      }
+      // Renormalize
+      for (int k = 0; k < num_experts_; ++k) {
+        responsibilities_[i * num_experts_ + k] /= (sum + kMixtureEpsilon);
       }
     }
   }

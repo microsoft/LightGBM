@@ -1186,11 +1186,12 @@ struct Config {
   std::string mixture_e_step_loss = "auto";
 
   // type = enum
-  // options = none, ema, markov
+  // options = none, ema, markov, momentum
   // desc = time-series smoothing method for responsibilities
   // desc = ``none``: no smoothing
   // desc = ``ema``: exponential moving average (assumes row order is time order)
   // desc = ``markov``: use previous gate probabilities for blending
+  // desc = ``momentum``: EMA with trend (considers direction of regime changes)
   std::string mixture_r_smoothing = "none";
 
   // check = >=0.0

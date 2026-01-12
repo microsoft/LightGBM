@@ -276,6 +276,15 @@ class MixtureGBDT : public GBDTBase {
   /*! \brief Previous gate probabilities for Markov mode (N x K) */
   std::vector<double> prev_gate_proba_;
 
+  /*! \brief Whether momentum mode is enabled */
+  bool use_momentum_;
+
+  /*! \brief Previous responsibilities for momentum calculation (N x K) */
+  std::vector<double> prev_responsibilities_;
+
+  /*! \brief Momentum trend for each sample/expert (N x K) */
+  std::vector<double> momentum_trend_;
+
   /*! \brief Gate dataset with extended features for Markov mode */
   std::unique_ptr<Dataset> gate_dataset_;
 

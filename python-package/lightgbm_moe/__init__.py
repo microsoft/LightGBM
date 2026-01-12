@@ -14,10 +14,6 @@ from .basic import (
     Dataset,
     Sequence,
     register_logger,
-    # MoE helper functions
-    create_lagged_features,
-    estimate_transition_matrix,
-    compute_regime_duration_stats,
 )
 from .callback import EarlyStopException, early_stopping, log_evaluation, record_evaluation, reset_parameter
 from .engine import CVBooster, cv, train
@@ -65,8 +61,4 @@ __all__ = [
     "plot_metric",
     "plot_tree",
     "create_tree_digraph",
-    # MoE helper functions
-    "create_lagged_features",
-    "estimate_transition_matrix",
-    "compute_regime_duration_stats",
 ]
