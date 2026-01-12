@@ -348,7 +348,6 @@ void MixtureGBDT::Forward() {
 void MixtureGBDT::EStep() {
   const label_t* labels = train_data_->metadata().label();
   const double alpha = config_->mixture_e_step_alpha;
-  const double r_min = config_->mixture_r_min;
 
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
@@ -364,20 +363,9 @@ void MixtureGBDT::EStep() {
     }
 
     // Apply softmax to get responsibilities
+    // Note: No hard clipping here. Collapse prevention is handled by
+    // Loss-Free Load Balancing (UpdateExpertBias) which adjusts gate bias.
     Softmax(scores.data(), num_experts_, responsibilities_.data() + i * num_experts_);
-
-    // Clip to r_min and renormalize
-    double sum = 0.0;
-    for (int k = 0; k < num_experts_; ++k) {
-      size_t idx = i * num_experts_ + k;
-      if (responsibilities_[idx] < r_min) {
-        responsibilities_[idx] = r_min;
-      }
-      sum += responsibilities_[idx];
-    }
-    for (int k = 0; k < num_experts_; ++k) {
-      responsibilities_[i * num_experts_ + k] /= sum;
-    }
   }
 }
 
@@ -444,15 +432,16 @@ void MixtureGBDT::SmoothResponsibilities() {
 }
 
 void MixtureGBDT::UpdateExpertBias() {
-  // Loss-Free Load Balancing: adjust expert bias based on actual vs target load
+  // Loss-Free Load Balancing: adjust expert bias when usage falls below threshold
   // Reference: "Auxiliary-Loss-Free Load Balancing Strategy for Mixture-of-Experts" (2024)
   //
-  // Algorithm:
-  // 1. Compute actual load for each expert (sum of responsibilities)
-  // 2. Compare with target load (uniform: N/K per expert)
-  // 3. Increase bias for underloaded experts, decrease for overloaded
+  // Modified for regime-switching: only intervene when an expert's usage
+  // falls below the minimum threshold, allowing natural imbalanced distributions.
+  //
+  // min_usage = 1 / (balance_factor * K)
+  // e.g., factor=10, K=2 -> min_usage = 5%, allows 95:5 imbalance
 
-  const double target_load = 1.0 / num_experts_;  // Each expert should get 1/K of total load
+  const double min_usage = 1.0 / (config_->mixture_balance_factor * num_experts_);
   const double bias_update_rate = 0.1;  // η: how quickly to adjust bias
 
   // Compute actual load per expert (mean responsibility)
@@ -466,10 +455,15 @@ void MixtureGBDT::UpdateExpertBias() {
     actual_load[k] /= num_data_;  // Normalize to [0, 1]
   }
 
-  // Update bias: increase for underloaded experts, decrease for overloaded
+  // Update bias: only increase for underloaded experts (below threshold)
+  // Do NOT decrease for overloaded - allow natural imbalance
   for (int k = 0; k < num_experts_; ++k) {
-    double load_diff = target_load - actual_load[k];
-    expert_bias_[k] += bias_update_rate * load_diff;
+    if (actual_load[k] < min_usage) {
+      double load_diff = min_usage - actual_load[k];
+      expert_bias_[k] += bias_update_rate * load_diff;
+    }
+    // Note: We don't decrease bias for overloaded experts
+    // This allows the model to learn naturally imbalanced regime distributions
   }
 
   // Log for debugging (only occasionally to avoid spam)

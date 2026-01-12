@@ -1153,10 +1153,13 @@ struct Config {
   // desc = each expert is a separate GBDT that specializes in different regimes
   int mixture_num_experts = 4;
 
-  // check = >0.0
-  // desc = minimum responsibility value for each expert (prevents expert collapse)
-  // desc = responsibilities are clipped to this minimum value and renormalized
-  double mixture_r_min = 1e-3;
+  // check = >=2
+  // check = <=10
+  // desc = load balancing factor for Loss-Free Load Balancing
+  // desc = minimum expert usage threshold is calculated as 1 / (mixture_balance_factor * num_experts)
+  // desc = lower values enforce more balanced usage, higher values allow more imbalance
+  // desc = e.g., factor=10 with 2 experts allows up to 95:5 imbalance
+  int mixture_balance_factor = 10;
 
   // check = >=1
   // desc = number of gate training iterations per boosting round
