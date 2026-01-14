@@ -1,4 +1,4 @@
-# $ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 
 $settings = @{
     Severity = @(
@@ -24,7 +24,7 @@ $settings = @{
             NoEmptyLineBefore = $true
             IgnoreOneLineBlock = $true
             NewLineAfter = $false
-         }
+        }
         PSPlaceOpenBrace = @{
             Enable = $true
             OnSameLine = $true
