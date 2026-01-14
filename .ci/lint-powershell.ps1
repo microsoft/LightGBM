@@ -24,7 +24,7 @@ $settings = @{
             NoEmptyLineBefore = $true
             IgnoreOneLineBlock = $true
             NewLineAfter = $false
-        }
+         }
         PSPlaceOpenBrace = @{
             Enable = $true
             OnSameLine = $true
@@ -56,4 +56,3 @@ $settings = @{
 }
 
 Invoke-ScriptAnalyzer -Path ./ -Recurse -EnableExit -Settings $settings
-
