@@ -1,3 +1,5 @@
+$ErrorActionPreference = 'Stop'
+
 $settings = @{
     Severity = @(
         'Information',
@@ -54,3 +56,4 @@ $settings = @{
 }
 
 Invoke-ScriptAnalyzer -Path ./ -Recurse -EnableExit -Settings $settings
+
