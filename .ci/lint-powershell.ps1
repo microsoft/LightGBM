@@ -55,5 +55,4 @@ $settings = @{
     }
 }
 
-Invoke-ScriptAnalyzer -Path ./ -Recurse -EnableExit -Settings $settings
-
+Invoke-ScriptAnalyzer -Path ./ -Reurse -EnableExit -Settings $settings
