@@ -1,6 +1,7 @@
 # coding: utf-8
 """Compatibility library."""
 
+import inspect
 from typing import TYPE_CHECKING, Any, List
 
 # scikit-learn is intentionally imported first here,
@@ -22,8 +23,20 @@ try:
         from sklearn.utils.validation import NotFittedError
     try:
         from sklearn.utils.validation import _check_sample_weight
+
+        # As of https://github.com/scikit-learn/scikit-learn/pull/32212, scikit-learn started raising an error
+        # when sample weights are all 0. This argument allow_all_zero_weights can be used switch back
+        # to the old behavior of allowing them.
+        #
+        # This can be removed when the minimum scikit-learn version supported here is v1.9.
+        SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG = (
+            "allow_all_zero_weights" in inspect.signature(_check_sample_weight).parameters
+        )
+
     except ImportError:
         from sklearn.utils.validation import check_consistent_length
+
+        SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG = False
 
         # dummy function to support older version of scikit-learn
         def _check_sample_weight(sample_weight: Any, X: Any, dtype: Any = None) -> Any:
@@ -99,6 +112,7 @@ try:
                 return X, y
 
     SKLEARN_INSTALLED = True
+    SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG = False
     _LGBMBaseCrossValidator = BaseCrossValidator
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin

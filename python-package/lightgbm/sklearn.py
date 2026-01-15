@@ -28,6 +28,7 @@ from .basic import (
 )
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (
+    SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG,
     SKLEARN_INSTALLED,
     LGBMNotFittedError,
     _LGBMAssertAllFinite,
@@ -959,7 +960,10 @@ class LGBMModel(_LGBMModelBase):
                 ensure_min_samples=2,
             )
             if sample_weight is not None:
-                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
+                if SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG:
+                    sample_weight = _LGBMCheckSampleWeight(sample_weight, _X, allow_all_zero_weights=True)
+                else:
+                    sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
 
