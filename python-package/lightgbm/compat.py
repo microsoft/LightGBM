@@ -112,7 +112,6 @@ try:
                 return X, y
 
     SKLEARN_INSTALLED = True
-    SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG = False
     _LGBMBaseCrossValidator = BaseCrossValidator
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin
@@ -128,6 +127,7 @@ try:
     _LGBMValidateData = validate_data
 except ImportError:
     SKLEARN_INSTALLED = False
+    SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG = False
 
     class _LGBMModelBase:  # type: ignore
         """Dummy class for sklearn.base.BaseEstimator."""
