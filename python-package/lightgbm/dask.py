@@ -324,8 +324,8 @@ def _train_part(
         local_eval_X = None
         local_eval_y = None
     else:
-        local_eval_X = tuple(X for X, y in local_eval_set)
-        local_eval_y = tuple(y for X, y in local_eval_set)
+        local_eval_X = tuple(X for X, _ in local_eval_set)
+        local_eval_y = tuple(y for _, y in local_eval_set)
 
     model = model_factory(**params)
     if remote_socket is not None:
@@ -477,8 +477,8 @@ def _train(
         Names of eval_set.
     eval_X : Dask Array or Dask DataFrame, tuple thereof or None, optional (default=None)
         Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
-    eval_y : Dask Array or Dask DataFrame, tuple thereof or None, optional (default=None)
-        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
+    eval_y : Dask Array or Dask DataFrame or Dask Series, tuple thereof or None, optional (default=None)
+        Target values or tuple thereof, e.g. `(y_val0, y_val1)`, to use as validation sets.
     eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
         Weights for each validation set in eval_set. Weights should be non-negative.
     eval_class_weight : list of dict or str, or None, optional (default=None)
