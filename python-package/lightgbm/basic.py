@@ -187,10 +187,12 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
 
 
 def _np2d_to_np1d(mat: np.ndarray) -> Tuple[np.ndarray, int]:
+    dtype: "np.typing.DTypeLike"
     if mat.dtype in (np.float32, np.float64):
         dtype = mat.dtype
     else:
         dtype = np.float32
+    order: "Literal['C', 'F']"
     if mat.flags["F_CONTIGUOUS"]:
         order = "F"
         layout = _C_API_IS_COL_MAJOR
