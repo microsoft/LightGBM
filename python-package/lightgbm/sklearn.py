@@ -23,6 +23,7 @@ from .basic import (
     _LGBM_GroupType,
     _LGBM_InitScoreType,
     _LGBM_LabelType,
+    _LGBM_PredictReturnType,
     _LGBM_WeightType,
     _log_warning,
 )
@@ -1100,7 +1101,7 @@ class LGBMModel(_LGBMModelBase):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ):
+    ) -> _LGBM_PredictReturnType:
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
@@ -1593,7 +1594,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ):
+    ) -> _LGBM_PredictReturnType:
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(
             X=X,
@@ -1623,7 +1624,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ):
+    ) -> _LGBM_PredictReturnType:
         """Docstring is set after definition, using a template."""
         result = super().predict(
             X=X,
@@ -1645,6 +1646,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         elif self.__is_multiclass or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
+            error_msg = (
+                "predict() should return np.ndarray when pred_contrib=False. "
+                "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+            )
+            assert isinstance(result, np.ndarray), error_msg
             return np.vstack((1.0 - result, result)).transpose()
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
