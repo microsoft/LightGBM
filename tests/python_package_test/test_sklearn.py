@@ -2140,7 +2140,7 @@ def test_eval_X_eval_y_eval_set_equivalence():
     gbm2.fit(X_train, y_train, eval_X=(X_test1, X_test2), eval_y=(y_test1, y_test2), callbacks=cbs)
     np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
     assert set(gbm2.evals_result_.keys()) == {"valid_0", "valid_1"}, (
-        f"expected 2 validation sets in evals_result_, got {gbm2.evals_result_.keys()}"
+        f"expected 2 validation sets, 'valid_0' and 'valid_1', in evals_result_, got {gbm2.evals_result_.keys()}"
     )
     assert gbm1.evals_result_["valid_0"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_0"]["l2"][0])
     assert gbm1.evals_result_["valid_1"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_1"]["l2"][0])

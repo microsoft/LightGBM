@@ -382,7 +382,7 @@ _lgbmmodel_doc_fit = """
     eval_X : {X_shape}, or tuple of such inputs, or None, optional (default=None)
         Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
     eval_y : {y_shape}, or tuple of such inputs, or None, optional (default=None)
-        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
+        Target values or tuple thereof, e.g. `(y_val0, y_val1)`, to use as validation sets.
 
     Returns
     -------
