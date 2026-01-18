@@ -927,7 +927,7 @@ class Sequence(abc.ABC):
     - With random access, **data sampling does not need to go through all data**.
     - With range data access, there's **no need to read all data into memory thus reduce memory usage**.
 
-    .. versionadded:: 3.3.0
+    .. version-added:: 3.3.0
 
     Attributes
     ----------
@@ -1127,7 +1127,7 @@ class _InnerPredictor:
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         Returns
         -------
@@ -3366,7 +3366,7 @@ class Dataset:
     def feature_num_bin(self, feature: Union[int, str]) -> int:
         """Get the number of bins for a feature.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
         Parameters
         ----------
@@ -4781,12 +4781,12 @@ class Booster:
         reference : Dataset or None, optional (default=None)
             Reference for ``data``.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query size for ``data``.
@@ -4795,18 +4795,18 @@ class Booster:
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names for ``data``.
             If 'auto' and data is pandas DataFrame, data columns names are used.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features for ``data``.
@@ -4819,23 +4819,23 @@ class Booster:
             The output cannot be monotonically constrained with respect to a categorical feature.
             Floating point numbers in categorical features will be rounded towards 0.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         dataset_params : dict or None, optional (default=None)
             Other parameters for Dataset ``data``.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset for ``data``.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         validate_features : bool, optional (default=False)
             If True, ensure that the features used to refit the model match the original ones.
             Used only if data is pandas DataFrame.
 
-            .. versionadded:: 4.0.0
+            .. version-added:: 4.0.0
 
         **kwargs
             Other parameters for refit.
@@ -4940,7 +4940,7 @@ class Booster:
     ) -> "Booster":
         """Set the output of a leaf.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
         Parameters
         ----------

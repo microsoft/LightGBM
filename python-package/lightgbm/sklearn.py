@@ -584,7 +584,7 @@ class LGBMModel(_LGBMModelBase):
             to using the number of physical cores in the system (its correct detection requires
             either the ``joblib`` or the ``psutil`` util libraries to be installed).
 
-            .. versionchanged:: 4.0.0
+            .. version-changed:: 4.0.0
 
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
@@ -1233,7 +1233,7 @@ class LGBMModel(_LGBMModelBase):
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No n_estimators found. Need to call fit beforehand.")
@@ -1246,7 +1246,7 @@ class LGBMModel(_LGBMModelBase):
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No n_iter found. Need to call fit beforehand.")
@@ -1295,7 +1295,7 @@ class LGBMModel(_LGBMModelBase):
     def feature_names_in_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
 
-        .. versionadded:: 4.5.0
+        .. version-added:: 4.5.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")

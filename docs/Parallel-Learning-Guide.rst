@@ -58,7 +58,7 @@ See `this SynapseML example`_ for additional information on using LightGBM on Sp
 Dask
 ^^^^
 
-.. versionadded:: 3.2.0
+.. version-added:: 3.2.0
 
 LightGBM's Python-package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
 
@@ -233,7 +233,7 @@ You could edit your firewall rules to allow communication between any of the wor
 Using Custom Objective Functions with Dask
 ******************************************
 
-.. versionadded:: 4.0.0
+.. version-added:: 4.0.0
 
 It is possible to customize the boosting process by providing a custom objective function written in Python.
 See the Dask API's documentation for details on how to implement such functions.

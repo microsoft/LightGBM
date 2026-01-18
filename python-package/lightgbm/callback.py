@@ -488,7 +488,7 @@ def early_stopping(
         If float, this single value is used for all metrics.
         If list, its length should match the total number of metrics.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
     Returns
     -------

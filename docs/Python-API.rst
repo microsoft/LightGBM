@@ -37,7 +37,7 @@ Scikit-learn API
 Dask API
 --------
 
-.. versionadded:: 3.2.0
+.. version-added:: 3.2.0
 
 .. autosummary::
     :toctree: pythonapi/

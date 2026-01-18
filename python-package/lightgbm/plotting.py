@@ -665,7 +665,7 @@ def create_tree_digraph(
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
     max_category_values : int, optional (default=10)
         The maximum number of category values to display in tree nodes, if the number of thresholds is greater than this value, thresholds will be collapsed and displayed on the label tooltip instead.
@@ -683,7 +683,7 @@ def create_tree_digraph(
                 graph = lgb.create_tree_digraph(clf, max_category_values=5)
                 HTML(graph._repr_image_svg_xml())
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
@@ -800,7 +800,7 @@ def plot_tree(
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
 
-        .. versionadded:: 4.0.0
+        .. version-added:: 4.0.0
 
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
