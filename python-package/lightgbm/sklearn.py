@@ -494,6 +494,7 @@ def _extract_evaluation_meta_data(
 
 
 def _validate_eval_set_Xy(
+    *,
     eval_set: Optional[List[_LGBM_ScikitValidSet]],
     eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]],
     eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]],
