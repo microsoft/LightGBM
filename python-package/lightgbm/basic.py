@@ -138,6 +138,11 @@ _LGBM_PredictDataType = Union[
     scipy.sparse.spmatrix,
     pa_Table,
 ]
+_LGBM_PredictReturnType = Union[
+    np.ndarray,
+    scipy.sparse.spmatrix,
+    List[scipy.sparse.spmatrix],
+]
 _LGBM_WeightType = Union[
     List[float],
     List[int],
@@ -1098,7 +1103,7 @@ class _InnerPredictor:
         pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> _LGBM_PredictReturnType:
         """Predict logic.
 
         Parameters
@@ -4693,7 +4698,7 @@ class Booster:
         data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> _LGBM_PredictReturnType:
         """Make a prediction.
 
         Parameters
