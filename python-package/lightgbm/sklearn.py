@@ -344,7 +344,7 @@ _lgbmmodel_doc_fit = """
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : list or None, optional (default=None)
         A list of (X, y) tuple pairs to use as validation sets.
-        .. version-deprecated:: 4.7.0
+        .. deprecated:: 4.7.0
             Use ``eval_X`` and ``eval_y`` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
