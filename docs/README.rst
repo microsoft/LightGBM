@@ -51,7 +51,7 @@ You can build the documentation locally without Docker. Just install Doxygen and
 
 .. code:: sh
 
-    pip install breathe sphinx 'sphinx_rtd_theme>=0.5'
+    pip install 'breathe>=4.36.0' 'sphinx>=9.1.0' 'sphinx-rtd-theme>=0.5'
     make html
 
 Note that this will not build the R documentation.
@@ -64,6 +64,6 @@ If you faced any problems with Doxygen installation or you simply do not need do
 
 .. code:: sh
 
-    pip install sphinx 'sphinx_rtd_theme>=0.5'
+    pip install 'sphinx>=9.1.0' 'sphinx-rtd-theme>=3.0.2'
     export C_API=NO || set C_API=NO
     make html
