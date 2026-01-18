@@ -29,6 +29,7 @@ from .basic import (
 )
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (
+    SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG,
     SKLEARN_INSTALLED,
     LGBMNotFittedError,
     _LGBMAssertAllFinite,
@@ -686,9 +687,17 @@ class LGBMModel(_LGBMModelBase):
             "allow_nan": True,
             "X_types": ["2darray", "sparse", "1dlabels"],
             "_xfail_checks": {
-                "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
-                "cannot be set in __init__: "
-                "(see https://github.com/microsoft/LightGBM/issues/2628)",
+                "check_no_attributes_set_in_init": (
+                    "scikit-learn incorrectly asserts that private attributes "
+                    "cannot be set in __init__: "
+                    "(see https://github.com/microsoft/LightGBM/issues/2628)"
+                ),
+                "check_all_zero_sample_weights_error": (
+                    "Beginning in scikit-learn 1.9, by default estimators are expected to reject "
+                    "sample weight arrays that are all-0. LightGBM intentionally accepts such arrays. "
+                    "LightGBM supports some operations where training on an all-0-weight input could make sense, "
+                    "like batch updates with training continuation or manual model creation with forced splits."
+                ),
                 "check_sample_weight_equivalence": check_sample_weight_str,
                 "check_sample_weight_equivalence_on_dense_data": check_sample_weight_str,
                 "check_sample_weight_equivalence_on_sparse_data": check_sample_weight_str,
@@ -960,7 +969,10 @@ class LGBMModel(_LGBMModelBase):
                 ensure_min_samples=2,
             )
             if sample_weight is not None:
-                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
+                if SKLEARN_CHECK_SAMPLE_WEIGHT_HAS_ALLOW_ZERO_WEIGHTS_ARG:
+                    sample_weight = _LGBMCheckSampleWeight(sample_weight, _X, allow_all_zero_weights=True)
+                else:
+                    sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
 
