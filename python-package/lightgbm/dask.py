@@ -476,9 +476,9 @@ def _train(
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_X : Dask Array or Dask DataFrame, tuple thereof or None, optional (default=None)
-        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
+        Feature matrix or tuple thereof, e.g. ``(X_val0, X_val1)``, to use as validation sets.
     eval_y : Dask Array or Dask DataFrame or Dask Series, tuple thereof or None, optional (default=None)
-        Target values or tuple thereof, e.g. `(y_val0, y_val1)`, to use as validation sets.
+        Target values or tuple thereof, e.g. ``(y_val0, y_val1)``, to use as validation sets.
     eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
         Weights for each validation set in eval_set. Weights should be non-negative.
     eval_class_weight : list of dict or str, or None, optional (default=None)
