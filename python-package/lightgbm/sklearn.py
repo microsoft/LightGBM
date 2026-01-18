@@ -342,9 +342,10 @@ _lgbmmodel_doc_fit = """
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : list or None, optional (default=None) (deprecated)
+    eval_set : list or None, optional (default=None)
         A list of (X, y) tuple pairs to use as validation sets.
-        This is deprecated, use `eval_X` and `eval_y` instead.
+        .. version-deprecated:: 4.7.0
+            Use ``eval_X`` and ``eval_y`` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : {eval_sample_weight_shape}
@@ -380,9 +381,9 @@ _lgbmmodel_doc_fit = """
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
     eval_X : {X_shape}, or tuple of such inputs, or None, optional (default=None)
-        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
+        Feature matrix or tuple thereof, e.g. ``(X_val0, X_val1)``, to use as validation sets.
     eval_y : {y_shape}, or tuple of such inputs, or None, optional (default=None)
-        Target values or tuple thereof, e.g. `(y_val0, y_val1)`, to use as validation sets.
+        Target values or tuple thereof, e.g. ``(y_val0, y_val1)``, to use as validation sets.
 
     Returns
     -------
