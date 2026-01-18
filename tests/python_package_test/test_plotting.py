@@ -319,8 +319,6 @@ def test_tree_with_categories_above_max_category_values(tmp_path):
 @pytest.mark.parametrize("use_missing", [True, False])
 @pytest.mark.parametrize("zero_as_missing", [True, False])
 def test_numeric_split_direction(use_missing, zero_as_missing):
-    if use_missing and zero_as_missing:
-        pytest.skip("use_missing and zero_as_missing both set to True")
     X, y = make_synthetic_regression()
     rng = np.random.RandomState(0)
     zero_mask = rng.rand(X.shape[0]) < 0.05
@@ -363,7 +361,12 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
             )
             node = node["left_child"] if direction == "left" else node["right_child"]
         assert node["leaf_index"] == expected_leaf_nan
-        assert expected_leaf_zero != expected_leaf_nan
+        if zero_as_missing:
+            # zeros treated as missing -> same leaf as NaN
+            assert expected_leaf_zero == expected_leaf_nan
+        else:
+            # zeros are regular values -> different leaf from NaN
+            assert expected_leaf_zero != expected_leaf_nan
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
