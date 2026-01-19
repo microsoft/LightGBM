@@ -151,7 +151,7 @@ elif [[ $TASK == "bdist" ]]; then
         # intentionally avoid vendoring libgomp, to reduce the risk of multiple OpenMP libraries
         # being loaded in the same process.
         auditwheel repair \
-            --exclude 'libgomp.so.*' \
+            --exclude 'libgomp.so*' \
             --wheel-dir dist-fixed/ \
             ./dist/lightgbm*.whl
 
@@ -166,9 +166,9 @@ elif [[ $TASK == "bdist" ]]; then
             # hard-code expected tag so CI will fail if 'auditwheel repair' has a surprising result (e.g. newer
             # manylinux tag than we intended)
             if [[ $ARCH == "x86_64" ]]; then
-                PLATFORM="manylinux_2_28_x86_64"
+                PLATFORM="manylinux_2_27_x86_64.manylinux_2_28_x86_64"
             else
-                PLATFORM="manylinux2014_$ARCH"
+                PLATFORM="manylinux2014_aarch64.manylinux_2_17_aarch64"
             fi
             cp "dist/lightgbm-${LGB_VER}-py3-none-${PLATFORM}.whl" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
