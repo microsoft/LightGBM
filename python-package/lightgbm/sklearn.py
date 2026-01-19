@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 
 import copy
+import warnings
 from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
@@ -13,6 +14,7 @@ from .basic import (
     _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
+    LGBMDeprecationWarning,
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
@@ -341,7 +343,9 @@ _lgbmmodel_doc_fit = """
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : list or None, optional (default=None)
-        A list of (X, y) tuple pairs to use as validation sets.
+        .. deprecated:: 4.7.0
+            A list of (X, y) tuple pairs to use as validation sets.
+            Use ``eval_X`` and ``eval_y`` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : {eval_sample_weight_shape}
@@ -376,6 +380,10 @@ _lgbmmodel_doc_fit = """
         See Callbacks in Python API for more information.
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
+    eval_X : {X_shape}, or tuple of such inputs, or None, optional (default=None)
+        Feature matrix or tuple thereof, e.g. ``(X_val0, X_val1)``, to use as validation sets.
+    eval_y : {y_shape}, or tuple of such inputs, or None, optional (default=None)
+        Target values or tuple thereof, e.g. ``(y_val0, y_val1)``, to use as validation sets.
 
     Returns
     -------
@@ -483,6 +491,42 @@ def _extract_evaluation_meta_data(
         return collection.get(i, None)
     else:
         raise TypeError(f"{name} should be dict or list")
+
+
+def _validate_eval_set_Xy(
+    *,
+    eval_set: Optional[List[_LGBM_ScikitValidSet]],
+    eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]],
+    eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]],
+) -> Optional[List[_LGBM_ScikitValidSet]]:
+    """Validate eval args.
+
+    Returns
+    -------
+    eval_set
+    """
+    if eval_set is not None:
+        msg = "The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead."
+        warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
+        if eval_X is not None or eval_y is not None:
+            raise ValueError("Specify either 'eval_set' or 'eval_X' and 'eval_y', but not both.")
+        if isinstance(eval_set, tuple):
+            return [eval_set]
+        else:
+            return eval_set
+    if (eval_X is None) != (eval_y is None):
+        raise ValueError("You must specify eval_X and eval_y, not just one of them.")
+    if eval_set is None and eval_X is not None:
+        if isinstance(eval_X, tuple) != isinstance(eval_y, tuple):
+            raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+        if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
+            if len(eval_X) != len(eval_y):
+                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+        if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
+            eval_set = list(zip(eval_X, eval_y))
+        else:
+            eval_set = [(eval_X, eval_y)]
+    return eval_set
 
 
 class LGBMModel(_LGBMModelBase):
@@ -932,6 +976,9 @@ class LGBMModel(_LGBMModelBase):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
@@ -1000,9 +1047,15 @@ class LGBMModel(_LGBMModelBase):
         )
 
         valid_sets: List[Dataset] = []
+        eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
         if eval_set is not None:
-            if isinstance(eval_set, tuple):
-                eval_set = [eval_set]
+            # check eval_group (only relevant for ranking tasks)
+            if eval_group is not None:
+                if len(eval_group) != len(eval_set):
+                    raise ValueError(
+                        f"Length of eval_group ({len(eval_group)}) not equal to length of eval_set ({len(eval_set)})"
+                    )
+
             for i, valid_data in enumerate(eval_set):
                 # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
@@ -1406,6 +1459,9 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
@@ -1414,6 +1470,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=sample_weight,
             init_score=init_score,
             eval_set=eval_set,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
@@ -1521,6 +1579,9 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
@@ -1578,6 +1639,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             init_score=init_score,
             eval_set=valid_sets,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
@@ -1773,27 +1836,17 @@ class LGBMRanker(LGBMModel):
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
+        *,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
     ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
             raise ValueError("Should set group for ranking task")
 
-        if eval_set is not None:
-            if eval_group is None:
-                raise ValueError("Eval_group cannot be None when eval_set is not None")
-            if len(eval_group) != len(eval_set):
-                raise ValueError("Length of eval_group should be equal to eval_set")
-            if (
-                isinstance(eval_group, dict)
-                and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
-                or isinstance(eval_group, list)
-                and any(group is None for group in eval_group)
-            ):
-                raise ValueError(
-                    "Should set group for all eval datasets for ranking task; "
-                    "if you use dict, the index should start from 0"
-                )
+        if eval_group is None and (eval_set is not None or eval_X is not None or eval_y is not None):
+            raise ValueError("eval_group cannot be None if any of eval_set, eval_X, or eval_y are provided")
 
         self._eval_at = eval_at
         super().fit(
@@ -1804,6 +1857,8 @@ class LGBMRanker(LGBMModel):
             group=group,
             eval_set=eval_set,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
             eval_group=eval_group,
