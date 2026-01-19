@@ -152,6 +152,7 @@ elif [[ $TASK == "bdist" ]]; then
         # being loaded in the same process.
         auditwheel repair \
             --exclude 'libgomp.so*' \
+            --lib-sdir '' \
             --wheel-dir dist-fixed/ \
             ./dist/lightgbm*.whl
 
