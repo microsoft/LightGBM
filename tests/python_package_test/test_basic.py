@@ -105,7 +105,6 @@ def test_booster_rollback_one_iter(rng):
     params = {
         "objective": "binary",
         "verbose": -1,
-        "num_threads": 1,
     }
     bst = lgb.Booster(params, train_data)
 
