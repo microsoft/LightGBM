@@ -685,18 +685,18 @@ def test_list_to_1d_numpy(collection, dtype, rng):
                 ValueError,
                 match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object",
             ):
-                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+                lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
             return
         elif pd.api.types.is_string_dtype(y):
             with pytest.raises(
                 ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: str"
             ):
-                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+                lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
             return
 
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match="column-vector"):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         err_msg = (
@@ -704,10 +704,10 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             r"It should be list, numpy 1-D array or pandas Series"
         )
         with pytest.raises(TypeError, match=err_msg):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
         return
 
-    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name=custom_name)
+    result = lgb.basic._list_to_1d_numpy(data=y, dtype=dtype, name=custom_name)
     assert result.size == 10
     assert result.dtype == dtype
 
