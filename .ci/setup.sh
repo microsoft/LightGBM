@@ -131,7 +131,6 @@ else  # Linux
             sudo yum install -y \
                 ocl-icd-devel \
                 opencl-headers \
-                patchelf \
             || exit 1
         fi
     fi
