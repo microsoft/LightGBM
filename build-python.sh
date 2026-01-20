@@ -307,7 +307,7 @@ if test "${INSTALL}" = true; then
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
         # shellcheck disable=SC2129
         echo '[build-system]' >> ./pyproject.toml
-        echo 'requires = ["setuptools"]' >> ./pyproject.toml
+        echo 'requires = ["setuptools>=77.0.0"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
         echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
