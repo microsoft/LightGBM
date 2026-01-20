@@ -369,11 +369,10 @@ fi
 
 if test "${INSTALL}" = true; then
     echo "[INFO] --- installing lightgbm ---"
-    cd ../dist
     if test "${BUILD_WHEEL}" = true; then
-        PACKAGE_NAME="$(echo lightgbm*.whl)"
+        PACKAGE_FILE="$(echo dist/lightgbm*.whl)"
     else
-        PACKAGE_NAME="$(echo lightgbm*.tar.gz)"
+        PACKAGE_FILE="$(echo dist/lightgbm*.tar.gz)"
     fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     # shellcheck disable=SC2086
@@ -383,9 +382,8 @@ if test "${INSTALL}" = true; then
         --no-cache-dir \
         --no-deps \
         --find-links=. \
-        "${PACKAGE_NAME}"
-    cd ../
+        "${PACKAGE_FILE}"
 fi
 
 echo "[INFO] cleaning up"
-# rm -rf ./lightgbm-python
+rm -rf ./lightgbm-python
