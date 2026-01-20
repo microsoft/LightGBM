@@ -381,7 +381,6 @@ if test "${INSTALL}" = true; then
         --force-reinstall \
         --no-cache-dir \
         --no-deps \
-        --find-links=. \
         "${PACKAGE_FILE}"
 fi
 
