@@ -369,12 +369,12 @@ fi
 
 if test "${INSTALL}" = true; then
     echo "[INFO] --- installing lightgbm ---"
+    cd ..
     if test "${BUILD_WHEEL}" = true; then
         PACKAGE_FILE="$(echo dist/lightgbm*.whl)"
     else
         PACKAGE_FILE="$(echo dist/lightgbm*.tar.gz)"
     fi
-    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     # shellcheck disable=SC2086
     pip install \
         ${PIP_INSTALL_ARGS} \
