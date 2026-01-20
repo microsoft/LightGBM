@@ -302,16 +302,19 @@ if test "${INSTALL}" = true; then
             ./include \
             ./src \
             ./swig
-        # use regular-old setuptools for these builds, to avoid
-        # trying to recompile the shared library
+        # avoid trying to recompile, just use hatchling and copy in relevant files
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
         # shellcheck disable=SC2129
-        echo '[build-system]' >> ./pyproject.toml
-        echo 'requires = ["setuptools>=77.0.0"]' >> ./pyproject.toml
-        echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
-        echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
-        echo "" >> ./MANIFEST.in
+        echo '[build-system]' >> ./pyproject.toml
+        echo 'requires = ["hatchling>=1.27.0"]' >> ./pyproject.toml
+        echo 'build-backend = "hatchling.build"' >> ./pyproject.toml
+        echo "" >> ./pyproject.toml
+        echo '[tool.hatch.build.targets.wheel]' >> ./pyproject.toml
+        # do not consider .gitignore when choosing files to include / exclude
+        echo 'ignore-vcs = true' >> ./pyproject.toml
+        echo 'packages = ["lightgbm"]' >> ./pyproject.toml
+        echo "" >> ./pyproject.toml
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "[INFO] found pre-compiled lib_lightgbm.so"
@@ -385,4 +388,4 @@ if test "${INSTALL}" = true; then
 fi
 
 echo "[INFO] cleaning up"
-rm -rf ./lightgbm-python
+# rm -rf ./lightgbm-python
