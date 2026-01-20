@@ -69,25 +69,52 @@ void GradientDiscretizer::DiscretizeGradients(
   const data_size_t num_data,
   const score_t* input_gradients,
   const score_t* input_hessians) {
+  // Optimized max reduction with vectorization
   double max_gradient = std::fabs(input_gradients[0]);
   double max_hessian = std::fabs(input_hessians[0]);
   const int num_threads = OMP_NUM_THREADS();
-  std::vector<double> thread_max_gradient(num_threads, max_gradient);
-  std::vector<double> thread_max_hessian(num_threads, max_hessian);
+  std::vector<double> thread_max_gradient(num_threads, 0.0);
+  std::vector<double> thread_max_hessian(num_threads, 0.0);
+
+  // Initialize with first element
+  thread_max_gradient[0] = max_gradient;
+  thread_max_hessian[0] = max_hessian;
+
+  // Vectorized parallel reduction
   Threading::For<data_size_t>(0, num_data, 1024,
     [input_gradients, input_hessians, &thread_max_gradient, &thread_max_hessian]
     (int, data_size_t start, data_size_t end) {
       int thread_id = omp_get_thread_num();
-      for (data_size_t i = start; i < end; ++i) {
+      double local_max_gradient = thread_max_gradient[thread_id];
+      double local_max_hessian = thread_max_hessian[thread_id];
+
+      // Process pairs to improve cache efficiency
+      data_size_t i = start;
+      for (; i + 1 < end; i += 2) {
+        double fabs_grad0 = std::fabs(input_gradients[i]);
+        double fabs_hess0 = std::fabs(input_hessians[i]);
+        double fabs_grad1 = std::fabs(input_gradients[i + 1]);
+        double fabs_hess1 = std::fabs(input_hessians[i + 1]);
+
+        if (fabs_grad0 > local_max_gradient) local_max_gradient = fabs_grad0;
+        if (fabs_hess0 > local_max_hessian) local_max_hessian = fabs_hess0;
+        if (fabs_grad1 > local_max_gradient) local_max_gradient = fabs_grad1;
+        if (fabs_hess1 > local_max_hessian) local_max_hessian = fabs_hess1;
+      }
+
+      // Handle remaining element if num_data is odd
+      if (i < end) {
         double fabs_grad = std::fabs(input_gradients[i]);
         double fabs_hess = std::fabs(input_hessians[i]);
-        if (fabs_grad > thread_max_gradient[thread_id]) {
-          thread_max_gradient[thread_id] = fabs_grad;
-        }
-        if (fabs_hess > thread_max_hessian[thread_id]) {
-          thread_max_hessian[thread_id] = fabs_hess;
-        }
-      }});
+        if (fabs_grad > local_max_gradient) local_max_gradient = fabs_grad;
+        if (fabs_hess > local_max_hessian) local_max_hessian = fabs_hess;
+      }
+
+      thread_max_gradient[thread_id] = local_max_gradient;
+      thread_max_hessian[thread_id] = local_max_hessian;
+    });
+
+  // Final reduction across threads
   max_gradient = thread_max_gradient[0];
   max_hessian = thread_max_hessian[0];
   for (int thread_id = 1; thread_id < num_threads; ++thread_id) {

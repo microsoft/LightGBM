@@ -182,6 +182,18 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
+  /*! \brief Populate gradient cache for a leaf to reuse across feature groups */
+  void PopulateGradientCache(int leaf_index, const data_size_t* data_indices,
+                              data_size_t num_data);
+
+  /*! \brief Get pointers to cached or newly reordered gradients
+   * Returns true if cache was hit, false if reordering was performed
+   */
+  bool GetOrReorderGradients(int leaf_index, const data_size_t* data_indices,
+                              data_size_t num_data,
+                              score_t*& out_ordered_gradients,
+                              score_t*& out_ordered_hessians);
+
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
@@ -236,6 +248,22 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
   std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
+
+  /*! \brief Cache for gradient reordering at leaf level - key is leaf_index */
+  struct GradientCacheEntry {
+    int leaf_index;  // Leaf index for validity check
+    std::vector<score_t> ordered_gradients;
+    std::vector<score_t> ordered_hessians;
+    data_size_t num_data_cached;  // Number of data points cached
+    bool is_valid;  // Whether this cache entry is still valid
+  };
+  std::vector<GradientCacheEntry> gradient_cache_;
+
+  /*! \brief Track which leaves have valid cached histograms */
+  std::vector<bool> leaf_histogram_is_cached_;
+
+  /*! \brief Track when each leaf was last split (generation number) */
+  std::vector<int> leaf_split_generation_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

@@ -64,6 +64,18 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
 
+  // Initialize gradient cache for reordering optimization
+  gradient_cache_.resize(config_->num_leaves);
+  for (int i = 0; i < config_->num_leaves; ++i) {
+    gradient_cache_[i].leaf_index = -1;
+    gradient_cache_[i].num_data_cached = 0;
+    gradient_cache_[i].is_valid = false;
+  }
+
+  // Initialize histogram caching tracking
+  leaf_histogram_is_cached_.resize(config_->num_leaves, false);
+  leaf_split_generation_.resize(config_->num_leaves, 0);
+
   if (config_->use_quantized_grad) {
     gradient_discretizer_.reset(new GradientDiscretizer(config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
     gradient_discretizer_->Init(num_data_, config_->num_leaves, num_features_, train_data_);
@@ -288,6 +300,75 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
   return FitByExistingTree(old_tree, gradients, hessians);
 }
 
+void SerialTreeLearner::PopulateGradientCache(int leaf_index, const data_size_t* data_indices,
+                                               data_size_t num_data) {
+  if (leaf_index < 0 || leaf_index >= config_->num_leaves) {
+    return;
+  }
+
+  GradientCacheEntry& cache_entry = gradient_cache_[leaf_index];
+
+  // Skip if already valid for this leaf with same data
+  if (cache_entry.is_valid && cache_entry.leaf_index == leaf_index &&
+      cache_entry.num_data_cached == num_data) {
+    return;
+  }
+
+  // Allocate cache if needed
+  if (cache_entry.ordered_gradients.size() < num_data) {
+    cache_entry.ordered_gradients.resize(num_data);
+    cache_entry.ordered_hessians.resize(num_data);
+  }
+
+  // Reorder gradients and hessians into cache
+  if (data_indices != nullptr) {
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      cache_entry.ordered_gradients[i] = gradients_[data_indices[i]];
+      cache_entry.ordered_hessians[i] = hessians_[data_indices[i]];
+    }
+  }
+
+  cache_entry.leaf_index = leaf_index;
+  cache_entry.num_data_cached = num_data;
+  cache_entry.is_valid = true;
+}
+
+bool SerialTreeLearner::GetOrReorderGradients(int leaf_index, const data_size_t* data_indices,
+                                               data_size_t num_data,
+                                               score_t*& out_ordered_gradients,
+                                               score_t*& out_ordered_hessians) {
+  if (leaf_index < 0 || leaf_index >= config_->num_leaves) {
+    // Cache miss - use default ordered arrays
+    out_ordered_gradients = ordered_gradients_.data();
+    out_ordered_hessians = ordered_hessians_.data();
+    return false;
+  }
+
+  GradientCacheEntry& cache_entry = gradient_cache_[leaf_index];
+
+  // Check if cache is valid for this leaf
+  if (cache_entry.is_valid && cache_entry.leaf_index == leaf_index &&
+      cache_entry.num_data_cached == num_data) {
+    // Cache hit - return cached gradients
+    out_ordered_gradients = cache_entry.ordered_gradients.data();
+    out_ordered_hessians = cache_entry.ordered_hessians.data();
+    return true;
+  }
+
+  // Cache miss - reorder into default array and return
+  if (data_indices != nullptr) {
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      ordered_gradients_[i] = gradients_[data_indices[i]];
+      ordered_hessians_[i] = hessians_[data_indices[i]];
+    }
+  }
+  out_ordered_gradients = ordered_gradients_.data();
+  out_ordered_hessians = ordered_hessians_.data();
+  return false;
+}
+
 void SerialTreeLearner::BeforeTrain() {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain", global_timer);
   // reset histogram pool
@@ -300,9 +381,12 @@ void SerialTreeLearner::BeforeTrain() {
 
   constraints_->Reset();
 
-  // reset the splits for leaves
+  // Invalidate gradient cache entries for new tree training
   for (int i = 0; i < config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
+    gradient_cache_[i].is_valid = false;
+    leaf_histogram_is_cached_[i] = false;
+    leaf_split_generation_[i] = 0;
   }
 
   // Sumup for root
@@ -907,6 +991,20 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     gradient_discretizer_->SetNumBitsInHistogramBin<false>(*left_leaf, *right_leaf,
                                                     data_partition_->leaf_count(*left_leaf),
                                                     data_partition_->leaf_count(*right_leaf));
+  }
+
+  // Invalidate histogram cache for the split leaf and its children
+  if (best_leaf >= 0 && best_leaf < config_->num_leaves) {
+    leaf_histogram_is_cached_[best_leaf] = false;
+    leaf_split_generation_[best_leaf]++;
+  }
+  if (*left_leaf >= 0 && *left_leaf < config_->num_leaves) {
+    leaf_histogram_is_cached_[*left_leaf] = false;
+    leaf_split_generation_[*left_leaf] = 0;
+  }
+  if (*right_leaf >= 0 && *right_leaf < config_->num_leaves) {
+    leaf_histogram_is_cached_[*right_leaf] = false;
+    leaf_split_generation_[*right_leaf] = 0;
   }
 
   #ifdef DEBUG
