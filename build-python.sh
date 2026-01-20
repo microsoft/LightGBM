@@ -289,11 +289,11 @@ create_isolated_source_dir
 
 cd ./lightgbm-python
 
-# installation involves building the wheel + `pip install`-ing it
+# if 'install' was passed, choose the type of package to build and install
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
-        BUILD_SDIST=true
-        BUILD_WHEEL=false
+        BUILD_SDIST=false
+        BUILD_WHEEL=true
         BUILD_ARGS=""
         rm -rf \
             ./cmake \
@@ -341,7 +341,11 @@ if test "${INSTALL}" = true; then
             exit 1
         fi
         rm -f ./*.bak
-    else
+    fi
+
+    # at this point, if 'install' was passed but the package type wasn't indicated, prefer wheel
+    if test "${BUILD_SDIST}" = false && test "${BUILD_WHEEL}" = false; then
+        echo "[INFO] 'install' passed but no package type ('bdist_wheel', 'sdist') chosen. Defaulting to 'bdist_wheel'."
         BUILD_SDIST="false"
         BUILD_WHEEL="true"
     fi
@@ -385,4 +389,4 @@ if test "${INSTALL}" = true; then
 fi
 
 echo "[INFO] cleaning up"
-rm -rf ./lightgbm-python
+#rm -rf ./lightgbm-python
