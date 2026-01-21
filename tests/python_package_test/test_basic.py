@@ -95,6 +95,49 @@ def test_basic(tmp_path):
     np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname)
 
 
+def test_booster_rollback_one_iter(rng):
+    """Test that Booster.rollback_one_iter() correctly rolls back one boosting iteration."""
+    X = rng.uniform(size=(100, 5))
+    y = rng.integers(0, 2, size=(100,))
+    X_test = rng.uniform(size=(10, 5))
+
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+    }
+    bst = lgb.Booster(params, train_data)
+
+    # Train for 10 iterations
+    num_iterations = 10
+    for _ in range(num_iterations):
+        bst.update()
+
+    assert bst.current_iteration() == num_iterations
+    assert bst.num_trees() == num_iterations
+
+    # Get predictions before rollback
+    pred_before = bst.predict(X_test)
+
+    # Rollback one iteration
+    result = bst.rollback_one_iter()
+
+    # Verify rollback decremented both iteration count and tree count
+    assert bst.current_iteration() == num_iterations - 1
+    assert bst.num_trees() == num_iterations - 1
+    # Verify it returns self for method chaining
+    assert result is bst
+
+    # Verify predictions actually changed (proves tree was removed, not just counter)
+    pred_after = bst.predict(X_test)
+    assert not np.allclose(pred_before, pred_after)
+
+    # Verify multiple rollbacks work
+    bst.rollback_one_iter()
+    assert bst.current_iteration() == num_iterations - 2
+    assert bst.num_trees() == num_iterations - 2
+
+
 class NumpySequence(lgb.Sequence):
     def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
