@@ -482,3 +482,20 @@ dmypy.json
 
 # files created by release tasks
 /release-artifacts
+
+# Benchmark and temporary files
+/build_baseline/
+/build_optimized/
+/build_opt/
+/lightgbm_baseline
+/lightgbm_optimized
+/benchmark_datasets/
+benchmark_*.py
+generate_*.py
+remove_categorical_cols.py
+BENCHMARK_*.md
+BENCHMARK_*.json
+BENCHMARK_SETUP_SUMMARY.md
+BENCHMARKING_PLAN_FINAL.md
+OPTIMIZATION_BRANCH_README.md
+OPTIMIZATION_STATUS_REPORT.md
