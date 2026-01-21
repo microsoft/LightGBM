@@ -22,6 +22,7 @@ from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_pa
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
     DASK_INSTALLED,
     PANDAS_INSTALLED,
@@ -2048,3 +2049,101 @@ def test_classifier_fit_detects_classes_every_time():
         assert model.objective_ == "multiclass"
         model.fit(X, y_bin)
         assert model.objective_ == "binary"
+
+
+def test_eval_set_deprecation():
+    """Test use of eval_set raises deprecation warning."""
+    X, y = make_synthetic_regression(n_samples=10)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    gbm = lgb.LGBMRegressor()
+    msg = "The argument 'eval_set' is deprecated.*"
+    with pytest.warns(LGBMDeprecationWarning, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+
+
+def test_eval_set_raises():
+    """Test that eval_set and eval_X raise errors where appropriate."""
+    X, y = make_synthetic_regression(n_samples=10)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    gbm = lgb.LGBMRegressor()
+
+    msg = "Specify either 'eval_set' or 'eval_X'.*"
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_X=X_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_y=y_test)
+
+    msg = "You must specify eval_X and eval_y, not just one of them."
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=X_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_y=y_test)
+
+    msg = "If eval_X is a tuple, y_val must be a tuple of same length, and vice versa."
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=(X_test, X_test), eval_y=y_test)
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=X_test, eval_y=(y_test, y_test))
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X_train, y_train, eval_X=(X_test,) * 3, eval_y=(y_test,) * 2)
+
+
+def test_ranker_eval_set_raises():
+    """Test that LGBMRanker raises expected errors from validating eval_group."""
+    X, y, g = _create_data(task="ranking", n_samples=1_000)
+    X_test, y_test, g_test = _create_data(task="ranking", n_samples=100)
+    gbm = lgb.LGBMRanker()
+
+    msg = "eval_group cannot be None if any of eval_set, eval_X, or eval_y are provided"
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_set=[(X_test, y_test)])
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_X=(X_test,))
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_y=(y_test,))
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_X=(X_test,), eval_y=(y_test,))
+
+    msg = re.escape("Length of eval_group (1) not equal to length of eval_set (2)")
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_X=(X_test, X_test), eval_y=(y_test, y_test), eval_group=[g_test])
+    with pytest.raises(ValueError, match=msg):
+        gbm.fit(X, y, group=g, eval_set=[(X_test, y_test), (X_test, y_test)], eval_group=[g_test])
+
+
+def test_eval_X_eval_y_eval_set_equivalence():
+    """Test that eval_X and eval_y are equivalent to eval_set."""
+    X, y = make_synthetic_regression()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    params = {
+        "deterministic": True,
+        "force_row_wise": True,
+        "n_jobs": 1,
+        "seed": 708,
+    }
+    cbs = [lgb.early_stopping(2)]
+    gbm1 = lgb.LGBMRegressor(**params)
+    with pytest.warns(LGBMDeprecationWarning, match="The argument 'eval_set' is deprecated.*"):
+        gbm1.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=cbs)
+    gbm2 = lgb.LGBMRegressor(**params)
+    gbm2.fit(X_train, y_train, eval_X=X_test, eval_y=y_test, callbacks=cbs)
+    np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
+    assert gbm1.evals_result_["valid_0"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_0"]["l2"][0])
+    # 2 evaluation sets
+    n = X_test.shape[0]
+    X_test1, X_test2 = X_test[: n // 2], X_test[n // 2 :]
+    y_test1, y_test2 = y_test[: n // 2], y_test[n // 2 :]
+    gbm1 = lgb.LGBMRegressor(**params)
+    with pytest.warns(LGBMDeprecationWarning, match="The argument 'eval_set' is deprecated.*"):
+        gbm1.fit(X_train, y_train, eval_set=[(X_test1, y_test1), (X_test2, y_test2)], callbacks=cbs)
+    gbm2 = lgb.LGBMRegressor(**params)
+    gbm2.fit(X_train, y_train, eval_X=(X_test1, X_test2), eval_y=(y_test1, y_test2), callbacks=cbs)
+    np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
+    assert set(gbm2.evals_result_.keys()) == {"valid_0", "valid_1"}, (
+        f"expected 2 validation sets, 'valid_0' and 'valid_1', in evals_result_, got {gbm2.evals_result_.keys()}"
+    )
+    assert gbm1.evals_result_["valid_0"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_0"]["l2"][0])
+    assert gbm1.evals_result_["valid_1"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_1"]["l2"][0])
+    assert gbm2.evals_result_["valid_0"]["l2"] != gbm2.evals_result_["valid_1"]["l2"], (
+        "Evaluation results for the 2 validation sets are not different. This might mean they weren't both used."
+    )

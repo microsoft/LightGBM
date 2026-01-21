@@ -95,6 +95,49 @@ def test_basic(tmp_path):
     np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname)
 
 
+def test_booster_rollback_one_iter(rng):
+    """Test that Booster.rollback_one_iter() correctly rolls back one boosting iteration."""
+    X = rng.uniform(size=(100, 5))
+    y = rng.integers(0, 2, size=(100,))
+    X_test = rng.uniform(size=(10, 5))
+
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+    }
+    bst = lgb.Booster(params, train_data)
+
+    # Train for 10 iterations
+    num_iterations = 10
+    for _ in range(num_iterations):
+        bst.update()
+
+    assert bst.current_iteration() == num_iterations
+    assert bst.num_trees() == num_iterations
+
+    # Get predictions before rollback
+    pred_before = bst.predict(X_test)
+
+    # Rollback one iteration
+    result = bst.rollback_one_iter()
+
+    # Verify rollback decremented both iteration count and tree count
+    assert bst.current_iteration() == num_iterations - 1
+    assert bst.num_trees() == num_iterations - 1
+    # Verify it returns self for method chaining
+    assert result is bst
+
+    # Verify predictions actually changed (proves tree was removed, not just counter)
+    pred_after = bst.predict(X_test)
+    assert not np.allclose(pred_before, pred_after)
+
+    # Verify multiple rollbacks work
+    bst.rollback_one_iter()
+    assert bst.current_iteration() == num_iterations - 2
+    assert bst.num_trees() == num_iterations - 2
+
+
 class NumpySequence(lgb.Sequence):
     def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
@@ -685,18 +728,18 @@ def test_list_to_1d_numpy(collection, dtype, rng):
                 ValueError,
                 match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object",
             ):
-                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+                lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
             return
         elif pd.api.types.is_string_dtype(y):
             with pytest.raises(
                 ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: str"
             ):
-                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+                lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
             return
 
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match="column-vector"):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         err_msg = (
@@ -704,10 +747,10 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             r"It should be list, numpy 1-D array or pandas Series"
         )
         with pytest.raises(TypeError, match=err_msg):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            lgb.basic._list_to_1d_numpy(data=y, dtype=np.float32, name=custom_name)
         return
 
-    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name=custom_name)
+    result = lgb.basic._list_to_1d_numpy(data=y, dtype=dtype, name=custom_name)
     assert result.size == 10
     assert result.dtype == dtype
 
