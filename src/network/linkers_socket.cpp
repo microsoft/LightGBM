@@ -184,7 +184,7 @@ void Linkers::Construct() {
   }
 
   // start listener
-  listener_->SetTimeout(socket_timeout_);
+  listener_->SetTimeout(socket_timeout_ * 1000 * 60);
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
   const int connect_fail_constant_factor = 20;
