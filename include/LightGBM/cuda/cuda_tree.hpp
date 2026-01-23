@@ -97,7 +97,15 @@ class CUDATree : public Tree {
 
   const double* cuda_leaf_value() const { return cuda_leaf_value_; }
 
-  double* cuda_leaf_value_ref() { return cuda_leaf_value_; }
+  double* cuda_leaf_value_ref() const { return cuda_leaf_value_; }
+
+  int host_leaf_depth(int leaf_index) { 
+    if (leaf_index >= 0 && leaf_index < num_leaves_) {
+      return host_leaf_depth_[leaf_index];
+    } else {
+      return -1;
+    }
+  }
 
   inline void Shrinkage(double rate) override;
 
@@ -160,6 +168,8 @@ class CUDATree : public Tree {
   CUDAVector<uint32_t> cuda_bitset_inner_;
   CUDAVector<int> cuda_cat_boundaries_;
   CUDAVector<int> cuda_cat_boundaries_inner_;
+
+  std::vector<int> host_leaf_depth_;
 
   cudaStream_t cuda_stream_;
 
