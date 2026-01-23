@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <ifaddrs.h>
+#include <sys/time.h>
 
 #endif  // defined(_WIN32)
 
@@ -117,8 +118,16 @@ class TcpSocket {
   }
   ~TcpSocket() {
   }
-  inline void SetTimeout(int timeout) {
-    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&timeout), sizeof(timeout));
+  inline void SetTimeout(int timeout_ms) {
+#if defined(_WIN32)
+    DWORD timeout = static_cast<DWORD>(timeout_ms);
+    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+#else
+    struct timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+#endif
   }
   inline void ConfigSocket() {
     if (sockfd_ == INVALID_SOCKET) {
