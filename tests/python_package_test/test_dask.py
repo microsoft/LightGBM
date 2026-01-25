@@ -1577,6 +1577,57 @@ def test_predict_with_raw_score(task, output, cluster):
 
 
 @pytest.mark.parametrize("output", data_output)
+@pytest.mark.parametrize("task", tasks)
+def test_predict_returns_expected_dtypes(task, output, cluster):
+    if task == "ranking" and output == "scipy_csr_matrix":
+        pytest.skip("LGBMRanker is not currently tested on sparse matrices")
+
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(objective=task, output=output, group=None)
+
+        model_factory = task_to_dask_factory[task]
+        params = {
+            "client": client,
+            "n_estimators": 1,
+            "num_leaves": 2,
+            "time_out": 5,
+            "verbose": -1,
+        }
+        model = model_factory(**params)
+        model.fit(dX, dy, group=dg)
+
+        # use a small sub-sample (to keep the tests fast)
+        if output.startswith("dataframe"):
+            dX_sample = dX.sample(frac=0.001)
+        else:
+            dX_sample = dX[:1,]
+            dX_sample.persist()
+
+        # raw predictions are always float64
+        raw_predictions = model.predict(dX_sample, raw_score=True).compute()
+        assert raw_predictions.dtype == np.float64
+
+        # pred_contrib are always float64
+        if output.startswith("scipy"):
+            preds_contrib = [arr.compute() for arr in model.predict(dX_sample, pred_contrib=True)]
+            assert all(arr.dtype == np.float64 for arr in preds_contrib)
+        else:
+            preds_contrib = model.predict(dX_sample, pred_contrib=True).compute()
+            assert preds_contrib.dtype == np.float64
+
+        # pred_leaves are:
+        #
+        #   - int64 for binary and multiclass classification
+        #   - float64 for ranking and regression
+        #
+        preds_leaves = model.predict(dX_sample, pred_leaves=True).compute()
+        if task.endswith("classification"):
+            assert preds_leaves.dtype == np.int64
+        else:
+            assert preds_leaves.dtype == np.float64
+
+
+@pytest.mark.parametrize("output", data_output)
 @pytest.mark.parametrize("use_init_score", [False, True])
 def test_predict_stump(output, use_init_score, cluster, rng):
     with Client(cluster) as client:
