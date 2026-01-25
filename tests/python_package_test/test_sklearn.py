@@ -2001,25 +2001,32 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         raise ValueError(f"Unrecognized task: '{task}'")
 
     # --- prediction dtypes ---#
-    # raw predictions are always float64
-    assert model.predict(X, raw_score=True).dtype == np.float64
 
-    # pred_contrib are always float64
+    # default predictions:
+    #
+    #  * classification: int64
+    #  * ranking: float64
+    #  * regression: float64
+    #
+    if task.endswith("classification"):
+        assert preds.dtype == np.int64
+    else:
+        assert preds.dtype == np.float64
+
+    # raw predictions: always float64
+    preds_raw = model.predict(X, raw_score=True)
+    assert preds_raw.dtype == np.float64
+
+    # pred_contrib: always float64
     if X_type.startswith("scipy"):
         assert all(arr.dtype == np.float64 for arr in model.predict(X, pred_contrib=True))
     else:
-        assert model.predict(X, pred_contrib=True).dtype == np.float64
+        preds_contrib = model.predict(X, pred_contrib=True)
+        assert preds_contrib.dtype == np.float64
 
-    # pred_leaves are:
-    #
-    #   - int64 for binary and multiclass classification
-    #   - float64 for ranking and regression
-    #
-    preds_leaves = model.predict(X, pred_leaves=True)
-    if task.endswith("classification"):
-        assert preds_leaves.dtype == np.int64
-    else:
-        assert preds_leaves.dtype == np.float64
+    # pred_leavs: always int32
+    preds_leaves = model.predict(X, pred_leaf=True)
+    assert preds_leaves.dtype == np.int32
 
 
 @pytest.mark.parametrize("X_type", all_x_types)

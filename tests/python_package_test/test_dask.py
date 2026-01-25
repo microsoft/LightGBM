@@ -1603,11 +1603,23 @@ def test_predict_returns_expected_dtypes(task, output, cluster):
             dX_sample = dX[:1,]
             dX_sample.persist()
 
-        # raw predictions are always float64
-        raw_predictions = model.predict(dX_sample, raw_score=True).compute()
-        assert raw_predictions.dtype == np.float64
+        # default predictions:
+        #
+        #  * classification: int64
+        #  * ranking: float64
+        #  * regression: float64
+        #
+        preds = model.predict(dX_sample).compute()
+        if task.endswith("classification"):
+            assert preds.dtype == np.int64
+        else:
+            assert preds.dtype == np.float64
 
-        # pred_contrib are always float64
+        # raw predictions: always float64
+        preds_raw = model.predict(dX_sample, raw_score=True).compute()
+        assert preds_raw.dtype == np.float64
+
+        # pred_contrib: always float64
         if output.startswith("scipy"):
             preds_contrib = [arr.compute() for arr in model.predict(dX_sample, pred_contrib=True)]
             assert all(arr.dtype == np.float64 for arr in preds_contrib)
@@ -1615,16 +1627,9 @@ def test_predict_returns_expected_dtypes(task, output, cluster):
             preds_contrib = model.predict(dX_sample, pred_contrib=True).compute()
             assert preds_contrib.dtype == np.float64
 
-        # pred_leaves are:
-        #
-        #   - int64 for binary and multiclass classification
-        #   - float64 for ranking and regression
-        #
-        preds_leaves = model.predict(dX_sample, pred_leaves=True).compute()
-        if task.endswith("classification"):
-            assert preds_leaves.dtype == np.int64
-        else:
-            assert preds_leaves.dtype == np.float64
+        # pred_leavs: always int32
+        preds_leaves = model.predict(dX_sample, pred_leaf=True).compute()
+        assert preds_leaves.dtype == np.int32
 
 
 @pytest.mark.parametrize("output", data_output)
