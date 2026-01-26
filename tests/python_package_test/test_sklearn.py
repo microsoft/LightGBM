@@ -1989,27 +1989,31 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
 
     # --- prediction accuracy --#
     preds = model.predict(X)
-    # if task == "binary-classification":
-    #     assert accuracy_score(y, preds) >= 0.99
-    # elif task == "multiclass-classification":
-    #     assert accuracy_score(y, preds) >= 0.99
-    # elif task == "regression":
-    #     assert r2_score(y, preds) > 0.86
-    # elif task == "ranking":
-    #     assert spearmanr(preds, y).correlation >= 0.99
-    # else:
-    #     raise ValueError(f"Unrecognized task: '{task}'")
+    if task == "binary-classification":
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == "multiclass-classification":
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == "regression":
+        assert r2_score(y, preds) > 0.86
+    elif task == "ranking":
+        assert spearmanr(preds, y).correlation >= 0.99
+    else:
+        raise ValueError(f"Unrecognized task: '{task}'")
 
     # --- prediction dtypes ---#
 
     # default predictions:
     #
-    #  * classification: int64
+    #  * classification: int32 or int64
     #  * ranking: float64
     #  * regression: float64
     #
     if task.endswith("classification"):
-        assert preds.dtype == np.int64
+        # preds go through LabelEncoder.inverse_transform() and have the same
+        # dtype as model.classes_ (expected to be an integer type, but exact size
+        # varies across scikit-learn versions).
+        assert preds.dtype == model.classes_.dtype
+        assert preds.dtype in (np.int32, np.int64)
     else:
         assert preds.dtype == np.float64
 
