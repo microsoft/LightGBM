@@ -1988,7 +1988,7 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     model.fit(**params_fit)
 
     # --- prediction accuracy --#
-    # preds = model.predict(X)
+    preds = model.predict(X)
     # if task == "binary-classification":
     #     assert accuracy_score(y, preds) >= 0.99
     # elif task == "multiclass-classification":

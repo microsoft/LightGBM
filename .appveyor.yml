@@ -12,8 +12,8 @@ branches:
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
     - COMPILER: MINGW
       TASK: python
 
