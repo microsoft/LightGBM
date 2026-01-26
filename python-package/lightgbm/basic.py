@@ -1289,6 +1289,7 @@ class _InnerPredictor:
     ) -> Tuple[np.ndarray, int]:
         data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
+        raise RuntimeError(f"type_ptr_data: {type_ptr_data}")
         n_preds = self.__get_num_preds(
             start_iteration=start_iteration,
             num_iteration=num_iteration,
