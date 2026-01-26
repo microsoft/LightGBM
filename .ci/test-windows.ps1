@@ -147,8 +147,7 @@ if ($env:TASK -eq "bdist") {
     $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
-pytest -vvv "tests/python_package_test/test_sklearn.py::test_classification_and_regression_minimally_work_with_all_accepted_data_types" ; Assert-Output $?
-exit 0
+pytest $tests ; Assert-Output $?
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
     Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
