@@ -1613,7 +1613,7 @@ def test_predict_returns_expected_dtypes(task, output, cluster):
         if task.endswith("classification"):
             # preds go through LabelEncoder.inverse_transform() and have the same
             # dtype as model.classes_ (expected to be an integer type, but exact size
-            # varies across scikit-learn versions).
+            # varies across numpy versions and operating systems)
             assert preds.dtype == model.classes_.dtype
             assert preds.dtype in (np.int32, np.int64)
         else:
