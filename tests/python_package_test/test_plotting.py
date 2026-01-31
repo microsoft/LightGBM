@@ -121,6 +121,11 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     with pytest.raises(TypeError, match="figsize must be a tuple of 2 elements."):
         lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, figsize="not a tuple")
 
+    # test max_num_features parameter
+    ax7 = lgb.plot_importance(gbm0, max_num_features=5)
+    assert isinstance(ax7, matplotlib.axes.Axes)
+    assert len(ax7.patches) == 5
+
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, importance_type="gain")
     gbm2.fit(X_train, y_train)
 
@@ -186,6 +191,11 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     assert ax2.patches[1].get_facecolor() == (0.75, 0.75, 0, 1.0)  # y
     assert ax2.patches[2].get_facecolor() == (0, 0.5, 0, 1.0)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1.0, 1.0)  # b
+
+    # test xlim parameter
+    ax3 = lgb.plot_split_value_histogram(gbm0, 27, xlim=(0, 100))
+    assert isinstance(ax3, matplotlib.axes.Axes)
+    assert ax3.get_xlim() == (0, 100)
 
     with pytest.raises(
         ValueError, match="Cannot plot split value histogram, because feature 0 was not used in splitting"
@@ -557,3 +567,8 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
     legend_items = ax4.get_legend().get_texts()
     assert len(legend_items) == 1
     assert legend_items[0].get_text() == "valid_0"
+
+    # test xlim parameter
+    ax5 = lgb.plot_metric(evals_result0, metric="binary_logloss", xlim=(0, 15))
+    assert isinstance(ax5, matplotlib.axes.Axes)
+    assert ax5.get_xlim() == (0, 15)
