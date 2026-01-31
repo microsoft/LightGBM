@@ -111,7 +111,7 @@ def test_plot_importance(params, breast_cancer_split, train_data):
         lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, ylim="not a tuple")
 
     ax6 = lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, figsize=(0, 30))
-    assert isinstance(ax5, matplotlib.axes.Axes)
+    assert isinstance(ax6, matplotlib.axes.Axes)
     assert ax6.get_title() == ""
     assert ax6.get_xlabel() == ""
     assert ax6.get_ylabel() == ""
