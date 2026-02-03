@@ -814,14 +814,14 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   } else {
     std::vector<uint32_t> cat_bitset_inner =
         Common::ConstructBitset(best_split_info.cat_threshold.data(),
-                                best_split_info.num_cat_threshold);
+                                static_cast<size_t>(best_split_info.num_cat_threshold));
     std::vector<int> threshold_int(best_split_info.num_cat_threshold);
     for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {
       threshold_int[i] = static_cast<int>(train_data_->RealThreshold(
           inner_feature_index, best_split_info.cat_threshold[i]));
     }
     std::vector<uint32_t> cat_bitset = Common::ConstructBitset(
-        threshold_int.data(), best_split_info.num_cat_threshold);
+        threshold_int.data(), static_cast<size_t>(best_split_info.num_cat_threshold));
 
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            cat_bitset_inner.data(),

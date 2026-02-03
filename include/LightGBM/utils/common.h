@@ -816,21 +816,21 @@ inline static std::vector<uint32_t> EmptyBitset(size_t n) {
 template<typename T>
 inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
   auto& ref_v = *vec;
-  int i1 = val / 32;
-  int i2 = val % 32;
-  if (static_cast<int>(vec->size()) < i1 + 1) {
+  size_t i1 = val / 32;
+  size_t i2 = val % 32;
+  if (vec->size() < i1 + 1) {
     vec->resize(i1 + 1, 0);
   }
   ref_v[i1] |= (1 << i2);
 }
 
 template<typename T>
-inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
+inline static std::vector<uint32_t> ConstructBitset(const T* vals, size_t n) {
   std::vector<uint32_t> ret;
   for (int i = 0; i < n; ++i) {
-    int i1 = vals[i] / 32;
-    int i2 = vals[i] % 32;
-    if (static_cast<int>(ret.size()) < i1 + 1) {
+    size_t i1 = vals[i] / 32;
+    size_t i2 = vals[i] % 32;
+    if (ret.size() < i1 + 1) {
       ret.resize(i1 + 1, 0);
     }
     ret[i1] |= (1 << i2);
@@ -839,12 +839,12 @@ inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
 }
 
 template<typename T>
-inline static bool FindInBitset(const uint32_t* bits, int n, T pos) {
-  int i1 = pos / 32;
+inline static bool FindInBitset(const uint32_t* bits, size_t n, T pos) {
+  size_t i1 = pos / 32;
   if (i1 >= n) {
     return false;
   }
-  int i2 = pos % 32;
+  size_t i2 = pos % 32;
   return (bits[i1] >> i2) & 1;
 }
 
