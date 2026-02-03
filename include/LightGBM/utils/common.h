@@ -807,8 +807,8 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   }
 }
 
-inline static std::vector<uint32_t> EmptyBitset(int n) {
-  int size = n / 32;
+inline static std::vector<uint32_t> EmptyBitset(size_t n) {
+  size_t size = n / 32;
   if (n % 32 != 0) ++size;
   return std::vector<uint32_t>(size);
 }

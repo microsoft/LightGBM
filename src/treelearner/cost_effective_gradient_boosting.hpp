@@ -59,8 +59,8 @@ class CostEfficientGradientBoosting {
             "number.");
       }
       if (!init_) {
-        feature_used_in_data_ = Common::EmptyBitset(train_data->num_features() *
-                                                    tree_learner_->num_data_);
+        const size_t n = (size_t)train_data->num_features() * (size_t)tree_learner_->num_data_;
+        feature_used_in_data_ = Common::EmptyBitset(n);
       }
     }
     init_ = true;
