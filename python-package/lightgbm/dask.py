@@ -899,6 +899,7 @@ def _predict_part(
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
+        assert isinstance(result, np.ndarray)
         if len(result.shape) == 2:
             result = pd_DataFrame(result, index=part.index)
         else:
@@ -1298,7 +1299,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         return _predict(
             model=self.to_local(),
             data=X,
-            dtype=self.classes_.dtype,
+            dtype=self.classes_.dtype.type,
             client=_get_dask_client(self.client),
             raw_score=raw_score,
             start_iteration=start_iteration,
