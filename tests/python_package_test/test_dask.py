@@ -1636,3 +1636,30 @@ def test_distributed_quantized_training(tmp_path, cluster):
         p1 = dask_classifier.predict(dX)
         rmse = np.sqrt(np.mean((p1.compute() - y) ** 2))
         assert quant_rmse < rmse + 7.0
+
+
+def test_no_warning_for_default_n_jobs(cluster):
+    """Test that no warning is raised for default n_jobs value (-1 or None)."""
+    with Client(cluster) as client:
+        X, y = make_blobs(n_samples=1000, n_features=50, centers=2, random_state=42)
+        dX = da.from_array(X, chunks=(100, 50))
+        dy = da.from_array(y, chunks=(100,))
+        # Test with default n_jobs (None)
+        dask_model = lgb.DaskLGBMClassifier(n_estimators=10, client=client)
+        with pytest.warns(None) as record:
+            dask_model.fit(dX, dy)
+        # Filter only UserWarnings related to n_jobs/num_threads
+        n_jobs_warnings = [w for w in record if "n_jobs" in str(w.message) or "num_threads" in str(w.message)]
+        assert len(n_jobs_warnings) == 0, f"Unexpected warning for default n_jobs: {n_jobs_warnings}"
+
+
+def test_warning_for_explicit_n_jobs(cluster):
+    """Test that warning is raised when n_jobs is explicitly set to a non-default value."""
+    with Client(cluster) as client:
+        X, y = make_blobs(n_samples=1000, n_features=50, centers=2, random_state=42)
+        dX = da.from_array(X, chunks=(100, 50))
+        dy = da.from_array(y, chunks=(100,))
+        # Test with explicit n_jobs value
+        dask_model = lgb.DaskLGBMClassifier(n_estimators=10, n_jobs=4, client=client)
+        with pytest.warns(UserWarning, match="n_jobs will be ignored"):
+            dask_model.fit(dX, dy)
