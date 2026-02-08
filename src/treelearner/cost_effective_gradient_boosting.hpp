@@ -59,8 +59,8 @@ class CostEfficientGradientBoosting {
             "number.");
       }
       if (!init_) {
-        feature_used_in_data_ = Common::EmptyBitset(train_data->num_features() *
-                                                    tree_learner_->num_data_);
+        const size_t n = (size_t)train_data->num_features() * (size_t)tree_learner_->num_data_;
+        feature_used_in_data_ = Common::EmptyBitset(n);
       }
     }
     init_ = true;
@@ -130,7 +130,7 @@ class CostEfficientGradientBoosting {
         int real_idx = tmp_idx[i_input];
         Common::InsertBitset(
             &feature_used_in_data_,
-            train_data->num_data() * inner_feature_index + real_idx);
+            static_cast<size_t>(train_data->num_data()) * inner_feature_index + real_idx);
       }
     }
   }
@@ -154,8 +154,8 @@ class CostEfficientGradientBoosting {
       int real_idx = tmp_idx[i_input];
       if (Common::FindInBitset(
               feature_used_in_data_.data(),
-              train_data->num_data() * train_data->num_features(),
-              train_data->num_data() * feature_index + real_idx)) {
+              static_cast<size_t>(train_data->num_data()) * train_data->num_features(),
+              static_cast<size_t>(train_data->num_data()) * feature_index + real_idx)) {
         continue;
       }
       total += penalty;
