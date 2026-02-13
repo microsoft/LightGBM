@@ -1577,6 +1577,66 @@ def test_predict_with_raw_score(task, output, cluster):
 
 
 @pytest.mark.parametrize("output", data_output)
+@pytest.mark.parametrize("task", tasks)
+def test_predict_returns_expected_dtypes(task, output, cluster):
+    if task == "ranking" and output == "scipy_csr_matrix":
+        pytest.skip("LGBMRanker is not currently tested on sparse matrices")
+
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(objective=task, output=output, group=None)
+
+        model_factory = task_to_dask_factory[task]
+        params = {
+            "client": client,
+            "n_estimators": 1,
+            "num_leaves": 2,
+            "time_out": 5,
+            "verbose": -1,
+        }
+        model = model_factory(**params)
+        model.fit(dX, dy, group=dg)
+
+        # use a small sub-sample (to keep the tests fast)
+        if output.startswith("dataframe"):
+            dX_sample = dX.sample(frac=0.001)
+        else:
+            dX_sample = dX[:1,]
+            dX_sample.persist()
+
+        # default predictions:
+        #
+        #  * classification: int64
+        #  * ranking: float64
+        #  * regression: float64
+        #
+        preds = model.predict(dX_sample).compute()
+        if task.endswith("classification"):
+            # preds go through LabelEncoder.inverse_transform() and have the same
+            # dtype as model.classes_ (expected to be an integer type, but exact size
+            # varies across numpy versions and operating systems)
+            assert preds.dtype == model.classes_.dtype
+            assert preds.dtype in (np.int32, np.int64)
+        else:
+            assert preds.dtype == np.float64
+
+        # raw predictions: always float64
+        preds_raw = model.predict(dX_sample, raw_score=True).compute()
+        assert preds_raw.dtype == np.float64
+
+        # pred_contrib: always float64
+        if output.startswith("scipy"):
+            preds_contrib = [arr.compute() for arr in model.predict(dX_sample, pred_contrib=True)]
+            assert all(arr.dtype == np.float64 for arr in preds_contrib)
+        else:
+            preds_contrib = model.predict(dX_sample, pred_contrib=True).compute()
+            assert preds_contrib.dtype == np.float64
+
+        # pred_leavs: always int32
+        preds_leaves = model.predict(dX_sample, pred_leaf=True).compute()
+        assert preds_leaves.dtype == np.int32
+
+
+@pytest.mark.parametrize("output", data_output)
 @pytest.mark.parametrize("use_init_score", [False, True])
 def test_predict_stump(output, use_init_score, cluster, rng):
     with Client(cluster) as client:
