@@ -1736,7 +1736,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects",
     )
-    
+
     def decision_function(
         self,
         X: _LGBM_ScikitMatrixLike,
@@ -1746,7 +1746,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any,
     ) -> _LGBM_PredictReturnType:
         """Docstring is set after definition, using a template."""
-        result = super().predict(
+        return super().predict(
             X=X,
             raw_score=True,
             start_iteration=start_iteration,
@@ -1754,7 +1754,6 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             validate_features=validate_features,
             **kwargs,
         )
-        return result
 
     decision_function.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return raw margin scores (raw scores before transformation). For binary classification, these are scores before applying sigmoid; for multiclass, before applying softmax.",
