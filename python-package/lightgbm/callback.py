@@ -4,7 +4,7 @@
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .basic import (
     Booster,
@@ -26,6 +26,11 @@ __all__ = [
 ]
 
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
+_EvalResultList = Union[
+    List[EvalResult],
+    List[Tuple[str, str, float, bool]],
+    List[Tuple[str, str, float, bool, float]],
+]
 
 
 class EarlyStopException(Exception):
@@ -35,7 +40,7 @@ class EarlyStopException(Exception):
     in ``cv()`` or ``train()`` to trigger early stopping.
     """
 
-    def __init__(self, best_iteration: int, best_score: List[EvalResult]) -> None:
+    def __init__(self, best_iteration: int, best_score: _EvalResultList) -> None:
         """Create early stopping exception.
 
         Parameters
@@ -43,12 +48,18 @@ class EarlyStopException(Exception):
         best_iteration : int
             The best iteration stopped.
             0-based... pass ``best_iteration=2`` to indicate that the third iteration was the best one.
-        best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuple or (eval_name, metric_name, eval_result, is_higher_better, stdv) tuple
+        best_score : list of (dataset_name, metric_name, metric_value, is_higher_better) tuple, (dataset_name, metric_name, metric_value, is_higher_better, stdv) tuple, or ``lightgbm.EvalResult``
             Scores for each metric, on each validation set, as of the best iteration.
+
+        Notes
+        -----
+
+        .. versionadded:: 4.7.0
+            ``best_score`` is stored on the instance as a list of ``lightgbm.EvalResult`` objects.
         """
         super().__init__()
         self.best_iteration = best_iteration
-        self.best_score = best_score
+        self.best_score: List[EvalResult] = [EvalResult(*score_tuple) for score_tuple in best_score]
 
 
 # Callback environment used by callbacks

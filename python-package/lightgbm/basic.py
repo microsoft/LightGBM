@@ -3584,6 +3584,7 @@ _LGBM_CustomEvalFunction = Union[
 #   * check if unpacking into exactly 4 values breaks (if it does, might need 2 classes here)
 #   * name consistency (e.g. 'eval_name' -> 'metric_name')
 #   * unit tests on new class(es), especially around len() and default values
+#    * scikit-learn type hints
 #
 class EvalResult(NamedTuple):
     """
@@ -4385,7 +4386,7 @@ class Booster:
         feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
-            and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+            and return (metric_name, metric_value, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
@@ -4394,17 +4395,18 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     A ``Dataset`` to evaluate.
-                eval_name : str
-                    The name of evaluation function (without whitespace).
-                eval_result : float
-                    The eval result.
+                metric_name : str
+                    Unique identifier for the metric (e.g. "custom_adjusted_mse").
+                metric_value : float
+                    Value of the evaluation metric.
                 is_higher_better : bool
-                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+                    Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
 
         Returns
         -------
-        result : list
-            List with (dataset_name, eval_name, eval_result, is_higher_better) tuples.
+        result : list[EvalResult]
+            List of ``lightgbm.EvalResult`` objects, named tuples of the form
+            (dataset_name, metric_name, metric_value, is_higher_better).
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -4434,7 +4436,7 @@ class Booster:
         feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
-            and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+            and return (metric_name, metric_value, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
@@ -4443,17 +4445,18 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The training dataset.
-                eval_name : str
-                    The name of evaluation function (without whitespace).
-                eval_result : float
-                    The eval result.
+                metric_name : str
+                    Unique identifier for the metric (e.g. "custom_adjusted_mse").
+                metric_value : float
+                    Value of the evaluation metric.
                 is_higher_better : bool
-                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+                    Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
 
         Returns
         -------
-        result : list
-            List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
+        result : list[EvalResult]
+            List of ``lightgbm.EvalResult`` objects, named tuples of the form
+            (dataset_name, metric_name, metric_value, is_higher_better).
         """
         return self.__inner_eval(data_name=self._train_data_name, data_idx=0, feval=feval)
 
@@ -4468,7 +4471,7 @@ class Booster:
         feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
-            and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+            and return (metric_name, metric_value, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
@@ -4477,17 +4480,17 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The validation dataset.
-                eval_name : str
-                    The name of evaluation function (without whitespace).
-                eval_result : float
-                    The eval result.
+                metric_name : str
+                    Unique identifier for the metric (e.g. "custom_adjusted_mse").
+                metric_value : float
+                    Value of the evaluation metric.
                 is_higher_better : bool
-                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+                    Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
 
         Returns
         -------
         result : list
-            List with (validation_dataset_name, eval_name, eval_result, is_higher_better) tuples.
+            List with (validation_dataset_name, metric_name, metric_value, is_higher_better) tuples.
         """
         return [
             item
