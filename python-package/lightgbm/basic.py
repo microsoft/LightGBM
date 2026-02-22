@@ -21,7 +21,7 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, NamedTuple, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -84,8 +84,6 @@ _ctypes_float_array = Union[
 ]
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
-_LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
-_LGBM_BoosterEvalMethodResultWithStandardDeviationType = Tuple[str, str, float, bool, float]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
 _LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
@@ -3578,6 +3576,48 @@ _LGBM_CustomEvalFunction = Union[
 ]
 
 
+# TODO:
+#
+#   * docstrings everywhere
+#   * check for uses of `if len(bst.eval_valid()) == 4` types of stuff in
+#     optuna, hyperopt, maybe other places
+#   * check if unpacking into exactly 4 values breaks (if it does, might need 2 classes here)
+#   * name consistency (e.g. 'eval_name' -> 'metric_name')
+#   * unit tests on new class(es), especially around len() and default values
+#
+class EvalResult(NamedTuple):
+    """
+    TODO: docs
+    """
+
+    dataset_name: str
+    metric_name: str
+    metric_value: float
+    is_higher_better: bool
+    metric_std_dev: float | None = None
+
+    def __len__(self) -> int:
+        if not self.is_cv_result():
+            return 4
+        else:
+            return 5
+
+    def __iter__(self) -> Any:
+        i = 0
+        while i < len(self):
+            yield getattr(self, self._fields[i])
+            i += 1
+
+    def is_cv_result(self) -> bool:
+        """
+        Whether the result was created by ``cv()``, and therefore:
+
+          * ``metric_value`` = mean of ``metric_name`` over CV folds
+          * ``metric_std_dev`` = standard deviation of ``metric_name`` over CV folds
+        """
+        return self.metric_std_dev is not None
+
+
 class Booster:
     """Booster in LightGBM."""
 
@@ -4333,7 +4373,7 @@ class Booster:
         data: Dataset,
         name: str,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None,
-    ) -> List[_LGBM_BoosterEvalMethodResultType]:
+    ) -> List[EvalResult]:
         """Evaluate for data.
 
         Parameters
@@ -4386,7 +4426,7 @@ class Booster:
     def eval_train(
         self,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None,
-    ) -> List[_LGBM_BoosterEvalMethodResultType]:
+    ) -> List[EvalResult]:
         """Evaluate for training data.
 
         Parameters
@@ -4420,7 +4460,7 @@ class Booster:
     def eval_valid(
         self,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None,
-    ) -> List[_LGBM_BoosterEvalMethodResultType]:
+    ) -> List[EvalResult]:
         """Evaluate for validation data.
 
         Parameters
@@ -5182,7 +5222,7 @@ class Booster:
         data_name: str,
         data_idx: int,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]],
-    ) -> List[_LGBM_BoosterEvalMethodResultType]:
+    ) -> List[EvalResult]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -5202,7 +5242,14 @@ class Booster:
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
             for i in range(self.__num_inner_eval):
-                ret.append((data_name, self.__name_inner_eval[i], result[i], self.__higher_better_inner_eval[i]))
+                ret.append(
+                    EvalResult(
+                        dataset_name=data_name,
+                        metric_name=self.__name_inner_eval[i],
+                        metric_value=result[i],
+                        is_higher_better=self.__higher_better_inner_eval[i],
+                    )
+                )
         if callable(feval):
             feval = [feval]
         if feval is not None:
@@ -5215,11 +5262,24 @@ class Booster:
                     continue
                 feval_ret = eval_function(self.__inner_predict(data_idx=data_idx), cur_data)
                 if isinstance(feval_ret, list):
-                    for eval_name, val, is_higher_better in feval_ret:
-                        ret.append((data_name, eval_name, val, is_higher_better))
+                    for eval_tuple in feval_ret:
+                        ret.append(
+                            EvalResult(
+                                dataset_name=data_name,
+                                metric_name=eval_tuple[0],
+                                metric_value=eval_tuple[1],
+                                is_higher_better=eval_tuple[2],
+                            )
+                        )
                 else:
-                    eval_name, val, is_higher_better = feval_ret
-                    ret.append((data_name, eval_name, val, is_higher_better))
+                    ret.append(
+                        EvalResult(
+                            dataset_name=data_name,
+                            metric_name=feval_ret[0],
+                            metric_value=feval_ret[1],
+                            is_higher_better=feval_ret[2],
+                        )
+                    )
         return ret
 
     def __inner_predict(self, *, data_idx: int) -> np.ndarray:
