@@ -316,7 +316,7 @@ class _EarlyStoppingCallback:
         if _is_using_cv(env) and dataset_name == "train":
             return True
 
-        # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
+        # for lgb.train(), it's possible to pass the training data via valid_sets with any name
         if isinstance(env.model, Booster) and dataset_name == env.model._train_data_name:
             return True
 

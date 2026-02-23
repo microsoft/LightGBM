@@ -134,7 +134,7 @@ def train(
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
-        and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+        and return (metric_name, metric_value, is_higher_better) or list of such tuples.
 
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
@@ -143,12 +143,12 @@ def train(
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
-            eval_name : str
-                The name of evaluation function (without whitespaces).
-            eval_result : float
-                The eval result.
+            metric_name : str
+                Unique identifier for the metric (e.g. "custom_adjusted_mse").
+            metric_value : float
+                Value of the evaluation metric.
             is_higher_better : bool
-                Is eval result higher better, e.g. AUC is ``is_higher_better``.
+                Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
 
         To ignore the default metric corresponding to the used objective,
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
@@ -677,7 +677,7 @@ def cv(
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
-        and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+        and return (metric_name, metric_value, is_higher_better) or list of such tuples.
 
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
@@ -686,12 +686,12 @@ def cv(
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
-            eval_name : str
-                The name of evaluation function (without whitespace).
-            eval_result : float
-                The eval result.
+            metric_name : str
+                Unique identifier for the metric (e.g. "custom_adjusted_mse").
+            metric_value : float
+                Value of the evaluation metric.
             is_higher_better : bool
-                Is eval result higher better, e.g. AUC is ``is_higher_better``.
+                Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
 
         To ignore the default metric corresponding to the used objective,
         set ``metrics`` to the string ``"None"``.
