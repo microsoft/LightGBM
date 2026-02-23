@@ -236,19 +236,22 @@ def test_plot_tree(breast_cancer_split):
     assert int(h) == 8
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_create_tree_digraph(tmp_path, breast_cancer_split):
+@pytest.fixture
+def fitted_gbm(breast_cancer_split):
     X_train, _, y_train, _ = breast_cancer_split
-
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
     gbm.fit(X_train, y_train)
+    return gbm
 
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph(tmp_path, fitted_gbm):
     with pytest.raises(IndexError, match="tree_index is out of range."):
-        lgb.create_tree_digraph(gbm, tree_index=83)
+        lgb.create_tree_digraph(fitted_gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
-        gbm,
+        fitted_gbm,
         tree_index=3,
         show_info=["split_gain", "internal_value", "internal_weight"],
         name="Tree4",
@@ -271,6 +274,77 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
     assert "#ddffdd" in graph_body
     assert "data" not in graph_body
     assert "count" not in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_internal_count(fitted_gbm):
+    graph = lgb.create_tree_digraph(
+        fitted_gbm,
+        tree_index=0,
+        show_info=["internal_count"],
+    )
+    assert isinstance(graph, graphviz.Digraph)
+    graph_body = "".join(graph.body)
+    assert "count: 200" in graph_body
+    assert "count: 512" in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_data_percentage(fitted_gbm):
+    graph = lgb.create_tree_digraph(
+        fitted_gbm,
+        tree_index=0,
+        show_info=["data_percentage"],
+    )
+    assert isinstance(graph, graphviz.Digraph)
+    graph_body = "".join(graph.body)
+    assert "60.94% of data" in graph_body
+    assert "9.77% of data" in graph_body
+    assert "29.30% of data" in graph_body
+    assert "39.06% of data" in graph_body
+    assert "100.00% of data" in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_leaf_weight(fitted_gbm):
+    graph = lgb.create_tree_digraph(
+        fitted_gbm,
+        tree_index=0,
+        show_info=["leaf_weight"],
+    )
+    assert isinstance(graph, graphviz.Digraph)
+    graph_body = "".join(graph.body)
+    assert "72.657 weight" in graph_body
+    assert "11.644 weight" in graph_body
+    assert "4.931 weight" in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_leaf_count(fitted_gbm):
+    graph = lgb.create_tree_digraph(
+        fitted_gbm,
+        tree_index=0,
+        show_info=["leaf_count"],
+    )
+    assert isinstance(graph, graphviz.Digraph)
+    graph_body = "".join(graph.body)
+    assert "count: 312" in graph_body
+    assert "count: 50" in graph_body
+    assert "count: 150" in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_leaf_data_percentage(fitted_gbm):
+    graph = lgb.create_tree_digraph(
+        fitted_gbm,
+        tree_index=0,
+        show_info=["data_percentage"],
+    )
+    assert isinstance(graph, graphviz.Digraph)
+    graph_body = "".join(graph.body)
+    assert "39.06% of data" in graph_body
+    assert "100.00% of data" in graph_body
+    assert "100.00% of data" in graph_body
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
