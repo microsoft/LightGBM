@@ -9,7 +9,6 @@ Light Gradient Boosting Machine
 [![CUDA Version GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/cuda.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/cuda.yml)
 [![SWIG Wrapper GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/swig.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/swig.yml)
 [![Static Analysis GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/static_analysis.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/static_analysis.yml)
-[![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![Link checks](https://github.com/microsoft/LightGBM/actions/workflows/lychee.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/lychee.yml)
@@ -21,6 +20,7 @@ Light Gradient Boosting Machine
 [![conda Version](https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda)](https://anaconda.org/conda-forge/lightgbm)
 [![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
 [![NuGet Version](https://img.shields.io/nuget/v/lightgbm?logo=nuget&logoColor=white)](https://www.nuget.org/packages/LightGBM)
+[![Winget Version](https://img.shields.io/winget/v/Microsoft.LightGBM)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/m/Microsoft/LightGBM)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 

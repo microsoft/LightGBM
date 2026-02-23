@@ -73,8 +73,8 @@ If you want to use the Python interface of LightGBM, you can install it now (alo
 
 ::
 
-    sudo apt-get -y install python-pip
-    sudo -H pip install setuptools numpy scipy scikit-learn -U
+    sudo apt-get -y install python3-pip python3-venv
+    sudo -H pip install numpy scipy scikit-learn -U
     sudo sh ./build-python.sh install --precompile
 
 You need to set an additional parameter ``"device" : "gpu"`` (along with your other options like ``learning_rate``, ``num_leaves``, etc) to use GPU in Python.

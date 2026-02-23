@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
-#define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#define LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
@@ -462,4 +462,4 @@ class RankXENDCG : public RankingObjective {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_SRC_OBJECTIVE_RANK_OBJECTIVE_HPP_

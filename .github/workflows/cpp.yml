@@ -41,7 +41,7 @@ jobs:
             method: with-sanitizers
             container: 'ubuntu:22.04'
             os-display-name: 'ubuntu22.04'
-          - os: macos-13
+          - os: macos-15-intel
             task: cpp-tests
             compiler: clang
             method: with-sanitizers
@@ -65,7 +65,7 @@ jobs:
             os-display-name: 'ubuntu22.04'
             python_version: '3.13'
             setup-conda: 'true'
-          - os: macos-13
+          - os: macos-15-intel
             task: if-else
             compiler: clang
             python_version: '3.10'
@@ -101,7 +101,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 5
           persist-credentials: false

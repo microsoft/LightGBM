@@ -13,8 +13,8 @@
  *           - param is only used by the CLI (especially the "predict" and "convert_model" tasks)
  *           - param is related to LightGBM writing files (e.g. "output_model", "save_binary")
  */
-#ifndef LIGHTGBM_CONFIG_H_
-#define LIGHTGBM_CONFIG_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_
 
 #include <LightGBM/export.h>
 #include <LightGBM/meta.h>
@@ -23,6 +23,7 @@
 
 #include <string>
 #include <algorithm>
+#include <cctype>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -1213,7 +1214,7 @@ inline bool Config::GetBool(
   const std::string& name, bool* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     std::string value = params.at(name);
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){ return std::tolower(c); });
     if (value == std::string("false") || value == std::string("-")) {
       *out = false;
     } else if (value == std::string("true") || value == std::string("+")) {
@@ -1329,4 +1330,4 @@ inline std::string ParseMetricAlias(const std::string& type) {
 
 }   // namespace LightGBM
 
-#endif   // LightGBM_CONFIG_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_CONFIG_H_
