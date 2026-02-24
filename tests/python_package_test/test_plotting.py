@@ -247,7 +247,7 @@ def test_plot_tree(breast_cancer_split):
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_create_tree_digraph(tmp_path):
+def test_create_tree_digraph(tmp_path, breast_cancer_split):
     X_train, _, y_train, _ = breast_cancer_split
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(
