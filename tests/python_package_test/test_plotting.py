@@ -603,3 +603,13 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
 
     with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
         lgb.plot_metric(evals_result0, metric="binary_logloss", xlim="not a tuple")
+
+    ax6 = lgb.plot_metric(evals_result0, metric="binary_logloss", ylim=(0, 15), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax6, matplotlib.axes.Axes)
+    assert ax6.get_title() == ""
+    assert ax6.get_xlabel() == ""
+    assert ax6.get_ylabel() == ""
+    assert ax6.get_ylim() == (0, 15)
+
+    with pytest.raises(TypeError, match="ylim must be a tuple of 2 elements."):
+        lgb.plot_metric(evals_result0, metric="binary_logloss", ylim="not a tuple")
