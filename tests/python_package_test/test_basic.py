@@ -1098,3 +1098,23 @@ def test_set_field_none_removes_field(rng, field_name):
 
     d.set_field(field_name, None)
     assert d.get_field(field_name) is None
+
+
+def test_booster_eval_adds_new_valid_dataset() -> None:
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True),
+        test_size=0.1,
+        random_state=42,
+    )
+    train_set = lgb.Dataset(X_train, label=y_train)
+    valid_set = lgb.Dataset(X_test, label=y_test, reference=train_set)
+    booster = lgb.Booster(
+        params={"objective": "binary", "verbose": -1},
+        train_set=train_set,
+    )
+    num_datasets_before = booster._Booster__num_dataset
+    result = booster.eval(valid_set, name="test")
+
+    assert booster._Booster__num_dataset == num_datasets_before + 1
+    assert len(result) > 0
+    assert result[0][0] == "test"
