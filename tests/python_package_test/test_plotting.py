@@ -212,6 +212,16 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
         lgb.plot_split_value_histogram(gbm0, 27, xlim="not a tuple")
 
+    ax4 = lgb.plot_split_value_histogram(gbm0, 27, ylim=(0, 100), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax4, matplotlib.axes.Axes)
+    assert ax4.get_title() == ""
+    assert ax4.get_xlabel() == ""
+    assert ax4.get_ylabel() == ""
+    assert ax4.get_ylim() == (0, 100)
+
+    with pytest.raises(TypeError, match="ylim must be a tuple of 2 elements."):
+        lgb.plot_split_value_histogram(gbm0, 27, ylim="not a tuple")
+
     with pytest.raises(
         ValueError, match="Cannot plot split value histogram, because feature 0 was not used in splitting"
     ):
