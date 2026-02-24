@@ -5,6 +5,7 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/cuda/cuda_utils.hu>
 
 namespace LightGBM {

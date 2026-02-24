@@ -285,6 +285,9 @@ if(USE_ROCM)
     endif()
     message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
 
+    # Building for ROCm almost always means USE_CUDA.
+    # Exceptions to this will be guarded by USE_ROCM.
+    add_definitions(-DUSE_CUDA)
     add_definitions(-DUSE_ROCM)
 endif()
 
@@ -471,8 +474,19 @@ set(
       src/cuda/cuda_algorithms.cu
 )
 
-if(USE_CUDA)
+if(USE_CUDA OR USE_ROCM)
   list(APPEND LGBM_SOURCES ${LGBM_CUDA_SOURCES})
+endif()
+
+if(USE_ROCM)
+  set(CU_FILES "")
+  foreach(file IN LISTS LGBM_CUDA_SOURCES)
+      string(REGEX MATCH "\\.cu$" is_cu_file "${file}")
+      if(is_cu_file)
+          list(APPEND CU_FILES "${file}")
+      endif()
+  endforeach()
+  set_source_files_properties(${CU_FILES} PROPERTIES LANGUAGE HIP)
 endif()
 
 add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
@@ -621,6 +635,10 @@ if(USE_CUDA)
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
+endif()
+
+if(USE_ROCM)
+  target_link_libraries(lightgbm_objs PUBLIC hip::host)
 endif()
 
 if(WIN32)

@@ -9,8 +9,10 @@
 
 #ifdef USE_CUDA
 
+#ifndef USE_ROCM
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
 #include <stdio.h>
 
 #include <LightGBM/bin.h>
