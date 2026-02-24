@@ -246,17 +246,8 @@ def test_plot_tree(breast_cancer_split):
     assert int(h) == 8
 
 
-@pytest.fixture
-def fitted_gbm(breast_cancer_split):
-    X_train, _, y_train, _ = breast_cancer_split
-    constraints = [-1, 1] * int(X_train.shape[1] / 2)
-    gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
-    gbm.fit(X_train, y_train)
-    return gbm
-
-
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_create_tree_digraph(tmp_path, breast_cancer_split):
+def test_create_tree_digraph(tmp_path):
     X_train, _, y_train, _ = breast_cancer_split
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(
