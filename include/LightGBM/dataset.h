@@ -668,6 +668,8 @@ class Dataset {
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
+  void CopySubrowToDevice(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data, int gpu_device_id);
+
   MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const;
 
   MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
@@ -1011,6 +1013,8 @@ class Dataset {
   size_t GetSerializedHeaderSize();
 
   void CreateCUDAColumnData();
+
+  void CopySubrowHostPart(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
   std::string data_filename_;
   /*! \brief Store used features */

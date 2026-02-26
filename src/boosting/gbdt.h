@@ -512,7 +512,7 @@ class GBDT : public GBDTBase {
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage(int class_id, bool update_scorer);
+  virtual double BoostFromAverage(int class_id, bool update_scorer);
 
   /*!
   * \brief Reset gradient buffers, must be called after sample strategy is reset

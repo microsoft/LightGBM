@@ -1125,16 +1125,25 @@ struct Config {
 
   // desc = OpenCL device ID in the specified platform or CUDA device ID. Each GPU in the selected platform has a unique device ID
   // desc = ``-1`` means the default device in the selected platform
+  // desc = in multi-GPU case (``num_gpu>1``) means ID of the master GPU
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
+
+  // desc = list of CUDA device IDs
+  // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``) and when ``num_gpu>1``
+  // desc = if empty, the devices with the smallest IDs will be used
+  std::string gpu_device_id_list = "";
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   // desc = **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0
-  // desc = number of GPUs
+  // desc = number of GPUs used for training in this node
   // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
+  // desc = if ``0``, only 1 GPU will be used
+  // desc = used in both single-machine and distributed learning applications
+  // desc = in distributed learning application, each machine can use different number of GPUs
   int num_gpu = 1;
 
   #ifndef __NVCC__

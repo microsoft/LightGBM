@@ -235,7 +235,7 @@ void GBDT::Boosting() {
   if (config_->bagging_by_query) {
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
     objective_function_->
-      GetGradients(GetTrainingScore(&num_score), data_sample_strategy_->num_sampled_queries(), data_sample_strategy_->sampled_query_indices(), gradients_pointer_, hessians_pointer_);
+      GetGradientsWithSampledQueries(GetTrainingScore(&num_score), data_sample_strategy_->num_sampled_queries(), data_sample_strategy_->sampled_query_indices(), gradients_pointer_, hessians_pointer_);
   } else {
     objective_function_->
       GetGradients(GetTrainingScore(&num_score), gradients_pointer_, hessians_pointer_);
