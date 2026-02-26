@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
 #include <LightGBM/objective_function.h>
-#include <LightGBM/cuda/cuda_objective_function.hpp>
 
 #include <string>
 
@@ -12,6 +12,8 @@
 #include "rank_objective.hpp"
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
+
+#include <LightGBM/cuda/cuda_objective_function.hpp>
 
 #include "cuda/cuda_binary_objective.hpp"
 #include "cuda/cuda_multiclass_objective.hpp"
