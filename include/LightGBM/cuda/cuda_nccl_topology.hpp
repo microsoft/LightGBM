@@ -3,6 +3,11 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_NCCL_TOPOLOGY_HPP_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_NCCL_TOPOLOGY_HPP_
+
+#ifdef USE_CUDA
+
 #include <nccl.h>
 
 #include <LightGBM/cuda/cuda_utils.hu>
@@ -218,3 +223,7 @@ class NCCLTopology {
 };
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA
+
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_NCCL_TOPOLOGY_HPP_
