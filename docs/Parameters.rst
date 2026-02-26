@@ -1393,11 +1393,15 @@ GPU Parameters
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 
-   -  number of GPUs
+   -  number of GPUs used for training in this node
 
    -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
 
    -  if ``0``, only 1 GPU will be used
+
+   -  used in both single-machine and distributed learning applications
+
+   -  in distributed learning application, each machine can use different number of GPUs
 
 .. end params list
 
