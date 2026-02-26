@@ -217,7 +217,7 @@ endif()
 
 if(USE_CUDA)
     find_package(CUDAToolkit 11.0 REQUIRED)
-    find_package(Nccl REQUIRED)
+    find_package(NCCL REQUIRED)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
