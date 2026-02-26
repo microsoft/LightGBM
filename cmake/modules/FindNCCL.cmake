@@ -25,7 +25,7 @@
 #              The environment variable NCCL_ROOT overrides this variable.
 #
 # This module defines
-#  Nccl_FOUND, whether nccl has been found
+#  NCCL_FOUND, whether nccl has been found
 #  NCCL_INCLUDE_DIR, directory containing header
 #  NCCL_LIBRARY, directory containing nccl library
 #  NCCL_LIB_NAME, nccl library name
@@ -61,7 +61,7 @@ find_library(NCCL_LIBRARY
 message(STATUS "Using nccl library: ${NCCL_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Nccl DEFAULT_MSG
+find_package_handle_standard_args(NCCL DEFAULT_MSG
                                   NCCL_INCLUDE_DIR NCCL_LIBRARY)
 
 mark_as_advanced(
