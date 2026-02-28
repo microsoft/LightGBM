@@ -3595,7 +3595,7 @@ class EvalResult(NamedTuple):
     metric_name: str
     metric_value: float
     is_higher_better: bool
-    metric_std_dev: float | None = None
+    metric_std_dev: Optional[float] = None
 
     def __len__(self) -> int:
         if not self.is_cv_result():
