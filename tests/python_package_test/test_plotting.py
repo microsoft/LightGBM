@@ -156,6 +156,26 @@ def test_plot_importance(params, breast_cancer_split, train_data):
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="matplotlib is not installed")
+def test_plot_importance_zero_splits():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = lgb.train(
+        params={
+            "min_data_in_bin": X.shape[0] + 1,
+            "objective": "regression",
+            "verbose": -1,
+        },
+        train_set=lgb.Dataset(X, label=y),
+        num_boost_round=1,
+    )
+    with pytest.raises(ValueError, match="No non-zero feature importances found"):
+        lgb.plot_importance(model)
+    # ignore_zero=False should still produce a valid plot
+    ax = lgb.plot_importance(model, ignore_zero=False)
+    assert isinstance(ax, matplotlib.axes.Axes)
+    assert len(ax.patches) == X.shape[1]
+
+
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="matplotlib is not installed")
 def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     X_train, _, y_train, _ = breast_cancer_split
 
