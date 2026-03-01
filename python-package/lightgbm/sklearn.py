@@ -745,6 +745,11 @@ class LGBMModel(_LGBMModelBase):
                 "check_sample_weight_equivalence": check_sample_weight_str,
                 "check_sample_weight_equivalence_on_dense_data": check_sample_weight_str,
                 "check_sample_weight_equivalence_on_sparse_data": check_sample_weight_str,
+                "check_decision_proba_consistency": (
+                    "decision_function() returns raw margins while predict_proba() applies sigmoid in C++ "
+                    "independently, causing different tie structures after rounding. "
+                    "scikit-learn >= 1.2 relaxed this check to accept monotonically consistent scores."
+                ),
             },
         }
 
@@ -1736,6 +1741,48 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects",
     )
+
+    def decision_function(
+        self,
+        X: _LGBM_ScikitMatrixLike,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        validate_features: bool = False,
+        **kwargs: Any,
+    ) -> _LGBM_PredictReturnType:
+        """Return the raw margin score for each sample.
+
+        Parameters
+        ----------
+        X : numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]
+            Input features matrix.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration to predict.
+            If <= 0, starts from the first iteration.
+        num_iteration : int or None, optional (default=None)
+            Total number of iterations used in the prediction.
+            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+            otherwise, all iterations from ``start_iteration`` are used (no limits).
+            If <= 0, all iterations from ``start_iteration`` are used (no limits).
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
+        **kwargs
+            Other parameters for the prediction.
+
+        Returns
+        -------
+        raw_score : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
+            The predicted values.
+        """
+        return super().predict(
+            X=X,
+            raw_score=True,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            validate_features=validate_features,
+            **kwargs,
+        )
 
     @property
     def classes_(self) -> np.ndarray:
