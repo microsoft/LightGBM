@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
-#define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -1594,4 +1594,4 @@ class HistogramPool {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_

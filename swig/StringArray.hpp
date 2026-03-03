@@ -4,8 +4,8 @@
  *
  * Author: Alberto Ferreira
  */
-#ifndef LIGHTGBM_SWIG_STRING_ARRAY_H_
-#define LIGHTGBM_SWIG_STRING_ARRAY_H_
+#ifndef LIGHTGBM_SWIG_STRINGARRAY_HPP_
+#define LIGHTGBM_SWIG_STRINGARRAY_HPP_
 
 #include <algorithm>
 #include <new>
@@ -137,4 +137,4 @@ class StringArray {
     std::vector<char*> _array;
 };
 
-#endif  // LIGHTGBM_SWIG_STRING_ARRAY_H_
+#endif  // LIGHTGBM_SWIG_STRINGARRAY_HPP_

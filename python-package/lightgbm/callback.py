@@ -301,16 +301,16 @@ class _EarlyStoppingCallback:
         self.best_score: List[float] = []
         self.best_iter: List[int] = []
         self.best_score_list: List[_ListOfEvalResultTuples] = []
-        self.cmp_op: List[Callable[[float, float], bool]] = []
+        self.cmp_op: List[Callable[[float, float, float], bool]] = []
         self.first_metric = ""
 
-    def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+    def _gt_delta(self, *, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score > best_score + delta
 
-    def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+    def _lt_delta(self, *, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score < best_score - delta
 
-    def _is_train_set(self, dataset_name: str, env: CallbackEnv) -> bool:
+    def _is_train_set(self, *, dataset_name: str, env: CallbackEnv) -> bool:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
@@ -413,7 +413,9 @@ class _EarlyStoppingCallback:
         first_time_updating_best_score_list = self.best_score_list == []
         for i in range(len(env.evaluation_result_list)):
             dataset_name, metric_name, metric_value, *_ = env.evaluation_result_list[i]
-            if first_time_updating_best_score_list or self.cmp_op[i](metric_value, self.best_score[i]):
+            if first_time_updating_best_score_list or self.cmp_op[i](  # type: ignore[call-arg]
+                curr_score=metric_value, best_score=self.best_score[i]
+            ):
                 self.best_score[i] = metric_value
                 self.best_iter[i] = env.iteration
                 if first_time_updating_best_score_list:

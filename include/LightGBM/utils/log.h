@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_UTILS_LOG_H_
-#define LIGHTGBM_UTILS_LOG_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_LOG_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_LOG_H_
 
 #include <cstdarg>
 #include <cstdio>
@@ -182,4 +182,4 @@ class Log {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_UTILS_LOG_H_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_UTILS_LOG_H_

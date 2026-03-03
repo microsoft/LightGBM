@@ -6,9 +6,11 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <limits>
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <limits>
+#include <string>
 #include <vector>
 
 namespace LightGBM {

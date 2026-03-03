@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_IO_DENSE_BIN_HPP_
-#define LIGHTGBM_IO_DENSE_BIN_HPP_
+#ifndef LIGHTGBM_SRC_IO_DENSE_BIN_HPP_
+#define LIGHTGBM_SRC_IO_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/vector_cudahost.h>
@@ -646,4 +646,4 @@ BinIterator* DenseBin<VAL_T, IS_4BIT>::GetIterator(
 }
 
 }  // namespace LightGBM
-#endif  // LightGBM_IO_DENSE_BIN_HPP_
+#endif  // LIGHTGBM_SRC_IO_DENSE_BIN_HPP_

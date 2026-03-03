@@ -4,11 +4,12 @@
  */
 #include "parser.hpp"
 
-#include <functional>
-#include <string>
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace LightGBM {
 

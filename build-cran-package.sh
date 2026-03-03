@@ -127,17 +127,6 @@ cd "${TEMP_R_DIR}"
     sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
     sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
 
-    # Rtools35 (used with R 3.6 on Windows) doesn't support C++17
-    LGB_CXX_STD="C++17"
-    using_windows_and_r3=$(
-        # shellcheck disable=SC2016
-        Rscript -e 'cat(.Platform$OS.type == "windows" && R.version[["major"]] < 4)'
-    )
-    if test "${using_windows_and_r3}" = "TRUE"; then
-        LGB_CXX_STD="C++11"
-    fi
-    sed -i.bak -e "s/~~CXXSTD~~/${LGB_CXX_STD}/" DESCRIPTION
-
     # Remove 'region', 'endregion', and 'warning' pragmas.
     # This won't change the correctness of the code. CRAN does
     # not allow you to use compiler flag '-Wno-unknown-pragmas' or

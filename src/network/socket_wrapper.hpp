@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
-#define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
+#ifndef LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_
+#define LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
 #include <LightGBM/utils/log.h>
@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <ifaddrs.h>
+#include <sys/time.h>
 
 #endif  // defined(_WIN32)
 
@@ -117,8 +118,16 @@ class TcpSocket {
   }
   ~TcpSocket() {
   }
-  inline void SetTimeout(int timeout) {
-    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&timeout), sizeof(timeout));
+  inline void SetTimeout(int timeout_ms) {
+#if defined(_WIN32)
+    DWORD timeout = static_cast<DWORD>(timeout_ms);
+    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+#else
+    struct timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+#endif
   }
   inline void ConfigSocket() {
     if (sockfd_ == INVALID_SOCKET) {
@@ -319,4 +328,4 @@ class TcpSocket {
 
 }  // namespace LightGBM
 #endif  // USE_SOCKET
-#endif   // LightGBM_NETWORK_SOCKET_WRAPPER_HPP_
+#endif   // LIGHTGBM_SRC_NETWORK_SOCKET_WRAPPER_HPP_

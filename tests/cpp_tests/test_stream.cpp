@@ -10,6 +10,8 @@
 #include <LightGBM/dataset.h>
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 using LightGBM::Dataset;
 using LightGBM::Log;

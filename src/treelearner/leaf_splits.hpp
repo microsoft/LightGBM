@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
-#define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_LEAF_SPLITS_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_LEAF_SPLITS_HPP_
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
@@ -43,6 +43,7 @@ class LeafSplits {
   * \param data_partition current data partition
   * \param sum_gradients
   * \param sum_hessians
+  * \param weight
   */
   void Init(int leaf, const DataPartition* data_partition, double sum_gradients,
             double sum_hessians, double weight) {
@@ -272,4 +273,4 @@ class LeafSplits {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_LEAF_SPLITS_HPP_
+#endif   // LIGHTGBM_SRC_TREELEARNER_LEAF_SPLITS_HPP_

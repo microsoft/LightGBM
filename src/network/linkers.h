@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_NETWORK_LINKERS_H_
-#define LIGHTGBM_NETWORK_LINKERS_H_
+#ifndef LIGHTGBM_SRC_NETWORK_LINKERS_H_
+#define LIGHTGBM_SRC_NETWORK_LINKERS_H_
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
@@ -325,4 +325,4 @@ inline void Linkers::SendRecv(int send_rank, char* send_data, int send_len,
 
 #endif  // USE_MPI
 }  // namespace LightGBM
-#endif   // LightGBM_NETWORK_LINKERS_H_
+#endif   // LIGHTGBM_SRC_NETWORK_LINKERS_H_

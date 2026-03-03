@@ -6,6 +6,10 @@
 
 #include <LightGBM/train_share_states.h>
 
+#include <algorithm>
+#include <memory>
+#include <vector>
+
 namespace LightGBM {
 
 MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,

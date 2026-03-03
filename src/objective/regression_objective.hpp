@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
-#define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#define LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
 #include <LightGBM/meta.h>
 #include <LightGBM/objective_function.h>
@@ -760,4 +760,4 @@ class RegressionTweedieLoss: public RegressionPoissonLoss {
 #undef WeightedPercentileFun
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#endif   // LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_

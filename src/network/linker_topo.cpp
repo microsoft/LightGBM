@@ -68,7 +68,9 @@ RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _typ
 RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
   // construct all recursive halving map for all machines
   int k = 0;
-  while ((1 << k) <= num_machines) { ++k; }
+  while ((1 << k) <= num_machines) {
+    ++k;
+  }
   // let 1 << k <= num_machines
   --k;
   // distance of each communication

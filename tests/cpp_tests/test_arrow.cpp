@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 
 using LightGBM::ArrowChunkedArray;
 using LightGBM::ArrowTable;

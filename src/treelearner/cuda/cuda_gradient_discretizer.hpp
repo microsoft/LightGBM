@@ -4,8 +4,8 @@
  * license information.
  */
 
-#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_
-#define LIGHTGBM_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_
 
 #ifdef USE_CUDA
 
@@ -25,11 +25,13 @@ namespace LightGBM {
 
 #define CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE (1024)
 
-class CUDAGradientDiscretizer: public GradientDiscretizer {
+class CUDAGradientDiscretizer: public GradientDiscretizer, public NCCLInfo {
  public:
   CUDAGradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed, bool is_constant_hessian, bool stochastic_roudning):
     GradientDiscretizer(num_grad_quant_bins, num_trees, random_seed, is_constant_hessian, stochastic_roudning) {
   }
+
+  ~CUDAGradientDiscretizer() {}
 
   void DiscretizeGradients(
     const data_size_t num_data,
@@ -115,4 +117,4 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_GRADIENT_DISCRETIZER_HPP_

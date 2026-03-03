@@ -7,8 +7,10 @@
 #include <testutils.h>
 #include <LightGBM/c_api.h>
 
-#include <iostream>
+#include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <vector>
 
 using LightGBM::TestUtils;
 

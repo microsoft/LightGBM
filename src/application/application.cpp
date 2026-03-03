@@ -16,13 +16,16 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <string>
 #include <chrono>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "predictor.hpp"
 
@@ -121,7 +124,9 @@ void Application::LoadData() {
   if (config_.is_provide_training_metric) {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -149,7 +154,9 @@ void Application::LoadData() {
       valid_metrics_.emplace_back();
       for (auto metric_type : config_.metric) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-        if (metric == nullptr) { continue; }
+        if (metric == nullptr) {
+          continue;
+        }
         metric->Init(valid_datas_.back()->metadata(),
                      valid_datas_.back()->num_data());
         valid_metrics_.back().push_back(std::move(metric));
@@ -181,7 +188,7 @@ void Application::InitTrain() {
   // create boosting
   boosting_.reset(
     Boosting::CreateBoosting(config_.boosting,
-                             config_.input_model.c_str()));
+                             config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   // create objective function
   objective_fun_.reset(
     ObjectiveFunction::CreateObjectiveFunction(config_.objective,
@@ -274,13 +281,13 @@ void Application::Predict() {
 
 void Application::InitPredict() {
   boosting_.reset(
-    Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
+    Boosting::CreateBoosting("gbdt", config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   Log::Info("Finished initializing prediction, total used %d iterations", boosting_->GetCurrentIteration());
 }
 
 void Application::ConvertModel() {
   boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
+    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str(), config_.device_type, config_.num_gpu));
   boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
 }
 

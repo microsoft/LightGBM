@@ -2,8 +2,8 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
-#define LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
 
 #ifdef USE_CUDA
 
@@ -71,4 +71,4 @@ class CUDARandom {
 
 #endif  // USE_CUDA
 
-#endif  // LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
+#endif  // LIGHTGBM_INCLUDE_LIGHTGBM_CUDA_CUDA_RANDOM_HPP_

@@ -11,6 +11,7 @@
 #include <LightGBM/dataset.h>
 
 #include <iostream>
+#include <string>
 
 using LightGBM::ByteBuffer;
 using LightGBM::Dataset;

@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef LIGHTGBM_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_
-#define LIGHTGBM_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_
+#ifndef LIGHTGBM_SRC_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_
+#define LIGHTGBM_SRC_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_
 
 #ifdef USE_CUDA
 
@@ -20,11 +20,11 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   ~CUDAScoreUpdater();
 
-  inline void AddScore(double val, int cur_tree_id) override;
+  void AddScore(double val, int cur_tree_id) override;
 
   inline void AddScore(const Tree* tree, int cur_tree_id) override;
 
-  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) override;
+  void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) override;
 
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
                        data_size_t data_cnt, int cur_tree_id) override;
@@ -33,7 +33,7 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   inline const double* score() const override {
     if (boosting_on_cuda_) {
-      return cuda_score_;
+      return cuda_score_.RawData();
     } else {
       return score_.data();
     }
@@ -51,7 +51,7 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   void LaunchMultiplyScoreConstantKernel(const double val, const size_t offset);
 
-  double* cuda_score_;
+  CUDAVector<double> cuda_score_;
 
   const int num_threads_per_block_;
 
@@ -62,4 +62,4 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
 #endif  // USE_CUDA
 
-#endif  // LIGHTGBM_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_
+#endif  // LIGHTGBM_SRC_BOOSTING_CUDA_CUDA_SCORE_UPDATER_HPP_

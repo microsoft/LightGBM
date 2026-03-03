@@ -6,6 +6,8 @@
 
 #include "linkers.h"
 
+#include <iostream>
+
 namespace LightGBM {
 
 Linkers::Linkers(Config) {

@@ -56,7 +56,7 @@ custom_multiclass_obj <- function(preds, dtrain) {
     grad <- prob
     subset_index <- as.matrix(
         data.frame(
-            seq_len(length(labels))
+            seq_along(labels)
             , labels + 1L
             , fix.empty.names = FALSE
         )
@@ -80,7 +80,7 @@ custom_multiclass_metric <- function(preds, dtrain) {
 
     subset_index <- as.matrix(
         data.frame(
-            seq_len(length(labels))
+            seq_along(labels)
             , labels + 1L
             , fix.empty.names = FALSE
         )

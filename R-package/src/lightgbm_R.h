@@ -2,8 +2,8 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_R_H_
-#define LIGHTGBM_R_H_
+#ifndef LIGHTGBM_R_PACKAGE_SRC_LIGHTGBM_R_H_
+#define LIGHTGBM_R_PACKAGE_SRC_LIGHTGBM_R_H_
 
 #include <LightGBM/c_api.h>
 
@@ -903,4 +903,4 @@ LIGHTGBM_C_EXPORT SEXP LGBM_SetMaxThreads_R(
   SEXP num_threads
 );
 
-#endif  // LIGHTGBM_R_H_
+#endif  // LIGHTGBM_R_PACKAGE_SRC_LIGHTGBM_R_H_

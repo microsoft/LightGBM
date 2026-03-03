@@ -8,9 +8,13 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/threading.h>
 
+#include <algorithm>
 #include <functional>
 #include <iomanip>
 #include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 

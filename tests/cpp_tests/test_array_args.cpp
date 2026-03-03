@@ -8,6 +8,7 @@
 #include <LightGBM/utils/array_args.h>
 
 #include <random>
+#include <vector>
 
 using LightGBM::data_size_t;
 using LightGBM::score_t;

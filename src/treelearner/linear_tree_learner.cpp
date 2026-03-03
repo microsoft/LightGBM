@@ -7,6 +7,8 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 namespace LightGBM {
 
@@ -188,7 +190,7 @@ void LinearTreeLearner<TREE_LEARNER_TYPE>::CalculateLinear(Tree* tree, bool is_r
     return;
   }
 
-  // calculate coefficients using the method described in Eq 3 of https://arxiv.org/pdf/1802.05640.pdf
+  // calculate coefficients using the method described in Eq 3 of https://arxiv.org/abs/1802.05640
   // the coefficients vector is given by
   // - (X_T * H * X + lambda) ^ (-1) * (X_T * g)
   // where:
