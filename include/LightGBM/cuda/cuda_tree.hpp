@@ -13,6 +13,8 @@
 #include <LightGBM/tree.h>
 #include <LightGBM/bin.h>
 
+#include <vector>
+
 namespace LightGBM {
 
 __device__ void SetDecisionTypeCUDA(int8_t* decision_type, bool input, int8_t mask);
