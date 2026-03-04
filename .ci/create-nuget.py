@@ -39,8 +39,10 @@ if __name__ == "__main__":
         <copyright>Copyright {datetime.datetime.now().year} @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
         <dependencies> </dependencies>
+        <readme>README.md</readme>
     </metadata>
         <files>
+        <file src="nuget\README.md" target=""/>
         <file src="build\**" target="build"/>
         <file src="runtimes\**" target="runtimes"/>
         </files>
