@@ -89,10 +89,14 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
     std::ifstream forced_splits_file(config->forcedsplits_filename.c_str());
-    std::stringstream buffer;
-    buffer << forced_splits_file.rdbuf();
-    std::string err;
-    forced_splits_json_ = Json::parse(buffer.str(), &err);
+    if (!forced_splits_file.is_open()) {
+      Log::Warning("Forced splits file %s not found. This parameter will be ignored.", config->forcedsplits_filename.c_str());
+    } else {
+      std::stringstream buffer;
+      buffer << forced_splits_file.rdbuf();
+      std::string err;
+      forced_splits_json_ = Json::parse(buffer.str(), &err);
+    }
   }
 
   objective_function_ = objective_function;
@@ -837,13 +841,16 @@ void GBDT::ResetConfig(const Config* config) {
   if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file
     if (!new_config->forcedsplits_filename.empty()) {
-      std::ifstream forced_splits_file(
-          new_config->forcedsplits_filename.c_str());
-      std::stringstream buffer;
-      buffer << forced_splits_file.rdbuf();
-      std::string err;
-      forced_splits_json_ = Json::parse(buffer.str(), &err);
-      tree_learner_->SetForcedSplit(&forced_splits_json_);
+      std::ifstream forced_splits_file(new_config->forcedsplits_filename.c_str());
+      if (!forced_splits_file.is_open()) {
+        Log::Warning("Forced splits file %s not found. This parameter will be ignored.", new_config->forcedsplits_filename.c_str());
+      } else {
+        std::stringstream buffer;
+        buffer << forced_splits_file.rdbuf();
+        std::string err;
+        forced_splits_json_ = Json::parse(buffer.str(), &err);
+        tree_learner_->SetForcedSplit(&forced_splits_json_);
+      }
     } else {
       forced_splits_json_ = Json();
       tree_learner_->SetForcedSplit(nullptr);
