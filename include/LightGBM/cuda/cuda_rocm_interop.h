@@ -20,6 +20,7 @@
 #define cudaFree hipFree
 #define cudaFreeHost hipFreeHost
 #define cudaGetDevice hipGetDevice
+#define cudaGetDeviceCount hipGetDeviceCount
 #define cudaGetDeviceProperties hipGetDeviceProperties
 #define cudaGetErrorName hipGetErrorName
 #define cudaGetErrorString hipGetErrorString
@@ -39,6 +40,7 @@
 #define cudaSetDevice hipSetDevice
 #define cudaStreamCreate hipStreamCreate
 #define cudaStreamDestroy hipStreamDestroy
+#define cudaStreamSynchronize hipStreamSynchronize
 #define cudaStream_t hipStream_t
 #define cudaSuccess hipSuccess
 
