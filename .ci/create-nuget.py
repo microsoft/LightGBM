@@ -23,6 +23,7 @@ if __name__ == "__main__":
     copyfile(source / "lib_lightgbm.dylib", osx_folder_path / "lib_lightgbm.dylib")
     copyfile(source / "lib_lightgbm.dll", windows_folder_path / "lib_lightgbm.dll")
     copyfile(source / "lightgbm.exe", windows_folder_path / "lightgbm.exe")
+    copyfile(Path(__file__).absolute().parent / "README.nuget.md", nuget_dir / "README.md")
     version = (nuget_dir.parents[1] / "VERSION.txt").read_text(encoding="utf-8").strip().replace("rc", "-rc")
     print(f"Setting version to '{version}'")
     nuget_str = rf"""<?xml version="1.0"?>
@@ -38,9 +39,11 @@ if __name__ == "__main__":
         <description>A fast, distributed, high performance gradient boosting framework</description>
         <copyright>Copyright {datetime.datetime.now().year} @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
+        <readme>README.md</readme>
         <dependencies> </dependencies>
     </metadata>
         <files>
+        <file src="README.md" target=""/>
         <file src="build\**" target="build"/>
         <file src="runtimes\**" target="runtimes"/>
         </files>
