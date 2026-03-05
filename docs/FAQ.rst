@@ -72,8 +72,12 @@ So this issue should be solved in the latest version.
 7. I tried to use Random Forest mode, and LightGBM crashes!
 -----------------------------------------------------------
 
-This is expected behaviour for arbitrary parameters. To enable Random Forest,
-you must use ``bagging_fraction`` and ``feature_fraction`` different from 1, along with a ``bagging_freq``.
+This is expected behaviour for arbitrary parameters. To enable Random Forest mode,
+you must set at least one of the following:
+
+* ``bagging_freq > 0`` and ``0.0 < bagging_fraction < 1.0``
+* ``0.0 < feature_fraction < 1.0``
+
 `This thread <https://github.com/microsoft/LightGBM/issues/691>`__ includes an example.
 
 8. CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
