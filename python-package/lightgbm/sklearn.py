@@ -1659,6 +1659,30 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     )  # type: ignore
     fit.__doc__ = _base_doc[: _base_doc.find("eval_group :")] + _base_doc[_base_doc.find("eval_metric :") :]
 
+    def decision_function(
+        self,
+        X: _LGBM_ScikitMatrixLike,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        validate_features: bool = False,
+        **kwargs: Any,
+    ) -> _LGBM_PredictReturnType:
+        """Compute confidence scores for samples.
+
+        This returns raw LightGBM scores from :meth:`predict` with ``raw_score=True``.
+        For binary classification, this is a 1D array with one score per sample.
+        For multiclass classification, this is a 2D array with shape
+        ``(n_samples, n_classes)``.
+        """
+        return super().predict(
+            X=X,
+            raw_score=True,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            validate_features=validate_features,
+            **kwargs,
+        )
+
     def predict(
         self,
         X: _LGBM_ScikitMatrixLike,

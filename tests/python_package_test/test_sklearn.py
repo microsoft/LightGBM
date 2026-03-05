@@ -184,6 +184,36 @@ def test_regression():
     assert gbm.evals_result_["valid_0"]["l2"][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+def test_binary_decision_function_matches_raw_scores():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+
+    gbm = lgb.LGBMClassifier(n_estimators=30, verbose=-1)
+    gbm.fit(X_train, y_train)
+
+    raw_scores = gbm.predict(X_test, raw_score=True)
+    decision_scores = gbm.decision_function(X_test)
+
+    np.testing.assert_allclose(decision_scores, raw_scores)
+
+
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
+)
+def test_multiclass_decision_function_matches_raw_scores():
+    X, y = load_digits(n_class=10, return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+
+    gbm = lgb.LGBMClassifier(n_estimators=30, verbose=-1)
+    gbm.fit(X_train, y_train)
+
+    raw_scores = gbm.predict(X_test, raw_score=True)
+    decision_scores = gbm.decision_function(X_test)
+
+    assert decision_scores.shape == (X_test.shape[0], len(np.unique(y_train)))
+    np.testing.assert_allclose(decision_scores, raw_scores)
+
+
 @pytest.mark.skipif(
     getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
 )
