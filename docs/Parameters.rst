@@ -264,7 +264,7 @@ Core Parameters
 
    -  ``cpu`` supports all LightGBM functionality and is portable across the widest range of operating systems and hardware
 
-   -  ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA
+   -  ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA or ROCm
 
    -  ``gpu`` can be faster than ``cpu`` and works on a wider range of GPUs than CUDA
 
@@ -272,7 +272,7 @@ Core Parameters
 
    -  **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
 
-   -  **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
+   -  **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU, CUDA, or ROCm support
 
 -  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
@@ -1373,7 +1373,17 @@ GPU Parameters
 
    -  ``-1`` means the default device in the selected platform
 
+   -  in multi-GPU case (``num_gpu>1``) means ID of the master GPU
+
    -  **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
+
+-  ``gpu_device_id_list`` :raw-html:`<a id="gpu_device_id_list" title="Permalink to this parameter" href="#gpu_device_id_list">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  list of CUDA device IDs
+
+   -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``) and when ``num_gpu>1``
+
+   -  if empty, the devices with the smallest IDs will be used
 
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -1383,9 +1393,15 @@ GPU Parameters
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 
-   -  number of GPUs
+   -  number of GPUs used for training in this node
 
    -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
+
+   -  if ``0``, only 1 GPU will be used
+
+   -  used in both single-machine and distributed learning applications
+
+   -  in distributed learning application, each machine can use different number of GPUs
 
 .. end params list
 
