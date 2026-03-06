@@ -749,6 +749,65 @@ macOS
 
 The CUDA version is not supported on macOS.
 
+Build ROCm Version
+~~~~~~~~~~~~~~~~~~
+
+The `original GPU version <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
+
+The ROCm-based version (``device_type=cuda``) is a separate implementation. Yes, the ROCm version reuses the ``device_type=cuda`` as a convenience for users.  Use this version in Linux environments with an AMD GPU.
+
+Windows
+^^^^^^^
+
+The ROCm version is not supported on Windows.
+Use the `GPU version <#build-gpu-version>`__ (``device_type=gpu``) for GPU acceleration on Windows.
+
+Linux
+^^^^^
+
+On Linux, a ROCm version of LightGBM can be built using
+
+- **CMake**, **gcc** and **ROCm**;
+- **CMake**, **Clang** and **ROCm**.
+
+Please refer to `the ROCm docs`_ for **ROCm** libraries installation.
+
+After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+gcc
+***
+
+1. Install `CMake`_, **gcc** and **ROCm**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_ROCM=ON
+     cmake --build build -j4
+
+Clang
+*****
+
+1. Install `CMake`_, **Clang**, **OpenMP** and **ROCm**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
+     cmake -B build -S . -DUSE_ROCM=ON
+     cmake --build build -j4
+
+macOS
+^^^^^
+
+The ROCm version is not supported on macOS.
+
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
 
@@ -1053,6 +1112,8 @@ gcc
 .. _SWIG: https://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+.. _the ROCm docs: https://rocm.docs.amd.com/projects/install-on-linux/en/latest/
 
 .. _following docs: https://github.com/google/sanitizers/wiki
 
