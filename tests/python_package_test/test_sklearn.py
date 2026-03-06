@@ -979,17 +979,17 @@ def test_decision_function_and_predict_proba_consistency():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
     clf = lgb.LGBMClassifier(n_estimators=10, random_state=42, verbose=-1).fit(X_train, y_train)
-    df = clf.decision_function(X_test)
-    np.testing.assert_allclose(df, clf.predict(X_test, raw_score=True))
-    np.testing.assert_allclose(logistic_sigmoid(df), clf.predict_proba(X_test)[:, 1])
+    preds_raw = clf.decision_function(X_test)
+    np.testing.assert_allclose(preds_raw, clf.predict(X_test, raw_score=True))
+    np.testing.assert_allclose(logistic_sigmoid(preds_raw), clf.predict_proba(X_test)[:, 1])
 
     # multiclass
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
     clf = lgb.LGBMClassifier(n_estimators=10, random_state=42, verbose=-1).fit(X_train, y_train)
-    df = clf.decision_function(X_test)
-    np.testing.assert_allclose(df, clf.predict(X_test, raw_score=True))
-    np.testing.assert_allclose(softmax(df), clf.predict_proba(X_test))
+    preds_raw = clf.decision_function(X_test)
+    np.testing.assert_allclose(preds_raw, clf.predict(X_test, raw_score=True))
+    np.testing.assert_allclose(softmax(preds_raw), clf.predict_proba(X_test))
 
 
 def test_predict_with_params_from_init():

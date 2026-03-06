@@ -1745,6 +1745,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     def decision_function(
         self,
         X: _LGBM_ScikitMatrixLike,
+        *,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
         validate_features: bool = False,
@@ -1768,7 +1769,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
         **kwargs
-            Other parameters for the prediction.
+            Other parameters forwarded to ``predict()``.
 
         Returns
         -------
