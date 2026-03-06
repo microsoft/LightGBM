@@ -4907,6 +4907,17 @@ class Booster:
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
         new_params.update(dataset_params)
+        args_names = inspect.signature(Dataset._lazy_init).parameters.keys()
+        refit_signature = inspect.signature(self.__class__.refit).parameters
+        for lazy_init_args in args_names:
+            if lazy_init_args in refit_signature:
+                default_val = refit_signature[lazy_init_args].default
+                current_val = locals().get(lazy_init_args)
+                is_default = current_val is default_val
+
+                if is_default:
+                    locals()[lazy_init_args] = new_params.get(lazy_init_args, current_val)
+                    new_params.pop(lazy_init_args, None)
         train_set = Dataset(
             data=data,
             label=label,
