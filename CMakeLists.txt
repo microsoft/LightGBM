@@ -608,6 +608,11 @@ if(USE_CUDA)
   target_link_libraries(lightgbm_objs PUBLIC ${NCCL_LIBRARY})
 endif()
 
+if(USE_ROCM)
+  find_package(rccl)
+  target_link_libraries(lightgbm_objs PUBLIC ${RCCL_LIBRARY})
+endif()
+
 if(__INTEGRATE_OPENCL)
   # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
   add_dependencies(lightgbm_objs OpenCL Boost)
