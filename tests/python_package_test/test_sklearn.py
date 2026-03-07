@@ -6,6 +6,7 @@ import re
 from functools import partial
 from os import getenv
 from pathlib import Path
+from unittest.mock import patch
 
 import joblib
 import numpy as np
@@ -1007,6 +1008,11 @@ def test_calibrated_classifier_cv(method):
     np.testing.assert_allclose(proba.sum(axis=1), 1.0)
     score = accuracy_score(y_test, clf.predict(X_test))
     assert 0.8 <= score <= 1.0
+    with patch.object(
+        lgb.LGBMClassifier, "decision_function", wraps=clf.calibrated_classifiers_[0].estimator.decision_function
+    ) as mock_decision_function:
+        clf.calibrated_classifiers_[0].estimator.decision_function(X_test)
+        mock_decision_function.assert_called_once()
 
     # multiclass
     X, y = load_iris(return_X_y=True)
@@ -1020,6 +1026,11 @@ def test_calibrated_classifier_cv(method):
     np.testing.assert_allclose(proba.sum(axis=1), 1.0)
     score = accuracy_score(y_test, clf.predict(X_test))
     assert 0.8 <= score <= 1.0
+    with patch.object(
+        lgb.LGBMClassifier, "decision_function", wraps=clf.calibrated_classifiers_[0].estimator.decision_function
+    ) as mock_decision_function:
+        clf.calibrated_classifiers_[0].estimator.decision_function(X_test)
+        mock_decision_function.assert_called_once()
 
 
 def test_predict_with_params_from_init():
