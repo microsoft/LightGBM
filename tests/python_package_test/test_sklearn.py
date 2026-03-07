@@ -999,38 +999,42 @@ def test_calibrated_classifier_cv(method):
     # binary
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = CalibratedClassifierCV(lgb.LGBMClassifier(n_estimators=10, verbose=-1), method=method, cv=3)
-    clf.fit(X_train, y_train)
-    proba = clf.predict_proba(X_test)
+    with patch.object(
+        lgb.LGBMClassifier,
+        "decision_function",
+        autospec=True,
+        wraps=lgb.LGBMClassifier.decision_function,
+    ) as mock_decision_function:
+        clf = CalibratedClassifierCV(lgb.LGBMClassifier(n_estimators=10, verbose=-1), method=method, cv=3)
+        clf.fit(X_train, y_train)
+        proba = clf.predict_proba(X_test)
+        assert mock_decision_function.call_count > 0
     assert proba.shape == (X_test.shape[0], 2)
     np.testing.assert_array_less(proba, 1.0 + 1e-9)
     np.testing.assert_array_less(-1e-9, proba)
     np.testing.assert_allclose(proba.sum(axis=1), 1.0)
     score = accuracy_score(y_test, clf.predict(X_test))
     assert 0.8 <= score <= 1.0
-    with patch.object(
-        lgb.LGBMClassifier, "decision_function", wraps=clf.calibrated_classifiers_[0].estimator.decision_function
-    ) as mock_decision_function:
-        clf.calibrated_classifiers_[0].estimator.decision_function(X_test)
-        mock_decision_function.assert_called_once()
 
     # multiclass
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = CalibratedClassifierCV(lgb.LGBMClassifier(n_estimators=10, verbose=-1), method=method, cv=3)
-    clf.fit(X_train, y_train)
-    proba = clf.predict_proba(X_test)
+    with patch.object(
+        lgb.LGBMClassifier,
+        "decision_function",
+        autospec=True,
+        wraps=lgb.LGBMClassifier.decision_function,
+    ) as mock_decision_function:
+        clf = CalibratedClassifierCV(lgb.LGBMClassifier(n_estimators=10, verbose=-1), method=method, cv=3)
+        clf.fit(X_train, y_train)
+        proba = clf.predict_proba(X_test)
+        assert mock_decision_function.call_count > 0
     assert proba.shape == (X_test.shape[0], 3)
     np.testing.assert_array_less(proba, 1.0 + 1e-9)
     np.testing.assert_array_less(-1e-9, proba)
     np.testing.assert_allclose(proba.sum(axis=1), 1.0)
     score = accuracy_score(y_test, clf.predict(X_test))
     assert 0.8 <= score <= 1.0
-    with patch.object(
-        lgb.LGBMClassifier, "decision_function", wraps=clf.calibrated_classifiers_[0].estimator.decision_function
-    ) as mock_decision_function:
-        clf.calibrated_classifiers_[0].estimator.decision_function(X_test)
-        mock_decision_function.assert_called_once()
 
 
 def test_predict_with_params_from_init():
