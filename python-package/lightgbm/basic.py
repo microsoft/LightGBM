@@ -4912,31 +4912,12 @@ class Booster:
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
         new_params.update(dataset_params)
-
-        # 'categorical_feature' can end up in self.params when a Booster
-        # is created from a model string or file... pre-process to ensure it's passed
-        # via a keyword argument to the Dataset constructor instead of 'params'.
-        new_params = _choose_param_value(
-            main_param_name="categorical_feature",
-            params=new_params,
-            default_value=None,
-        )
-        cat_features_from_params = new_params.pop("categorical_feature")
-
-        # reconcile params and keyword argument
-        if cat_features_from_params:
-            if categorical_feature == "auto":
-                categorical_feature = cat_features_from_params
-            elif cat_features_from_params != categorical_feature:
-                error_msg = (
-                    "'categorical_feature' value passed to Booster.refit() is different from  "
-                    "'categorical_feature' value found in Booster.params. "
-                    "Preferring the value passed via keyword argument. "
-                    "Using refit() to change which columns are treated as categorical is not supported. "
-                    "If you have a valid use case for this, please open an issue at https://github.com/lightgbm-org/LightGBM/issues."
-                )
-                raise LightGBMError(error_msg)
-
+        # Strip params that are explicit keyword arguments of Dataset.__init__ so they
+        # are not passed via both the params dict and the dedicated argument, which
+        # would trigger a "keyword found in params" warning. categorical_feature is the
+        # common offender because it is persisted inside the model's parameter string.
+        for _alias in _ConfigAliases.get("categorical_feature"):
+            new_params.pop(_alias, None)
         train_set = Dataset(
             data=data,
             label=label,
