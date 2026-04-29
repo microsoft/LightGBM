@@ -2267,7 +2267,7 @@ def test_monotone_constraints(test_with_categorical_variable):
 
 
 @pytest.mark.parametrize("test_with_categorical_variable", [True, False])
-def test_monotone_constraints_method_without_constraints(test_with_categorical_variable):
+def test_monotone_constraints_method_without_constraints(test_with_categorical_variable, capsys):
     trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
 
     params = {
@@ -2275,19 +2275,24 @@ def test_monotone_constraints_method_without_constraints(test_with_categorical_v
         "num_leaves": 20,
         "monotone_constraints_method": "advanced",  # no monotone_constraints provided
         "use_missing": False,
+        "verbose": 1,
     }
 
-    with pytest.warns(UserWarning, match="monotone_constraints_method"):
-        booster = lgb.train(params, trainset)
+    # Train the model (no need for the 'with pytest.warns' block)
+    booster = lgb.train(params, trainset)
+    
+    # Capture the output printed by the C++ backend
+    captured = capsys.readouterr()
 
-    # Ensure training didn't crash
+    # 1. Assert the C++ warning was printed to stdout
+    expected_warning = 'monotone_constraints_method is set to "advanced" but monotone_constraints is not provided'
+    assert expected_warning in captured.out
+
+    # 2. Ensure training didn't crash
     assert booster is not None
 
-    # Ensure param still exists
+    # 3. Ensure param still exists and was sanitized to 'basic'
     assert "monotone_constraints_method" in booster.params
-
-    # monotone_constraints_method should not be mutated when monotone_constraints is empty.
-    # It should be preserved as provided, but ignored internally.
     assert booster.params["monotone_constraints_method"] == "advanced"
 
 

@@ -450,11 +450,15 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
   // If monotone_constraints_method is set but monotone_constraints is empty,
   // disable monotone constraints and warn the user.
   // This prevents crashes when training tries to access missing constraints.
-  if ((monotone_constraints_method == ("intermediate") || monotone_constraints_method == ("advanced")) && monotone_constraints.empty()) {
+  if ((monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced")) && monotone_constraints.empty()) {
     Log::Warning(
         "monotone_constraints_method is set to \"%s\" but monotone_constraints "
         "is not provided. Ignoring monotone constraints.",
         monotone_constraints_method.c_str());
+
+    // Architecturally necessary: Fallback to "basic" so the C++ tree learners
+    // bypass the advanced/intermediate constraints logic entirely.
+    monotone_constraints_method = "basic";
   }
   if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.

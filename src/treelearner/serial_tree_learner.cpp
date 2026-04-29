@@ -52,14 +52,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
-
-  if (config_->monotone_constraints.empty()) {
-    constraints_.reset(nullptr);
-  } else {
-    constraints_.reset(
-      LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features())
-    );
-  }
+  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 
   // initialize splits for leaf
   smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
@@ -184,14 +177,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     }
     cegb_->Init();
   }
-
-  if (config_->monotone_constraints.empty()) {
-    constraints_.reset(nullptr);
-  } else {
-    constraints_.reset(
-      LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features())
-    );
-  }
+  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
 
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool /*is_first_tree*/) {
@@ -217,9 +203,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_ptr = tree.get();
-  if (constraints_ != nullptr) {
-    constraints_->ShareTreePointer(tree_ptr);
-  }
+  constraints_->ShareTreePointer(tree_ptr);
 
   // set the root value by hand, as it is not handled by splits
   tree->SetLeafOutput(0, FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
@@ -315,9 +299,7 @@ void SerialTreeLearner::BeforeTrain() {
   // initialize data partition
   data_partition_->Init();
 
-  if (constraints_ != nullptr) {
-    constraints_->Reset();
-  }
+  constraints_->Reset();
 
   // reset the splits for leaves
   for (int i = 0; i < config_->num_leaves; ++i) {
@@ -799,9 +781,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   auto next_leaf_id = tree->NextLeafId();
 
   // update before tree split
-  if (constraints_ != nullptr) {
-    constraints_->BeforeSplit(best_leaf, next_leaf_id, best_split_info.monotone_type);
-  }
+  constraints_->BeforeSplit(best_leaf, next_leaf_id,
+                            best_split_info.monotone_type);
 
   bool is_numerical_split =
       train_data_->FeatureBinMapper(inner_feature_index)->bin_type() ==
@@ -933,15 +914,11 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   CheckSplit(best_split_info, *left_leaf, *right_leaf);
   #endif
 
-  std::vector<int> leaves_need_update;
-  if (constraints_ != nullptr) {
-    leaves_need_update = constraints_->Update(
+  auto leaves_need_update = constraints_->Update(
       is_numerical_split, *left_leaf, *right_leaf,
       best_split_info.monotone_type, best_split_info.right_output,
       best_split_info.left_output, inner_feature_index, best_split_info,
       best_split_per_leaf_);
-  }
-
   // update leave outputs if needed
   for (auto leaf : leaves_need_update) {
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
@@ -994,11 +971,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     SplitInfo* best_split, double parent_output) {
   bool is_feature_numerical = train_data_->FeatureBinMapper(feature_index)
                                   ->bin_type() == BinType::NumericalBin;
-  if (constraints_ != nullptr && is_feature_numerical) {
-      constraints_->RecomputeConstraintsIfNeeded(
-        constraints_.get(),
-        feature_index,
-        ~(leaf_splits->leaf_index()),
+  if (is_feature_numerical & !config_->monotone_constraints.empty()) {
+    constraints_->RecomputeConstraintsIfNeeded(
+        constraints_.get(), feature_index, ~(leaf_splits->leaf_index()),
         train_data_->FeatureNumBin(feature_index));
   }
   SplitInfo new_split;
@@ -1011,17 +986,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         hist_bits_bin,
         hist_bits_bin,
         num_data,
-        constraints_ ? constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index) : nullptr,
-        parent_output,
-        &new_split);
+        constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index), parent_output, &new_split);
   } else {
     histogram_array_[feature_index].FindBestThreshold(
-        leaf_splits->sum_gradients(),
-        leaf_splits->sum_hessians(),
-        num_data,
-        constraints_ ? constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index) : nullptr,
-        parent_output,
-        &new_split);
+        leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
+        constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index), parent_output, &new_split);
   }
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
@@ -1029,9 +998,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         cegb_->DeltaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
   }
-  if (constraints_ != nullptr && new_split.monotone_type != 0) {
+  if (new_split.monotone_type != 0) {
     double penalty = constraints_->ComputeMonotoneSplitGainPenalty(
-      leaf_splits->leaf_index(), config_->monotone_penalty);
+        leaf_splits->leaf_index(), config_->monotone_penalty);
     new_split.gain *= penalty;
   }
   // it is needed to filter the features after the above code.
