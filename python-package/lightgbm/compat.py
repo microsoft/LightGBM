@@ -341,6 +341,35 @@ except ImportError:
             pass
 
 
+"""polars"""
+try:
+    from polars import Categorical as pl_Categorical
+    from polars import DataFrame as pl_DataFrame
+    from polars import Int32 as pl_Int32
+    from polars import Series as pl_Series
+    from polars import String as pl_String
+
+    POLARS_INSTALLED = True
+except ImportError:
+    POLARS_INSTALLED = False
+
+    class pl_DataFrame:  # type: ignore
+        """Dummy class for pl.DataFrame."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    class pl_Series:  # type: ignore
+        """Dummy class for pl.Series."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    pl_Categorical = None
+    pl_Int32 = None
+    pl_String = None
+
+
 """cpu_count()"""
 try:
     from joblib import cpu_count

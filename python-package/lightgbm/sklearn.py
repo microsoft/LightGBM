@@ -47,6 +47,7 @@ from .compat import (
     _sklearn_version,
     pa_Table,
     pd_DataFrame,
+    pl_DataFrame,
 )
 from .engine import train
 
@@ -1013,7 +1014,7 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if not isinstance(X, (pd_DataFrame, pa_Table, pl_DataFrame)):
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1181,7 +1182,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if not isinstance(X, (pd_DataFrame, pa_Table, pl_DataFrame)):
             X = _LGBMValidateData(
                 self,
                 X,
