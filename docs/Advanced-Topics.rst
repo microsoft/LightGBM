@@ -23,7 +23,7 @@ Categorical Feature Support
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.
 
--  Categorical features will be cast to ``int32`` (integer codes will be extracted from pandas categoricals in the Python-package) so they must be encoded as non-negative integers (negative values will be treated as missing)
+-  Categorical features will be cast to ``int32`` so they must be encoded as non-negative integers (negative values will be treated as missing)
    less than ``Int32.MaxValue`` (2147483647).
    It is best to use a contiguous range of integers started from zero.
    Floating point numbers in categorical features will be rounded towards 0.
@@ -33,6 +33,14 @@ Categorical Feature Support
 -  For a categorical feature with high cardinality (``#category`` is large), it often works best to
    treat the feature as numeric, either by simply ignoring the categorical interpretation of the integers or
    by embedding the categories in a low-dimensional numeric space.
+
+.. note::
+
+   When using the Python package with a pandas ``DataFrame`` and columns of dtype ``category``,
+   LightGBM stores the category labels observed during training and re-aligns categories at
+   prediction time before converting them to integer codes. This ensures consistent encoding
+   even if category order or subsets differ between training and prediction data. Categories
+   not seen during training are treated as missing values.
 
 LambdaRank
 ----------
