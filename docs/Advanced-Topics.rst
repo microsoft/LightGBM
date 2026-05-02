@@ -40,14 +40,6 @@ Categorical Feature Support
    treat the feature as numeric, either by simply ignoring the categorical interpretation of the integers or
    by embedding the categories in a low-dimensional numeric space.
 
-.. note::
-
-   When using the Python package with a pandas ``DataFrame`` and columns of dtype ``category``,
-   LightGBM stores the category labels observed during training and re-aligns categories at
-   prediction time before converting them to integer codes. This ensures consistent encoding
-   even if category order or subsets differ between training and prediction data. Categories
-   not seen during training are treated as missing values.
-
 LambdaRank
 ----------
 
