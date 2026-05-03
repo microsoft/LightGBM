@@ -28,6 +28,19 @@
 #endif
 #define SP_SHARED_HIST_SIZE (DP_SHARED_HIST_SIZE * 2)
 
+// Max columns allowed in a single CUDA feature partition. Must remain
+// strictly less than NUM_THREADS_PER_BLOCK (504, defined in
+// cuda_histogram_constructor.hpp), because the histogram kernel computes
+// `block_dim_y = NUM_THREADS_PER_BLOCK / max_num_column_per_partition`. With
+// 252 we keep block_dim_y >= 2, preserving meaningful y-parallelism.
+//
+// Without this cap, low-bin-count features (e.g. quantized data with ~5 bins)
+// pack hundreds of columns into one partition because the partition split
+// logic checks only the bin total against `max_num_bin_per_partition`. That
+// previously triggered SIGFPE in the kernel-dim calculation for such data
+// (LightGBM issue #7122).
+#define MAX_NUM_COLUMN_PER_PARTITION (252)
+
 namespace LightGBM {
 
 class CUDARowData {

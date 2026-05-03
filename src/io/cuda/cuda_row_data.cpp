@@ -199,7 +199,10 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
 
       // try if adding this column exceed the maximum number per partition
       const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
-      if (cur_hist_num_bin > max_num_bin_per_partition) {
+      const int cur_num_columns_in_partition =
+          column_index - feature_partition_column_index_offsets_.back();
+      if (cur_hist_num_bin > max_num_bin_per_partition ||
+          cur_num_columns_in_partition >= MAX_NUM_COLUMN_PER_PARTITION) {
         feature_partition_column_index_offsets_.emplace_back(column_index);
         start_hist_offset = column_feature_hist_start;
         partition_hist_offsets_.emplace_back(start_hist_offset);
@@ -237,7 +240,10 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
 
         // try if adding this column exceed the maximum number per partition
         const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
-        if (cur_hist_num_bin > max_num_bin_per_partition) {
+        const int cur_num_columns_in_partition =
+            column_index - feature_partition_column_index_offsets_.back();
+        if (cur_hist_num_bin > max_num_bin_per_partition ||
+            cur_num_columns_in_partition >= MAX_NUM_COLUMN_PER_PARTITION) {
           feature_partition_column_index_offsets_.emplace_back(column_index);
           start_hist_offset = column_feature_hist_start;
           partition_hist_offsets_.emplace_back(start_hist_offset);
