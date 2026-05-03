@@ -4867,3 +4867,17 @@ def test_equal_predict_from_row_major_and_col_major_data():
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)
+
+
+@pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
+def test_many_low_bin_features_does_not_sigfpe():
+    # Reproduces the SIGFPE in CalcConstructHistogramKernelDim where
+    rng = np.random.default_rng(0)
+    X = rng.integers(0, 5, size=(1500, 600)).astype(np.float32)
+    y = rng.uniform(0.0, 1.0, size=1500).astype(np.float32)
+    ds = lgb.Dataset(X, label=y)
+    lgb.train(
+        {"device_type": "cuda", "objective": "regression", "verbose": -1},
+        ds,
+        num_boost_round=5,
+    )

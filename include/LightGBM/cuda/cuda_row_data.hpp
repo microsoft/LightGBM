@@ -38,7 +38,7 @@
 // pack hundreds of columns into one partition because the partition split
 // logic checks only the bin total against `max_num_bin_per_partition`. That
 // previously triggered SIGFPE in the kernel-dim calculation for such data
-// (LightGBM issue #7122).
+// (https://github.com/lightgbm-org/LightGBM/issues/7122).
 #define MAX_NUM_COLUMN_PER_PARTITION (252)
 
 namespace LightGBM {

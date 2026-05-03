@@ -147,15 +147,11 @@ void CUDAHistogramConstructor::SubtractHistogramForLeaf(
   global_timer.Stop("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
 }
 
-// The column-count cap used in DivideCUDAFeatureGroups must stay strictly
-// below NUM_THREADS_PER_BLOCK so that block_dim_y >= 1 here. Tying the two
-// constants together via static_assert prevents future drift between
-// cuda_row_data.hpp and this file from silently re-introducing the
-// host-side divide-by-zero (#7122).
 static_assert(MAX_NUM_COLUMN_PER_PARTITION < NUM_THREADS_PER_BLOCK,
               "MAX_NUM_COLUMN_PER_PARTITION must stay strictly less than "
               "NUM_THREADS_PER_BLOCK so that block_dim_y >= 1 in "
-              "CalcConstructHistogramKernelDim. See issue #7122.");
+              "CalcConstructHistogramKernelDim. "
+              "See https://github.com/lightgbm-org/LightGBM/issues/7122.");
 
 void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   int* grid_dim_x,
