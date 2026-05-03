@@ -30,9 +30,7 @@
 
 // Max columns allowed in a single CUDA feature partition. Must remain
 // strictly less than NUM_THREADS_PER_BLOCK (504, defined in
-// cuda_histogram_constructor.hpp), because the histogram kernel computes
-// `block_dim_y = NUM_THREADS_PER_BLOCK / max_num_column_per_partition`. With
-// 252 we keep block_dim_y >= 2, preserving meaningful y-parallelism.
+// cuda_histogram_constructor.hpp).
 //
 // Without this cap, low-bin-count features (e.g. quantized data with ~5 bins)
 // pack hundreds of columns into one partition because the partition split
