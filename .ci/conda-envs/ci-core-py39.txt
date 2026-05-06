@@ -40,6 +40,9 @@ pytest=7.4.*
 # https://github.com/lightgbm-org/LightGBM/issues/6990
 graphite2=1.3.14=*_0
 
+# starting some time around 2026, 'pip' is no longer guaranteed to be installed
+pip=25.2.*
+
 # other recursive dependencies, just
 # pinned here to help speed up solves
 bokeh=2.4.*

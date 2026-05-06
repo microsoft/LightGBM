@@ -85,12 +85,6 @@ jobs:
             os-display-name: 'ubuntu22.04'
           - os: macos-15-intel
             task: r-package
-            compiler: gcc
-            r_version: 4.3
-            build_type: cmake
-            container: null
-          - os: macos-15-intel
-            task: r-package
             compiler: clang
             r_version: 4.3
             build_type: cmake
@@ -178,10 +172,10 @@ jobs:
           persist-credentials: false
           submodules: true
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@6f6e5bc62fba3a704f74e7ad7ef7676c5c6a2590  # v2.11.4
+        uses: r-lib/actions/setup-pandoc@a51a8012b0aab7c32ef9d19bf54da93f3254335e  # v2.12.0
       - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
-        uses: r-lib/actions/setup-tinytex@6f6e5bc62fba3a704f74e7ad7ef7676c5c6a2590  # v2.11.4
+        uses: r-lib/actions/setup-tinytex@a51a8012b0aab7c32ef9d19bf54da93f3254335e  # v2.12.0
         env:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
@@ -293,7 +287,7 @@ jobs:
           persist-credentials: false
           submodules: true
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@6f6e5bc62fba3a704f74e7ad7ef7676c5c6a2590  # v2.11.4
+        uses: r-lib/actions/setup-pandoc@a51a8012b0aab7c32ef9d19bf54da93f3254335e  # v2.12.0
       - name: Install system dependencies
         shell: bash
         run: |
