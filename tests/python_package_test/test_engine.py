@@ -4870,14 +4870,17 @@ def test_equal_predict_from_row_major_and_col_major_data():
 
 
 @pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
-def test_many_low_bin_features_does_not_sigfpe():
+def test_many_low_bin_features_does_not_sigfpe(rng):
     # Reproduces the SIGFPE in CalcConstructHistogramKernelDim where
-    rng = np.random.default_rng(0)
-    X = rng.integers(0, 5, size=(1500, 600)).astype(np.float32)
-    y = rng.uniform(0.0, 1.0, size=1500).astype(np.float32)
-    ds = lgb.Dataset(X, label=y)
-    lgb.train(
-        {"device_type": "cuda", "objective": "regression", "verbose": -1},
-        ds,
-        num_boost_round=5,
-    )
+    # MAX_NUM_COLUMN_PER_PARTITION reaching NUM_THREADS_PER_BLOCK drove
+    # block_dim_y to 0 and triggered a divide-by-zero (see
+    # https://github.com/lightgbm-org/LightGBM/issues/7122).
+    n_rows = 1500
+    n_features = 600
+    X = rng.integers(0, 5, size=(n_rows, n_features)).astype(np.float32)
+    y = rng.uniform(0.0, 1.0, size=n_rows).astype(np.float32)
+    ds = lgb.Dataset(X, label=y, params={"device": "cuda"})
+    ds.construct()
+    np.testing.assert_array_equal(ds.get_label(), y)
+    assert ds.num_feature() == n_features
+    assert ds.feature_num_bin(0) == 5
