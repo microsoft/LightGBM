@@ -1013,7 +1013,10 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        # Skip scikit-learn validation for data types that LightGBM handles natively:
+        # pandas DataFrames, PyArrow Tables, and any object that exposes the Arrow C
+        # Stream Interface (e.g. Polars DataFrames).
+        if not isinstance(X, (pd_DataFrame, pa_Table)) and not hasattr(X, "__arrow_c_stream__"):
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1181,7 +1184,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if not isinstance(X, (pd_DataFrame, pa_Table)) and not hasattr(X, "__arrow_c_stream__"):
             X = _LGBMValidateData(
                 self,
                 X,
@@ -1384,6 +1387,17 @@ class LGBMModel(_LGBMModelBase):
             Do not call ``del estimator.feature_names_in_`` or anything else that invokes
             this method. It is only here for compatibility with ``scikit-learn`` validation
             functions used internally in ``lightgbm``.
+        """
+        pass
+
+    @feature_names_in_.setter
+    def feature_names_in_(self, value: np.ndarray) -> None:
+        """Intercept scikit-learn setting ``feature_names_in_``.
+
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn`` sets this attribute directly
+        during ``validate_data()`` when the input has named features.  LightGBM derives
+        feature names from the trained model (accessible via ``feature_name_``), so we
+        accept the write for API compliance but do not store it.
         """
         pass
 

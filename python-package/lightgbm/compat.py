@@ -282,10 +282,13 @@ try:
     import pyarrow.compute as pa_compute
     from pyarrow import Array as pa_Array
     from pyarrow import ChunkedArray as pa_ChunkedArray
+    from pyarrow import RecordBatchReader as pa_RecordBatchReader
     from pyarrow import Table as pa_Table
     from pyarrow import array as pa_array
     from pyarrow import chunked_array as pa_chunked_array
+    from pyarrow import concat_arrays as pa_concat_arrays
     from pyarrow.types import is_boolean as arrow_is_boolean
+    from pyarrow.types import is_dictionary as arrow_is_dictionary
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
 
@@ -305,6 +308,12 @@ except ImportError:
         def __init__(self, *args: Any, **kwargs: Any):
             pass
 
+    class pa_RecordBatchReader:  # type: ignore
+        """Dummy class for pa.RecordBatchReader."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
     class pa_Table:  # type: ignore
         """Dummy class for pa.Table."""
 
@@ -319,7 +328,9 @@ except ImportError:
 
     pa_array = None
     pa_chunked_array = None
+    pa_concat_arrays = None
     arrow_is_boolean = None
+    arrow_is_dictionary = None
     arrow_is_integer = None
     arrow_is_floating = None
 
@@ -339,6 +350,15 @@ except ImportError:
 
         def __init__(self, *args: Any, **kwargs: Any):
             pass
+
+
+"""polars"""
+try:
+    import polars as _polars_module  # noqa: F401
+
+    POLARS_INSTALLED = True
+except ImportError:
+    POLARS_INSTALLED = False
 
 
 """cpu_count()"""

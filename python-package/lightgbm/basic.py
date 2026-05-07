@@ -32,13 +32,17 @@ from .compat import (
     PYARROW_INSTALLED,
     arrow_cffi,
     arrow_is_boolean,
+    arrow_is_dictionary,
     arrow_is_floating,
     arrow_is_integer,
     concat,
     pa_Array,
+    pa_array,
     pa_chunked_array,
     pa_ChunkedArray,
     pa_compute,
+    pa_concat_arrays,
+    pa_RecordBatchReader,
     pa_Table,
     pd_CategoricalDtype,
     pd_DataFrame,
@@ -419,6 +423,17 @@ def _is_pyarrow_table(data: Any) -> "TypeGuard[pa_Table]":
     return isinstance(data, pa_Table)
 
 
+def _has_arrow_c_stream(data: Any) -> bool:
+    """Check whether data exposes the Arrow C Stream Interface but is not already a PyArrow Table.
+
+    Any object implementing ``__arrow_c_stream__`` (e.g. a Polars DataFrame) can be
+    consumed via ``pa.RecordBatchReader.from_stream()``.  Note that ``read_all()``
+    materialises the stream into a ``pa.Table``; the downstream C-level call
+    ``LGBM_DatasetCreateFromArrow`` operates on that table without an additional copy.
+    """
+    return hasattr(data, "__arrow_c_stream__") and not _is_pyarrow_table(data)
+
+
 class _ArrowCArray:
     """Simple wrapper around the C representation of an Arrow type."""
 
@@ -468,6 +483,31 @@ def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
             obj._export_to_c(chunk_ptr)
 
     return _ArrowCArray(len(chunks), chunks, schema)
+
+
+def _arrow_dict_to_utf8(col: Union[pa_Array, pa_ChunkedArray]) -> pa_Array:
+    """Decode an Arrow dictionary column to a flat utf8 array.
+
+    Processes each chunk individually to work around missing ``array_take`` compute
+    kernels for the ``string_view`` value type emitted by Polars >= 1.0 when
+    converting via the Arrow C Stream Interface.
+
+    Note: this materialises the decoded strings in memory; it is not zero-copy.
+    """
+    chunks = col.chunks if isinstance(col, pa_ChunkedArray) else [col]
+    if not chunks:
+        # empty ChunkedArray (zero-row table) — return an empty utf8 array
+        return pa_compute.cast(pa_array([], type="null"), "utf8")
+    utf8_parts: List[pa_Array] = []
+    for chunk in chunks:
+        # Cast the dictionary's unique values to utf8 (handles string_view from Polars >= 1.0).
+        utf8_dict_values = pa_compute.cast(chunk.dictionary, "utf8")
+        # Gather decoded strings row-by-row using the integer indices.
+        # Null indices propagate as null values.
+        utf8_parts.append(pa_compute.take(utf8_dict_values, chunk.indices))
+    if len(utf8_parts) == 1:
+        return utf8_parts[0]
+    return pa_concat_arrays(utf8_parts)
 
 
 def _data_to_2d_numpy(
@@ -872,6 +912,108 @@ def _data_from_pandas(
     )
 
 
+def _data_from_arrow(
+    data: pa_Table,
+    feature_name: _LGBM_FeatureNameConfiguration,
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration,
+    pandas_categorical: Optional[List[List]],
+) -> Tuple[pa_Table, _LGBM_FeatureNameConfiguration, _LGBM_CategoricalFeatureConfiguration, Optional[List[List]]]:
+    """Prepare a PyArrow Table for LightGBM.
+
+    Converts dictionary-encoded columns (produced by e.g. Polars ``Categorical`` /
+    ``Enum``) to stable ``int32`` codes using a saved category list.  This mirrors
+    the behaviour of ``_data_from_pandas`` and reuses the ``pandas_categorical``
+    persistence mechanism so that category maps are saved/loaded alongside the model.
+
+    Parameters
+    ----------
+    data : pyarrow.Table
+        Input table; may contain dictionary-encoded columns.
+    feature_name : list of str or "auto"
+        Feature names.  ``"auto"`` uses column names from the schema.
+    categorical_feature : list of str or int, or "auto"
+        Categorical feature specification.  ``"auto"`` treats every
+        dictionary-encoded column as categorical.
+    pandas_categorical : list of list, or None
+        Saved per-column category lists for consistent re-encoding at validation
+        or inference time.  Pass ``None`` during training so that categories are
+        inferred from the data.
+
+        .. warning::
+
+            Matching between ``pandas_categorical`` entries and table columns is
+            positional (first dict-typed column maps to index 0, etc.), mirroring
+            the behaviour of ``_data_from_pandas``.  The column order of
+            dictionary-encoded columns must be the same at training and inference.
+
+        .. note::
+
+            ``pandas_categorical=None`` is also the value held by a ``Booster``
+            that was trained on purely numeric data.  Passing an Arrow table that
+            contains dictionary columns to such a ``Booster`` at predict time will
+            silently derive categories from the inference data and apply them —
+            this matches the existing pandas behaviour but produces garbage
+            predictions.  A future improvement could guard against this case.
+
+    Returns
+    -------
+    (data, feature_name, categorical_feature, pandas_categorical) : tuple
+    """
+    if not PYARROW_INSTALLED:
+        raise LightGBMError("Cannot process Arrow data without 'pyarrow' installed.")
+
+    # use column names from schema when feature_name is not provided
+    if feature_name == "auto":
+        feature_name = data.column_names
+
+    # collect dictionary-encoded column names (in schema order)
+    dict_col_names: List[str] = [field.name for field in data.schema if arrow_is_dictionary(field.type)]
+    if not dict_col_names:
+        return data, feature_name, categorical_feature, pandas_categorical
+
+    new_columns: Dict[str, pa_Array] = {}
+
+    if pandas_categorical is None:  # training dataset: derive category lists from data
+        new_pandas_categorical: List[List] = []
+        for field in data.schema:
+            if not arrow_is_dictionary(field.type):
+                continue
+            string_col = _arrow_dict_to_utf8(data.column(field.name))
+            cats: List = sorted(pa_compute.unique(string_col).drop_null().to_pylist())
+            new_pandas_categorical.append(cats)
+            new_columns[field.name] = pa_compute.cast(
+                pa_compute.index_in(string_col, value_set=pa_array(cats)),
+                "int32",
+            )
+        pandas_categorical = new_pandas_categorical
+    else:  # validation / inference: re-encode using saved category lists
+        n_dict = sum(1 for f in data.schema if arrow_is_dictionary(f.type))
+        if n_dict != len(pandas_categorical):
+            raise ValueError("train and valid dataset categorical_feature do not match.")
+        cat_idx = 0
+        for field in data.schema:
+            if not arrow_is_dictionary(field.type):
+                continue
+            cats = pandas_categorical[cat_idx]
+            string_col = _arrow_dict_to_utf8(data.column(field.name))
+            new_columns[field.name] = pa_compute.cast(
+                pa_compute.index_in(string_col, value_set=pa_array(cats)),
+                "int32",
+            )
+            cat_idx += 1
+
+    # replace dictionary columns in the table with their int32 code columns
+    for col_name, int_col in new_columns.items():
+        col_idx = data.schema.get_field_index(col_name)
+        data = data.set_column(col_idx, col_name, int_col)
+
+    # when not explicitly specified, treat all dictionary columns as categorical
+    if categorical_feature == "auto":
+        categorical_feature = dict_col_names
+
+    return data, feature_name, categorical_feature, pandas_categorical
+
+
 def _dump_pandas_categorical(
     pandas_categorical: Optional[List[List]],
     file_name: Optional[Union[str, Path]] = None,
@@ -1156,6 +1298,18 @@ class _InnerPredictor:
 
         if isinstance(data, pd_DataFrame):
             data = _data_from_pandas(
+                data=data,
+                feature_name="auto",
+                categorical_feature="auto",
+                pandas_categorical=self.pandas_categorical,
+            )[0]
+        elif _is_pyarrow_table(data) or _has_arrow_c_stream(data):
+            if _has_arrow_c_stream(data):
+                if not PYARROW_INSTALLED:
+                    raise LightGBMError("Cannot predict from an Arrow C Stream object without 'pyarrow' installed.")
+                data = pa_RecordBatchReader.from_stream(data).read_all()
+            # re-encode any dictionary columns using the saved category maps
+            data = _data_from_arrow(
                 data=data,
                 feature_name="auto",
                 categorical_feature="auto",
@@ -2135,8 +2289,19 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-        elif _is_pyarrow_table(data) and feature_name == "auto":
-            feature_name = data.column_names
+        elif _is_pyarrow_table(data) or _has_arrow_c_stream(data):
+            if _has_arrow_c_stream(data):
+                if not PYARROW_INSTALLED:
+                    raise LightGBMError(
+                        "Cannot init Dataset from an Arrow C Stream object without 'pyarrow' installed."
+                    )
+                data = pa_RecordBatchReader.from_stream(data).read_all()
+            data, feature_name, categorical_feature, self.pandas_categorical = _data_from_arrow(
+                data=data,
+                feature_name=feature_name,
+                categorical_feature=categorical_feature,
+                pandas_categorical=self.pandas_categorical,
+            )
 
         # process for args
         params = {} if params is None else params
