@@ -17,7 +17,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, cross_val_score, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
@@ -2260,3 +2260,47 @@ def test_eval_X_eval_y_eval_set_equivalence():
     assert gbm2.evals_result_["valid_0"]["l2"] != gbm2.evals_result_["valid_1"]["l2"], (
         "Evaluation results for the 2 validation sets are not different. This might mean they weren't both used."
     )
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_lgbm_classifier_with_arrow_backed_dataframe():
+    pd = pytest.importorskip("pandas")
+    X, y = load_breast_cancer(return_X_y=True)
+    X_arrow = pd.DataFrame(X, dtype="float64[pyarrow]")
+    y_arrow = pd.Series(y, dtype="int32[pyarrow]")
+    X_train, X_test, y_train, y_test = train_test_split(X_arrow, y_arrow, test_size=0.2, random_state=42)
+    clf = lgb.LGBMClassifier(n_estimators=10, verbose=-1, random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    y_pred_proba = clf.predict_proba(X_test)
+    assert y_pred.shape == (len(X_test),)
+    assert y_pred_proba.shape == (len(X_test), 2)
+    assert accuracy_score(y_test, y_pred) > 0.9
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_lgbm_regressor_with_arrow_backed_dataframe():
+    pd = pytest.importorskip("pandas")
+    X, y = make_synthetic_regression()
+    X_arrow = pd.DataFrame(X, dtype="float32[pyarrow]")
+    y_arrow = pd.Series(y, dtype="float32[pyarrow]")
+    X_train, X_test, y_train, _ = train_test_split(X_arrow, y_arrow, test_size=0.2, random_state=42)
+    reg = lgb.LGBMRegressor(n_estimators=10, verbose=-1, random_state=42)
+    reg.fit(X_train, y_train)
+    y_pred = reg.predict(X_test)
+    assert y_pred.shape == (len(X_test),)
+    assert np.isfinite(y_pred).all()
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_cross_validation_with_arrow_backed_dataframe(rng):
+    pd = pytest.importorskip("pandas")
+    X_arrow = pd.DataFrame(rng.random((100, 5)), dtype="float32[pyarrow]")
+    y_arrow = pd.Series(rng.integers(0, 2, 100), dtype="int32[pyarrow]")
+    clf = lgb.LGBMClassifier(n_estimators=5, verbose=-1)
+    scores = cross_val_score(clf, X_arrow, y_arrow, cv=3)
+    assert len(scores) == 3
+    assert all(0 <= s <= 1 for s in scores)

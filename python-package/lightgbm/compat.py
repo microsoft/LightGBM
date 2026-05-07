@@ -176,6 +176,10 @@ try:
         from pandas import CategoricalDtype as pd_CategoricalDtype
     except ImportError:
         from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
+    try:
+        from pandas import ArrowDtype as pd_ArrowDtype
+    except ImportError:
+        pd_ArrowDtype = None
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
@@ -194,6 +198,12 @@ except ImportError:
 
     class pd_CategoricalDtype:  # type: ignore
         """Dummy class for pandas.CategoricalDtype."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    class pd_ArrowDtype:  # type: ignore
+        """Dummy class for pandas.ArrowDtype."""
 
         def __init__(self, *args: Any, **kwargs: Any):
             pass
@@ -285,6 +295,7 @@ try:
     from pyarrow import Table as pa_Table
     from pyarrow import array as pa_array
     from pyarrow import chunked_array as pa_chunked_array
+    from pyarrow.lib import DataType as pa_DataType
     from pyarrow.types import is_boolean as arrow_is_boolean
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
@@ -307,6 +318,12 @@ except ImportError:
 
     class pa_Table:  # type: ignore
         """Dummy class for pa.Table."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    class pa_DataType:  # type: ignore
+        """Dummy class for pa.lib.DataType."""
 
         def __init__(self, *args: Any, **kwargs: Any):
             pass

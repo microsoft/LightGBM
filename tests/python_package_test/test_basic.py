@@ -14,7 +14,7 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
+from lightgbm.compat import PANDAS_INSTALLED, PYARROW_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
@@ -1209,3 +1209,182 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.parametrize(
+    "dtype_str",
+    [
+        "int8[pyarrow]",
+        "int16[pyarrow]",
+        "int32[pyarrow]",
+        "int64[pyarrow]",
+        "uint8[pyarrow]",
+        "uint32[pyarrow]",
+        "uint64[pyarrow]",
+        "float32[pyarrow]",
+        "float64[pyarrow]",
+        "bool[pyarrow]",
+    ]
+)
+def test_dataset_constructor_with_arrow_backed_dataframe(dtype_str, rng):
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame(rng.integers(0, 10, (100, 5)), dtype=dtype_str)
+    ds = lgb.Dataset(X).construct()
+    assert ds.num_data() == 100
+    assert ds.num_feature() == 5
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_dataset_constructor_with_arrow_backed_dataframe_mixed(rng):
+    """tests for mixes of both numpy series and pyarrow-backed sereis in the same dataframe"""
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame(rng.integers(0, 10, (100, 5)), dtype="int32[pyarrow]")
+    X["int_col"] = pd.Series(rng.integers(0, 10, 100), dtype=np.int32)
+    X["float_col"] = pd.Series(rng.uniform(size=100), dtype=np.float32)
+    X["bool_col"] = pd.Series(rng.choice(a=[False, True], size=100), dtype=np.bool_)
+    X["nullable_int_col"] = pd.Series(rng.choice(a=[0, 1, None], size=100), dtype=pd.Int32Dtype())
+    X["nullable_float_col"] = pd.Series(rng.choice(a=[0.0, 1.0, None], size=100), dtype=pd.Float32Dtype())
+    X["nullable_bool_col"] = pd.Series(rng.choice(a=[False, True, None], size=100), dtype=pd.BooleanDtype())
+    ds = lgb.Dataset(X).construct()
+    assert ds.num_data() == 100
+    assert ds.num_feature() == 11
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_dataset_constructor_with_invalid_arrow_backed_dataframe():
+    pd = pytest.importorskip("pandas")
+    for dtype in ["string[pyarrow]", "large_string[pyarrow]", "binary[pyarrow]", "large_binary[pyarrow]"]:
+        with pytest.raises(ValueError, match="must be int, float or bool."):
+            lgb.Dataset(pd.DataFrame(["hello", "world", None], dtype=dtype)).construct()
+    for dtype in [
+        "timestamp[ns][pyarrow]",
+        "timestamp[us][pyarrow]",
+        "timestamp[ms][pyarrow]",
+        "timestamp[s][pyarrow]",
+        "timestamp[ns, tz=UTC][pyarrow]",
+        "date32[pyarrow]",
+        "date64[pyarrow]",
+    ]:
+        with pytest.raises(ValueError, match="must be int, float or bool."):
+            lgb.Dataset(pd.DataFrame(["2020-01-01", None], dtype=dtype)).construct()
+    for dtype in ["time32[s][pyarrow]", "time32[ms][pyarrow]", "time64[ns][pyarrow]", "time64[us][pyarrow]"]:
+        with pytest.raises(ValueError, match="must be int, float or bool."):
+            lgb.Dataset(pd.DataFrame(["12:00:00", None], dtype=dtype)).construct()
+    for dtype in ["duration[s][pyarrow]", "duration[ms][pyarrow]", "duration[us][pyarrow]", "duration[ns][pyarrow]"]:
+        with pytest.raises(ValueError, match="must be int, float or bool."):
+            lgb.Dataset(pd.DataFrame([1000, None], dtype=dtype)).construct()
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.parametrize(
+    ("field_name", "dtype", "data_fn"),
+    [
+        ("label", "float64[pyarrow]", lambda rng: rng.random(100)),
+        ("weight", "float64[pyarrow]", lambda rng: rng.random(100)),
+        ("group", "int32[pyarrow]", lambda _: [20, 30, 50]),
+        # Position support will be added in https://github.com/lightgbm-org/LightGBM/pull/7260
+        # ("position", "int8[pyarrow]", lambda rng: rng.integers(0, 10, size=100)),
+        ("init_score", "float64[pyarrow]", lambda _: list(range(100))),
+    ],
+)
+def test_dataset_constructor_with_arrow_series_metadata_field(rng, field_name, dtype, data_fn):
+    pd = pytest.importorskip("pandas")
+    X = rng.random((100, 5))
+    data = data_fn(rng)
+    series = pd.Series(data, dtype=dtype)
+    ds = lgb.Dataset(X, **{field_name: series}).construct()
+    retrieved = getattr(ds, f"get_{field_name}")()
+    assert isinstance(retrieved, np.ndarray)
+    expected = np.asarray(data)
+    np.testing.assert_allclose(retrieved, expected)
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_arrow_backed_categorical_features(rng):
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame({
+        'cat_col': pd.Series(rng.choice([1, 2, 3], size=100), dtype="float64[pyarrow]"),
+        'num_col': rng.random(100)
+    })
+    y = rng.integers(0, 2, 100)
+    ds = lgb.Dataset(X, label=y, categorical_feature=['cat_col']).construct()
+    assert ds.num_data() == 100
+    assert ds.num_feature() == 2
+    assert ds.categorical_feature == ['cat_col']
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_pd_categorical_features_with_arrow_backed_dataframe(rng):
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame({
+        'cat_col': pd.Categorical(['a', 'b', 'c'] * 30),
+        'num_col': rng.random(90)
+    })
+    y = rng.integers(0, 2, 90)
+    X['num_col'] = X['num_col'].astype('float64[pyarrow]')
+    ds = lgb.Dataset(X, label=y, categorical_feature=['cat_col']).construct()
+    assert ds.num_data() == 90
+    assert ds.num_feature() == 2
+    assert ds.categorical_feature == ['cat_col']
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_empty_arrow_backed_dataframe_raises():
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame(dtype="float64[pyarrow]")
+    with pytest.raises(ValueError, match="must be 2 dimensional and non empty"):
+        lgb.Dataset(X).construct()
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_numeric_column_names_with_arrow_backend(rng):
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame(rng.random((50, 3)), columns=[0, 1, 2], dtype="float64[pyarrow]")
+    ds = lgb.Dataset(X).construct()
+    assert ds.feature_name == ['0', '1', '2']
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_all_null_arrow_column():
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame({
+        'col1': pd.Series([1.0, 2.0, 3.0], dtype='float64[pyarrow]'),
+        'col2': pd.Series([None, None, None], dtype='float64[pyarrow]')
+    })
+    y = [0, 1, 0]
+    ds = lgb.Dataset(X, label=y).construct()
+    assert ds.num_feature() == 2
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+def test_all_arrow_vs_mixed_dtypes_equivalence(rng):
+    pd = pytest.importorskip("pandas")
+    data = rng.random((100, 5))
+    y = rng.integers(0, 2, 100)
+
+    X_all_arrow = pd.DataFrame(data, dtype="float64[pyarrow]")
+    X_mixed = pd.DataFrame(data)
+    X_mixed[0] = X_mixed[0].astype('float64[pyarrow]')
+
+    ds1 = lgb.Dataset(X_all_arrow, label=y).construct()  # fast path
+    ds2 = lgb.Dataset(X_mixed, label=y).construct()  # mixed path
+
+    params = {'seed': 42, 'verbose': -1}
+    bst1 = lgb.train(params, ds1, num_boost_round=5)
+    bst2 = lgb.train(params, ds2, num_boost_round=5)
+
+    pred1 = bst1.predict(data)
+    pred2 = bst2.predict(data)
+
+    np.testing.assert_allclose(pred1, pred2)

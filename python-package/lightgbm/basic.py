@@ -35,11 +35,14 @@ from .compat import (
     arrow_is_floating,
     arrow_is_integer,
     concat,
+    pa_array,
     pa_Array,
     pa_chunked_array,
     pa_ChunkedArray,
     pa_compute,
+    pa_DataType,
     pa_Table,
+    pd_ArrowDtype,
     pd_CategoricalDtype,
     pd_DataFrame,
     pd_Series,
@@ -407,6 +410,23 @@ def _is_2d_list(data: Any) -> bool:
 def _is_2d_collection(data: Any) -> bool:
     """Check whether data is a 2-D collection."""
     return _is_numpy_2d_array(data) or _is_2d_list(data) or isinstance(data, pd_DataFrame)
+
+
+def _is_pd_arrow_dtype(dtype: Any) -> bool:
+    """Check whether the dtype is a pandas ArrowDtype."""
+    return pd_ArrowDtype is not None and isinstance(dtype, pd_ArrowDtype)
+
+
+def _is_arrow_backed_pd_series(data: Any) -> bool:
+    """Check whether data is a pandas Series backed by ArrowDtype."""
+    return isinstance(data, pd_Series) and _is_pd_arrow_dtype(data.dtype)
+
+
+def _extract_arrow_array(data: Any) -> Any:
+    """Extract PyArrow array from arrow-backed pandas Series, or return as-is if already an arrow array."""
+    if _is_arrow_backed_pd_series(data):
+        return data.array.__arrow_array__()
+    return data
 
 
 def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]":
@@ -790,6 +810,55 @@ def _c_int_array(data: np.ndarray) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
+def _is_allowed_arrow_dtype(arrow_type: pa_DataType) -> bool:
+    """Check if the Arrow type is one that C++ can handle (integer, floating point, or boolean)."""
+    return arrow_is_integer(arrow_type) or arrow_is_floating(arrow_type) or arrow_is_boolean(arrow_type)
+
+
+def _check_for_bad_arrow_dtypes(table: pa_Table) -> None:
+    """Raise if the Arrow table contains non-numeric types."""
+    bad_arrow_dtypes = [
+        f"{field.name}: {field.type}"
+        for field in table.schema
+        if not _is_allowed_arrow_dtype(field.type)
+    ]
+    if bad_arrow_dtypes:
+        raise ValueError(
+            "Arrow columns must be int, float or bool.\n"
+            f"Fields with bad Arrow dtypes: {', '.join(bad_arrow_dtypes)}"
+        )
+
+
+def _pandas_to_arrow_table(data: pd_DataFrame) -> pa_Table:
+    """Convert a pandas DataFrame to an Arrow Table."""
+    if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+        raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
+    arrays = []
+    names = []
+    for col_name, col in data.items():
+        dtype = col.dtype
+        if _is_pd_arrow_dtype(dtype):
+            # arrow-backed columns can be converted zero-copy by extracting the underlying array
+            arrays.append(col.array.__arrow_array__())
+        elif hasattr(dtype, 'numpy_dtype'):
+            # nullable extension types (e.g. pd.Int64Dtype, pd.Float64Dtype, pd.BooleanDtype)
+            # use separate data+mask arrays; pass the Series directly so pyarrow can interpret the mask
+            arrays.append(pa_array(col, from_pandas=True))
+        elif _is_allowed_numpy_dtype(dtype.type):
+            # numpy-backed columns are a single contiguous buffer; .values is a zero-copy view
+            arrays.append(pa_array(col.values, from_pandas=True))
+        else:
+            raise ValueError(
+                f"Column '{col_name}' has unsupported dtype '{dtype}'. "
+                "Columns must have integer, floating point, or boolean dtypes."
+            )
+        names.append(str(col_name))
+    # column names are coerced to strings as required by Arrow
+    table = pa_Table.from_arrays(arrays, names=names)
+    _check_for_bad_arrow_dtypes(table)
+    return table
+
+
 def _is_allowed_numpy_dtype(dtype: type) -> bool:
     float128 = getattr(np, "float128", type(None))
     return issubclass(dtype, (np.integer, np.floating, np.bool_)) and not issubclass(dtype, (np.timedelta64, float128))
@@ -829,7 +898,7 @@ def _data_from_pandas(
     feature_name: _LGBM_FeatureNameConfiguration,
     categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]],
-) -> Tuple[np.ndarray, List[str], Union[List[str], List[int]], List[List]]:
+) -> Tuple[Union[np.ndarray, pa_Table], List[str], Union[List[str], List[int]], List[List]]:
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError("Input data must be 2 dimensional and non empty.")
 
@@ -858,6 +927,14 @@ def _data_from_pandas(
     # use cat cols from DataFrame
     if categorical_feature == "auto":
         categorical_feature = cat_cols_not_ordered
+
+    if any(_is_pd_arrow_dtype(dtype) for dtype in data.dtypes):
+        return (
+            _pandas_to_arrow_table(data),
+            feature_name,
+            categorical_feature,
+            pandas_categorical,
+        )
 
     df_dtypes = [dtype.type for dtype in data.dtypes]
     # so that the target dtype considers floats
@@ -1718,9 +1795,7 @@ class _InnerPredictor:
         if not (PYARROW_INSTALLED and CFFI_INSTALLED):
             raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
 
-        # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
-            raise ValueError("Arrow table may only have integer or floating point datatypes")
+        _check_for_bad_arrow_dtypes(table)
 
         # Prepare prediction output array
         n_preds = self.__get_num_preds(
@@ -2473,9 +2548,7 @@ class Dataset:
         if not (PYARROW_INSTALLED and CFFI_INSTALLED):
             raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
 
-        # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
-            raise ValueError("Arrow table may only have integer or floating point datatypes")
+        _check_for_bad_arrow_dtypes(table)
 
         # Export Arrow table to C
         c_array = _export_arrow_to_c(table)
@@ -2804,6 +2877,8 @@ class Dataset:
             )
             return self
 
+        data = _extract_arrow_array(data)
+
         # If the data is a arrow data, we can just pass it to C
         if _is_pyarrow_array(data) or _is_pyarrow_table(data):
             # If a table is being passed, we concatenate the columns. This is only valid for
@@ -3076,6 +3151,7 @@ class Dataset:
         ----------
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information to be set into Dataset.
+            Supports arrow-backed pandas Series (ArrowDtype).
 
         Returns
         -------
@@ -3088,7 +3164,7 @@ class Dataset:
                 if len(label.columns) > 1:
                     raise ValueError("DataFrame for label cannot have multiple columns")
                 label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
-            elif _is_pyarrow_array(label):
+            elif _is_pyarrow_array(label) or _is_arrow_backed_pd_series(label):
                 label_array = label
             else:
                 label_array = _list_to_1d_numpy(data=label, dtype=np.float32, name="label")
@@ -3106,6 +3182,7 @@ class Dataset:
         ----------
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight to be set for each data point. Weights should be non-negative.
+            Supports arrow-backed pandas Series (ArrowDtype).
 
         Returns
         -------
@@ -3114,6 +3191,7 @@ class Dataset:
         """
         # Check if the weight contains values other than one
         if weight is not None:
+            weight = _extract_arrow_array(weight)
             if _is_pyarrow_array(weight):
                 # TODO: remove 'type: ignore[attr-defined]' when https://github.com/apache/arrow/issues/49831 is resolved.
                 if pa_compute.all(pa_compute.equal(weight, 1)).as_py():  # type: ignore[attr-defined]
@@ -3124,7 +3202,7 @@ class Dataset:
 
         # Set field
         if self._handle is not None and weight is not None:
-            if not _is_pyarrow_array(weight):
+            if not (_is_pyarrow_array(weight) or _is_arrow_backed_pd_series(weight)):
                 weight = _list_to_1d_numpy(data=weight, dtype=np.float32, name="weight")
             self.set_field("weight", weight)
             self.weight = self.get_field("weight")  # original values can be modified at cpp side
@@ -3140,6 +3218,7 @@ class Dataset:
         ----------
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score for Booster.
+            Supports arrow-backed pandas Series and DataFrame (ArrowDtype).
 
         Returns
         -------
@@ -3166,6 +3245,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+            Supports arrow-backed pandas Series (ArrowDtype).
 
         Returns
         -------
@@ -3174,7 +3254,7 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            if not _is_pyarrow_array(group):
+            if not (_is_pyarrow_array(group) or _is_arrow_backed_pd_series(group)):
                 group = _list_to_1d_numpy(data=group, dtype=np.int32, name="group")
             self.set_field("group", group)
             # original values can be modified at cpp side
@@ -3191,8 +3271,9 @@ class Dataset:
 
         Parameters
         ----------
-        position : numpy 1-D array, pandas Series or None, optional (default=None)
+        position : numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Position of items used in unbiased learning-to-rank task.
+            Supports arrow-backed pandas Series (ArrowDtype).
 
         Returns
         -------
@@ -3201,7 +3282,8 @@ class Dataset:
         """
         self.position = position
         if self._handle is not None and position is not None:
-            position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
+            if not (_is_pyarrow_array(position) or _is_arrow_backed_pd_series(position)):
+                position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
             self.set_field("position", position)
         return self
 
