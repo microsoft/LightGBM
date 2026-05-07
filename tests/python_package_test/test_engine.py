@@ -4875,9 +4875,6 @@ def test_many_low_bin_features_does_not_sigfpe(rng):
     # MAX_NUM_COLUMN_PER_PARTITION reaching NUM_THREADS_PER_BLOCK drove
     # block_dim_y to 0 and triggered a divide-by-zero (see
     # https://github.com/lightgbm-org/LightGBM/issues/7122).
-    # Note: the SIGFPE site is in CUDAHistogramConstructor (a tree-learner
-    # construct), so a training call is required to reach it -- Dataset
-    # construction alone does not exercise DivideCUDAFeatureGroups.
     n_rows = 1500
     n_features = 600
     X = rng.integers(0, 5, size=(n_rows, n_features)).astype(np.float32)
