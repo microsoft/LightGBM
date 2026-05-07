@@ -18,6 +18,18 @@ from lightgbm.compat import PANDAS_INSTALLED, PYARROW_INSTALLED, pd_DataFrame, p
 
 from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
+# The "name[pyarrow]" dtype-string syntax used by some tests below requires
+# pandas >= 1.5 (which introduced ``pd.ArrowDtype``). The "oldest" CI matrix
+# pins pandas to a version that does not understand those strings even when
+# pyarrow itself is installed, so we gate those tests on this capability.
+if PANDAS_INSTALLED and PYARROW_INSTALLED:
+    import pandas as _pd_for_arrow_check
+
+    _PANDAS_ARROW_DTYPE_SUPPORTED = hasattr(_pd_for_arrow_check, "ArrowDtype")
+    del _pd_for_arrow_check
+else:
+    _PANDAS_ARROW_DTYPE_SUPPORTED = False
+
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(
@@ -1211,8 +1223,10 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 @pytest.mark.parametrize(
     "dtype_str",
     [
@@ -1236,8 +1250,10 @@ def test_dataset_constructor_with_arrow_backed_dataframe(dtype_str, rng):
     assert ds.num_feature() == 5
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_dataset_constructor_with_arrow_backed_dataframe_mixed(rng):
     """tests for mixes of both numpy series and pyarrow-backed sereis in the same dataframe"""
     pd = pytest.importorskip("pandas")
@@ -1253,8 +1269,10 @@ def test_dataset_constructor_with_arrow_backed_dataframe_mixed(rng):
     assert ds.num_feature() == 11
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_dataset_constructor_with_invalid_arrow_backed_dataframe():
     pd = pytest.importorskip("pandas")
     for dtype in ["string[pyarrow]", "large_string[pyarrow]", "binary[pyarrow]", "large_binary[pyarrow]"]:
@@ -1279,8 +1297,10 @@ def test_dataset_constructor_with_invalid_arrow_backed_dataframe():
             lgb.Dataset(pd.DataFrame([1000, None], dtype=dtype)).construct()
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 @pytest.mark.parametrize(
     ("field_name", "dtype", "data_fn"),
     [
@@ -1304,8 +1324,10 @@ def test_dataset_constructor_with_arrow_series_metadata_field(rng, field_name, d
     np.testing.assert_allclose(retrieved, expected)
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_arrow_backed_categorical_features(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame({
@@ -1319,8 +1341,10 @@ def test_arrow_backed_categorical_features(rng):
     assert ds.categorical_feature == ['cat_col']
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_pd_categorical_features_with_arrow_backed_dataframe(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame({
@@ -1335,8 +1359,10 @@ def test_pd_categorical_features_with_arrow_backed_dataframe(rng):
     assert ds.categorical_feature == ['cat_col']
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_empty_arrow_backed_dataframe_raises():
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(dtype="float64[pyarrow]")
@@ -1344,8 +1370,10 @@ def test_empty_arrow_backed_dataframe_raises():
         lgb.Dataset(X).construct()
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_numeric_column_names_with_arrow_backend(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(rng.random((50, 3)), columns=[0, 1, 2], dtype="float64[pyarrow]")
@@ -1353,8 +1381,10 @@ def test_numeric_column_names_with_arrow_backend(rng):
     assert ds.feature_name == ['0', '1', '2']
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_all_null_arrow_column():
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame({
@@ -1366,8 +1396,10 @@ def test_all_null_arrow_column():
     assert ds.num_feature() == 2
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_all_arrow_vs_mixed_dtypes_equivalence(rng):
     pd = pytest.importorskip("pandas")
     data = rng.random((100, 5))

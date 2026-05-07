@@ -54,6 +54,18 @@ SKLEARN_MAJOR, SKLEARN_MINOR, *_ = _sklearn_version.split(".")
 SKLEARN_VERSION_GTE_1_6 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 6)
 SKLEARN_VERSION_GTE_1_7 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 7)
 
+# The "name[pyarrow]" dtype-string syntax used by some tests below requires
+# pandas >= 1.5 (which introduced ``pd.ArrowDtype``). The "oldest" CI matrix
+# pins pandas to a version that does not understand those strings even when
+# pyarrow itself is installed, so we gate those tests on this capability.
+if PANDAS_INSTALLED and PYARROW_INSTALLED:
+    import pandas as _pd_for_arrow_check
+
+    _PANDAS_ARROW_DTYPE_SUPPORTED = hasattr(_pd_for_arrow_check, "ArrowDtype")
+    del _pd_for_arrow_check
+else:
+    _PANDAS_ARROW_DTYPE_SUPPORTED = False
+
 decreasing_generator = itertools.count(0, -1)
 estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
 task_to_model_factory = {
@@ -2262,8 +2274,10 @@ def test_eval_X_eval_y_eval_set_equivalence():
     )
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_lgbm_classifier_with_arrow_backed_dataframe():
     pd = pytest.importorskip("pandas")
     X, y = load_breast_cancer(return_X_y=True)
@@ -2279,8 +2293,10 @@ def test_lgbm_classifier_with_arrow_backed_dataframe():
     assert accuracy_score(y_test, y_pred) > 0.9
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_lgbm_regressor_with_arrow_backed_dataframe():
     pd = pytest.importorskip("pandas")
     X, y = make_synthetic_regression()
@@ -2294,8 +2310,10 @@ def test_lgbm_regressor_with_arrow_backed_dataframe():
     assert np.isfinite(y_pred).all()
 
 
-@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow not installed")
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas not installed")
+@pytest.mark.skipif(
+    not _PANDAS_ARROW_DTYPE_SUPPORTED,
+    reason="pandas + pyarrow with ArrowDtype string support (pandas >= 1.5) not installed",
+)
 def test_cross_validation_with_arrow_backed_dataframe(rng):
     pd = pytest.importorskip("pandas")
     X_arrow = pd.DataFrame(rng.random((100, 5)), dtype="float32[pyarrow]")
