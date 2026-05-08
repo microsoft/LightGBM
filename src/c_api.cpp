@@ -251,6 +251,10 @@ class Booster {
         new_config.data_random_seed != old_config.data_random_seed) {
       Log::Fatal("Cannot change data_random_seed after constructed Dataset handle.");
     }
+    if ((new_param.count("device_type") || new_param.count("device")) &&
+        new_config.device_type != old_config.device_type) {
+      Log::Fatal("Cannot change device_type after constructed Dataset handle.");
+    }
     if (new_param.count("max_bin") &&
         new_config.max_bin != old_config.max_bin) {
       Log::Fatal("Cannot change max_bin after constructed Dataset handle.");

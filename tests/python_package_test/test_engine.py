@@ -3535,6 +3535,7 @@ def test_dataset_update_params(rng):
         "pre_partition": True,
         "enable_bundle": False,
         "data_random_seed": 1,
+        "device_type": "cuda",
         "is_enable_sparse": False,
         "header": False,
         "two_round": False,
