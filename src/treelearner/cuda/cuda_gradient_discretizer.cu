@@ -72,7 +72,7 @@ __global__ void ReduceBlockMinMaxKernel(
   __syncthreads();
   grad_max_val = ShuffleReduceMax<score_t>(grad_max_val, shared_mem_buffer, blockDim.x);
   __syncthreads();
-  hess_max_val = ShuffleReduceMax<score_t>(hess_max_val, shared_mem_buffer, blockDim.x);
+  hess_min_val = ShuffleReduceMin<score_t>(hess_min_val, shared_mem_buffer, blockDim.x);
   __syncthreads();
   hess_max_val = ShuffleReduceMax<score_t>(hess_max_val, shared_mem_buffer, blockDim.x);
   if (threadIdx.x == 0) {

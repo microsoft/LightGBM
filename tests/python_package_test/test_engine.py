@@ -4867,3 +4867,32 @@ def test_equal_predict_from_row_major_and_col_major_data():
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)
+
+
+@pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
+def test_cuda_quantized_grad_training_progresses(rng):
+    # CUDA training with use_quantized_grad=True must actually fit, not return
+    # single-leaf trees. The CPU equivalent test (test_quantized_training)
+    # exercises only the CPU path so it didn't catch the CUDA breakage.
+    n_rows = 2000
+    X = rng.uniform(size=(n_rows, 30)).astype(np.float32)
+    y = rng.uniform(size=n_rows).astype(np.float32)
+    ds = lgb.Dataset(X, label=y, params={"device": "cuda"})
+    bst = lgb.train(
+        {
+            "device_type": "cuda",
+            "objective": "regression",
+            "use_quantized_grad": True,
+            "num_grad_quant_bins": 30,
+            "verbose": -1,
+            "seed": 0,
+        },
+        ds,
+        num_boost_round=50,
+    )
+    mse = float(np.mean((bst.predict(X) - y) ** 2))
+    var = float(np.var(y))
+    # On the broken build, training never progresses past the constant initial
+    # leaf so mse stays at var(y). With the buffer fix, training progresses
+    # (slowly) and mse drops below var.
+    assert mse < 0.97 * var, f"mse={mse:.6f} >= 0.97*var={0.97 * var:.6f}; CUDA quantized training is not progressing"
