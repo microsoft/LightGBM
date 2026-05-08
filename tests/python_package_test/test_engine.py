@@ -3535,7 +3535,6 @@ def test_dataset_update_params(rng):
         "pre_partition": True,
         "enable_bundle": False,
         "data_random_seed": 1,
-        "device_type": "cuda",
         "is_enable_sparse": False,
         "header": False,
         "two_round": False,
@@ -4868,3 +4867,20 @@ def test_equal_predict_from_row_major_and_col_major_data():
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)
+
+
+@pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
+def test_cuda_dataset_device_type_unchangeable_after_construct(rng):
+    # Switching to device_type=cuda after constructing a CPU-side Dataset used
+    # to leave cuda_metadata_ unset and SIGSEGV inside CUDAObjectiveInterface::Init.
+    # The check on device_type in CheckDatasetResetConfig now surfaces a clear
+    # error instead.
+    X = rng.uniform(size=(100, 5)).astype(np.float32)
+    y = rng.uniform(size=100).astype(np.float32)
+    ds = lgb.Dataset(X, label=y).construct()
+    with pytest.raises(lgb.basic.LightGBMError, match="Cannot change device_type"):
+        lgb.train(
+            {"device_type": "cuda", "objective": "regression", "verbose": -1},
+            ds,
+            num_boost_round=1,
+        )
