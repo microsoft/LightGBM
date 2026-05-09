@@ -4870,29 +4870,35 @@ def test_equal_predict_from_row_major_and_col_major_data():
 
 
 @pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
-def test_cuda_quantized_grad_training_progresses(rng):
-    # CUDA training with use_quantized_grad=True must actually fit, not return
-    # single-leaf trees. The CPU equivalent test (test_quantized_training)
-    # exercises only the CPU path so it didn't catch the CUDA breakage.
+def test_cuda_quantized_grad_matches_cpu(rng):
+    # CUDA training with use_quantized_grad=True must produce essentially the
+    # same fit as CPU quantized on the same data. The project's existing
+    # test_quantized_training exercises only the CPU path; without this CUDA
+    # case, breakage in the discretized split-finder / histogram path went
+    # silently uncaught.
     n_rows = 2000
     X = rng.uniform(size=(n_rows, 30)).astype(np.float32)
     y = rng.uniform(size=n_rows).astype(np.float32)
-    ds = lgb.Dataset(X, label=y, params={"device": "cuda"})
-    bst = lgb.train(
-        {
-            "device_type": "cuda",
-            "objective": "regression",
-            "use_quantized_grad": True,
-            "num_grad_quant_bins": 30,
-            "verbose": -1,
-            "seed": 0,
-        },
-        ds,
-        num_boost_round=50,
-    )
-    mse = float(np.mean((bst.predict(X) - y) ** 2))
+    common = {
+        "objective": "regression",
+        "use_quantized_grad": True,
+        "num_grad_quant_bins": 30,
+        "verbose": -1,
+        "seed": 0,
+    }
+    cpu_ds = lgb.Dataset(X, label=y)
+    cpu_bst = lgb.train(common, cpu_ds, num_boost_round=10)
+    cpu_mse = float(np.mean((cpu_bst.predict(X) - y) ** 2))
+
+    cuda_ds = lgb.Dataset(X, label=y, params={"device": "cuda"})
+    cuda_bst = lgb.train({**common, "device_type": "cuda"}, cuda_ds, num_boost_round=10)
+    cuda_mse = float(np.mean((cuda_bst.predict(X) - y) ** 2))
+
     var = float(np.var(y))
-    # On the broken build, training never progresses past the constant initial
-    # leaf so mse stays at var(y). With the buffer fix, training progresses
-    # (slowly) and mse drops below var.
-    assert mse < 0.97 * var, f"mse={mse:.6f} >= 0.97*var={0.97 * var:.6f}; CUDA quantized training is not progressing"
+    # CUDA must actually train, not return constant-output single-leaf trees,
+    # and must not diverge from CPU. Allow a small numerical tolerance since
+    # the reduction order on GPU isn't bit-identical to CPU.
+    assert cuda_mse < 0.9 * var, f"CUDA quantized mse={cuda_mse:.6f} indicates training did not progress"
+    assert abs(cuda_mse - cpu_mse) < 0.05 * var, (
+        f"CUDA quantized mse={cuda_mse:.6f} diverges from CPU quantized mse={cpu_mse:.6f}"
+    )

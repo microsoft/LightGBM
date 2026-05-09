@@ -871,6 +871,10 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
       cuda_split_info_buffer[7] = right_leaf_index;
     } else if (global_thread_index == 16) {
       smaller_leaf_splits->leaf_index = left_leaf_index;
+    } else if (global_thread_index == 17) {
+      smaller_leaf_splits->sum_of_gradients_hessians = best_split_info->left_sum_of_gradients_hessians;
+    } else if (global_thread_index == 18) {
+      larger_leaf_splits->sum_of_gradients_hessians = best_split_info->right_sum_of_gradients_hessians;
     }
   } else {
     if (global_thread_index == 0) {
@@ -902,7 +906,9 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
     } else if (global_thread_index == 13) {
       smaller_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
     } else if (global_thread_index == 14) {
-      cuda_hist_pool[right_leaf_index] = cuda_hist + 2 * right_leaf_index * num_total_bin;
+      cuda_hist_pool[right_leaf_index] = USE_GRAD_DISCRETIZED ?
+        cuda_hist + right_leaf_index * num_total_bin :
+        cuda_hist + 2 * right_leaf_index * num_total_bin;
       smaller_leaf_splits->hist_in_leaf = cuda_hist_pool[right_leaf_index];
     } else if (global_thread_index == 15) {
       larger_leaf_splits->hist_in_leaf = cuda_hist_pool[left_leaf_index];
@@ -910,6 +916,10 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
       cuda_split_info_buffer[6] = right_leaf_index;
     } else if (global_thread_index == 17) {
       cuda_split_info_buffer[7] = left_leaf_index;
+    } else if (global_thread_index == 18) {
+      smaller_leaf_splits->sum_of_gradients_hessians = best_split_info->right_sum_of_gradients_hessians;
+    } else if (global_thread_index == 19) {
+      larger_leaf_splits->sum_of_gradients_hessians = best_split_info->left_sum_of_gradients_hessians;
     }
   }
 }
