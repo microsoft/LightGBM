@@ -62,8 +62,15 @@ pip install cloudpickle psutil graphviz
 #### 5. Run the tests
 
 ```shell
-pytest tests/python_package_test/
+pytest \
+    --cov=lightgbm \
+    --cov-report="term" \
+    --cov-report="html:htmlcov" \
+    tests/python_package_test/
 ```
+
+Coverage results are printed to the terminal and written to `htmlcov/index.html`.
+This requires `pytest-cov` (`pip install pytest-cov`).
 
 For a faster iteration cycle on a specific module:
 
