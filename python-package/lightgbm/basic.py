@@ -402,7 +402,7 @@ def _list_to_1d_numpy(
         return np.asarray(data, dtype=dtype)
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array, pandas Series, or any object implementing __array__"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
         )
 
 
@@ -567,7 +567,7 @@ def _data_to_2d_numpy(
         return _cast_numpy_array_to_dtype(np.asarray(data), dtype)
     raise TypeError(
         f"Wrong type({type(data).__name__}) for {name}.\n"
-        "It should be list of lists, numpy 2-D array, pandas DataFrame, or any object implementing __array__"
+        "It should be list of lists, numpy 2-D array or pandas DataFrame"
     )
 
 
@@ -3012,10 +3012,16 @@ class Dataset:
             return self
 
         # Normalise Arrow C Stream objects (e.g. Polars Series/DataFrame) to PyArrow
-        # before any other checks.  The stream can only be consumed once, so this must
-        # happen before any code that reads the data (e.g. the "all-ones" check in
-        # set_weight, which calls this method after its own early normalisation).
-        if hasattr(data, "__arrow_c_stream__") and not _is_pyarrow_array(data) and not _is_pyarrow_table(data):
+        # before any other checks.  Exclude pandas types explicitly: pandas 3.x also
+        # implements __arrow_c_stream__, but pandas has its own handling paths that must
+        # not be bypassed.  The stream can only be consumed once, so this must happen
+        # before any code that reads the data.
+        if (
+            hasattr(data, "__arrow_c_stream__")
+            and not _is_pyarrow_array(data)
+            and not _is_pyarrow_table(data)
+            and not isinstance(data, (pd_Series, pd_DataFrame))
+        ):
             data = _from_arrow_c_stream(data, field_name)
 
         # If the data is a arrow data, we can just pass it to C
@@ -3304,7 +3310,7 @@ class Dataset:
                 label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
             elif _is_pyarrow_array(label):
                 label_array = label
-            elif hasattr(label, "__arrow_c_stream__"):
+            elif hasattr(label, "__arrow_c_stream__") and not isinstance(label, (pd_Series, pd_DataFrame)):
                 label_array = _from_arrow_c_stream(label, "label")
             else:
                 label_array = _list_to_1d_numpy(data=label, dtype=np.float32, name="label")
@@ -3330,7 +3336,13 @@ class Dataset:
         """
         # Normalise Arrow C Stream objects early: the stream can only be consumed once,
         # and the "all-ones" shortcut below reads the data before set_field is called.
-        if weight is not None and hasattr(weight, "__arrow_c_stream__") and not _is_pyarrow_array(weight):
+        # Exclude pandas types: pandas 3.x implements __arrow_c_stream__ but has its own path.
+        if (
+            weight is not None
+            and hasattr(weight, "__arrow_c_stream__")
+            and not _is_pyarrow_array(weight)
+            and not isinstance(weight, (pd_Series, pd_DataFrame))
+        ):
             weight = _from_arrow_c_stream(weight, "weight")
 
         # Check if the weight contains values other than one
@@ -3397,7 +3409,7 @@ class Dataset:
         if self._handle is not None and group is not None:
             if _is_pyarrow_array(group):
                 pass
-            elif hasattr(group, "__arrow_c_stream__"):
+            elif hasattr(group, "__arrow_c_stream__") and not isinstance(group, (pd_Series, pd_DataFrame)):
                 group = _from_arrow_c_stream(group, "group")
             else:
                 group = _list_to_1d_numpy(data=group, dtype=np.int32, name="group")
@@ -3426,10 +3438,7 @@ class Dataset:
         """
         self.position = position
         if self._handle is not None and position is not None:
-            if hasattr(position, "__arrow_c_stream__") and not _is_pyarrow_array(position):
-                position = _from_arrow_c_stream(position, "position")
-            else:
-                position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
+            position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
             self.set_field("position", position)
         return self
 

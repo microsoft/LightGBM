@@ -293,6 +293,7 @@ matplotlib.use\(\"Agg\"\)\
         joblib \
         matplotlib-base \
         pandas \
+        polars \
         psutil \
         pyarrow \
         python-graphviz \
