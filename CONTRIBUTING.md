@@ -48,7 +48,18 @@ Re-run whenever you make Python changes.
 sh build-python.sh install --precompile
 ```
 
-#### 4. Run the tests
+#### 4. Install test dependencies
+
+Some tests require additional packages beyond the core runtime dependencies:
+
+```shell
+pip install cloudpickle psutil graphviz
+```
+
+- `psutil` — used by `test_engine.py` for memory / process checks
+- `graphviz` — used by `test_plotting.py`; also requires the [Graphviz system package](https://graphviz.org/download/) to be installed
+
+#### 5. Run the tests
 
 ```shell
 pytest tests/python_package_test/
