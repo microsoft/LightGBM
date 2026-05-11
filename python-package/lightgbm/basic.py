@@ -371,7 +371,13 @@ def _is_list_of_sequences(data: Any) -> "TypeGuard[List[Sequence]]":
 
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
-    return _is_numpy_1d_array(data) or _is_numpy_column_array(data) or _is_1d_list(data) or isinstance(data, pd_Series)
+    return (
+        _is_numpy_1d_array(data)
+        or _is_numpy_column_array(data)
+        or _is_1d_list(data)
+        or isinstance(data, pd_Series)
+        or (hasattr(data, "__array__") and hasattr(data, "shape") and len(data.shape) == 1)
+    )
 
 
 def _list_to_1d_numpy(
@@ -392,9 +398,11 @@ def _list_to_1d_numpy(
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
         return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
+    elif hasattr(data, "__array__"):
+        return np.asarray(data, dtype=dtype)
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array, pandas Series, or any object implementing __array__"
         )
 
 
@@ -410,7 +418,12 @@ def _is_2d_list(data: Any) -> bool:
 
 def _is_2d_collection(data: Any) -> bool:
     """Check whether data is a 2-D collection."""
-    return _is_numpy_2d_array(data) or _is_2d_list(data) or isinstance(data, pd_DataFrame)
+    return (
+        _is_numpy_2d_array(data)
+        or _is_2d_list(data)
+        or isinstance(data, pd_DataFrame)
+        or (hasattr(data, "__array__") and hasattr(data, "shape") and len(data.shape) == 2)
+    )
 
 
 def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]":
@@ -523,9 +536,11 @@ def _data_to_2d_numpy(
     if isinstance(data, pd_DataFrame):
         _check_for_bad_pandas_dtypes(data.dtypes)
         return _cast_numpy_array_to_dtype(data.values, dtype)
+    if hasattr(data, "__array__"):
+        return _cast_numpy_array_to_dtype(np.asarray(data), dtype)
     raise TypeError(
         f"Wrong type({type(data).__name__}) for {name}.\n"
-        "It should be list of lists, numpy 2-D array or pandas DataFrame"
+        "It should be list of lists, numpy 2-D array, pandas DataFrame, or any object implementing __array__"
     )
 
 
@@ -3283,7 +3298,7 @@ class Dataset:
                 # TODO: remove 'type: ignore[attr-defined]' when https://github.com/apache/arrow/issues/49831 is resolved.
                 if pa_compute.all(pa_compute.equal(weight, 1)).as_py():  # type: ignore[attr-defined]
                     weight = None
-            elif np.all(weight == 1):
+            elif np.all(np.asarray(weight) == 1):
                 weight = None
         self.weight = weight
 

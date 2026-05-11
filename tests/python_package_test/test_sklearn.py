@@ -71,8 +71,8 @@ task_to_model_factory = {
 }
 all_tasks = tuple(task_to_model_factory.keys())
 all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "polars_DataFrame", "scipy_csc", "scipy_csr")
-all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
-all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
+all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray", "polars_Series")
+all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray", "polars_Series")
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -2045,6 +2045,10 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
             init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
         else:
             init_score = pa_chunked_array([init_score])
+    elif y_type == "polars_Series":
+        y = _polars_module.Series(y)
+        weights = _polars_module.Series(weights)
+        init_score = _polars_module.Series(init_score.ravel())
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
@@ -2058,6 +2062,8 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         g = pa_array(g)
     elif g_type == "pa_ChunkedArray":
         g = pa_chunked_array([g])
+    elif g_type == "polars_Series":
+        g = _polars_module.Series(g)
     elif g_type != "numpy":
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
@@ -2135,7 +2141,7 @@ def test_classification_and_regression_minimally_work_with_all_accepted_data_typ
         pytest.skip("pandas is not installed")
     if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
-    if X_type == "polars_DataFrame" and not POLARS_INSTALLED:
+    if any(t.startswith("polars_") for t in [X_type, y_type]) and not POLARS_INSTALLED:
         pytest.skip("polars is not installed")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
@@ -2154,7 +2160,7 @@ def test_ranking_minimally_works_with_all_accepted_data_types(
         pytest.skip("pandas is not installed")
     if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
-    if X_type == "polars_DataFrame" and not POLARS_INSTALLED:
+    if any(t.startswith("polars_") for t in [X_type, y_type, g_type]) and not POLARS_INSTALLED:
         pytest.skip("polars is not installed")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
