@@ -1,13 +1,15 @@
 # coding: utf-8
 """Tests for Arrow C Stream / Polars DataFrame integration.
 
-These tests cover every combination of:
-  - data source: Polars DataFrame, PyArrow Table with dictionary columns
+These tests cover:
+  - data source: Polars DataFrame
   - API surface: lgb.Dataset + lgb.train / Booster.predict (core) and
                  LGBMClassifier / LGBMRegressor .fit / .predict (sklearn)
   - feature types: numeric-only and numeric + categorical
   - edge cases: null category values, unseen categories at inference,
                 save/load model round-trip
+
+PyArrow-specific dictionary-column tests live in test_arrow.py.
 """
 
 from pathlib import Path
@@ -17,17 +19,9 @@ import numpy as np
 import pytest
 
 import lightgbm as lgb
-from lightgbm.compat import POLARS_INSTALLED, PYARROW_INSTALLED
 
-if not PYARROW_INSTALLED:
-    pytest.skip("pyarrow is not installed", allow_module_level=True)
-
-import pyarrow as pa
-
-if not POLARS_INSTALLED:
-    pytest.skip("polars is not installed", allow_module_level=True)
-
-import polars as pl
+pa = pytest.importorskip("pyarrow")
+pl = pytest.importorskip("polars")
 
 from .utils import np_assert_array_equal
 
@@ -75,24 +69,6 @@ def _make_polars_infer(n: int = 100, seed: int = 99, with_cats: bool = True) -> 
     return pl.DataFrame(data)
 
 
-def _make_pyarrow_with_dict(n: int = 300, seed: int = 42) -> Tuple[pa.Table, np.ndarray]:
-    """PyArrow table whose categorical columns use DictionaryType (not Polars)."""
-    rng = np.random.default_rng(seed)
-    indices = rng.integers(0, 3, n).astype(np.int32)
-    cat_arr = pa.DictionaryArray.from_arrays(
-        pa.array(indices, pa.int32()),
-        pa.array(_CAT_VALS_1, pa.utf8()),
-    )
-    table = pa.table(
-        {
-            "num1": pa.array(rng.standard_normal(n).astype(np.float32)),
-            "num2": pa.array(rng.integers(0, 50, n).astype(np.int32)),
-            "cat1": pa.chunked_array([cat_arr]),
-        }
-    )
-    labels = (rng.standard_normal(n) > 0).astype(np.float32)
-    return table, labels
-
 
 _BINARY_PARAMS: Dict[str, Any] = {
     "objective": "binary",
@@ -118,15 +94,6 @@ def _assert_polars_category_maps(obj: Any, *, construct_dataset: bool = False) -
     assert len(obj.pandas_categorical) == 2
     assert obj.pandas_categorical[0] == sorted(_CAT_VALS_1)
     assert obj.pandas_categorical[1] == sorted(_CAT_VALS_2)
-
-
-def _assert_pyarrow_category_map(obj: Any, *, construct_dataset: bool = False) -> None:
-    """Assert expected category map for the dict-typed PyArrow fixture."""
-    if construct_dataset:
-        obj.construct()
-    assert obj.pandas_categorical is not None
-    assert len(obj.pandas_categorical) == 1
-    assert obj.pandas_categorical[0] == sorted(_CAT_VALS_1)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -281,61 +248,6 @@ def test_polars_matches_pandas_baseline(tmp_path: Path):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Core API  —  PyArrow Table with DictionaryType columns
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def test_pyarrow_dict_columns_core_train_predict():
-    """PyArrow Table with DictionaryType columns → core API train + predict."""
-    table_train, y_train = _make_pyarrow_with_dict()
-    rng = np.random.default_rng(7)
-    idx = rng.integers(0, 3, 80).astype(np.int32)
-    table_infer = pa.table(
-        {
-            "num1": pa.array(rng.standard_normal(80).astype(np.float32)),
-            "num2": pa.array(rng.integers(0, 50, 80).astype(np.int32)),
-            "cat1": pa.chunked_array(
-                [pa.DictionaryArray.from_arrays(pa.array(idx, pa.int32()), pa.array(_CAT_VALS_1))]
-            ),
-        }
-    )
-
-    ds = lgb.Dataset(table_train, label=y_train, params=_NUM_PARAMS)
-    _assert_pyarrow_category_map(ds, construct_dataset=True)
-    bst = lgb.train(_BINARY_PARAMS, ds)
-    preds = bst.predict(table_infer)
-    assert len(preds) == 80
-
-
-def test_pyarrow_dict_columns_save_load(tmp_path: Path):
-    """PyArrow Table with dict columns: category maps persist across save/load."""
-    table_train, y_train = _make_pyarrow_with_dict()
-    ds = lgb.Dataset(table_train, label=y_train, params=_NUM_PARAMS)
-    _assert_pyarrow_category_map(ds, construct_dataset=True)
-    bst = lgb.train(_BINARY_PARAMS, ds)
-
-    model_path = tmp_path / "model_arrow.txt"
-    bst.save_model(str(model_path))
-    bst2 = lgb.Booster(model_file=str(model_path))
-
-    # inference with a fresh dict-typed table
-    rng = np.random.default_rng(55)
-    idx = rng.integers(0, 3, 50).astype(np.int32)
-    table_infer = pa.table(
-        {
-            "num1": pa.array(rng.standard_normal(50).astype(np.float32)),
-            "num2": pa.array(rng.integers(0, 50, 50).astype(np.int32)),
-            "cat1": pa.chunked_array(
-                [pa.DictionaryArray.from_arrays(pa.array(idx, pa.int32()), pa.array(_CAT_VALS_1))]
-            ),
-        }
-    )
-    preds1 = bst.predict(table_infer)
-    preds2 = bst2.predict(table_infer)
-    np_assert_array_equal(preds1, preds2, strict=True)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # sklearn API  —  LGBMClassifier / LGBMRegressor
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -404,26 +316,3 @@ def test_polars_sklearn_predict_consistency():
     preds_arrow = clf.predict_proba(df_infer.to_arrow())
 
     np_assert_array_equal(preds_polars, preds_arrow, strict=True)
-
-
-def test_pyarrow_dict_sklearn_classifier():
-    """LGBMClassifier with a PyArrow Table that has DictionaryType columns."""
-    table_train, y_train = _make_pyarrow_with_dict()
-
-    clf = lgb.LGBMClassifier(n_estimators=20, verbose=-1, **_NUM_PARAMS)
-    clf.fit(table_train, y_train, categorical_feature=["cat1"])
-    _assert_pyarrow_category_map(clf.booster_)
-
-    rng = np.random.default_rng(3)
-    idx = rng.integers(0, 3, 40).astype(np.int32)
-    table_infer = pa.table(
-        {
-            "num1": pa.array(rng.standard_normal(40).astype(np.float32)),
-            "num2": pa.array(rng.integers(0, 50, 40).astype(np.int32)),
-            "cat1": pa.chunked_array(
-                [pa.DictionaryArray.from_arrays(pa.array(idx, pa.int32()), pa.array(_CAT_VALS_1))]
-            ),
-        }
-    )
-    preds = clf.predict(table_infer)
-    assert len(preds) == 40

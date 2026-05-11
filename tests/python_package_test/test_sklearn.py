@@ -36,6 +36,13 @@ from lightgbm.compat import (
     pd_Series,
 )
 
+try:
+    import polars as _polars_module
+
+    POLARS_INSTALLED = True
+except ImportError:
+    POLARS_INSTALLED = False
+
 from .utils import (
     assert_silent,
     load_breast_cancer,
@@ -63,7 +70,7 @@ task_to_model_factory = {
     "regression": lgb.LGBMRegressor,
 }
 all_tasks = tuple(task_to_model_factory.keys())
-all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr")
+all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "polars_DataFrame", "scipy_csc", "scipy_csr")
 all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
 all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
 
@@ -1999,6 +2006,8 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         X = pd_DataFrame(X)
     elif X_type == "pa_Table":
         X = pa_Table.from_pandas(pd_DataFrame(X))
+    elif X_type == "polars_DataFrame":
+        X = _polars_module.DataFrame({f"f{i}": X[:, i] for i in range(X.shape[1])})
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
@@ -2126,6 +2135,8 @@ def test_classification_and_regression_minimally_work_with_all_accepted_data_typ
         pytest.skip("pandas is not installed")
     if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
+    if X_type == "polars_DataFrame" and not POLARS_INSTALLED:
+        pytest.skip("polars is not installed")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
 
@@ -2143,6 +2154,8 @@ def test_ranking_minimally_works_with_all_accepted_data_types(
         pytest.skip("pandas is not installed")
     if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
+    if X_type == "polars_DataFrame" and not POLARS_INSTALLED:
+        pytest.skip("polars is not installed")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 

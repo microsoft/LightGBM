@@ -15,6 +15,52 @@ Your help is very valuable to make it better for everyone.
 
 ## Development Guide
 
+### Python Package Development
+
+To test changes to the Python package locally, follow these steps.
+
+#### 1. Initialize submodules (one-time setup)
+
+The C++ build needs several header-only libraries (Eigen, fmt, fast\_double\_parser) that are tracked as git submodules.
+Run this once after cloning, or any time you add/update a submodule:
+
+```shell
+git submodule update --init --recursive
+```
+
+#### 2. Build the shared library
+
+This compiles `lib_lightgbm.so` (`.dylib` on macOS, `.dll` on Windows).
+Re-run only when you change C/C++ files.
+
+```shell
+rm -rf ./build
+cmake -B build -S .
+cmake --build build --target _lightgbm -j4
+```
+
+#### 3. Install the Python package
+
+Re-run whenever you make Python changes.
+`--precompile` skips recompilation and reuses the library built in step 2.
+
+```shell
+sh build-python.sh install --precompile
+```
+
+#### 4. Run the tests
+
+```shell
+pytest tests/python_package_test/
+```
+
+For a faster iteration cycle on a specific module:
+
+```shell
+pytest tests/python_package_test/test_polars.py -v
+pytest tests/python_package_test/test_arrow.py  -v
+```
+
 ### Linting
 
 Every commit in the repository is tested with multiple static analyzers.

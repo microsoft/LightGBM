@@ -352,15 +352,6 @@ except ImportError:
             pass
 
 
-"""polars"""
-try:
-    import polars as _polars_module  # noqa: F401
-
-    POLARS_INSTALLED = True
-except ImportError:
-    POLARS_INSTALLED = False
-
-
 """cpu_count()"""
 try:
     from joblib import cpu_count
