@@ -498,6 +498,33 @@ def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
     return _ArrowCArray(len(chunks), chunks, schema)
 
 
+def _from_arrow_c_stream(data: Any, field_name: str) -> Union[pa_ChunkedArray, pa_Table]:
+    """Materialise an Arrow C Stream object into a PyArrow ChunkedArray or Table.
+
+    The Arrow C Stream Interface exports two distinct layouts:
+
+    - **Struct type** (e.g. a Polars DataFrame): ``pa.RecordBatchReader.from_stream()``
+      handles this and returns a ``pa.Table``.
+    - **Non-struct type** (e.g. a Polars Series): ``pa.RecordBatchReader.from_stream()``
+      rejects it; use ``pa.chunked_array()`` which accepts ``__arrow_c_stream__``
+      objects of any Arrow type directly.
+
+    Both paths are zero-copy over the Arrow data buffers.
+    """
+    if not PYARROW_INSTALLED:
+        raise LightGBMError(
+            f"Cannot set '{field_name}' from an Arrow C Stream object without 'pyarrow' installed."
+        )
+    # Use shape to distinguish 1-D (Series) from 2-D (DataFrame).
+    # pa.RecordBatchReader.from_stream() requires a struct/table schema and will
+    # raise ArrowInvalid for a plain array schema; pa.chunked_array() handles both
+    # but we route explicitly to keep the intent clear.
+    if hasattr(data, "shape") and len(data.shape) == 2:
+        table = pa_RecordBatchReader.from_stream(data).read_all()
+        return table
+    return pa_chunked_array(data)
+
+
 def _arrow_dict_to_utf8(col: Union[pa_Array, pa_ChunkedArray]) -> pa_Array:
     """Decode an Arrow dictionary column to a flat utf8 array.
 
@@ -2984,6 +3011,13 @@ class Dataset:
             )
             return self
 
+        # Normalise Arrow C Stream objects (e.g. Polars Series/DataFrame) to PyArrow
+        # before any other checks.  The stream can only be consumed once, so this must
+        # happen before any code that reads the data (e.g. the "all-ones" check in
+        # set_weight, which calls this method after its own early normalisation).
+        if hasattr(data, "__arrow_c_stream__") and not _is_pyarrow_array(data) and not _is_pyarrow_table(data):
+            data = _from_arrow_c_stream(data, field_name)
+
         # If the data is a arrow data, we can just pass it to C
         if _is_pyarrow_array(data) or _is_pyarrow_table(data):
             # If a table is being passed, we concatenate the columns. This is only valid for
@@ -3270,6 +3304,8 @@ class Dataset:
                 label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
             elif _is_pyarrow_array(label):
                 label_array = label
+            elif hasattr(label, "__arrow_c_stream__"):
+                label_array = _from_arrow_c_stream(label, "label")
             else:
                 label_array = _list_to_1d_numpy(data=label, dtype=np.float32, name="label")
             self.set_field("label", label_array)
@@ -3292,6 +3328,11 @@ class Dataset:
         self : Dataset
             Dataset with set weight.
         """
+        # Normalise Arrow C Stream objects early: the stream can only be consumed once,
+        # and the "all-ones" shortcut below reads the data before set_field is called.
+        if weight is not None and hasattr(weight, "__arrow_c_stream__") and not _is_pyarrow_array(weight):
+            weight = _from_arrow_c_stream(weight, "weight")
+
         # Check if the weight contains values other than one
         if weight is not None:
             if _is_pyarrow_array(weight):
@@ -3354,7 +3395,11 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            if not _is_pyarrow_array(group):
+            if _is_pyarrow_array(group):
+                pass
+            elif hasattr(group, "__arrow_c_stream__"):
+                group = _from_arrow_c_stream(group, "group")
+            else:
                 group = _list_to_1d_numpy(data=group, dtype=np.int32, name="group")
             self.set_field("group", group)
             # original values can be modified at cpp side
@@ -3381,7 +3426,10 @@ class Dataset:
         """
         self.position = position
         if self._handle is not None and position is not None:
-            position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
+            if hasattr(position, "__arrow_c_stream__") and not _is_pyarrow_array(position):
+                position = _from_arrow_c_stream(position, "position")
+            else:
+                position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
             self.set_field("position", position)
         return self
 
