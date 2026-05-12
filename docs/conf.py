@@ -273,10 +273,6 @@ def generate_r_docs(app: Sphinx) -> None:
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
     sh build-cran-package.sh || exit 1
     R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
-    cp -R \
-        {CURR_PATH.parent / "R-package" / "pkgdown"} \
-        {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
-    cd {CURR_PATH.parent / "lightgbm_r"}
     Rscript .ci/build-docs.R || exit 1
     cd {CURR_PATH.parent}
     """
