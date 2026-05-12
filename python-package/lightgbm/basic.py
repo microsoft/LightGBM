@@ -512,16 +512,13 @@ def _from_arrow_c_stream(data: Any, field_name: str) -> Union[pa_ChunkedArray, p
     Both paths are zero-copy over the Arrow data buffers.
     """
     if not PYARROW_INSTALLED:
-        raise LightGBMError(
-            f"Cannot set '{field_name}' from an Arrow C Stream object without 'pyarrow' installed."
-        )
+        raise LightGBMError(f"Cannot set '{field_name}' from an Arrow C Stream object without 'pyarrow' installed.")
     # Use shape to distinguish 1-D (Series) from 2-D (DataFrame).
     # pa.RecordBatchReader.from_stream() requires a struct/table schema and will
     # raise ArrowInvalid for a plain array schema; pa.chunked_array() handles both
     # but we route explicitly to keep the intent clear.
     if hasattr(data, "shape") and len(data.shape) == 2:
-        table = pa_RecordBatchReader.from_stream(data).read_all()
-        return table
+        return pa_RecordBatchReader.from_stream(data).read_all()
     return pa_chunked_array(data)
 
 
@@ -1021,10 +1018,10 @@ def _data_from_arrow(
             if not arrow_is_dictionary(field.type):
                 continue
             string_col = _arrow_dict_to_utf8(data.column(field.name))
-            cats: List = sorted(pa_compute.unique(string_col).drop_null().to_pylist())
+            cats: List = sorted(pa_compute.unique(string_col).drop_null().to_pylist())  # type: ignore[attr-defined]
             new_pandas_categorical.append(cats)
             new_columns[field.name] = pa_compute.cast(
-                pa_compute.index_in(string_col, value_set=pa_array(cats)),
+                pa_compute.index_in(string_col, value_set=pa_array(cats)),  # type: ignore[attr-defined]
                 "int32",
             )
         pandas_categorical = new_pandas_categorical
@@ -1039,7 +1036,7 @@ def _data_from_arrow(
             cats = pandas_categorical[cat_idx]
             string_col = _arrow_dict_to_utf8(data.column(field.name))
             new_columns[field.name] = pa_compute.cast(
-                pa_compute.index_in(string_col, value_set=pa_array(cats)),
+                pa_compute.index_in(string_col, value_set=pa_array(cats)),  # type: ignore[attr-defined]
                 "int32",
             )
             cat_idx += 1
@@ -1998,13 +1995,13 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2846,11 +2843,11 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Label of the data.
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -3294,7 +3291,7 @@ class Dataset:
 
         Parameters
         ----------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             The label information to be set into Dataset.
 
         Returns
@@ -3326,7 +3323,7 @@ class Dataset:
 
         Parameters
         ----------
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             Weight to be set for each data point. Weights should be non-negative.
 
         Returns
@@ -3393,7 +3390,7 @@ class Dataset:
 
         Parameters
         ----------
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -3492,7 +3489,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3505,7 +3502,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3566,7 +3563,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -5056,12 +5053,12 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
 
             .. versionadded:: 4.0.0
 
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray, or any object implementing ``__arrow_c_stream__`` (e.g. a Polars Series) or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.

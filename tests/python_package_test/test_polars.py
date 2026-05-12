@@ -20,10 +20,10 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import np_assert_array_equal
+
 pa = pytest.importorskip("pyarrow")
 pl = pytest.importorskip("polars")
-
-from .utils import np_assert_array_equal
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Data generators
@@ -67,7 +67,6 @@ def _make_polars_infer(n: int = 100, seed: int = 99, with_cats: bool = True) -> 
         data["cat1"] = pl.Series(rng.choice(_CAT_VALS_1, n).tolist(), dtype=pl.Categorical)
         data["cat2"] = pl.Series(rng.choice(_CAT_VALS_2, n).tolist(), dtype=pl.Categorical)
     return pl.DataFrame(data)
-
 
 
 _BINARY_PARAMS: Dict[str, Any] = {
