@@ -13,7 +13,9 @@ matplotlib>=3.11.0.dev0
 numpy>=2.5.0.dev0
 pandas>=3.1.0.dev0
 pyarrow>=24.0.0.dev0
-scikit-learn>=1.9.dev0
+
+# TODO: use 'scikit-learn' nightlies again when https://github.com/scikit-learn/scikit-learn/issues/33993 is resolved
+scikit-learn==1.8.*
 scipy>=1.18.0.dev0
 
 # testing-only dependencies
