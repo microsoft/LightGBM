@@ -1209,8 +1209,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {_kwargs}{_after_kwargs}
+        Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {_kwargs}
+        {_after_kwargs}
         """
 
     def __getstate__(self) -> Dict[Any, Any]:
@@ -1417,8 +1418,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {_kwargs}{_after_kwargs}
+        Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {_kwargs}
+        {_after_kwargs}
         """
 
     def __getstate__(self) -> Dict[Any, Any]:
@@ -1590,7 +1592,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}
         {_after_kwargs}
         """
