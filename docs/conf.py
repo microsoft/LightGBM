@@ -277,18 +277,7 @@ def generate_r_docs(app: Sphinx) -> None:
         {CURR_PATH.parent / "R-package" / "pkgdown"} \
         {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
     cd {CURR_PATH.parent / "lightgbm_r"}
-    Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit 1
-    Rscript -e "pkgdown::build_site( \
-            lazy = FALSE \
-            , install = FALSE \
-            , devel = FALSE \
-            , examples = TRUE \
-            , run_dont_run = TRUE \
-            , seed = 42L \
-            , preview = FALSE \
-            , new_process = TRUE \
-        )
-        " || exit 1
+    Rscript .ci/build-docs.R || exit 1
     cd {CURR_PATH.parent}
     """
     try:
@@ -339,12 +328,11 @@ def setup(app: Sphinx) -> None:
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive("doxygenfile", IgnoredDirective)
-    if RTD:  # build R docs only on Read the Docs site
-        if first_run:
-            app.connect("builder-inited", generate_r_docs)
-        app.connect(
-            "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
-        )
+    if first_run:
+        app.connect("builder-inited", generate_r_docs)
+    app.connect(
+        "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
+    )
     app.connect("builder-inited", replace_reference_to_r_docs)
     app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, "add_js_file", False) or app.add_javascript
