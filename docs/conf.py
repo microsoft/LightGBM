@@ -274,7 +274,6 @@ def generate_r_docs(app: Sphinx) -> None:
     sh build-cran-package.sh || exit 1
     R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
     Rscript .ci/build-docs.R || exit 1
-    cd {CURR_PATH.parent}
     """
     try:
         print("Building R-package documentation")
@@ -327,7 +326,7 @@ def setup(app: Sphinx) -> None:
     if first_run:
         app.connect("builder-inited", generate_r_docs)
     app.connect(
-        "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
+        "build-finished", lambda app, _: copytree(CURR_PATH.parent / "R-package" / "docs", Path(app.outdir) / "R")
     )
     app.connect("builder-inited", replace_reference_to_r_docs)
     app.add_transform(InternalRefTransform)

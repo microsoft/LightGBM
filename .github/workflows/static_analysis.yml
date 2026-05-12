@@ -57,7 +57,7 @@ jobs:
         with:
           fetch-depth: 5
           persist-credentials: false
-          submodules: false
+          submodules: true
       - name: Setup and run tests
         shell: bash
         run: |
