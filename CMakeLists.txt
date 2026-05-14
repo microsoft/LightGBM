@@ -150,6 +150,11 @@ endif()
 
 if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    # Must be set before enable_language(CUDA) — CMake writes the default (52) into the
+    # cache during language init, and a later CACHE set without FORCE won't override it.
+    set(CMAKE_CUDA_ARCHITECTURES "all-major" CACHE STRING
+        "CUDA architectures to compile for (e.g. native, all-major, all, or an explicit list like '80;86;90')")
+    message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
@@ -220,11 +225,6 @@ if(USE_CUDA)
     find_package(NCCL REQUIRED)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
-
-    # Control which GPU architectures are compiled for.
-    set(CMAKE_CUDA_ARCHITECTURES "75;80;86;90" CACHE STRING
-        "CUDA architectures to compile for (e.g. native, all-major, all, or an explicit list like '80;86;90')")
-    message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
