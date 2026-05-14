@@ -13,11 +13,10 @@
 
 #include <algorithm>
 #include <limits>
+#include <nanoarrow/nanoarrow.hpp>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <nanoarrow/nanoarrow.hpp>
 
 namespace LightGBM {
 
@@ -282,6 +281,8 @@ class ArrowChunkedArray {
     Iterator(const Visitor<ArrowT, OutputT>& visitor, int64_t chunk_idx, int64_t element_idx)
         : visitor_(visitor), chunk_idx_(chunk_idx), element_idx_(element_idx) {}
 
+    int64_t full_offset() const { return visitor_.chunk_offsets_[chunk_idx_] + element_idx_; }
+
    public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = int64_t;
@@ -314,8 +315,8 @@ class ArrowChunkedArray {
 
     friend int64_t operator-(const Iterator<ArrowT, OutputT>& a,
                              const Iterator<ArrowT, OutputT>& b) {
-      auto full_offset_a = a.visitor_.chunk_offsets_[a.chunk_idx_] + a.element_idx_;
-      auto full_offset_b = b.visitor_.chunk_offsets_[b.chunk_idx_] + b.element_idx_;
+      auto full_offset_a = a.full_offset();
+      auto full_offset_b = b.full_offset();
       return full_offset_a - full_offset_b;
     }
 
