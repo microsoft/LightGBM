@@ -136,12 +136,18 @@ else  # Linux
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+        apt-get update
+        APT_INSTALL_PACKAGES=(
+            libnccl-dev
+        )
         if [[ $COMPILER == "clang" ]]; then
-            apt-get update
-            apt-get install --no-install-recommends -y \
-                clang \
+            APT_INSTALL_PACKAGES+=(
+                clang
                 libomp-dev
+            )
         fi
+        apt-get install --no-install-recommends -y \
+          "${APT_INSTALL_PACKAGES[@]}"
     fi
 fi
 
