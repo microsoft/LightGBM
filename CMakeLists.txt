@@ -584,7 +584,7 @@ if(USE_GPU)
 endif()
 
 if(USE_CUDA)
-  target_link_libraries(lightgbm_objs PUBLIC ${NCCL_LIBRARY})
+  target_link_libraries(lightgbm_objs PUBLIC NCCL::NCCL)
 endif()
 
 if(USE_ROCM)
