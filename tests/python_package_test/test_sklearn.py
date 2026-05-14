@@ -2,7 +2,9 @@
 import inspect
 import itertools
 import math
+import pickle
 import re
+import warnings
 from functools import partial
 from os import getenv
 from pathlib import Path
@@ -1705,8 +1707,9 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
 
 @pytest.mark.parametrize("estimator_class", estimator_classes)
 def test_getting_feature_names_in_np_input(estimator_class):
-    # input is a numpy array, which doesn't have feature names. LightGBM adds
-    # feature names to the fitted model, which is inconsistent with sklearn's behavior
+    # When fit() receives a numpy array (no feature names), scikit-learn's contract is
+    # that feature_names_in_ must be absent. LightGBM-specific feature_name_ stays
+    # populated with the auto-generated Column_* names. See issue #6798.
     X, y = load_digits(n_class=2, return_X_y=True)
     params = {"n_estimators": 2, "num_leaves": 7}
     if estimator_class is lgb.LGBMModel:
@@ -1720,7 +1723,9 @@ def test_getting_feature_names_in_np_input(estimator_class):
         model.fit(X, y, group=[X.shape[0]])
     else:
         model.fit(X, y)
-    np_assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]), strict=True)
+    assert not hasattr(model, "feature_names_in_")
+    assert getattr(model, "feature_names_in_", None) is None
+    assert model.feature_name_ == [f"Column_{i}" for i in range(X.shape[1])]
 
 
 @pytest.mark.parametrize("estimator_class", estimator_classes)
@@ -1745,6 +1750,123 @@ def test_getting_feature_names_in_pd_input(estimator_class):
         model.fit(X, y)
     # strict=False due to dtype mismatch: '<U9' and 'object'
     np_assert_array_equal(model.feature_names_in_, X.columns, strict=False)
+
+
+# Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798:
+# scikit-learn>=1.6 emitted a spurious "X does not have valid feature names" UserWarning
+# on every predict() of a model fitted on a numpy array, because LightGBM was always
+# setting feature_names_in_ via a property. After the fix the attribute is absent for
+# nameless inputs and the warning no longer fires.
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+@pytest.mark.parametrize("input_kind", ["ndarray", "sparse", "list"])
+def test_no_feature_names_warning_on_nameless_predict(estimator_class, input_kind):
+    X, y = make_blobs(n_samples=100, n_features=4, centers=2, random_state=42)
+    if input_kind == "sparse":
+        X_fit = scipy.sparse.csr_matrix(X)
+    elif input_kind == "list":
+        X_fit = X.tolist()
+    else:
+        X_fit = X
+    params = {"n_estimators": 2, "num_leaves": 7, "verbose": -1}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    if isinstance(model, lgb.LGBMRanker):
+        fit_kwargs = {"group": [len(y)]}
+    else:
+        fit_kwargs = {}
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "error",
+            message="X does not have valid feature names",
+            category=UserWarning,
+        )
+        model.fit(X_fit, y, **fit_kwargs)
+        model.predict(X_fit[:5])
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_feature_names_in_pd_integer_columns(estimator_class):
+    # SLEP007: feature_names_in_ must only be set for inputs whose column names are all
+    # strings. A DataFrame with integer column labels should leave the attribute absent,
+    # while the LightGBM-specific feature_name_ stays populated (with str-coerced labels).
+    X, y = load_digits(n_class=2, return_X_y=True)
+    X_df = pd_DataFrame(X, columns=list(range(X.shape[1])))
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X_df, y, group=[X.shape[0]])
+    else:
+        model.fit(X_df, y)
+    assert not hasattr(model, "feature_names_in_")
+    assert model.feature_name_ == [str(i) for i in range(X.shape[1])]
+
+
+@pytest.mark.skipif(not PYARROW_INSTALLED, reason="pyarrow is not installed")
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_feature_names_in_pa_table(estimator_class):
+    X, y = load_digits(n_class=2, return_X_y=True)
+    col_names = [f"f{i}" for i in range(X.shape[1])]
+    X_table = pa_Table.from_arrays(
+        [pa_array(X[:, i].astype(np.float64)) for i in range(X.shape[1])],
+        names=col_names,
+    )
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X_table, y, group=[X.shape[0]])
+    else:
+        model.fit(X_table, y)
+    np_assert_array_equal(model.feature_names_in_, np.asarray(col_names, dtype=object), strict=False)
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_feature_names_in_refit_changes_input_type(estimator_class):
+    # Same estimator instance fitted first on a named DataFrame, then refitted on numpy:
+    # feature_names_in_ from the first fit must not leak into the second fitted state.
+    X, y = load_digits(n_class=2, return_X_y=True)
+    X_df = pd_DataFrame(X, columns=[f"f{i}" for i in range(X.shape[1])])
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    fit_kwargs = {"group": [X.shape[0]]} if isinstance(model, lgb.LGBMRanker) else {}
+    model.fit(X_df, y, **fit_kwargs)
+    assert hasattr(model, "feature_names_in_")
+    model.fit(X, y, **fit_kwargs)
+    assert not hasattr(model, "feature_names_in_")
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_feature_names_in_persists_through_pickle(estimator_class):
+    X, y = load_digits(n_class=2, return_X_y=True)
+    X_df = pd_DataFrame(X, columns=[f"f{i}" for i in range(X.shape[1])])
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        named_model = estimator_class(**{**params, "objective": "binary"})
+        nameless_model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        named_model = estimator_class(**params)
+        nameless_model = estimator_class(**params)
+    fit_kwargs = {"group": [X.shape[0]]} if isinstance(named_model, lgb.LGBMRanker) else {}
+    named_model.fit(X_df, y, **fit_kwargs)
+    nameless_model.fit(X, y, **fit_kwargs)
+    named_roundtripped = pickle.loads(pickle.dumps(named_model))
+    nameless_roundtripped = pickle.loads(pickle.dumps(nameless_model))
+    assert hasattr(named_roundtripped, "feature_names_in_")
+    np_assert_array_equal(named_roundtripped.feature_names_in_, named_model.feature_names_in_, strict=False)
+    assert not hasattr(nameless_roundtripped, "feature_names_in_")
 
 
 # Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),

@@ -152,6 +152,19 @@ def _get_weight_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarra
     return weight
 
 
+def _extract_string_feature_names(X: Any) -> Optional[List[str]]:
+    # SLEP007: feature_names_in_ is only set when every input column name is a string.
+    if isinstance(X, pd_DataFrame):
+        columns = list(X.columns)
+        if columns and all(isinstance(c, str) for c in columns):
+            return columns
+        return None
+    if isinstance(X, pa_Table):
+        # pyarrow Table schemas are always string-typed
+        return list(X.schema.names)
+    return None
+
+
 class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
@@ -1032,10 +1045,21 @@ class LGBMModel(_LGBMModelBase):
                 else:
                     sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
+            # This branch deliberately skips _LGBMValidateData() to preserve pandas categorical
+            # dtypes and pyarrow types, which scikit-learn's input validation would coerce away.
+            # That means feature-name bookkeeping that validate_data() normally performs has to
+            # be done by hand here.
             _X, _y = X, y
 
-            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
             self.n_features_in_ = _X.shape[1]
+
+            # Clear any feature_names_in_ left over from a previous fit() on this instance
+            # so a refit on a nameless input doesn't carry stale names.
+            feature_names_in = _extract_string_feature_names(_X)
+            if feature_names_in is not None:
+                self.feature_names_in_ = np.asarray(feature_names_in, dtype=object)
+            else:
+                self.__dict__.pop("feature_names_in_", None)
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -1186,9 +1210,6 @@ class LGBMModel(_LGBMModelBase):
                 self,
                 X,
                 # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
-                #
-                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
-                # These shouldn't be changed at predict() time.
                 reset=False,
                 # allow any input type (this validation is done further down, in lgb.Dataset())
                 accept_sparse=True,
@@ -1350,42 +1371,23 @@ class LGBMModel(_LGBMModelBase):
         .. note::
 
             If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
+
+            This LightGBM-specific attribute is always populated after ``fit()``. It is
+            distinct from the scikit-learn ``feature_names_in_`` attribute, which follows
+            SLEP007 and is only present when ``fit()`` received input with all-string
+            column names (e.g. a pandas DataFrame or pyarrow Table).
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
 
-    @property
-    def feature_names_in_(self) -> np.ndarray:
-        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
-
-        .. versionadded:: 4.5.0
-        """
-        if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
-        return np.array(self.feature_name_)
-
-    @feature_names_in_.deleter
-    def feature_names_in_(self) -> None:
-        """Intercept calls to delete ``feature_names_in_``.
-
-        Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
-        on estimators when a new training dataset that doesn't have features is passed.
-        LightGBM automatically assigns feature names to such datasets
-        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
-
-        However, that behavior is coupled to ``scikit-learn`` automatically updating
-        ``n_features_in_`` in those same code paths, which is necessary for compliance
-        with its API (via argument ``reset`` to functions like ``validate_data()`` and
-        ``check_array()``).
-
-        .. note::
-
-            Do not call ``del estimator.feature_names_in_`` or anything else that invokes
-            this method. It is only here for compatibility with ``scikit-learn`` validation
-            functions used internally in ``lightgbm``.
-        """
-        pass
+    # ``feature_names_in_`` is intentionally NOT defined as a property here. It is set as a
+    # plain instance attribute by ``_LGBMValidateData(..., reset=True)`` (for numpy/sparse
+    # inputs) or by ``fit()`` itself (for pandas/pyarrow inputs with string column names).
+    # When ``fit()`` was called with input that has no feature names, the attribute is
+    # absent — this is the canonical scikit-learn signal that the estimator was "fitted
+    # without feature names", and is what suppresses the spurious
+    # "X does not have valid feature names" warning from scikit-learn>=1.6 in predict().
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):

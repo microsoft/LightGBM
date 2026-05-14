@@ -99,6 +99,17 @@ try:
                 # this only needs to be updated at fit() time
                 _estimator.n_features_in_ = n_features_in_
 
+            # Mirror scikit-learn>=1.6 behavior on the reset=True (fit) path: when the
+            # caller-provided X has no feature names, ensure feature_names_in_ is absent.
+            # In lightgbm, the only X that reaches this backport without feature names is
+            # numpy/sparse (the pandas/pyarrow branch in sklearn.py bypasses validate_data
+            # to preserve dtypes), so unconditionally clearing the attribute here matches
+            # what real scikit-learn>=1.6 does and what sklearn.py expects when it later
+            # consults hasattr(self, "feature_names_in_").
+            reset = ignored_kwargs.get("reset", True)
+            if reset and not no_val_y:
+                _estimator.__dict__.pop("feature_names_in_", None)
+
             # raise the same error that scikit-learn's `validate_data()` does on scikit-learn>=1.6
             if _estimator.__sklearn_is_fitted__() and _estimator._n_features != n_features_in_:
                 raise ValueError(
