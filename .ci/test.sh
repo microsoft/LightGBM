@@ -88,7 +88,7 @@ fi
 CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
 if [[ $TASK == "if-else" ]]; then
-    conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
+    conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy narwhals
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
     cmake -B build -S . || exit 1

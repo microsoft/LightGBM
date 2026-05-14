@@ -288,6 +288,23 @@ create_isolated_source_dir() {
         -R \
         external_libs/compute/include \
         ./lightgbm-python/external_libs/compute/include/
+
+    #############
+    # nanoarrow #
+    #############
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow
+    cp \
+        external_libs/nanoarrow/CMakeLists.txt \
+        external_libs/nanoarrow/LICENSE.txt \
+        external_libs/nanoarrow/NOTICE.txt \
+        ./lightgbm-python/external_libs/nanoarrow/
+    cp -R \
+        external_libs/nanoarrow/cmake \
+        ./lightgbm-python/external_libs/nanoarrow/cmake
+    cp -R \
+        external_libs/nanoarrow/src \
+        ./lightgbm-python/external_libs/nanoarrow/src
+    find ./lightgbm-python/external_libs/nanoarrow -name '*_test.cc' -delete
 }
 
 create_isolated_source_dir

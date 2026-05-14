@@ -56,5 +56,9 @@ OBJECTS = \
     treelearner/tree_learner.o \
     treelearner/voting_parallel_tree_learner.o \
     utils/openmp_wrapper.o \
+    nanoarrow/array.o \
+    nanoarrow/schema.o \
+    nanoarrow/array_stream.o \
+    nanoarrow/utils.o \
     c_api.o \
     lightgbm_R.o

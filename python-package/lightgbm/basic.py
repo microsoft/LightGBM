@@ -23,27 +23,13 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
+import narwhals as nw
+import narwhals.dependencies as nwd
+import narwhals.typing as nwt
 import numpy as np
 import scipy.sparse
 
-from .compat import (
-    CFFI_INSTALLED,
-    PANDAS_INSTALLED,
-    PYARROW_INSTALLED,
-    arrow_cffi,
-    arrow_is_boolean,
-    arrow_is_floating,
-    arrow_is_integer,
-    concat,
-    pa_Array,
-    pa_chunked_array,
-    pa_ChunkedArray,
-    pa_compute,
-    pa_Table,
-    pd_CategoricalDtype,
-    pd_DataFrame,
-    pd_Series,
-)
+from .compat import PANDAS_INSTALLED, concat, pd_CategoricalDtype, pd_DataFrame, pd_Series
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -63,6 +49,7 @@ __all__ = [
     "register_logger",
     "Sequence",
 ]
+
 
 _BoosterHandle = ctypes.c_void_p
 _DatasetHandle = ctypes.c_void_p
@@ -93,8 +80,7 @@ _LGBM_GroupType = Union[
     List[int],
     np.ndarray,
     pd_Series,
-    pa_Array,
-    pa_ChunkedArray,
+    nwt.IntoSeries,
 ]
 _LGBM_PositionType = Union[
     np.ndarray,
@@ -106,9 +92,8 @@ _LGBM_InitScoreType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
-    pa_Table,
-    pa_Array,
-    pa_ChunkedArray,
+    nwt.IntoSeries,
+    nwt.IntoDataFrame,
 ]
 _LGBM_TrainDataType = Union[
     str,
@@ -119,7 +104,7 @@ _LGBM_TrainDataType = Union[
     "Sequence",
     List["Sequence"],
     List[np.ndarray],
-    pa_Table,
+    nwt.IntoDataFrame,
 ]
 _LGBM_LabelType = Union[
     List[float],
@@ -127,8 +112,8 @@ _LGBM_LabelType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
-    pa_Array,
-    pa_ChunkedArray,
+    nwt.IntoSeries,
+    nwt.IntoDataFrame,
 ]
 _LGBM_PredictDataType = Union[
     str,
@@ -136,7 +121,7 @@ _LGBM_PredictDataType = Union[
     np.ndarray,
     pd_DataFrame,
     scipy.sparse.spmatrix,
-    pa_Table,
+    nwt.IntoDataFrame,
 ]
 _LGBM_PredictReturnType = Union[
     np.ndarray,
@@ -152,8 +137,7 @@ _LGBM_WeightType = Union[
     List[int],
     np.ndarray,
     pd_Series,
-    pa_Array,
-    pa_ChunkedArray,
+    nwt.IntoSeries,
 ]
 _LGBM_SetFieldType = Union[
     List[List[float]],
@@ -163,9 +147,7 @@ _LGBM_SetFieldType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
-    pa_Table,
-    pa_Array,
-    pa_ChunkedArray,
+    nwt.IntoDataFrame,
 ]
 
 ZERO_THRESHOLD = 1e-35
@@ -409,65 +391,14 @@ def _is_2d_collection(data: Any) -> bool:
     return _is_numpy_2d_array(data) or _is_2d_list(data) or isinstance(data, pd_DataFrame)
 
 
-def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]":
-    """Check whether data is a PyArrow array."""
-    return isinstance(data, (pa_Array, pa_ChunkedArray))
+_pycapsule_get_pointer = ctypes.pythonapi.PyCapsule_GetPointer
+_pycapsule_get_pointer.restype = ctypes.c_void_p
+_pycapsule_get_pointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
 
 
-def _is_pyarrow_table(data: Any) -> "TypeGuard[pa_Table]":
-    """Check whether data is a PyArrow table."""
-    return isinstance(data, pa_Table)
-
-
-class _ArrowCArray:
-    """Simple wrapper around the C representation of an Arrow type."""
-
-    n_chunks: int
-    chunks: arrow_cffi.CData
-    schema: arrow_cffi.CData
-
-    def __init__(self, n_chunks: int, chunks: arrow_cffi.CData, schema: arrow_cffi.CData):
-        self.n_chunks = n_chunks
-        self.chunks = chunks
-        self.schema = schema
-
-    @property
-    def chunks_ptr(self) -> int:
-        """Returns the address of the pointer to the list of chunks making up the array."""
-        return int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(self.chunks[0])))
-
-    @property
-    def schema_ptr(self) -> int:
-        """Returns the address of the pointer to the schema of the array."""
-        return int(arrow_cffi.cast("uintptr_t", self.schema))
-
-
-def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
-    """Export an Arrow type to its C representation."""
-    # Obtain objects to export
-    if isinstance(data, pa_Array):
-        export_objects = [data]
-    elif isinstance(data, pa_ChunkedArray):
-        export_objects = data.chunks
-    elif isinstance(data, pa_Table):
-        export_objects = data.to_batches()
-    else:
-        raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
-
-    # Prepare export
-    chunks = arrow_cffi.new("struct ArrowArray[]", len(export_objects))
-    schema = arrow_cffi.new("struct ArrowSchema*")
-
-    # Export all objects
-    for i, obj in enumerate(export_objects):
-        chunk_ptr = int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(chunks[i])))
-        if i == 0:
-            schema_ptr = int(arrow_cffi.cast("uintptr_t", schema))
-            obj._export_to_c(chunk_ptr, schema_ptr)
-        else:
-            obj._export_to_c(chunk_ptr)
-
-    return _ArrowCArray(len(chunks), chunks, schema)
+def _extract_arrow_stream_capsule_pointer(pycapsule: object) -> ctypes.c_void_p:
+    """Extract the raw pointer from a PyCapsule returned by __arrow_c_stream__."""
+    return ctypes.c_void_p(_pycapsule_get_pointer(pycapsule, b"arrow_array_stream"))
 
 
 def _data_to_2d_numpy(
@@ -1112,7 +1043,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or narwhals-compatible data frame
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1209,9 +1140,9 @@ class _InnerPredictor:
                 num_iteration=num_iteration,
                 predict_type=predict_type,
             )
-        elif _is_pyarrow_table(data):
-            preds, nrow = self.__pred_for_pyarrow_table(
-                table=data,
+        elif nwd.is_into_dataframe(data):
+            preds, nrow = self.__pred_for_narwhals(
+                data=nw.from_native(data),
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
@@ -1707,39 +1638,30 @@ class _InnerPredictor:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
 
-    def __pred_for_pyarrow_table(
+    def __pred_for_narwhals(
         self,
-        table: pa_Table,
+        data: nw.DataFrame,
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
     ) -> Tuple[np.ndarray, int]:
-        """Predict for a PyArrow table."""
-        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
-            raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
-
-        # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
-            raise ValueError("Arrow table may only have integer or floating point datatypes")
-
+        """Predict for a Narwhals DataFrame."""
         # Prepare prediction output array
         n_preds = self.__get_num_preds(
             start_iteration=start_iteration,
             num_iteration=num_iteration,
-            nrow=table.num_rows,
+            nrow=len(data),
             predict_type=predict_type,
         )
         preds = np.empty(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
-        # Export Arrow table to C and run prediction
-        c_array = _export_arrow_to_c(table)
+        # Export Narwhals DataFrame to C and run prediction
+        pycapsule = data.__arrow_c_stream__()
         _safe_call(
             _LIB.LGBM_BoosterPredictForArrow(
                 self._handle,
-                ctypes.c_int64(c_array.n_chunks),
-                ctypes.c_void_p(c_array.chunks_ptr),
-                ctypes.c_void_p(c_array.schema_ptr),
+                _extract_arrow_stream_capsule_pointer(pycapsule),
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
@@ -1750,7 +1672,7 @@ class _InnerPredictor:
         )
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
-        return preds, table.num_rows
+        return preds, len(data)
 
     def current_iteration(self) -> int:
         """Get the index of the current iteration.
@@ -1799,26 +1721,26 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or narwhals-compatible data frame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, narwhals-compatible series or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
-            If 'auto' and data is pandas DataFrame or pyarrow Table, data columns names are used.
+            If 'auto' and data is pandas DataFrame or narwhals-compatible data frame, data columns names are used.
         categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
@@ -2135,8 +2057,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-        elif _is_pyarrow_table(data) and feature_name == "auto":
-            feature_name = data.column_names
+        if nwd.is_into_dataframe(data) and feature_name == "auto":
+            feature_name = nw.from_native(data).schema.names()
 
         # process for args
         params = {} if params is None else params
@@ -2194,8 +2116,8 @@ class Dataset:
             self.__init_from_csc(csc=data, params_str=params_str, ref_dataset=ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(mat=data, params_str=params_str, ref_dataset=ref_dataset)
-        elif _is_pyarrow_table(data):
-            self.__init_from_pyarrow_table(table=data, params_str=params_str, ref_dataset=ref_dataset)
+        elif nwd.is_into_dataframe(data):
+            self.__init_from_narwhals(data=nw.from_native(data), params_str=params_str, ref_dataset=ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(mats=data, params_str=params_str, ref_dataset=ref_dataset)
@@ -2462,29 +2384,22 @@ class Dataset:
         )
         return self
 
-    def __init_from_pyarrow_table(
+    def __init_from_narwhals(
         self,
         *,
-        table: pa_Table,
+        data: nw.DataFrame,
         params_str: str,
         ref_dataset: Optional[_DatasetHandle],
     ) -> "Dataset":
-        """Initialize data from a PyArrow table."""
-        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
-            raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
+        """Initialize data from a Narwhals DataFrame."""
+        # Export Narwhals DataFrame to C
+        pycapsule = data.__arrow_c_stream__()
 
-        # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
-            raise ValueError("Arrow table may only have integer or floating point datatypes")
-
-        # Export Arrow table to C
-        c_array = _export_arrow_to_c(table)
+        # Create dataset
         self._handle = ctypes.c_void_p()
         _safe_call(
             _LIB.LGBM_DatasetCreateFromArrow(
-                ctypes.c_int64(c_array.n_chunks),
-                ctypes.c_void_p(c_array.chunks_ptr),
-                ctypes.c_void_p(c_array.schema_ptr),
+                _extract_arrow_stream_capsule_pointer(pycapsule),
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
@@ -2636,20 +2551,20 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or narwhals-compatible data frame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, narwhals-compatible series or None, optional (default=None)
             Label of the data.
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
@@ -2781,7 +2696,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None
             The data to be set.
 
         Returns
@@ -2805,28 +2720,13 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if _is_pyarrow_array(data) or _is_pyarrow_table(data):
-            # If a table is being passed, we concatenate the columns. This is only valid for
-            # 'init_score'.
-            if _is_pyarrow_table(data):
-                if field_name != "init_score":
-                    raise ValueError(f"pyarrow tables are not supported for field '{field_name}'")
-                data = pa_chunked_array(
-                    [
-                        chunk
-                        for array in data.columns  # type: ignore
-                        for chunk in array.chunks
-                    ]
-                )
-
-            c_array = _export_arrow_to_c(data)
+        if nwd.is_into_dataframe(data):
+            pycapsule = nw.from_native(data).__arrow_c_stream__()
             _safe_call(
                 _LIB.LGBM_DatasetSetFieldFromArrow(
                     self._handle,
                     _c_str(field_name),
-                    ctypes.c_int64(c_array.n_chunks),
-                    ctypes.c_void_p(c_array.chunks_ptr),
-                    ctypes.c_void_p(c_array.schema_ptr),
+                    _extract_arrow_stream_capsule_pointer(pycapsule),
                 )
             )
             self.version += 1
@@ -3074,7 +2974,7 @@ class Dataset:
 
         Parameters
         ----------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, narwhals-compatible series or None
             The label information to be set into Dataset.
 
         Returns
@@ -3088,7 +2988,7 @@ class Dataset:
                 if len(label.columns) > 1:
                     raise ValueError("DataFrame for label cannot have multiple columns")
                 label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
-            elif _is_pyarrow_array(label):
+            elif nwd.is_into_dataframe(label) or nwd.is_into_series(label):
                 label_array = label
             else:
                 label_array = _list_to_1d_numpy(data=label, dtype=np.float32, name="label")
@@ -3104,7 +3004,7 @@ class Dataset:
 
         Parameters
         ----------
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        weight : list, numpy 1-D array, pandas Series, narwhals-compatible series or None
             Weight to be set for each data point. Weights should be non-negative.
 
         Returns
@@ -3114,9 +3014,8 @@ class Dataset:
         """
         # Check if the weight contains values other than one
         if weight is not None:
-            if _is_pyarrow_array(weight):
-                # TODO: remove 'type: ignore[attr-defined]' when https://github.com/apache/arrow/issues/49831 is resolved.
-                if pa_compute.all(pa_compute.equal(weight, 1)).as_py():  # type: ignore[attr-defined]
+            if nwd.is_into_series(weight):
+                if (nw.from_native(weight) == 1).all():
                     weight = None
             elif np.all(weight == 1):
                 weight = None
@@ -3124,7 +3023,7 @@ class Dataset:
 
         # Set field
         if self._handle is not None and weight is not None:
-            if not _is_pyarrow_array(weight):
+            if not nwd.is_into_series(weight):
                 weight = _list_to_1d_numpy(data=weight, dtype=np.float32, name="weight")
             self.set_field("weight", weight)
             self.weight = self.get_field("weight")  # original values can be modified at cpp side
@@ -3138,7 +3037,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -3160,7 +3059,7 @@ class Dataset:
 
         Parameters
         ----------
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        group : list, numpy 1-D array, pandas Series, narwhals-compatible series or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -3174,7 +3073,7 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            if not _is_pyarrow_array(group):
+            if not nwd.is_into_series(group):
                 group = _list_to_1d_numpy(data=group, dtype=np.int32, name="group")
             self.set_field("group", group)
             # original values can be modified at cpp side
@@ -3255,7 +3154,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, narwhals-compatible series or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3268,7 +3167,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        weight : list, numpy 1-D array, pandas Series, narwhals-compatible series or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3281,7 +3180,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3294,7 +3193,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, narwhals-compatible data frame, or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3308,8 +3207,8 @@ class Dataset:
                     self.data = self.data.iloc[self.used_indices].copy()
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
-                elif isinstance(self.data, pa_Table):
-                    self.data = self.data.take(self.used_indices)
+                elif nwd.is_into_dataframe(self.data):
+                    self.data = nw.from_native(self.data)[self.used_indices].to_native()
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
@@ -3329,7 +3228,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
+        group : list, numpy 1-D array, pandas Series, narwhals-compatible series or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4725,7 +4624,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or narwhals-compatible data frame
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4806,10 +4705,10 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or narwhals-compatible data frame
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, narwhals-compatible series or None
             Label for refit.
         decay_rate : float, optional (default=0.9)
             Decay rate of refit,
@@ -4819,12 +4718,12 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
 
             .. versionadded:: 4.0.0
 
-        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, narwhals-compatible series or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4833,7 +4732,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), narwhals-compatible series or data frame (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0

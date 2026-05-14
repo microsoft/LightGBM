@@ -14,12 +14,23 @@ import scipy.sparse
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
+from sklearn.datasets import (
+    load_svmlight_file,
+    make_blobs,
+    make_multilabel_classification,
+)
 from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
-from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_parametrize_with_checks
+from sklearn.multioutput import (
+    ClassifierChain,
+    MultiOutputClassifier,
+    MultiOutputRegressor,
+    RegressorChain,
+)
+from sklearn.utils.estimator_checks import (
+    parametrize_with_checks as sklearn_parametrize_with_checks,
+)
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
@@ -27,11 +38,7 @@ from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
     DASK_INSTALLED,
     PANDAS_INSTALLED,
-    PYARROW_INSTALLED,
     _sklearn_version,
-    pa_array,
-    pa_chunked_array,
-    pa_Table,
     pd_DataFrame,
     pd_Series,
 )
@@ -64,8 +71,8 @@ task_to_model_factory = {
 }
 all_tasks = tuple(task_to_model_factory.keys())
 all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr")
-all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
-all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
+all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_ChunkedArray")
+all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_ChunkedArray")
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -1998,7 +2005,8 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
     elif X_type == "pa_Table":
-        X = pa_Table.from_pandas(pd_DataFrame(X))
+        pa = pytest.importorskip("pyarrow")
+        X = pa.Table.from_pandas(pd_DataFrame(X))
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
@@ -2022,20 +2030,14 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
             init_score = pd_DataFrame(init_score)
         else:
             init_score = pd_Series(init_score)
-    elif y_type == "pa_Array":
-        y = pa_array(y)
-        weights = pa_array(weights)
-        if task == "multiclass-classification":
-            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
-        else:
-            init_score = pa_array(init_score)
     elif y_type == "pa_ChunkedArray":
-        y = pa_chunked_array([y])
-        weights = pa_chunked_array([weights])
+        pa = pytest.importorskip("pyarrow")
+        y = pa.chunked_array([y])
+        weights = pa.chunked_array([weights])
         if task == "multiclass-classification":
-            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
+            init_score = pa.Table.from_pandas(pd_DataFrame(init_score))
         else:
-            init_score = pa_chunked_array([init_score])
+            init_score = pa.chunked_array([init_score])
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
@@ -2045,10 +2047,9 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         g = g.astype("int").tolist()
     elif g_type == "pd_Series":
         g = pd_Series(g)
-    elif g_type == "pa_Array":
-        g = pa_array(g)
     elif g_type == "pa_ChunkedArray":
-        g = pa_chunked_array([g])
+        pa = pytest.importorskip("pyarrow")
+        g = pa.chunked_array([g])
     elif g_type != "numpy":
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
@@ -2124,8 +2125,8 @@ def test_classification_and_regression_minimally_work_with_all_accepted_data_typ
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type]):
+        pytest.importorskip("pyarrow")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
 
@@ -2141,8 +2142,8 @@ def test_ranking_minimally_works_with_all_accepted_data_types(
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]):
+        pytest.importorskip("pyarrow")
 
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 

@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../arrow/array.hpp"
+
 namespace LightGBM {
 
 Metadata::Metadata() {
@@ -393,8 +395,24 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   SetInitScoresFromIterator(init_score, init_score + len);
 }
 
-void Metadata::SetInitScore(const ArrowChunkedArray& array) {
-  SetInitScoresFromIterator(array.begin<double>(), array.end<double>());
+void Metadata::SetInitScore(struct ArrowArrayStream* stream) {
+  ArrowChunkedArray ca(stream);
+  auto view = ca.view();
+
+  // For multiclass classification, the init scores are provided in multiple columns. In this
+  // case, we must concatenate all fields of the chunked array.
+  if (ca.is_struct()) {
+    std::vector<ArrowChunkedArray::View> views;
+    views.reserve(ca.get_num_fields());
+    for (int64_t i = 0; i < ca.get_num_fields(); ++i) {
+      views.push_back(view.field(i));
+    }
+    view = ArrowChunkedArray::View(views);
+  }
+
+  view.visit<double>([&](auto&& visitor) {
+    SetInitScoresFromIterator(visitor.begin(), visitor.end());
+  });
 }
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
@@ -450,8 +468,11 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   SetLabelsFromIterator(label, label + len);
 }
 
-void Metadata::SetLabel(const ArrowChunkedArray& array) {
-  SetLabelsFromIterator(array.begin<label_t>(), array.end<label_t>());
+void Metadata::SetLabel(struct ArrowArrayStream* stream) {
+  ArrowChunkedArray ca(stream);
+  ca.view().visit<label_t>([&](auto&& visitor) {
+    SetLabelsFromIterator(visitor.begin(), visitor.end());
+  });
 }
 
 void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {
@@ -505,8 +526,11 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   SetWeightsFromIterator(weights, weights + len);
 }
 
-void Metadata::SetWeights(const ArrowChunkedArray& array) {
-  SetWeightsFromIterator(array.begin<label_t>(), array.end<label_t>());
+void Metadata::SetWeights(struct ArrowArrayStream* stream) {
+  ArrowChunkedArray ca(stream);
+  ca.view().visit<label_t>([&](auto&& visitor) {
+    SetWeightsFromIterator(visitor.begin(), visitor.end());
+  });
 }
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
@@ -573,8 +597,11 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   SetQueriesFromIterator(query, query + len);
 }
 
-void Metadata::SetQuery(const ArrowChunkedArray& array) {
-  SetQueriesFromIterator(array.begin<data_size_t>(), array.end<data_size_t>());
+void Metadata::SetQuery(struct ArrowArrayStream* stream) {
+  ArrowChunkedArray ca(stream);
+  ca.view().visit<data_size_t>([&](auto&& visitor) {
+    SetQueriesFromIterator(visitor.begin(), visitor.end());
+  });
 }
 
 void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {

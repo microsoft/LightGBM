@@ -123,6 +123,8 @@ include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
 set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
 include_directories(${FMT_INCLUDE_DIR})
 
+add_subdirectory("${PROJECT_SOURCE_DIR}/external_libs/nanoarrow" EXCLUDE_FROM_ALL)
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -492,6 +494,7 @@ if(USE_ROCM)
 endif()
 
 add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
+target_link_libraries(lightgbm_objs PRIVATE nanoarrow_static)
 
 if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
@@ -506,6 +509,7 @@ if(__BUILD_FOR_R)
 endif()
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
+target_link_libraries(lightgbm_capi_objs PRIVATE nanoarrow_static)
 
 if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC)
@@ -709,7 +713,7 @@ if(BUILD_CPP_TEST)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs nanoarrow_static GTest::GTest)
 endif()
 
 if(BUILD_CLI)

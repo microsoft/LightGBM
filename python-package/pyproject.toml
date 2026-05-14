@@ -17,6 +17,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
+    "narwhals",
     "numpy>=1.17.0",
     "scipy"
 ]
@@ -34,10 +35,6 @@ requires-python = ">=3.9"
 version = "4.6.0.99"
 
 [project.optional-dependencies]
-arrow = [
-    "cffi>=1.15.1",
-    "pyarrow>=6.0.1"
-]
 dask = [
     "dask[array,dataframe,distributed]>=2.0.0",
     "pandas>=0.24.0"
