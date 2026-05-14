@@ -652,3 +652,28 @@ def test_pyarrow_dict_columns_sklearn_classifier():
     )
     preds = clf.predict(table_infer)
     assert len(preds) == 40
+
+
+def test_pyarrow_dict_columns_auto_detected():
+    """DictionaryType columns are auto-detected as categorical without explicit specification."""
+    table_train, y_train = _make_arrow_dict_table()
+
+    # categorical_feature is "auto" by default — dict columns should be picked up
+    ds = lgb.Dataset(table_train, label=y_train, params=_DICT_NUM_PARAMS)
+    _assert_arrow_dict_category_map(ds, construct_dataset=True)
+
+    bst = lgb.train(_DICT_BINARY_PARAMS, ds)
+
+    rng = np.random.default_rng(99)
+    idx = rng.integers(0, 3, 60).astype(np.int32)
+    table_infer = pa.table(
+        {
+            "num1": pa.array(rng.standard_normal(60).astype(np.float32)),
+            "num2": pa.array(rng.integers(0, 50, 60).astype(np.int32)),
+            "cat1": pa.chunked_array(
+                [pa.DictionaryArray.from_arrays(pa.array(idx, pa.int32()), pa.array(_DICT_CAT_VALS))]
+            ),
+        }
+    )
+    preds = bst.predict(table_infer)
+    assert len(preds) == 60

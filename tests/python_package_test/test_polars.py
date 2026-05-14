@@ -20,7 +20,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal
+from .utils import make_ranking, np_assert_array_equal
 
 pa = pytest.importorskip("pyarrow")
 pl = pytest.importorskip("polars")
@@ -171,7 +171,7 @@ def test_polars_core_unseen_category_at_inference():
     """Unseen category at inference becomes null/NaN — no crash."""
     df_train, y_train = _make_polars_train()
     df_infer = _make_polars_infer().with_columns(
-        pl.Series("cat1", ["unseen_value"] * 100, dtype=pl.Utf8).cast(pl.Categorical)
+        pl.Series("cat1", ["unseen_value"] * 100, dtype=pl.String).cast(pl.Categorical)
     )
 
     ds = lgb.Dataset(df_train, label=y_train, params=_NUM_PARAMS)
@@ -315,3 +315,25 @@ def test_polars_sklearn_predict_consistency():
     preds_arrow = clf.predict_proba(df_infer.to_arrow())
 
     np_assert_array_equal(preds_polars, preds_arrow, strict=True)
+
+
+def test_polars_sklearn_ranker():
+    """LGBMRanker.fit / predict with Polars DataFrame."""
+    n_samples = 300
+    X_np, y_np, g_np = make_ranking(n_features=4, n_samples=n_samples)
+    g_np = np.bincount(g_np)
+
+    rng = np.random.default_rng(0)
+    cat_vals = rng.choice(["a", "b", "c"], n_samples).tolist()
+    X_pl = pl.DataFrame(
+        {f"f{i}": X_np[:, i] for i in range(X_np.shape[1])} | {"cat1": pl.Series(cat_vals, dtype=pl.Categorical)}
+    )
+    y_pl = pl.Series(y_np.astype(np.float32))
+    g_pl = pl.Series(g_np.astype(np.int32))
+
+    ranker = lgb.LGBMRanker(n_estimators=20, verbose=-1, **_NUM_PARAMS)
+    ranker.fit(X_pl, y_pl, group=g_pl, categorical_feature=["cat1"])
+
+    preds = ranker.predict(X_pl)
+    assert len(preds) == n_samples
+    assert np.isfinite(preds).all()
