@@ -215,6 +215,7 @@ elif [[ $TASK == "cuda" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
+            --config-settings="cmake.verbose=true" \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
         pytest ./tests/python_package_test || exit 1
@@ -252,7 +253,7 @@ else
     cmake -B build -S .
 fi
 
-cmake --build build --target _lightgbm -j4 || exit 1
+cmake --build build --verbose --target _lightgbm -j4 || exit 1
 
 sh ./build-python.sh install --precompile || exit 1
 pytest ./tests || exit 1
