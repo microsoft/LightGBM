@@ -89,9 +89,6 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
-          find / -type f -name 'nccl.h'
-          echo "--- exiting ---"
-          exit 123
           export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export PATH=$CONDA/bin:$PATH
@@ -101,6 +98,8 @@ jobs:
 
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
+          echo "--- find ---"
+          find / -type f -name 'nccl.h'
           $GITHUB_WORKSPACE/.ci/test.sh
   all-cuda-jobs-successful:
     if: always()
