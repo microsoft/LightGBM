@@ -98,8 +98,6 @@ jobs:
 
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
-          echo "--- find ---"
-          find / -type f -name 'nccl.h'
           $GITHUB_WORKSPACE/.ci/test.sh
   all-cuda-jobs-successful:
     if: always()
