@@ -703,6 +703,11 @@ Windows
 The CUDA version is not supported on Windows.
 Use the `GPU version <#build-gpu-version>`__ (``device_type=gpu``) for GPU acceleration on Windows.
 
+For all supported systems, LightGBM defaults to CMake's ``all-major`` GPU architectures.
+See https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
+
+To override that, pass ``-DCMAKE_CUDA_ARCHITECTURES`` or set environment variable ``CUDAARCHS``.
+
 Linux
 ^^^^^
 

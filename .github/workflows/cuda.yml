@@ -1,6 +1,10 @@
 name: CUDA Version
 
 on:
+  push:
+    # run on pushes to LightGBM branches matching certain names
+    branches:
+      - cuda-*
   # Run manually by clicking a button in the UI
   workflow_dispatch:
 
