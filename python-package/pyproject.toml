@@ -49,7 +49,7 @@ plotting = [
     "matplotlib"
 ]
 scikit-learn = [
-    "scikit-learn>=1.0.1"
+    "scikit-learn>=1.0.2"
 ]
 
 [project.urls]
