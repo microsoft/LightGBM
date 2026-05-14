@@ -313,6 +313,26 @@ class ArrowChunkedArray {
       return *this;
     }
 
+    Iterator<ArrowT, OutputT>& operator--() {
+      if (element_idx_ == 0) {
+        chunk_idx_--;
+        element_idx_ = visitor_.chunks_[chunk_idx_]->length - 1;
+      } else {
+        element_idx_--;
+      }
+      return *this;
+    }
+
+    Iterator<ArrowT, OutputT>& operator-=(int64_t c) {
+      while (c > element_idx_) {
+        c -= element_idx_ + 1;
+        chunk_idx_--;
+        element_idx_ = visitor_.chunks_[chunk_idx_]->length - 1;
+      }
+      element_idx_ -= c;
+      return *this;
+    }
+
     friend int64_t operator-(const Iterator<ArrowT, OutputT>& a,
                              const Iterator<ArrowT, OutputT>& b) {
       auto full_offset_a = a.full_offset();
