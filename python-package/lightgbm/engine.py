@@ -571,8 +571,7 @@ def _make_n_folds(
                 randidx = np.random.RandomState(seed).permutation(num_data)
             else:
                 randidx = np.arange(num_data)
-            kstep = int(num_data / nfold)
-            test_id = [randidx[i : i + kstep] for i in range(0, num_data, kstep)]
+            test_id = np.array_split(num_data, nfold)
             train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
             folds = zip(train_id, test_id, strict=True)
 
