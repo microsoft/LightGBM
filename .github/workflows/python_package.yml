@@ -78,7 +78,7 @@ jobs:
             "${IMAGE_URI}" \
             /bin/bash ./docker-script.sh
       - name: Upload artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: linux-aarch64-wheel
           path: artifacts/*.whl
@@ -96,7 +96,7 @@ jobs:
           - os: macos-15-intel
             task: sdist
             compiler: clang
-            python_version: '3.9'
+            python_version: '3.10'
           - os: windows-2022
             task: sdist
             compiler: MSVC
@@ -164,7 +164,7 @@ jobs:
             task: mpi
             compiler: gcc
             method: source
-            python_version: '3.10'
+            python_version: '3.11'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
           - os: ubuntu-latest
@@ -241,7 +241,7 @@ jobs:
             os-display-name: *manylinux_amd64_display_name
             task: sdist
             compiler: gcc
-            python_version: '3.9'
+            python_version: '3.10'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -343,7 +343,7 @@ jobs:
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: ${{ matrix.artifact-name }}
           path: |
@@ -375,7 +375,7 @@ jobs:
           pattern: '*amd64*-liblightgbm'
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
-        uses: NuGet/setup-nuget@323ab0502cd38fdc493335025a96c8fdb0edc71f  # v2.0.1
+        uses: NuGet/setup-nuget@b26b823c478ee115be5c9403e62c90b0bf943843  # v3.1.0
       # ref: https://github.com/NuGet/setup-nuget/issues/168
       - name: Setup mono
         run: |
@@ -391,7 +391,7 @@ jobs:
             -Verbosity detailed \
             -OutputDirectory "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
       - name: Upload artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: nuget-package
           path: artifacts/*.nupkg
@@ -435,7 +435,7 @@ jobs:
         # This should always include at least the oldest
         # not-yet-end-of-life Python version
         python_version:
-          - '3.9'
+          - '3.10'
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2

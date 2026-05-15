@@ -185,7 +185,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-pip install --prefer-binary 'build>=0.10.0'
+python -m pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed
 # to build the Python-package
@@ -388,7 +388,7 @@ if test "${INSTALL}" = true; then
         PACKAGE_FILE="$(echo dist/lightgbm*.tar.gz)"
     fi
     # shellcheck disable=SC2086
-    pip install \
+    python -m pip install \
         ${PIP_INSTALL_ARGS} \
         --force-reinstall \
         --no-cache-dir \
