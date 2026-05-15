@@ -123,7 +123,18 @@ include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
 set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
 include_directories(${FMT_INCLUDE_DIR})
 
+if(BUILD_CPP_TEST AND MSVC)
+  # Use /MT flag to statically link the C runtime. Must be set before
+  # add_subdirectory(nanoarrow) so the bundled library uses the same runtime
+  # as the test executable; otherwise linking fails with unresolved __imp_*
+  # symbols (e.g. __imp_realloc).
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 add_subdirectory("${PROJECT_SOURCE_DIR}/external_libs/nanoarrow" EXCLUDE_FROM_ALL)
+if(NOT BUILD_STATIC_LIB)
+  set_target_properties(nanoarrow_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -210,11 +221,6 @@ if(__INTEGRATE_OPENCL)
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
     endif()
-endif()
-
-if(BUILD_CPP_TEST AND MSVC)
-  # Use /MT flag to statically link the C runtime
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 if(USE_CUDA)
