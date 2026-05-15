@@ -301,10 +301,19 @@ create_isolated_source_dir() {
     cp -R \
         external_libs/nanoarrow/cmake \
         ./lightgbm-python/external_libs/nanoarrow/cmake
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
+    cp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.h \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.hpp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow_config.h.in \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/
     cp -R \
-        external_libs/nanoarrow/src \
-        ./lightgbm-python/external_libs/nanoarrow/src
-    find ./lightgbm-python/external_libs/nanoarrow -name '*_test.cc' -delete
+        external_libs/nanoarrow/src/nanoarrow/common \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/hpp \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
 }
 
 create_isolated_source_dir
