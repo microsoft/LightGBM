@@ -379,7 +379,7 @@ class _EarlyStoppingCallback:
             deltas = [self.min_delta] * n_datasets * n_metrics
 
         self.first_metric = first_metric_name
-        for eval_ret, delta in zip(env.evaluation_result_list, deltas):
+        for eval_ret, delta in zip(env.evaluation_result_list, deltas, strict=False):
             self.best_iter.append(0)
             if eval_ret[3]:  # greater is better
                 self.best_score.append(float("-inf"))
