@@ -88,6 +88,8 @@ jobs:
           persist-credentials: false
           submodules: true
       - name: Setup and run tests
+        env:
+          CI_CUDA_VERSION: ${{ matrix.cuda_version }}
         run: |
           export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"

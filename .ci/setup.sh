@@ -137,9 +137,32 @@ else  # Linux
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
-        APT_INSTALL_PACKAGES=(
-            libnccl-dev
-        )
+        APT_INSTALL_PACKAGES=()
+
+        # only re-install NCCL if there wasn't one already pre-installed in the image
+        if ! apt list --installed | grep -E 'libnccl\-dev' >/dev/null 2>&1; then
+            echo "libnccl-dev not found, manually installing it"
+
+            # find a compatible libnccl-dev for this CUDA version
+            #
+            # (just 'apt-get install libnccl-dev' can result in mixing across CUDA versions)
+            IFS='.' read -r CUDA_MAJOR CUDA_MINOR _ <<< "${CI_CUDA_VERSION}"
+            NCCL_VERSION=$(
+                apt-cache madison libnccl-dev \
+                | awk -F'|' '{print $2}' \
+                | tr -d ' ' \
+                | grep "+cuda${CUDA_MAJOR}.${CUDA_MINOR}$" \
+                | sort -V \
+                | tail -1
+            )
+
+            APT_INSTALL_PACKAGES+=(
+                "libnccl-dev=${NCCL_VERSION}"
+                "libnccl2=${NCCL_VERSION}"
+            )
+        else
+            echo "libnccl-dev already installed"
+        fi
         if [[ $COMPILER == "clang" ]]; then
             APT_INSTALL_PACKAGES+=(
                 clang
