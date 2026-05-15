@@ -300,19 +300,21 @@ create_isolated_source_dir() {
         ./lightgbm-python/external_libs/nanoarrow/
     cp -R \
         external_libs/nanoarrow/cmake \
-        ./lightgbm-python/external_libs/nanoarrow/cmake
-    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
-    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
+        ./lightgbm-python/external_libs/nanoarrow/cmake/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow
     cp \
         external_libs/nanoarrow/src/nanoarrow/nanoarrow.h \
         external_libs/nanoarrow/src/nanoarrow/nanoarrow.hpp \
         external_libs/nanoarrow/src/nanoarrow/nanoarrow_config.h.in \
         ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
     cp -R \
-        external_libs/nanoarrow/src/nanoarrow/common \
+        external_libs/nanoarrow/src/nanoarrow/common/ \
         ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    ls -la ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
     cp -R \
-        external_libs/nanoarrow/src/nanoarrow/hpp \
+        external_libs/nanoarrow/src/nanoarrow/hpp/ \
         ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
 }
 
