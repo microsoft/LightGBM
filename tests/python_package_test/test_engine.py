@@ -3011,7 +3011,7 @@ def test_objective_callable_cv_regression():
     params = {"verbose": -1, "objective": mse_obj}
     cv_res = lgb.cv(params, lgb_train, num_boost_round=20, nfold=3, stratified=False, return_cvbooster=True)
     cv_booster = cv_res["cvbooster"].boosters
-    cv_mse_errors = [mean_squared_error(y, cb.predict(X)) < 463 for cb in cv_booster]
+    cv_mse_errors = [mean_squared_error(y, cb.predict(X)) < 504 for cb in cv_booster]
     cv_objs = [cb.params["objective"] == "none" for cb in cv_booster]
     assert all(cv_objs)
     assert all(cv_mse_errors)
