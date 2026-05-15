@@ -101,8 +101,8 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $PYTHON_VERSION == "3.9" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py39.txt"
+if [[ $PYTHON_VERSION == "3.10" ]]; then
+    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py310.txt"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi

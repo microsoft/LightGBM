@@ -1,6 +1,6 @@
 # [description]
 #
-#   Similar to ci-core.txt, but specific to Python 3.9.
+#   Similar to ci-core.txt, but specific to Python 3.10.
 #
 #   Unlike ci-core.txt, this includes a Python version and uses
 #   `=` and `<=` pins to make solves faster and prevent against
@@ -10,11 +10,11 @@
 #
 #   conda create \
 #     --name test-env \
-#     --file ./.ci/conda-envs/ci-core-py39.txt
+#     --file ./.ci/conda-envs/ci-core-py310.txt
 #
 
 # python
-python=3.9.*
+python=3.10.*
 
 # direct imports
 cffi=1.15.*
@@ -23,7 +23,7 @@ cffi=1.15.*
 dask=2022.12.*
 distributed=2022.12.*
 joblib=1.3.*
-matplotlib-base=3.5.*
+matplotlib-base=3.7.*
 numpy=1.22.*
 pandas=1.3.*
 pyarrow=14.0.*
