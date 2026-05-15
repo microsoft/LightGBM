@@ -843,7 +843,7 @@ def _data_from_pandas(
 
     # determine categorical features
     cat_cols = [
-        col for col, dtype in zip(data.columns, data.dtypes, strict=False) if isinstance(dtype, pd_CategoricalDtype)
+        col for col, dtype in zip(data.columns, data.dtypes, strict=True) if isinstance(dtype, pd_CategoricalDtype)
     ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not data[col].cat.ordered]
     if pandas_categorical is None:  # train dataset
@@ -851,7 +851,7 @@ def _data_from_pandas(
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
-        for col, category in zip(cat_cols, pandas_categorical, strict=False):
+        for col, category in zip(cat_cols, pandas_categorical, strict=True):
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if cat_cols:  # cat_cols is list
@@ -1349,7 +1349,7 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for chunk, (start_idx_pred, end_idx_pred) in zip(
-                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:], strict=False), strict=False
+                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:], strict=True), strict=True
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_np2d(
@@ -1570,9 +1570,9 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(
-                zip(sections, sections[1:], strict=False),
-                zip(n_preds_sections, n_preds_sections[1:], strict=False),
-                strict=False,
+                zip(sections, sections[1:], strict=True),
+                zip(n_preds_sections, n_preds_sections[1:], strict=True),
+                strict=True,
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_csr(

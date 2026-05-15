@@ -1348,7 +1348,7 @@ def test_cvbooster():
     assert isinstance(preds, list)
     assert len(preds) == nfold
     # check that each booster predicted using the best iteration
-    for fold_preds, bst in zip(preds, cvb.boosters, strict=False):
+    for fold_preds, bst in zip(preds, cvb.boosters, strict=True):
         assert bst.best_iteration == cvb.best_iteration
         expected = bst.predict(X_test, num_iteration=cvb.best_iteration)
         np.testing.assert_allclose(fold_preds, expected)
@@ -3116,7 +3116,7 @@ def test_multiclass_custom_eval(use_weight):
         keep_training_booster=True,
     )
 
-    for key, ds in zip(["train", "valid"], [train_ds, valid_ds], strict=False):
+    for key, ds in zip(["train", "valid"], [train_ds, valid_ds], strict=True):
         np.testing.assert_allclose(eval_result[key]["multi_logloss"], eval_result[key]["custom_logloss"])
         _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
         assert metric == "custom_logloss"
