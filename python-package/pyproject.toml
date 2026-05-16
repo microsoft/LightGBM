@@ -16,7 +16,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "narwhals",
+    "narwhals>=1.10",
     "numpy>=1.21.3",
     "scipy"
 ]

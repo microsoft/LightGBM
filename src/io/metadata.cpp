@@ -11,7 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
+#ifndef LGB_R_BUILD
 #include "../arrow/array.hpp"
+#endif  // LGB_R_BUILD
 
 namespace LightGBM {
 
@@ -395,6 +397,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   SetInitScoresFromIterator(init_score, init_score + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetInitScore(struct ArrowArrayStream* stream) {
   ArrowChunkedArray ca(stream);
   auto view = ca.view();
@@ -414,6 +417,7 @@ void Metadata::SetInitScore(struct ArrowArrayStream* stream) {
     SetInitScoresFromIterator(visitor.begin(), visitor.end());
   });
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
   if (num_init_score_ <= 0) {
@@ -468,12 +472,14 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   SetLabelsFromIterator(label, label + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetLabel(struct ArrowArrayStream* stream) {
   ArrowChunkedArray ca(stream);
   ca.view().visit<label_t>([&](auto&& visitor) {
     SetLabelsFromIterator(visitor.begin(), visitor.end());
   });
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {
   if (labels == nullptr) {
@@ -526,12 +532,14 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   SetWeightsFromIterator(weights, weights + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetWeights(struct ArrowArrayStream* stream) {
   ArrowChunkedArray ca(stream);
   ca.view().visit<label_t>([&](auto&& visitor) {
     SetWeightsFromIterator(visitor.begin(), visitor.end());
   });
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
   if (!weights) {
@@ -597,12 +605,14 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   SetQueriesFromIterator(query, query + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetQuery(struct ArrowArrayStream* stream) {
   ArrowChunkedArray ca(stream);
   ca.view().visit<data_size_t>([&](auto&& visitor) {
     SetQueriesFromIterator(visitor.begin(), visitor.end());
   });
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
   std::lock_guard<std::mutex> lock(mutex_);

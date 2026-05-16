@@ -34,7 +34,9 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+#ifndef LGB_R_BUILD
 #include "arrow/array.hpp"
+#endif  // LGB_R_BUILD
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -902,7 +904,9 @@ class Booster {
 
 // explicitly declare symbols from LightGBM namespace
 using LightGBM::AllgatherFunction;
+#ifndef LGB_R_BUILD
 using LightGBM::ArrowChunkedArray;
+#endif  // LGB_R_BUILD
 using LightGBM::Booster;
 using LightGBM::Common::CheckElementsIntervalClosed;
 using LightGBM::Common::RemoveQuotationSymbol;
@@ -1643,6 +1647,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
                                 const char* parameters,
                                 const DatasetHandle reference,
@@ -1736,6 +1741,7 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
   *out = ret.release();
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
@@ -1858,6 +1864,7 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   struct ArrowArrayStream* stream) {
@@ -1869,6 +1876,7 @@ int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
   }
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetField(DatasetHandle handle,
                          const char* field_name,
@@ -2615,6 +2623,7 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 struct ArrowArrayStream* stream,
                                 int predict_type,
@@ -2668,6 +2677,7 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                        out_len);
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,

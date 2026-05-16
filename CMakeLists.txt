@@ -131,9 +131,15 @@ if(BUILD_CPP_TEST AND MSVC)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/external_libs/nanoarrow" EXCLUDE_FROM_ALL)
-if(NOT BUILD_STATIC_LIB)
-  set_target_properties(nanoarrow_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# nanoarrow is only needed by the Arrow-based C API entry points, which are
+# disabled for the R package (the R API never calls them). Skipping the
+# subdirectory keeps the package tarball free of nanoarrow sources, which
+# would otherwise trigger CRAN warnings about diagnostic-suppressing pragmas.
+if(NOT __BUILD_FOR_R)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/external_libs/nanoarrow" EXCLUDE_FROM_ALL)
+  if(NOT BUILD_STATIC_LIB)
+    set_target_properties(nanoarrow_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  endif()
 endif()
 
 if(__BUILD_FOR_R)
@@ -500,7 +506,9 @@ if(USE_ROCM)
 endif()
 
 add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
-target_link_libraries(lightgbm_objs PRIVATE nanoarrow_static)
+if(NOT __BUILD_FOR_R)
+  target_link_libraries(lightgbm_objs PRIVATE nanoarrow_static)
+endif()
 
 if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
@@ -515,7 +523,9 @@ if(__BUILD_FOR_R)
 endif()
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
-target_link_libraries(lightgbm_capi_objs PRIVATE nanoarrow_static)
+if(NOT __BUILD_FOR_R)
+  target_link_libraries(lightgbm_capi_objs PRIVATE nanoarrow_static)
+endif()
 
 if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC)

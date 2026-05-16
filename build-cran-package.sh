@@ -83,31 +83,6 @@ cp \
     external_libs/fmt/include/fmt/*.h \
     "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 
-# nanoarrow: copy the full src/nanoarrow tree (headers + .c sources) into the R
-# package. Headers are picked up via `-Isrc/include`; the .c files are listed
-# explicitly in OBJECTS in src/Makevars.in. The only thing we need to do by hand
-# is expand nanoarrow_config.h.in, since R doesn't invoke CMake's configure_file.
-cp -R external_libs/nanoarrow/src/nanoarrow "${TEMP_R_DIR}/src/include/"
-NANOARROW_VERSION=$(sed -n 's/^set(NANOARROW_VERSION "\(.*\)").*/\1/p' external_libs/nanoarrow/CMakeLists.txt)
-NANOARROW_MAJOR=$(echo "${NANOARROW_VERSION}" | cut -d. -f1)
-NANOARROW_MINOR=$(echo "${NANOARROW_VERSION}" | cut -d. -f2)
-NANOARROW_PATCH=$(echo "${NANOARROW_VERSION}" | cut -d. -f3)
-sed \
-    -e "s/@NANOARROW_VERSION_MAJOR@/${NANOARROW_MAJOR}/" \
-    -e "s/@NANOARROW_VERSION_MINOR@/${NANOARROW_MINOR}/" \
-    -e "s/@NANOARROW_VERSION_PATCH@/${NANOARROW_PATCH}/" \
-    -e "s/@NANOARROW_VERSION@/${NANOARROW_VERSION}/" \
-    -e 's|@NANOARROW_NAMESPACE_DEFINE@|// #define NANOARROW_NAMESPACE YourNamespaceHere|' \
-    "${TEMP_R_DIR}/src/include/nanoarrow/nanoarrow_config.h.in" \
-    > "${TEMP_R_DIR}/src/include/nanoarrow/nanoarrow_config.h"
-rm "${TEMP_R_DIR}/src/include/nanoarrow/nanoarrow_config.h.in"
-
-# Move the nanoarrow .c files to where Makevars expects them and drop the test files
-# (CRAN strips them anyway, but let's not ship them in the tarball at all).
-mkdir -p "${TEMP_R_DIR}/src/nanoarrow"
-mv "${TEMP_R_DIR}/src/include/nanoarrow/common"/*.c "${TEMP_R_DIR}/src/nanoarrow/"
-find "${TEMP_R_DIR}/src/include/nanoarrow" -name '*_test.cc' -delete
-
 # including only specific files from Eigen, to keep the R-package
 # small and avoid redistributing code with licenses incompatible with
 # LightGBM's license
@@ -213,7 +188,6 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/objective/*.o
         rm -f ./lightgbm/src/treelearner/*.o
         rm -f ./lightgbm/src/utils/*.o
-        rm -f ./lightgbm/src/nanoarrow/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
         # --no-xattrs is the default in GNU tar but not some distributions of BSD tar.

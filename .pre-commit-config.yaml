@@ -105,7 +105,7 @@ repos:
         verbose: true
         additional_dependencies:
           - matplotlib>=3.9.1
-          - narwhals>=1
+          - narwhals>=1.10
           - pandas>=2.0
           - pyarrow>=17.0
           - scikit-learn>=1.5.2
