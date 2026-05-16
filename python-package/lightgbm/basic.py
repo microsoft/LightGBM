@@ -2988,7 +2988,7 @@ class Dataset:
                 if len(label.columns) > 1:
                     raise ValueError("DataFrame for label cannot have multiple columns")
                 label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
-            elif nwd.is_into_dataframe(label) or nwd.is_into_series(label):
+            elif (nwd.is_into_dataframe(label) or nwd.is_into_series(label)) and not isinstance(label, pd_Series):
                 label_array = label
             else:
                 label_array = _list_to_1d_numpy(data=label, dtype=np.float32, name="label")
@@ -3023,7 +3023,7 @@ class Dataset:
 
         # Set field
         if self._handle is not None and weight is not None:
-            if not nwd.is_into_series(weight):
+            if isinstance(weight, pd_Series) or not nwd.is_into_series(weight):
                 weight = _list_to_1d_numpy(data=weight, dtype=np.float32, name="weight")
             self.set_field("weight", weight)
             self.weight = self.get_field("weight")  # original values can be modified at cpp side
@@ -3073,7 +3073,7 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            if not nwd.is_into_series(group):
+            if isinstance(group, pd_Series) or not nwd.is_into_series(group):
                 group = _list_to_1d_numpy(data=group, dtype=np.int32, name="group")
             self.set_field("group", group)
             # original values can be modified at cpp side
@@ -3208,7 +3208,8 @@ class Dataset:
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif nwd.is_into_dataframe(self.data):
-                    self.data = nw.from_native(self.data)[self.used_indices].to_native()
+                    indices = np.array(self.used_indices)
+                    self.data = nw.from_native(self.data)[indices].to_native()
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
