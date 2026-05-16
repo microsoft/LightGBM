@@ -2720,8 +2720,8 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if nwd.is_into_dataframe(data):
-            pycapsule = nw.from_native(data).__arrow_c_stream__()
+        if nwd.is_into_dataframe(data) or nwd.is_into_series(data):
+            pycapsule = nw.from_native(data, allow_series=True).__arrow_c_stream__()
             _safe_call(
                 _LIB.LGBM_DatasetSetFieldFromArrow(
                     self._handle,
@@ -3015,7 +3015,7 @@ class Dataset:
         # Check if the weight contains values other than one
         if weight is not None:
             if nwd.is_into_series(weight):
-                if (nw.from_native(weight) == 1).all():
+                if (nw.from_native(weight, series_only=True) == 1).all():
                     weight = None
             elif np.all(weight == 1):
                 weight = None
