@@ -2723,8 +2723,10 @@ class Dataset:
             )
             return self
 
-        # If the data is a arrow data, we can just pass it to C
-        if nwd.is_into_dataframe(data) or nwd.is_into_series(data):
+        # If the data is Arrow, we can just pass it to C
+        if (nwd.is_into_dataframe(data) or nwd.is_into_series(data)) and not isinstance(
+            data, (pd_DataFrame, pd_Series)
+        ):
             pycapsule = nw.from_native(data, allow_series=True).__arrow_c_stream__()
             _safe_call(
                 _LIB.LGBM_DatasetSetFieldFromArrow(
