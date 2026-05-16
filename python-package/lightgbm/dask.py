@@ -579,7 +579,7 @@ def _train(
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
-    parts = [{"data": x, "label": y} for (x, y) in zip(data_parts, label_parts)]
+    parts = [{"data": x, "label": y} for (x, y) in zip(data_parts, label_parts, strict=True)]
     n_parts = len(parts)
 
     if sample_weight is not None:

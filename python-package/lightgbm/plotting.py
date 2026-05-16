@@ -124,7 +124,7 @@ def plot_importance(
     if not len(importance):
         raise ValueError("Booster's feature_importance is empty.")
 
-    tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
+    tuples = sorted(zip(feature_name, importance, strict=True), key=lambda x: x[1])
     if ignore_zero:
         tuples = [x for x in tuples if x[1] > 0]
     if max_num_features is not None and max_num_features > 0:
@@ -134,7 +134,7 @@ def plot_importance(
             "No non-zero feature importances found. The model may have no splits. "
             "Use ignore_zero=False to show all features."
         )
-    labels, values = zip(*tuples)
+    labels, values = zip(*tuples, strict=True)
 
     if ax is None:
         if figsize is not None:
@@ -144,7 +144,7 @@ def plot_importance(
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align="center", height=height, **kwargs)
 
-    for x, y in zip(values, ylocs):
+    for x, y in zip(values, ylocs, strict=True):
         ax.text(x + 1, float(y), _float2str(x, precision) if importance_type == "gain" else x, va="center")
 
     ax.set_yticks(ylocs)
