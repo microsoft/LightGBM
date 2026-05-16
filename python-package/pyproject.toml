@@ -127,8 +127,6 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 ignore = [
-    # (flake8-bugbear) Zip calls without an explicit strict parameter
-    "B905",
     # (pydocstyle) Missing docstring in magic method
     "D105",
     # (pycodestyle) Line too long
