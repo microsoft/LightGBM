@@ -71,7 +71,7 @@ jobs:
             --env METHOD=wheel \
             --env OS_NAME=linux \
             --env PRODUCES_ARTIFACTS=true \
-            --env PYTHON_VERSION="3.14ks" \
+            --env PYTHON_VERSION="3.14" \
             --env TASK=bdist \
             -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
             -w ${{ env.BUILD_DIRECTORY }} \
