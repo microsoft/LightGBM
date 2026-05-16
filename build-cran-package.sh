@@ -213,6 +213,7 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/objective/*.o
         rm -f ./lightgbm/src/treelearner/*.o
         rm -f ./lightgbm/src/utils/*.o
+        rm -f ./lightgbm/src/nanoarrow/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
         # --no-xattrs is the default in GNU tar but not some distributions of BSD tar.

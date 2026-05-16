@@ -322,8 +322,24 @@ for (submodule in list.dirs(
 )) {
   # compute/ is a submodule with boost, only needed if
   # building the R-package with GPU support;
-  # eigen/ has a special treatment due to licensing aspects
+  # eigen/ has a special treatment due to licensing aspects;
+  # nanoarrow/ contains a circular symlink (python/subprojects/arrow-nanoarrow -> ../..)
+  # that breaks R's recursive file.copy, so only copy the parts CMake actually needs.
   if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
+    next
+  }
+  if (submodule == "nanoarrow") {
+    nanoarrow_dst <- file.path(EXTERNAL_LIBS_R_DIR, "nanoarrow")
+    dir.create(nanoarrow_dst)
+    for (item in c("CMakeLists.txt", "LICENSE.txt", "NOTICE.txt", "src", "cmake")) {
+      result <- file.copy(
+        from = file.path("external_libs", "nanoarrow", item)
+        , to = sprintf("%s/", nanoarrow_dst)
+        , recursive = TRUE
+        , overwrite = TRUE
+      )
+      .handle_result(result)
+    }
     next
   }
   result <- file.copy(
