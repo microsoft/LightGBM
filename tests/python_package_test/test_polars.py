@@ -59,7 +59,9 @@ def generate_random_polars_frame(
 ) -> pl.DataFrame:
     return pl.DataFrame(
         {
-            f"col_{i}": generate_random_polars_series(num_datapoints, seed + i, generate_nulls=generate_nulls, values=values)
+            f"col_{i}": generate_random_polars_series(
+                num_datapoints, seed + i, generate_nulls=generate_nulls, values=values
+            )
             for i in range(num_columns)
         }
     )
