@@ -49,7 +49,7 @@ jobs:
             task: cuda
           - method: source
             compiler: gcc
-            python_version: "3.13"
+            python_version: "3.14"
             cuda_version: "12.2.2"
             linux_version: "ubuntu22.04"
             task: cuda

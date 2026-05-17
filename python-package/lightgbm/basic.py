@@ -842,14 +842,16 @@ def _data_from_pandas(
         feature_name = [str(col) for col in data.columns]
 
     # determine categorical features
-    cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
+    cat_cols = [
+        col for col, dtype in zip(data.columns, data.dtypes, strict=True) if isinstance(dtype, pd_CategoricalDtype)
+    ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not data[col].cat.ordered]
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
-        for col, category in zip(cat_cols, pandas_categorical):
+        for col, category in zip(cat_cols, pandas_categorical, strict=True):
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if cat_cols:  # cat_cols is list
@@ -1347,7 +1349,7 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for chunk, (start_idx_pred, end_idx_pred) in zip(
-                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:])
+                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:], strict=True), strict=True
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_np2d(
@@ -1568,7 +1570,9 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(
-                zip(sections, sections[1:]), zip(n_preds_sections, n_preds_sections[1:])
+                zip(sections, sections[1:], strict=True),
+                zip(n_preds_sections, n_preds_sections[1:], strict=True),
+                strict=True,
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_csr(
@@ -3115,7 +3119,8 @@ class Dataset:
         # Check if the weight contains values other than one
         if weight is not None:
             if _is_pyarrow_array(weight):
-                if pa_compute.all(pa_compute.equal(weight, 1)).as_py():
+                # TODO: remove 'type: ignore[attr-defined]' when https://github.com/apache/arrow/issues/49831 is resolved.
+                if pa_compute.all(pa_compute.equal(weight, 1)).as_py():  # type: ignore[attr-defined]
                     weight = None
             elif np.all(weight == 1):
                 weight = None
@@ -4907,6 +4912,31 @@ class Booster:
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
         new_params.update(dataset_params)
+
+        # 'categorical_feature' can end up in self.params when a Booster
+        # is created from a model string or file... pre-process to ensure it's passed
+        # via a keyword argument to the Dataset constructor instead of 'params'.
+        new_params = _choose_param_value(
+            main_param_name="categorical_feature",
+            params=new_params,
+            default_value=None,
+        )
+        cat_features_from_params = new_params.pop("categorical_feature")
+
+        # reconcile params and keyword argument
+        if cat_features_from_params:
+            if categorical_feature == "auto":
+                categorical_feature = cat_features_from_params
+            elif cat_features_from_params != categorical_feature:
+                error_msg = (
+                    "'categorical_feature' value passed to Booster.refit() is different from  "
+                    "'categorical_feature' value found in Booster.params. "
+                    "Preferring the value passed via keyword argument. "
+                    "Using refit() to change which columns are treated as categorical is not supported. "
+                    "If you have a valid use case for this, please open an issue at https://github.com/lightgbm-org/LightGBM/issues."
+                )
+                raise LightGBMError(error_msg)
+
         train_set = Dataset(
             data=data,
             label=label,
