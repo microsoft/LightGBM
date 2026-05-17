@@ -1737,8 +1737,8 @@ void DatasetCreateFromArrowChunkedArray(ArrowChunkedArray& chunked_array,
 }
 
 int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
-                                struct ArrowArray* chunks,
-                                struct ArrowSchema* schema,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
                                 const char* parameters,
                                 const DatasetHandle reference,
                                 DatasetHandle *out) {
@@ -1748,7 +1748,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
   API_END();
 }
 
-int LGBM_DatasetCreateFromArrowStream(struct ArrowArrayStream* stream,
+int LGBM_DatasetCreateFromArrowStream(ArrowArrayStream* stream,
                                       const char* parameters,
                                       const DatasetHandle reference,
                                       DatasetHandle *out) {
@@ -1884,8 +1884,8 @@ int LGBM_DatasetSetField(DatasetHandle handle,
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   int64_t n_chunks,
-                                  struct ArrowArray* chunks,
-                                  struct ArrowSchema* schema) {
+                                  ArrowArray* chunks,
+                                  ArrowSchema* schema) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto is_success = dataset->SetFieldFromArrow(field_name, n_chunks, chunks, schema);
@@ -1897,7 +1897,7 @@ int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
 
 int LGBM_DatasetSetFieldFromArrowStream(DatasetHandle handle,
                                         const char* field_name,
-                                        struct ArrowArrayStream* stream) {
+                                        ArrowArrayStream* stream) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto is_success = dataset->SetFieldFromArrow(field_name, stream);
@@ -2706,8 +2706,8 @@ void LGBM_BoosterPredictForArrowChunkedArray(BoosterHandle handle,
 
 int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 int64_t n_chunks,
-                                struct ArrowArray* chunks,
-                                struct ArrowSchema* schema,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
                                 int predict_type,
                                 int start_iteration,
                                 int num_iteration,
@@ -2717,13 +2717,12 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
   API_BEGIN();
   ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
   LGBM_BoosterPredictForArrowChunkedArray(
-    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result
-  );
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
   API_END();
 }
 
 int LGBM_BoosterPredictForArrowStream(BoosterHandle handle,
-                                      struct ArrowArrayStream* stream,
+                                      ArrowArrayStream* stream,
                                       int predict_type,
                                       int start_iteration,
                                       int num_iteration,
@@ -2733,8 +2732,7 @@ int LGBM_BoosterPredictForArrowStream(BoosterHandle handle,
   API_BEGIN();
   ArrowChunkedArray chunked_array(stream);
   LGBM_BoosterPredictForArrowChunkedArray(
-    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result
-  );
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
   API_END();
 }
 #endif  // LGB_R_BUILD

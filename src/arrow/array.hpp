@@ -13,10 +13,11 @@
 
 #include <algorithm>
 #include <limits>
-#include <nanoarrow/nanoarrow.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <nanoarrow/nanoarrow.hpp>
 
 namespace LightGBM {
 
