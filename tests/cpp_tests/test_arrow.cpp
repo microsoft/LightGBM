@@ -85,8 +85,8 @@ TEST(ArrowChunkedArrayTest, GetLength) {
     auto schema = MakePrimitiveSchema(NANOARROW_TYPE_FLOAT);
     std::vector<nanoarrow::UniqueArray> chunks;
     chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {1, 2}));
-    ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
-    ASSERT_EQ(ca.get_length(), 2);
+    ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
+    ASSERT_EQ(chunked_array.get_length(), 2);
   }
 
   // Multiple chunks
@@ -95,8 +95,8 @@ TEST(ArrowChunkedArrayTest, GetLength) {
     std::vector<nanoarrow::UniqueArray> chunks;
     chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {1, 2}));
     chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {3, 4, 5, 6}));
-    ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
-    ASSERT_EQ(ca.get_length(), 6);
+    ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
+    ASSERT_EQ(chunked_array.get_length(), 6);
   }
 
   // Sliced chunk via offset
@@ -105,8 +105,8 @@ TEST(ArrowChunkedArrayTest, GetLength) {
     std::vector<nanoarrow::UniqueArray> chunks;
     chunks.emplace_back(
         MakePrimitiveArray<bool>(NANOARROW_TYPE_BOOL, {true, false, true, true}, {}, 1));
-    ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
-    ASSERT_EQ(ca.get_length(), 3);
+    ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
+    ASSERT_EQ(chunked_array.get_length(), 3);
   }
 }
 
@@ -127,14 +127,14 @@ TEST(ArrowChunkedArrayTest, GetFields) {
 
   std::vector<nanoarrow::UniqueArray> chunks;
   chunks.emplace_back(std::move(array));
-  ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
+  ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
 
-  ASSERT_EQ(ca.get_length(), 3);
-  ASSERT_EQ(ca.get_num_fields(), 2);
+  ASSERT_EQ(chunked_array.get_length(), 3);
+  ASSERT_EQ(chunked_array.get_num_fields(), 2);
 
   int32_t first0 = 0, first1 = 0;
-  ca.view().field(0).visit<int32_t>([&](auto v) { first0 = *v.begin(); });
-  ca.view().field(1).visit<int32_t>([&](auto v) { first1 = *v.begin(); });
+  chunked_array.view().field(0).visit<int32_t>([&](auto v) { first0 = *v.begin(); });
+  chunked_array.view().field(1).visit<int32_t>([&](auto v) { first1 = *v.begin(); });
   ASSERT_EQ(first0, 1);
   ASSERT_EQ(first1, 4);
 }
@@ -145,9 +145,9 @@ TEST(ArrowChunkedArrayTest, IteratorArithmetic) {
   chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {1, 2}));
   chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {3, 4, 5, 6}));
   chunks.emplace_back(MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {7}));
-  ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
+  ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
 
-  ca.view().visit<int32_t>([](auto v) {
+  chunked_array.view().visit<int32_t>([](auto v) {
     auto it = v.begin();
     EXPECT_EQ(*it, 1);
     ++it;
@@ -178,9 +178,9 @@ TEST(ArrowChunkedArrayTest, BooleanIterator) {
   chunks.emplace_back(MakePrimitiveArray<bool>(
       NANOARROW_TYPE_BOOL, {false, false, false, false, true, true, true, true, false, true}, {},
       1));
-  ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
+  ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
 
-  ca.view().visit<float>([](auto v) {
+  chunked_array.view().visit<float>([](auto v) {
     auto it = v.begin();
     // First chunk
     EXPECT_EQ(*it, 0);
@@ -204,9 +204,9 @@ TEST(ArrowChunkedArrayTest, OffsetAndValidity) {
   std::vector<nanoarrow::UniqueArray> chunks;
   chunks.emplace_back(
       MakePrimitiveArray<float>(NANOARROW_TYPE_FLOAT, {0, 1, 2, 3, 4, 5, 6}, {2, 3}, 2));
-  ArrowChunkedArray ca(MakeStream(std::move(schema), std::move(chunks)).get());
+  ArrowChunkedArray chunked_array(MakeStream(std::move(schema), std::move(chunks)).get());
 
-  ca.view().visit<double>([](auto v) {
+  chunked_array.view().visit<double>([](auto v) {
     auto it = v.begin();
     EXPECT_TRUE(std::isnan(*it));
     EXPECT_TRUE(std::isnan(*(++it)));

@@ -1662,21 +1662,21 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
   std::unique_ptr<Dataset> ret;
 
   // Prepare the Arrow data
-  ArrowChunkedArray ca(stream);
-  auto ca_view = ca.view();
+  ArrowChunkedArray chunked_array(stream);
+  auto ca_view = chunked_array.view();
 
   // Initialize the dataset
   if (reference == nullptr) {
     // If there is no reference dataset, we first sample indices
-    auto sample_indices = CreateSampleIndices(static_cast<int32_t>(ca.get_length()), config);
+    auto sample_indices = CreateSampleIndices(static_cast<int32_t>(chunked_array.get_length()), config);
     auto sample_count = static_cast<int>(sample_indices.size());
-    std::vector<std::vector<double>> sample_values(ca.get_num_fields());
-    std::vector<std::vector<int>> sample_idx(ca.get_num_fields());
+    std::vector<std::vector<double>> sample_values(chunked_array.get_num_fields());
+    std::vector<std::vector<int>> sample_idx(chunked_array.get_num_fields());
 
     // Then, we obtain sample values by parallelizing across columns
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int64_t j = 0; j < ca.get_num_fields(); ++j) {
+    for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
       OMP_LOOP_EX_BEGIN();
 
       // Values need to be copied from the record batches.
@@ -1707,16 +1707,16 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
-                                             static_cast<int>(ca.get_num_fields()),
+                                             static_cast<int>(chunked_array.get_num_fields()),
                                              VectorSize<double>(sample_values).data(),
                                              sample_count,
-                                             static_cast<int>(ca.get_length()),
-                                             static_cast<int>(ca.get_length())));
+                                             static_cast<int>(chunked_array.get_length()),
+                                             static_cast<int>(chunked_array.get_length())));
   } else {
-    ret.reset(new Dataset(static_cast<data_size_t>(ca.get_length())));
+    ret.reset(new Dataset(static_cast<data_size_t>(chunked_array.get_length())));
     ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
     if (ret->has_raw()) {
-      ret->ResizeRaw(static_cast<int>(ca.get_length()));
+      ret->ResizeRaw(static_cast<int>(chunked_array.get_length()));
     }
   }
 
@@ -1724,7 +1724,7 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
   // we parallelize across rows.
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int64_t j = 0; j < ca.get_num_fields(); ++j) {
+  for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     data_size_t idx = 0;
@@ -2641,20 +2641,20 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
   OMP_SET_NUM_THREADS(config.num_threads);
 
   // Set up chunked array and iterators for all fields
-  ArrowChunkedArray ca(stream);
-  auto ca_view = ca.view();
+  ArrowChunkedArray chunked_array(stream);
+  auto ca_view = chunked_array.view();
 
   // Collect type-erased accessors for all fields to prevent type lookups on every iteration
   std::vector<std::function<double(int64_t)>> accessors;
-  accessors.reserve(ca.get_num_fields());
-  for (int64_t j = 0; j < ca.get_num_fields(); ++j) {
+  accessors.reserve(chunked_array.get_num_fields());
+  for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
     ca_view.field(j).visit<double>([&](auto&& visitor) {
       accessors.emplace_back([visitor](int64_t i) { return visitor.begin()[i]; });
     });
   }
 
   // Build row function
-  auto num_columns = ca.get_num_fields();
+  auto num_columns = chunked_array.get_num_fields();
   auto row_fn = [num_columns, &accessors] (int row_idx) {
     std::vector<std::pair<int, double>> result;
     result.reserve(num_columns);
@@ -2669,8 +2669,8 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
   ref_booster->Predict(start_iteration,
                        num_iteration,
                        predict_type,
-                       static_cast<int>(ca.get_length()),
-                       static_cast<int>(ca.get_num_fields()),
+                       static_cast<int>(chunked_array.get_length()),
+                       static_cast<int>(chunked_array.get_num_fields()),
                        row_fn,
                        config,
                        out_result,
