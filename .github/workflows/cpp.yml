@@ -70,7 +70,7 @@ jobs:
             compiler: clang-17
             container: 'ubuntu:22.04'
             os-display-name: 'ubuntu22.04'
-            python_version: '3.13'
+            python_version: '3.14'
             setup-conda: 'true'
           - os: macos-15-intel
             task: if-else
