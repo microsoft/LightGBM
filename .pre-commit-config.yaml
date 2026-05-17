@@ -107,7 +107,6 @@ repos:
           - matplotlib>=3.9.1
           - narwhals>=1.15
           - pandas>=2.0
-          - pyarrow>=17.0
           - scikit-learn>=1.5.2
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.23.1
