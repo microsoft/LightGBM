@@ -140,6 +140,7 @@ else  # Linux
         APT_INSTALL_PACKAGES=()
 
         # only re-install NCCL if there wasn't one already pre-installed in the image
+        # (for example, nvidia/cuda 12.9.1 images excluded it)
         if ! apt list --installed | grep -E 'libnccl\-dev' >/dev/null 2>&1; then
             echo "libnccl-dev not found, manually installing it"
 

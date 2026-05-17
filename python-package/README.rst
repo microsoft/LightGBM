@@ -185,6 +185,20 @@ Build CUDA Version
 
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
+Prior to ``lightgbm`` v4.7.0, this built the library with support for most GPU architectures known to the local version of the CUDA Toolkit.
+From v4.7.0 onwards, this defaults to only compiling support for the local GPU's architecture.
+
+To build a package with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
+
+.. code:: sh
+
+    # example: all Blackwell arches, including DGX Spark
+    pip install \
+      --no-binary lightgbm \
+      --config-settings=cmake.define.USE_CUDA=ON \
+      --config-settings=cmake.define.CMAKE_CUDA_ARCHITECTURES='100;120;121-real;121-virtual' \
+      'lightgbm>=4.7.0'
+
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 For **macOS** and **Windows** users, the CUDA version is not supported.

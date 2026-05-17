@@ -703,11 +703,6 @@ Windows
 The CUDA version is not supported on Windows.
 Use the `GPU version <#build-gpu-version>`__ (``device_type=gpu``) for GPU acceleration on Windows.
 
-For all supported systems, LightGBM defaults to CMake's ``all-major`` GPU architectures.
-See https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
-
-To override that, pass ``-DCMAKE_CUDA_ARCHITECTURES`` or set environment variable ``CUDAARCHS``.
-
 Linux
 ^^^^^
 
@@ -719,6 +714,18 @@ On Linux, a CUDA version of LightGBM can be built using
 Please refer to `this detailed guide`_ for **CUDA** libraries installation.
 
 After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+.. note::
+
+   Prior to ``LightGBM`` v4.7.0, by default th library built with support for most GPU architectures known to the local version of the CUDA Toolkit.
+   From v4.7.0 onwards, by default only support for the local GPU's architecture is built.
+
+   To build the library with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
+
+   .. code:: sh
+
+      # example: all Blackwell arches, including DGX Spark
+      cmake -B build -S . -DUSE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="100;120;121-real;121-virtual"
 
 gcc
 ***

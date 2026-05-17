@@ -209,13 +209,42 @@ elif [[ $TASK == "cuda" ]]; then
     # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
     sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' ./include/LightGBM/config.h
     grep -q 'gpu_use_dp = true' ./include/LightGBM/config.h || exit 1  # make sure that changes were really done
+
+    # Try compiling for all supported architectures.
+    #
+    # This isn't strictly necessary for runtime (only the architecture of the GPU
+    # in the test environment is needed), but it allows us to catch build-time issues
+    # where LightGBM does not support specific GPU architectures.
+    #
+    # Reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
+    # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+    #
+    IFS='.' read -r CUDA_MAJOR CUDA_MINOR _ <<< "${CI_CUDA_VERSION}"
+    case "${CUDA_MAJOR}.${CUDA_MINOR}" in
+        11.8)
+            export CUDAARCHS="60;61;62;70;75;80;86;87;89;90-real;90-virtual"
+            ;;
+        12.2)
+            export CUDAARCHS="70;75;80;86;87;89;90-real;90-virtual"
+            ;;
+        12.9)
+            export CUDAARCHS="70;75;80;86;87;89;90;100;120;121-real;121-virtual"
+            ;;
+        13.2)
+            export CUDAARCHS="75;80;86;87;89;90;100;120;121-real;121-virtual"
+            ;;
+        *)
+            echo "[ERROR] unrecognized CUDA_VERSION '${CUDA_VERSION}'" >&2
+            exit 1
+            ;;
+    esac
+
     if [[ $METHOD == "pip" ]]; then
         sh ./build-python.sh sdist || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
-            --config-settings="cmake.verbose=true" \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
         pytest ./tests/python_package_test || exit 1
@@ -227,7 +256,12 @@ elif [[ $TASK == "cuda" ]]; then
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -B build -S . -DUSE_CUDA=ON
+        cmake \
+            -B build \
+            -S \
+            -DUSE_CUDA=ON \
+            -DCMAKE_CUDA_ARCHITECTURES="${CUDAARCHS}" \
+            .
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
@@ -253,7 +287,7 @@ else
     cmake -B build -S .
 fi
 
-cmake --build build --verbose --target _lightgbm -j4 || exit 1
+cmake --build build --target _lightgbm -j4 || exit 1
 
 sh ./build-python.sh install --precompile || exit 1
 pytest ./tests || exit 1
