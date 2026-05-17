@@ -441,16 +441,33 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
 
 /*!
  * \brief Create dataset from Arrow.
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+                                                  struct ArrowArray* chunks,
+                                                  struct ArrowSchema* schema,
+                                                  const char* parameters,
+                                                  const DatasetHandle reference,
+                                                  DatasetHandle *out);
+
+/*!
+ * \brief Create dataset from Arrow stream.
  * \param stream Arrow stream pointer
  * \param parameters Additional parameters
  * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
-                                                  const char* parameters,
-                                                  const DatasetHandle reference,
-                                                  DatasetHandle *out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrowStream(struct ArrowArrayStream* stream,
+                                                        const char* parameters,
+                                                        const DatasetHandle reference,
+                                                        DatasetHandle *out);
 
 /*!
  * \brief Create subset of a data.
@@ -560,12 +577,31 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * - \a init_score converts input datatype into ``float64``.
  * \param handle Handle of dataset
  * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
- * \param stream Arrow stream pointer
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                                     const char* field_name,
-                                                    struct ArrowArrayStream* stream);
+                                                    int64_t n_chunks,
+                                                    struct ArrowArray* chunks,
+                                                    struct ArrowSchema* schema);
+
+/*!
+ * \brief Set vector to a content in info.
+ * \note
+ * - \a group converts input datatype into ``int32``;
+ * - \a label and \a weight convert input datatype into ``float32``;
+ * - \a init_score converts input datatype into ``float64``.
+ * \param handle Handle of dataset
+ * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
+ * \param stream Arrow stream pointer
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrowStream(DatasetHandle handle,
+                                                          const char* field_name,
+                                                          struct ArrowArrayStream* stream);
 
 /*!
  * \brief Get info vector from dataset.
@@ -1426,7 +1462,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
- * \param stream Arrow stream pointer
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
@@ -1440,13 +1478,45 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
-                                                  struct ArrowArrayStream* stream,
+                                                  int64_t n_chunks,
+                                                  struct ArrowArray* chunks,
+                                                  struct ArrowSchema* schema,
                                                   int predict_type,
                                                   int start_iteration,
                                                   int num_iteration,
                                                   const char* parameter,
                                                   int64_t* out_len,
                                                   double* out_result);
+
+/*!
+ * \brief Make prediction for a new dataset.
+ * \note
+ * You should pre-allocate memory for ``out_result``:
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
+ * \param handle Handle of booster
+ * \param stream Arrow stream pointer
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
+ * \param num_iteration Number of iteration for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with predictions
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrowStream(BoosterHandle handle,
+                                                        struct ArrowArrayStream* stream,
+                                                        int predict_type,
+                                                        int start_iteration,
+                                                        int num_iteration,
+                                                        const char* parameter,
+                                                        int64_t* out_len,
+                                                        double* out_result);
 
 /*!
  * \brief Save model into file.

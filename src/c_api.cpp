@@ -1648,22 +1648,17 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 #ifndef LGB_R_BUILD
-int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
-                                const char* parameters,
-                                const DatasetHandle reference,
-                                DatasetHandle *out) {
-  API_BEGIN();
-
+void DatasetCreateFromArrowChunkedArray(ArrowChunkedArray& chunked_array,
+                                        const char* parameters,
+                                        const DatasetHandle reference,
+                                        DatasetHandle* out) {
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
 
   std::unique_ptr<Dataset> ret;
-
-  // Prepare the Arrow data
-  ArrowChunkedArray chunked_array(stream);
-  auto ca_view = chunked_array.view();
+  auto chunked_array_view = chunked_array.view();
 
   // Initialize the dataset
   if (reference == nullptr) {
@@ -1684,7 +1679,7 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
       sample_idx[j].reserve(sample_indices.size());
 
       // The chunks are iterated over in the inner loop as columns can be treated independently.
-      ca_view.field(j).visit<double>([&](auto&& visitor) {
+      chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
         int last_idx = 0;
         int i = 0;
         auto it = visitor.begin();
@@ -1728,7 +1723,7 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     data_size_t idx = 0;
-    ca_view.field(j).visit<double>([&](auto&& visitor) {
+    chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
       for (auto it = visitor.begin(), end = visitor.end(); it != end; ++it) {
         ret->PushOneValue(tid, idx++, j, *it);
       }
@@ -1739,6 +1734,27 @@ int LGBM_DatasetCreateFromArrow(struct ArrowArrayStream* stream,
 
   ret->FinishLoad();
   *out = ret.release();
+}
+
+int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+                                struct ArrowArray* chunks,
+                                struct ArrowSchema* schema,
+                                const char* parameters,
+                                const DatasetHandle reference,
+                                DatasetHandle *out) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
+  DatasetCreateFromArrowChunkedArray(chunked_array, parameters, reference, out);
+  API_END();
+}
+
+int LGBM_DatasetCreateFromArrowStream(struct ArrowArrayStream* stream,
+                                      const char* parameters,
+                                      const DatasetHandle reference,
+                                      DatasetHandle *out) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(stream);
+  DatasetCreateFromArrowChunkedArray(chunked_array, parameters, reference, out);
   API_END();
 }
 #endif  // LGB_R_BUILD
@@ -1867,7 +1883,21 @@ int LGBM_DatasetSetField(DatasetHandle handle,
 #ifndef LGB_R_BUILD
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
-                                  struct ArrowArrayStream* stream) {
+                                  int64_t n_chunks,
+                                  struct ArrowArray* chunks,
+                                  struct ArrowSchema* schema) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  auto is_success = dataset->SetFieldFromArrow(field_name, n_chunks, chunks, schema);
+  if (!is_success) {
+    Log::Fatal("Input field is not supported");
+  }
+  API_END();
+}
+
+int LGBM_DatasetSetFieldFromArrowStream(DatasetHandle handle,
+                                        const char* field_name,
+                                        struct ArrowArrayStream* stream) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto is_success = dataset->SetFieldFromArrow(field_name, stream);
@@ -2624,31 +2654,28 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
 }
 
 #ifndef LGB_R_BUILD
-int LGBM_BoosterPredictForArrow(BoosterHandle handle,
-                                struct ArrowArrayStream* stream,
-                                int predict_type,
-                                int start_iteration,
-                                int num_iteration,
-                                const char* parameter,
-                                int64_t* out_len,
-                                double* out_result) {
-  API_BEGIN();
-
+void LGBM_BoosterPredictForArrowChunkedArray(BoosterHandle handle,
+                                             ArrowChunkedArray& chunked_array,
+                                             int predict_type,
+                                             int start_iteration,
+                                             int num_iteration,
+                                             const char* parameter,
+                                             int64_t* out_len,
+                                             double* out_result) {
   // Apply the configuration
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
 
-  // Set up chunked array and iterators for all fields
-  ArrowChunkedArray chunked_array(stream);
-  auto ca_view = chunked_array.view();
+  // Set up iterators for all fields
+  auto chunked_array_view = chunked_array.view();
 
   // Collect type-erased accessors for all fields to prevent type lookups on every iteration
   std::vector<std::function<double(int64_t)>> accessors;
   accessors.reserve(chunked_array.get_num_fields());
   for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
-    ca_view.field(j).visit<double>([&](auto&& visitor) {
+    chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
       accessors.emplace_back([visitor](int64_t i) { return visitor.begin()[i]; });
     });
   }
@@ -2675,6 +2702,39 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                        config,
                        out_result,
                        out_len);
+}
+
+int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+                                int64_t n_chunks,
+                                struct ArrowArray* chunks,
+                                struct ArrowSchema* schema,
+                                int predict_type,
+                                int start_iteration,
+                                int num_iteration,
+                                const char* parameter,
+                                int64_t* out_len,
+                                double* out_result) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
+  LGBM_BoosterPredictForArrowChunkedArray(
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result
+  );
+  API_END();
+}
+
+int LGBM_BoosterPredictForArrowStream(BoosterHandle handle,
+                                      struct ArrowArrayStream* stream,
+                                      int predict_type,
+                                      int start_iteration,
+                                      int num_iteration,
+                                      const char* parameter,
+                                      int64_t* out_len,
+                                      double* out_result) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(stream);
+  LGBM_BoosterPredictForArrowChunkedArray(
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result
+  );
   API_END();
 }
 #endif  // LGB_R_BUILD

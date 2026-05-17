@@ -1663,7 +1663,7 @@ class _InnerPredictor:
         # Export narwhals DataFrame to Arrow and run prediction
         pycapsule = data.__arrow_c_stream__()
         _safe_call(
-            _LIB.LGBM_BoosterPredictForArrow(
+            _LIB.LGBM_BoosterPredictForArrowStream(
                 self._handle,
                 _extract_arrow_stream_capsule_pointer(pycapsule),
                 ctypes.c_int(predict_type),
@@ -2402,7 +2402,7 @@ class Dataset:
         # Create dataset
         self._handle = ctypes.c_void_p()
         _safe_call(
-            _LIB.LGBM_DatasetCreateFromArrow(
+            _LIB.LGBM_DatasetCreateFromArrowStream(
                 _extract_arrow_stream_capsule_pointer(pycapsule),
                 _c_str(params_str),
                 ref_dataset,
@@ -2729,7 +2729,7 @@ class Dataset:
         ):
             pycapsule = nw.from_native(data, allow_series=True).__arrow_c_stream__()
             _safe_call(
-                _LIB.LGBM_DatasetSetFieldFromArrow(
+                _LIB.LGBM_DatasetSetFieldFromArrowStream(
                     self._handle,
                     _c_str(field_name),
                     _extract_arrow_stream_capsule_pointer(pycapsule),

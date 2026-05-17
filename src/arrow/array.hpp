@@ -13,11 +13,10 @@
 
 #include <algorithm>
 #include <limits>
+#include <nanoarrow/nanoarrow.hpp>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <nanoarrow/nanoarrow.hpp>
 
 namespace LightGBM {
 
@@ -80,6 +79,28 @@ class ArrowChunkedArray {
       }
       if (chunk->release == nullptr) break;
       chunks_.emplace_back(std::move(chunk));
+    }
+  }
+
+  /**
+   * @brief Construct a new chunked Arrow array from a list of Arrow arrays and a schema.
+   * The chunked Arrow array takes ownership of the schema and all chunks. Upon destruction,
+   * the release callback is called for the schema and all chunks.
+   *
+   * @param n_chunks The number of Arrow arrays.
+   * @param chunks Pointer to the list of Arrow arrays.
+   * @param schema Pointer to the schema of all Arrow arrays.
+   */
+  explicit ArrowChunkedArray(int64_t n_chunks, struct ArrowArray* chunks,
+                             struct ArrowSchema* schema) {
+    // Take ownership of schema
+    schema_ = nanoarrow::UniqueSchema(schema);
+    type_ = MakeSchemaView(schema_.get()).type;
+
+    // Take ownership of chunks
+    chunks_.reserve(n_chunks);
+    for (int64_t i = 0; i < n_chunks; ++i) {
+      chunks_.emplace_back(&chunks[i]);
     }
   }
 
