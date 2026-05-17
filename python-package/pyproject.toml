@@ -51,7 +51,8 @@ plotting = [
     "matplotlib"
 ]
 polars = [
-    "narwhals[polars]"
+    "narwhals[polars]",
+    "polars>=1.0.0"
 ]
 scikit-learn = [
     "scikit-learn>=1.0.2"
