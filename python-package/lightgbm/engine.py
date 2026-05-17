@@ -297,7 +297,7 @@ def train(
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
-        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets, strict=True):
             booster.add_valid(valid_set, name_valid_set)
     finally:
         train_set._reverse_update_params()
@@ -571,10 +571,9 @@ def _make_n_folds(
                 randidx = np.random.RandomState(seed).permutation(num_data)
             else:
                 randidx = np.arange(num_data)
-            kstep = int(num_data / nfold)
-            test_id = [randidx[i : i + kstep] for i in range(0, num_data, kstep)]
+            test_id = np.array_split(randidx, nfold)
             train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
-            folds = zip(train_id, test_id)
+            folds = zip(train_id, test_id, strict=True)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:

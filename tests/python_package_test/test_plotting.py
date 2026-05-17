@@ -130,7 +130,7 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     # verify the 5 displayed features are the top 5 by importance
     importance = gbm0.feature_importance()
     feature_names = gbm0.feature_name()
-    sorted_pairs = sorted(zip(feature_names, importance), key=lambda x: x[1])
+    sorted_pairs = sorted(zip(feature_names, importance, strict=True), key=lambda x: x[1])
     top5_names = [name for name, _ in sorted_pairs[-5:]]
     displayed_labels = [label.get_text() for label in ax7.get_yticklabels()]
     assert displayed_labels == top5_names
