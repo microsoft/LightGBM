@@ -14,23 +14,12 @@ import scipy.sparse
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.datasets import (
-    load_svmlight_file,
-    make_blobs,
-    make_multilabel_classification,
-)
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
-from sklearn.multioutput import (
-    ClassifierChain,
-    MultiOutputClassifier,
-    MultiOutputRegressor,
-    RegressorChain,
-)
-from sklearn.utils.estimator_checks import (
-    parametrize_with_checks as sklearn_parametrize_with_checks,
-)
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
+from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb

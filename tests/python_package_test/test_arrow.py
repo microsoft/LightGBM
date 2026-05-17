@@ -10,10 +10,7 @@ import lightgbm as lgb
 
 from .utils import np_assert_array_equal
 
-try:
-    import pyarrow as pa
-except ImportError:
-    pytest.skip("pyarrow is not installed", allow_module_level=True)
+pa = pytest.importorskip("pyarrow")
 
 
 # ----------------------------------------------------------------------------------------------- #

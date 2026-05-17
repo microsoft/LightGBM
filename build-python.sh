@@ -314,7 +314,6 @@ create_isolated_source_dir() {
     cp -R \
         external_libs/nanoarrow/src/nanoarrow/common/*.c \
         ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
-    ls -la ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
     mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
     cp -R \
         external_libs/nanoarrow/src/nanoarrow/hpp/*.hpp \

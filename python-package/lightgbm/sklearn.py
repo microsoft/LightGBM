@@ -1048,7 +1048,7 @@ class LGBMModel(_LGBMModelBase):
             if sample_weight is None or len(sample_weight) == 0:
                 sample_weight = class_sample_weight
             else:
-                sample_weight = np.multiply(sample_weight, class_sample_weight)  # type: ignore
+                sample_weight = np.multiply(sample_weight, class_sample_weight)  # type: ignore[arg-type]
 
         train_set = Dataset(
             data=_X,
@@ -1158,11 +1158,11 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, narwhals-compatible data frame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, narwhals-compatible series of shape = [n_samples]",
-            sample_weight_shape="numpy array, pandas Series, list of int or float, narwhals-compatible series of shape = [n_samples] or None, optional (default=None)",
-            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, narwhals-compatible series or data frame of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-            group_shape="numpy array, pandas Series, narwhals-compatible series, list of int or float, or None, optional (default=None)",
+            X_shape="numpy array, pandas DataFrame, pyarrow Table, polars DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow ChunkedArray or polars Series of shape = [n_samples]",
+            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow ChunkedArray, polars Series of shape = [n_samples] or None, optional (default=None)",
+            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow ChunkedArray, pyarrow Table, polars Series, polars DataFrame of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
+            group_shape="numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)",
             eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
             eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
             eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)",

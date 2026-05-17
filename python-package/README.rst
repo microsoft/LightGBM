@@ -37,6 +37,28 @@ You can install it by the following command: ``brew install libomp``.
 
 |
 
+Use LightGBM with PyArrow
+*************************
+
+To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arrow]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[arrow]'
+
+|
+
+Use LightGBM with Polars
+*************************
+
+To install all dependencies needed to use ``polars`` in LightGBM, append ``[polars]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[polars]'
+
+|
+
 Use LightGBM with Dask
 **********************
 
