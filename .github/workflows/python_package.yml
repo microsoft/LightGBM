@@ -35,7 +35,7 @@ env:
 
 jobs:
   test-linux-aarch64:
-    name: bdist wheel (manylinux2014-arm, gcc, Python 3.13)
+    name: bdist wheel (manylinux2014-arm, gcc, Python 3.14)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -71,7 +71,7 @@ jobs:
             --env METHOD=wheel \
             --env OS_NAME=linux \
             --env PRODUCES_ARTIFACTS=true \
-            --env PYTHON_VERSION="3.13" \
+            --env PYTHON_VERSION="3.14" \
             --env TASK=bdist \
             -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
             -w ${{ env.BUILD_DIRECTORY }} \
@@ -113,7 +113,7 @@ jobs:
             os-display-name: *ubuntu_latest_display_name
             task: sdist
             compiler: clang-17
-            python_version: '3.13'
+            python_version: '3.14'
             in-ubuntu-base-container: 'true'
           #########################
           # OpenCL-based GPU jobs #
@@ -147,7 +147,7 @@ jobs:
             task: gpu
             method: source
             compiler: gcc
-            python_version: '3.13'
+            python_version: '3.14'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
           ############
@@ -423,8 +423,9 @@ jobs:
             --rm \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
-            python:3.13 \
+            python:3.14 \
             /bin/bash ./.ci/test-python-latest.sh
+
   test-old-versions:
     name: Python - oldest supported versions (manylinux_2_28, Python ${{ matrix.python_version }})
     runs-on: ubuntu-latest
