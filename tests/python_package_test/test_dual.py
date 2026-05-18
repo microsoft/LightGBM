@@ -74,7 +74,7 @@ def _train_pair(params_overrides, X, y):
 
 @_REQUIRES_CUDA
 @pytest.mark.parametrize(
-    "max_depth,num_leaves",
+    ("max_depth", "num_leaves"),
     [
         (1, 2),
         (1, 7),
@@ -109,8 +109,7 @@ def test_cuda_respects_max_depth(max_depth, num_leaves):
     cuda_depth = _tree_depth(cuda_dump["tree_structure"])
 
     assert cuda_depth <= max_depth, (
-        f"CUDA exceeded max_depth={max_depth}: produced depth-{cuda_depth} tree "
-        f"with num_leaves={num_leaves}"
+        f"CUDA exceeded max_depth={max_depth}: produced depth-{cuda_depth} tree with num_leaves={num_leaves}"
     )
     assert cpu_depth == cuda_depth, (
         f"CPU/CUDA depth mismatch with max_depth={max_depth}, num_leaves={num_leaves}: "
