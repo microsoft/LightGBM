@@ -223,7 +223,11 @@ if(USE_CUDA)
 
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
-    set(CUDA_ARCHS "60" "61" "62" "70" "75")
+    if(CUDAToolkit_VERSION VERSION_LESS "13.0")
+        set(CUDA_ARCHS "60" "61" "62" "70" "75")
+    else()
+        set(CUDA_ARCHS "75")
+    endif()
     if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "80")
     endif()
