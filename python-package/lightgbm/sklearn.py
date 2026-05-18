@@ -1383,7 +1383,7 @@ class LGBMModel(_LGBMModelBase):
 
         Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
         on estimators when a new training dataset that doesn't have feature names is passed.
-        This is handled via ``_fitted_with_feature_names``, so deletion is a no-op here.
+        This is handled via ``_fitted_with_feature_names``, so deletion is simply not possible here.
 
         .. note::
 
