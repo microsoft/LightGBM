@@ -524,7 +524,7 @@ def _validate_eval_set_Xy(
             if len(eval_X) != len(eval_y):
                 raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
         if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
-            eval_set = list(zip(eval_X, eval_y))
+            eval_set = list(zip(eval_X, eval_y, strict=True))
         else:
             eval_set = [(eval_X, eval_y)]
     return eval_set
@@ -1599,7 +1599,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
-        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_)))
+        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_), strict=True))
         if isinstance(self.class_weight, dict):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
