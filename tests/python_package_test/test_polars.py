@@ -377,6 +377,8 @@ def test_polars_feature_name_manual():
 
 
 def test_get_data_polars_frame():
+    from polars.testing import assert_frame_equal
+
     original_frame = generate_simple_polars_frame()
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
@@ -385,10 +387,12 @@ def test_get_data_polars_frame():
     assert isinstance(returned_data, pl.DataFrame)
     assert returned_data.schema == original_frame.schema
     assert returned_data.shape == original_frame.shape
-    pl.testing.assert_frame_equal(returned_data, original_frame)
+    assert_frame_equal(returned_data, original_frame)
 
 
 def test_get_data_polars_frame_subset(rng):
+    from polars.testing import assert_frame_equal
+
     original_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
@@ -406,4 +410,4 @@ def test_get_data_polars_frame_subset(rng):
     assert subset_data.shape == expected_subset.shape
     assert len(subset_data) == len(used_indices)
     assert subset_data.shape == (subset_size, 3)
-    pl.testing.assert_frame_equal(subset_data, expected_subset)
+    assert_frame_equal(subset_data, expected_subset)
