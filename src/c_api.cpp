@@ -1736,6 +1736,7 @@ void DatasetCreateFromArrowChunkedArray(ArrowChunkedArray& chunked_array,
   *out = ret.release();
 }
 
+[[deprecated("Use LGBM_DatasetCreateFromArrowStream instead.")]]
 int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
                                 ArrowArray* chunks,
                                 ArrowSchema* schema,
@@ -1743,6 +1744,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
                                 const DatasetHandle reference,
                                 DatasetHandle *out) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetCreateFromArrow is deprecated. Please use LGBM_DatasetCreateFromArrowStream instead.");
   ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
   DatasetCreateFromArrowChunkedArray(chunked_array, parameters, reference, out);
   API_END();
@@ -1881,12 +1883,14 @@ int LGBM_DatasetSetField(DatasetHandle handle,
 }
 
 #ifndef LGB_R_BUILD
+[[deprecated("Use LGBM_DatasetSetFieldFromArrowStream instead.")]]
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   int64_t n_chunks,
                                   ArrowArray* chunks,
                                   ArrowSchema* schema) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetSetFieldFromArrow is deprecated. Please use LGBM_DatasetSetFieldFromArrowStream instead.");
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto is_success = dataset->SetFieldFromArrow(field_name, n_chunks, chunks, schema);
   if (!is_success) {
@@ -2704,6 +2708,7 @@ void LGBM_BoosterPredictForArrowChunkedArray(BoosterHandle handle,
                        out_len);
 }
 
+[[deprecated("Use LGBM_BoosterPredictForArrowStream instead.")]]
 int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 int64_t n_chunks,
                                 ArrowArray* chunks,
@@ -2715,6 +2720,7 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 int64_t* out_len,
                                 double* out_result) {
   API_BEGIN();
+  Log::Info("LGBM_BoosterPredictForArrow is deprecated. Please use LGBM_BoosterPredictForArrowStream instead.");
   ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
   LGBM_BoosterPredictForArrowChunkedArray(
     handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);

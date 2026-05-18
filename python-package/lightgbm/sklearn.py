@@ -1022,7 +1022,7 @@ class LGBMModel(_LGBMModelBase):
             _X, _y = X, y
             self.n_features_in_ = nw.from_native(X).shape[1]
         else:
-            # setting n_features_in_ is handled by _LGBMValidateData() in the branch above
+            # NOTE: _LGBMValidateData() is also responsible for setting n_features_in_
             _X, _y = _LGBMValidateData(
                 self,
                 X,

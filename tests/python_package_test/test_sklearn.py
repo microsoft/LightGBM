@@ -1974,6 +1974,11 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
 
 
 def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]):
+        pa = pytest.importorskip("pyarrow")
+    if any(t.startswith("pl_") for t in [X_type, y_type, g_type]):
+        pl = pytest.importorskip("polars")
+
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -1994,10 +1999,8 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
     elif X_type == "pa_Table":
-        pa = pytest.importorskip("pyarrow")
         X = pa.Table.from_pandas(pd_DataFrame(X))
     elif X_type == "pl_DataFrame":
-        pl = pytest.importorskip("polars")
         X = pl.DataFrame(X)
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
@@ -2023,7 +2026,6 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         else:
             init_score = pd_Series(init_score)
     elif y_type == "pa_ChunkedArray":
-        pa = pytest.importorskip("pyarrow")
         y = pa.chunked_array([y])
         weights = pa.chunked_array([weights])
         if task == "multiclass-classification":
@@ -2031,7 +2033,6 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         else:
             init_score = pa.chunked_array([init_score])
     elif y_type == "pl_Series":
-        pl = pytest.importorskip("polars")
         y = pl.Series(y)
         weights = pl.Series(weights)
         if task == "multiclass-classification":
@@ -2048,10 +2049,8 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     elif g_type == "pd_Series":
         g = pd_Series(g)
     elif g_type == "pa_ChunkedArray":
-        pa = pytest.importorskip("pyarrow")
         g = pa.chunked_array([g])
     elif g_type == "pl_Series":
-        pl = pytest.importorskip("polars")
         g = pl.Series(g)
     elif g_type != "numpy":
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
@@ -2128,11 +2127,6 @@ def test_classification_and_regression_minimally_work_with_all_accepted_data_typ
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type]):
-        pytest.importorskip("pyarrow")
-    if any(t.startswith("pl_") for t in [X_type, y_type]):
-        pytest.importorskip("polars")
-
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
 
 
@@ -2147,10 +2141,6 @@ def test_ranking_minimally_works_with_all_accepted_data_types(
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]):
-        pytest.importorskip("pyarrow")
-    if any(t.startswith("pl_") for t in [X_type, y_type, g_type]):
-        pytest.importorskip("polars")
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 
 

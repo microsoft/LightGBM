@@ -50,7 +50,6 @@ __all__ = [
     "Sequence",
 ]
 
-
 _BoosterHandle = ctypes.c_void_p
 _DatasetHandle = ctypes.c_void_p
 _ctypes_int_ptr = Union[

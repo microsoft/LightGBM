@@ -441,6 +441,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
 
 /*!
  * \brief Create dataset from Arrow.
+ * \deprecated This function is deprecated in favor of ``LGBM_DatasetCreateFromArrowStream``.
  * \param n_chunks The number of Arrow arrays passed to this function
  * \param chunks Pointer to the list of Arrow arrays
  * \param schema Pointer to the schema of all Arrow arrays
@@ -571,6 +572,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
 
 /*!
  * \brief Set vector to a content in info.
+ * \deprecated This function is deprecated in favor of ``LGBM_DatasetSetFieldFromArrowStream``.
  * \note
  * - \a group converts input datatype into ``int32``;
  * - \a label and \a weight convert input datatype into ``float32``;
@@ -1456,6 +1458,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
 
 /*!
  * \brief Make prediction for a new dataset.
+ * \deprecated This function is deprecated in favor of ``LGBM_BoosterPredictForArrowStream``.
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;

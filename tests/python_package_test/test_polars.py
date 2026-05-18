@@ -11,7 +11,6 @@ import lightgbm as lgb
 from .utils import np_assert_array_equal
 
 pl = pytest.importorskip("polars")
-pl_testing = pytest.importorskip("polars.testing")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -386,7 +385,7 @@ def test_get_data_polars_frame():
     assert isinstance(returned_data, pl.DataFrame)
     assert returned_data.schema == original_frame.schema
     assert returned_data.shape == original_frame.shape
-    pl_testing.assert_frame_equal(returned_data, original_frame)
+    pl.testing.assert_frame_equal(returned_data, original_frame)
 
 
 def test_get_data_polars_frame_subset(rng):
@@ -407,4 +406,4 @@ def test_get_data_polars_frame_subset(rng):
     assert subset_data.shape == expected_subset.shape
     assert len(subset_data) == len(used_indices)
     assert subset_data.shape == (subset_size, 3)
-    pl_testing.assert_frame_equal(subset_data, expected_subset)
+    pl.testing.assert_frame_equal(subset_data, expected_subset)
