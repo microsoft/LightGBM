@@ -785,7 +785,7 @@ test_that("lgb.train() raises an informative error for unrecognized metrics", {
         )
       )
     }, type = "message")
-  }, regexp = "Unknown metric type: nonsense")
+  }, regexp = "Unknown metric 'nonsense'")
 })
 
 test_that("lgb.cv() raises an informative error for unrecognized metrics", {
@@ -808,7 +808,7 @@ test_that("lgb.cv() raises an informative error for unrecognized metrics", {
         , nrounds = 2L
       )
     }, type = "message")
-  }, regexp = "Unknown metric type: nonsense")
+  }, regexp = "Unknown metric 'nonsense'")
 })
 
 test_that("lgb.train() respects parameter aliases for objective", {

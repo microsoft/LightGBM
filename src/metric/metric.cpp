@@ -140,7 +140,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   // it means the user deliberately requested no built-in metric, so returning nullptr is intentional.
   // Any other unrecognised name is a user mistake and deserves a clear error.
   if (type != std::string("custom")) {
-    Log::Fatal("Unknown metric type: %s", type.c_str());
+    Log::Fatal("Unknown metric '%s'. To avoid enabling LightGBM built-in metrics, pass metric='none'. Otherwise, ensure 'metric' contains only supported values.", type.c_str());
   }
   return nullptr;
 }
