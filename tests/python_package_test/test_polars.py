@@ -12,6 +12,14 @@ from .utils import np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
+try:
+    # We import this explicitly to fail the tests using `assert_frame_equal` if `polars` is
+    # installed but does not provide the `testing` submodule. We need to explicitly import
+    # this as `pl.testing` fails otherwise.
+    from polars.testing import assert_frame_equal
+except ImportError:
+    pass
+
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -377,8 +385,6 @@ def test_polars_feature_name_manual():
 
 
 def test_get_data_polars_frame():
-    from polars.testing import assert_frame_equal
-
     original_frame = generate_simple_polars_frame()
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
@@ -391,8 +397,6 @@ def test_get_data_polars_frame():
 
 
 def test_get_data_polars_frame_subset(rng):
-    from polars.testing import assert_frame_equal
-
     original_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
