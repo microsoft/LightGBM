@@ -57,7 +57,6 @@ def _train_pair(params_overrides, X, y):
     out = {}
     for device_type in ("cpu", "cuda"):
         params = {
-            "objective": "regression",
             "verbose": -1,
             "deterministic": True,
             "num_threads": 1,
