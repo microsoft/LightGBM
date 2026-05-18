@@ -96,11 +96,15 @@ def test_cuda_respects_max_depth(max_depth, num_leaves):
     depth-7 trees with all 31 leaves filled.
     """
     rng = np.random.default_rng(0)
-    n = 400
-    X = rng.standard_normal((n, 6)).astype(np.float64)
-    y = (X @ rng.standard_normal(6) + 0.1 * rng.standard_normal(n)).astype(np.float64)
+    n = 64
+    X = rng.standard_normal((n, 4)).astype(np.float64)
+    y = (X @ rng.standard_normal(4) + 0.1 * rng.standard_normal(n)).astype(np.float64)
 
-    models = _train_pair({"max_depth": max_depth, "num_leaves": num_leaves}, X, y)
+    models = _train_pair(
+        {"max_depth": max_depth, "num_leaves": num_leaves, "min_data_in_leaf": 1},
+        X,
+        y,
+    )
 
     cpu_dump = models["cpu"].dump_model()["tree_info"][0]
     cuda_dump = models["cuda"].dump_model()["tree_info"][0]
