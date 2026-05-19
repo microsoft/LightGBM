@@ -94,7 +94,7 @@ if ($env:PYTHON_VERSION -eq "3.10") {
 
 $condaParams = @(
     "-y",
-    "--quiet" \
+    "--quiet"
     "-n", "$env:CONDA_ENV",
     "--file", "$env:CONDA_REQUIREMENT_FILE",
     "python=$env:PYTHON_VERSION[build=*_cp*]"
