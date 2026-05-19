@@ -23,6 +23,13 @@ function Install-Conda-From-Miniforge {
         "/RegisterPython=0"
     ) ; Assert-Output $?
     Remove-Item $miniforgeInstaller
+
+    # ensure miniforge is at the beginning of PATH
+    $env:PATH = @(
+        "$env:USERPROFILE\Miniforge3\Scripts",
+        "$env:USERPROFILE\Miniforge3\condabin",
+        $env:PATH
+    ) -join ";"
     Write-Output "Done installing conda with miniforge"
 }
 
