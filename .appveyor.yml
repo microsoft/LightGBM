@@ -37,7 +37,7 @@ build: false
 
 test_script:
   # remove built-in (often very old) 'conda'
-  - Remove-Item C:\Miniconda3-x64 -Force -Recurse -ErrorAction Ignore
+  - rmdir /S /Q C:\Miniconda3-x64
   # install 'conda' with miniforge
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\setup-conda.ps1
   # run build and tests
