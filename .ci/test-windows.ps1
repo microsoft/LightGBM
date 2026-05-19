@@ -15,18 +15,14 @@ function Install-Conda-From-Miniforge {
         -OutFile $miniforgeInstaller
 
     Write-Output "Installing conda with miniforge"
-    Start-Process -FilePath $miniforgeInstaller -Wait -ArgumentList @(
+    Start-Process -FilePath $miniforgeInstaller -Wait -NoNewWindow -ArgumentList @(
+        "/S",
+        "/AddToPath=1",
         "/InstallationType=JustMe",
         "/RegisterPython=0",
         "/D=$env:USERPROFILE\Miniforge3"
     ) ; Assert-Output $?
     Remove-Item $miniforgeInstaller
-
-    $env:PATH = @(
-        "$env:USERPROFILE\Miniforge3\Scripts",
-        "$env:USERPROFILE\Miniforge3\condabin",
-        $env:PATH
-    ) -join ";"
     Write-Output "Done installing conda with miniforge"
 }
 
