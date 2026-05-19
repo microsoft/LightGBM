@@ -258,10 +258,9 @@ elif [[ $TASK == "cuda" ]]; then
     elif [[ $METHOD == "source" ]]; then
         cmake \
             -B build \
-            -S \
+            -S . \
             -DUSE_CUDA=ON \
-            -DCMAKE_CUDA_ARCHITECTURES="${CUDAARCHS}" \
-            .
+            -DCMAKE_CUDA_ARCHITECTURES="${CUDAARCHS}"
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
