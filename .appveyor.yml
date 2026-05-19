@@ -38,6 +38,7 @@ build: false
 test_script:
   # remove built-in (often very old) 'conda'
   - rmdir /S /Q C:\Miniconda3-x64
+  - Add-AppveyorBuildVariable -Name PATH -Value "C:\Miniforge3\condabin;C:\Miniforge3\Scripts;$env:PATH"
   # install 'conda' with miniforge
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\setup-conda.ps1
   # run build and tests
