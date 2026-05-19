@@ -723,8 +723,8 @@ After compilation the executable and ``.so`` files will be in ``LightGBM/`` fold
 
 .. note::
 
-   Prior to ``LightGBM`` v4.7.0, by default the library was built with support for most GPU architectures known to the local version of the CUDA Toolkit.
-   From v4.7.0 onwards, by default only support for the local GPU's architecture is built.
+   By default, the library will be built with support for a hard-coded list of GPU architectures
+   based on the detected CUDA Toolkit version.
 
    To build the library with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
 
@@ -732,6 +732,9 @@ After compilation the executable and ``.so`` files will be in ``LightGBM/`` fold
 
       # example: all Blackwell arches, including DGX Spark
       cmake -B build -S . -DUSE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="100;120;121-real;121-virtual"
+
+      # example: just the local GPU
+      cmake -B build -S . -DUSE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="native"
 
 gcc
 ***

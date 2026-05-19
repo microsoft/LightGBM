@@ -1,3 +1,7 @@
+# Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+# Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root for license information.
+
 cmake_minimum_required(VERSION 3.28)
 
 option(USE_MPI "Enable MPI-based distributed learning" OFF)
@@ -35,6 +39,8 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
 endif()
 
 project(lightgbm LANGUAGES C CXX)
+
+include(cmake/Utils.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -150,15 +156,10 @@ endif()
 
 if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    find_package(CUDAToolkit 11.8 REQUIRED)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      set(CMAKE_CUDA_ARCHITECTURES "native" CACHE STRING
-        "CUDA architectures to compile for (defaults to local GPU's architecture).")
-      message(
-        STATUS
-        "Setting CMAKE_CUDA_ARCHITECTURES='native'. This can be overridden with -DCMAKE_CUDA_ARCHITECTURES."
-      )
+      compute_cmake_cuda_archs("${CUDAToolkit_VERSION}")
     endif()
-    message(STATUS "CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
@@ -225,7 +226,6 @@ if(BUILD_CPP_TEST AND MSVC)
 endif()
 
 if(USE_CUDA)
-    find_package(CUDAToolkit 11.0 REQUIRED)
     find_package(NCCL REQUIRED)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
