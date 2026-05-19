@@ -41,5 +41,5 @@ test_script:
   # install 'conda' with miniforge
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\setup-conda.ps1
   # run build and tests
-  - conda init powershell
+  - C:\Miniforge3\condabin\conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test-windows.ps1
