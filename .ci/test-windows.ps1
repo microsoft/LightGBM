@@ -6,6 +6,27 @@ function Assert-Output {
     }
 }
 
+function Install-Conda-From-Miniforge {
+    $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down Invoke-WebRequest
+    $miniforgeInstaller = "$env:TEMP\Miniforge3.exe"
+    Invoke-WebRequest `
+        -Uri "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe" `
+        -OutFile $miniforgeInstaller
+
+    Start-Process -FilePath $miniforgeInstaller -Wait -ArgumentList @(
+        "/InstallationType=JustMe",
+        "/RegisterPython=0",
+        "/D=$env:USERPROFILE\Miniforge3"
+    ) ; Assert-Output $?
+    Remove-Item $miniforgeInstaller
+
+    $env:PATH = @(
+        "$env:USERPROFILE\Miniforge3\Scripts",
+        "$env:USERPROFILE\Miniforge3\condabin",
+        $env:PATH
+    ) -join ";"
+}
+
 $env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 # Use custom temp directory to avoid
@@ -65,6 +86,13 @@ if ($env:TASK -eq "swig") {
     exit 0
 }
 
+# AppVeyor images we use ship a VERY old version of conda.
+#
+# Installing via Miniforge is faster than doing a 'conda install conda' there.
+if ($env:APPVEYOR -eq "true") {
+    Install-Conda-From-Miniforge ; Assert-Output $?
+}
+
 # setup for Python
 conda activate ; Assert-Output $?
 conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
@@ -78,7 +106,6 @@ if ($env:PYTHON_VERSION -eq "3.10") {
 } else {
     conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 }
-
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
