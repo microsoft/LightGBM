@@ -2,7 +2,7 @@ version: 2
 build:
   os: "ubuntu-24.04"
   tools:
-    python: "mambaforge-23.11"
+    python: "miniforge3-latest"
 conda:
   environment: docs/env.yml
 formats:

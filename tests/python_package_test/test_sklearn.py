@@ -1876,7 +1876,7 @@ def test_multiclass_custom_eval(use_weight):
     eval_result = model.evals_result_
     train_ds = (X_train, y_train, weight_train)
     valid_ds = (X_valid, y_valid, weight_valid)
-    for key, (X, y_true, weight) in zip(["train", "valid"], [train_ds, valid_ds]):
+    for key, (X, y_true, weight) in zip(["train", "valid"], [train_ds, valid_ds], strict=True):
         np.testing.assert_allclose(eval_result[key]["multi_logloss"], eval_result[key]["custom_logloss"])
         y_pred = model.predict_proba(X)
         _, metric_value, _ = custom_eval(y_true, y_pred, weight)

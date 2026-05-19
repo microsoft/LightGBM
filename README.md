@@ -86,6 +86,8 @@ GBNet (use `LightGBM` as a [PyTorch Module](https://docs.pytorch.org/docs/stable
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
+nvForest (GPU-accelerated inference): https://github.com/rapidsai/nvforest
+
 daal4py (Intel CPU-accelerated inference): https://github.com/intel/scikit-learn-intelex/tree/master/daal4py
 
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
@@ -141,6 +143,8 @@ Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 LightGBMLSS (probabilistic modelling with LightGBM): https://github.com/StatMixedML/LightGBMLSS
 
 LightGBM-MoE (Mixture-of-Experts / regime-switching extension): https://github.com/kyo219/LightGBM-MoE
+
+darts (time series forecasting and anomaly detection with LightGBM): https://github.com/unit8co/darts
 
 mlforecast (time series forecasting with LightGBM): https://github.com/Nixtla/mlforecast
 
