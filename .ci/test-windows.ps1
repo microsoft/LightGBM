@@ -19,7 +19,6 @@ function Install-Conda-From-Miniforge {
         "/AddToPath=1",
         "/D=$env:USERPROFILE\Miniforge3",
         "/InstallationType=JustMe",
-        "/KeepPkgCache=1",
         "/RegisterPython=0",
         "/S"
     ) ; Assert-Output $?
