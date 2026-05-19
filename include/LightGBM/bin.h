@@ -175,6 +175,7 @@ class BinMapper {
   inline uint32_t ValueToBin(double value) const;
   inline uint32_t ValueToBin(double value, uint32_t min_bin, uint32_t max_bin) const;
   inline uint32_t ValueToBinWithPairwiseRange(double value, uint32_t first_bin, uint32_t second_bin) const;
+  inline uint32_t ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin) const;
   inline std::pair<uint32_t, uint32_t> GetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin) const;
 
   /*!
@@ -774,11 +775,43 @@ inline std::pair<uint32_t, uint32_t> BinMapper::GetPairwiseBinRange(uint32_t fir
 }
 
 inline uint32_t BinMapper::ValueToBinWithPairwiseRange(double value, uint32_t first_bin, uint32_t second_bin) const {
-  if (!HasPairwiseBinRanges()) {
+  if (bin_type_ != BinType::NumericalBin || !HasPairwiseBinRanges() || first_bin >= pairwise_bin_num_ || second_bin >= pairwise_bin_num_) {
     return ValueToBin(value);
   }
-  const auto bin_range = GetPairwiseBinRange(first_bin, second_bin);
-  return ValueToBin(value, bin_range.first, bin_range.second);
+  return ValueToBinWithPairwiseRangeUnchecked(value, first_bin, second_bin);
+}
+
+inline uint32_t BinMapper::ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin) const {
+  if (std::isnan(value)) {
+    if (missing_type_ == MissingType::NaN) {
+      return static_cast<uint32_t>(num_bin_ - 1);
+    } else {
+      value = 0.0f;
+    }
+  }
+  const size_t range_offset = (static_cast<size_t>(first_bin) * pairwise_bin_num_ + second_bin) * 2;
+  const uint32_t lower = pairwise_bin_ranges_[range_offset];
+  const uint32_t upper = pairwise_bin_ranges_[range_offset + 1];
+  constexpr uint32_t kLinearSearchThreshold = 8;
+  if (upper - lower <= kLinearSearchThreshold) {
+    for (uint32_t bin = lower; bin < upper; ++bin) {
+      if (value <= bin_upper_bound_[bin]) {
+        return bin;
+      }
+    }
+    return upper;
+  }
+  int l = static_cast<int>(lower);
+  int r = static_cast<int>(upper);
+  while (l < r) {
+    int m = (r + l - 1) / 2;
+    if (value <= bin_upper_bound_[m]) {
+      r = m;
+    } else {
+      l = m + 1;
+    }
+  }
+  return static_cast<uint32_t>(l);
 }
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
@@ -786,17 +819,27 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
     if (bin_type_ == BinType::CategoricalBin) {
       return 0;
     } else if (missing_type_ == MissingType::NaN) {
-      return static_cast<uint32_t>(num_bin_ - 1);
+      return num_bin_ - 1;
     } else {
       value = 0.0f;
     }
   }
   if (bin_type_ == BinType::NumericalBin) {
-    uint32_t max_bin = static_cast<uint32_t>(num_bin_ - 1);
-    if (missing_type_ == MissingType::NaN && max_bin > 0) {
-      --max_bin;
+    // binary search to find bin
+    int l = 0;
+    int r = num_bin_ - 1;
+    if (missing_type_ == MissingType::NaN) {
+      r -= 1;
     }
-    return ValueToBin(value, 0, max_bin);
+    while (l < r) {
+      int m = (r + l - 1) / 2;
+      if (value <= bin_upper_bound_[m]) {
+        r = m;
+      } else {
+        l = m + 1;
+      }
+    }
+    return l;
   } else {
     int int_value = static_cast<int>(value);
     // convert negative value to NaN bin

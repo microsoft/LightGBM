@@ -2211,7 +2211,7 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
         sampled_differential_values[i].data(),
         static_cast<int>(sampled_differential_values[i].size()),
         static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
-        3, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
+        config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
         BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
       );
 

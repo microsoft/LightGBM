@@ -41,8 +41,8 @@ class MultiValDensePairwiseLambdarankBin
       const std::vector<int>& diff_feature_to_raw_feature_index)
       : MultiValPairwiseLambdarankBin<BIN_TYPE, LightGBM::MultiValDenseBin>(
             num_data, num_bin, num_feature, offsets),
-        use_pairwise_bin_lookup_(use_pairwise_bin_lookup),
-        diff_feature_to_original_feature_slot_(diff_feature_to_original_feature_slot) {
+        diff_feature_to_original_feature_slot_(diff_feature_to_original_feature_slot),
+        use_fast_pairwise_bin_lookup_(use_pairwise_bin_lookup) {
     this->paired_ranking_item_global_index_map_ =
         paired_ranking_item_global_index_map;
     CHECK_EQ(diff_feature_bin_mappers.size(), diff_feature_to_original_feature_slot.size());
@@ -61,16 +61,15 @@ class MultiValDensePairwiseLambdarankBin
         const int raw_feature_index = diff_feature_to_raw_feature_index[j];
         CHECK_GE(raw_feature_index, 0);
         CHECK_LT(raw_feature_index, static_cast<int>(raw_data->size()));
-        diff_feature_raw_data_ptrs_.push_back((*raw_data)[raw_feature_index].data());
+        const float* raw_data_ptr = (*raw_data)[raw_feature_index].data();
+        diff_feature_raw_data_ptrs_.push_back(raw_data_ptr);
+        if (raw_data_ptr != nullptr) {
+          active_diff_feature_slots_.push_back(j);
+          use_fast_pairwise_bin_lookup_ &= diff_feature_bin_mappers_[j]->HasPairwiseBinRanges();
+        }
       } else {
         diff_feature_raw_data_ptrs_.push_back(nullptr);
       }
-    }
-
-    original_feature_to_diff_feature_slot_.resize(this->num_feature_, -1);
-    for (size_t i = 0; i < diff_feature_to_original_feature_slot_.size(); ++i) {
-      original_feature_to_diff_feature_slot_[diff_feature_to_original_feature_slot_[i]] = static_cast<int>(i);
-      Log::Warning("i = %ld, diff_feature_to_original_feature_slot_[%ld] = %d", i, i, diff_feature_to_original_feature_slot_[i]);
     }
 
     (void)original_feature_bin_mappers;
@@ -108,7 +107,7 @@ class MultiValDensePairwiseLambdarankBin
     hist_t* grad = out;
     hist_t* hess = out + 1;
 
-    if (!diff_feature_raw_data_ptrs_.empty() && use_pairwise_bin_lookup_) {
+    if (!active_diff_feature_slots_.empty() && use_fast_pairwise_bin_lookup_) {
       for (; i < end; ++i) {
         const auto idx = USE_INDICES ? data_indices[i] : i;
         const data_size_t first_idx =
@@ -125,36 +124,33 @@ class MultiValDensePairwiseLambdarankBin
         const auto base_offset = this->offsets_.back();
 
         for (int j = 0; j < this->num_feature_; ++j) {
-          uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[j]);
+          const uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[j]);
           const auto first_ti = (first_bin + this->offsets_[j]) << 1;
           grad[first_ti] += gradient;
           hess[first_ti] += hessian;
 
-          uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[j]);
+          const uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[j]);
           const auto second_ti = (second_bin + this->offsets_[j] + base_offset) << 1;
           grad[second_ti] += gradient;
           hess[second_ti] += hessian;
+        }
 
+        for (const int j : active_diff_feature_slots_) {
           const float* feature_values = diff_feature_raw_data_ptrs_[j];
-          if (feature_values == nullptr) {
-            continue;
-          }
+          const int original_feature_slot = diff_feature_to_original_feature_slot_[j];
+          const uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[original_feature_slot]);
+          const uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[original_feature_slot]);
           const double diff_value =
               static_cast<double>(feature_values[first_idx]) -
               static_cast<double>(feature_values[second_idx]);
-          const int diff_feature_slot =
-              original_feature_to_diff_feature_slot_[j];
-          if (diff_feature_slot == -1) {
-            continue;
-          }
 
           const uint32_t diff_bin =
-              diff_feature_bin_mappers_[diff_feature_slot]->ValueToBinWithPairwiseRange(
+              diff_feature_bin_mappers_[j]->ValueToBinWithPairwiseRangeUnchecked(
                   diff_value, first_bin, second_bin);
           // The original row-wise bins already exclude feature-group offsets.
           // Differential features still need the single-feature-group packing fix below.
-          const uint32_t bin = diff_bin + diff_feature_bin_value_offsets_[diff_feature_slot];
-          const auto ti = (bin + diff_feature_hist_offsets_[diff_feature_slot]) << 1;
+          const uint32_t bin = diff_bin + diff_feature_bin_value_offsets_[j];
+          const auto ti = (bin + diff_feature_hist_offsets_[j]) << 1;
           grad[ti] += gradient;
           hess[ti] += hessian;
         }
@@ -187,14 +183,11 @@ class MultiValDensePairwiseLambdarankBin
           hess[ti] += hessian;
         }
 
-        if (diff_feature_raw_data_ptrs_.empty()) {
+        if (active_diff_feature_slots_.empty()) {
           continue;
         }
-        for (int j = 0; j < num_diff_features_; ++j) {
+        for (const int j : active_diff_feature_slots_) {
           const float* feature_values = diff_feature_raw_data_ptrs_[j];
-          if (feature_values == nullptr) {
-            continue;
-          }
           const double diff_value =
               static_cast<double>(feature_values[first_idx]) -
               static_cast<double>(feature_values[second_idx]);
@@ -214,12 +207,12 @@ class MultiValDensePairwiseLambdarankBin
  private:
   std::vector<std::unique_ptr<const BinMapper>> diff_feature_bin_mappers_;
   std::vector<int> diff_feature_to_original_feature_slot_;
-  std::vector<int> original_feature_to_diff_feature_slot_;
   std::vector<uint32_t> diff_feature_hist_offsets_;
   std::vector<uint32_t> diff_feature_bin_value_offsets_;
   std::vector<const float*> diff_feature_raw_data_ptrs_;
+  std::vector<int> active_diff_feature_slots_;
   int num_diff_features_;
-  const bool use_pairwise_bin_lookup_;
+  bool use_fast_pairwise_bin_lookup_;
 };
 
 }  // namespace LightGBM
