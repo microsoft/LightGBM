@@ -72,7 +72,13 @@ conda config --remove channels defaults ; Assert-Output $?
 conda config --add channels nodefaults ; Assert-Output $?
 conda config --add channels conda-forge ; Assert-Output $?
 conda config --set channel_priority strict ; Assert-Output $?
-conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
+
+if ($env:PYTHON_VERSION -eq "3.10") {
+    conda install -q -y --file  "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-conda-update-py310.txt" ; Assert-Output $?
+} else {
+    conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
+}
+
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
