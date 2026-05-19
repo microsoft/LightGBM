@@ -6,33 +6,6 @@ function Assert-Output {
     }
 }
 
-function Install-Conda-From-Miniforge {
-    Write-Output "Downloading miniforge installer"
-    $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down Invoke-WebRequest
-    $miniforgeInstaller = "$env:TEMP\Miniforge3.exe"
-    Invoke-WebRequest `
-        -Uri "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe" `
-        -OutFile $miniforgeInstaller
-
-    Write-Output "Installing conda with miniforge"
-    Start-Process -FilePath $miniforgeInstaller -Wait -NoNewWindow -ArgumentList @(
-        "/S",
-        "/AddToPath=1",
-        "/D=$env:USERPROFILE\Miniforge3",
-        "/InstallationType=JustMe",
-        "/RegisterPython=0"
-    ) ; Assert-Output $?
-    Remove-Item $miniforgeInstaller
-
-    # ensure miniforge is at the beginning of PATH
-    $env:PATH = @(
-        "$env:USERPROFILE\Miniforge3\Scripts",
-        "$env:USERPROFILE\Miniforge3\condabin",
-        $env:PATH
-    ) -join ";"
-    Write-Output "Done installing conda with miniforge"
-}
-
 $env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 # Use custom temp directory to avoid
@@ -92,17 +65,6 @@ if ($env:TASK -eq "swig") {
     exit 0
 }
 
-# AppVeyor images we use ship a VERY old version of conda.
-#
-# Installing via Miniforge is faster than doing a 'conda install conda' there.
-if ($env:APPVEYOR -eq "true") {
-    # remove old, outdated 'conda' preinstalled in the image
-    Remove-Item C:\Miniconda3-x64 -Force -Recurse -ErrorAction Ignore
-
-    # install from miniforge
-    Install-Conda-From-Miniforge ; Assert-Output $?
-}
-
 # setup for Python
 conda activate ; Assert-Output $?
 Write-Output "conda info (before updating conda):"
@@ -121,7 +83,7 @@ conda config --set channel_priority strict ; Assert-Output $?
 conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
 # print output of 'conda info', to help in submitting bug reports
-Write-Output "conda info:"
+Write-Output "conda info (after updating conda):"
 conda info
 
 if ($env:PYTHON_VERSION -eq "3.10") {
