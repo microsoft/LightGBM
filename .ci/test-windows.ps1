@@ -16,11 +16,12 @@ function Install-Conda-From-Miniforge {
 
     Write-Output "Installing conda with miniforge"
     Start-Process -FilePath $miniforgeInstaller -Wait -NoNewWindow -ArgumentList @(
-        "/S",
         "/AddToPath=1",
-        "/InstallationType=JustMe",
-        "/RegisterPython=0",
         "/D=$env:USERPROFILE\Miniforge3"
+        "/InstallationType=JustMe",
+        "/KeepPkgCache=1",
+        "/RegisterPython=0",
+        "/S",
     ) ; Assert-Output $?
     Remove-Item $miniforgeInstaller
     Write-Output "Done installing conda with miniforge"
@@ -90,6 +91,8 @@ if ($env:TASK -eq "swig") {
 # Installing via Miniforge is faster than doing a 'conda install conda' there.
 if ($env:APPVEYOR -eq "true") {
     Install-Conda-From-Miniforge ; Assert-Output $?
+    Write-Output "conda info (after miniforge install):"
+    conda info
 }
 
 # setup for Python
@@ -100,11 +103,12 @@ conda config --add channels nodefaults ; Assert-Output $?
 conda config --add channels conda-forge ; Assert-Output $?
 conda config --set channel_priority strict ; Assert-Output $?
 
-if ($env:PYTHON_VERSION -eq "3.10") {
-    conda install -q -y --file  "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-conda-update-py310.txt" ; Assert-Output $?
-} else {
-    conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
-}
+# if ($env:PYTHON_VERSION -eq "3.10") {
+#     conda install -q -y --file  "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-conda-update-py310.txt" ; Assert-Output $?
+# } else {
+#     conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
+# }
+conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
 # print output of 'conda info', to help in submitting bug reports
 Write-Output "conda info:"
