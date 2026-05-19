@@ -6,6 +6,13 @@ function Assert-Output {
     }
 }
 
+# add in search paths from setup-conda.ps1
+$env:PATH = @(
+    "C:\Miniforge3\Scripts",
+    "C:\Miniforge3\condabin",
+    $env:PATH
+) -join ";"
+
 $env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 # Use custom temp directory to avoid
