@@ -16,7 +16,6 @@ Invoke-WebRequest `
 Write-Output "Installing conda with miniforge"
 Start-Process -FilePath $miniforgeInstaller -Wait -NoNewWindow -ArgumentList @(
     "/S",
-    "/AddToPath=1",
     "/D=C:\Miniforge3",
     "/InstallationType=JustMe",
     "/RegisterPython=0"
