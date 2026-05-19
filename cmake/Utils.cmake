@@ -17,13 +17,13 @@ function(compute_cmake_cuda_archs _cuda_version)
   # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
   #
   if(_cuda_version VERSION_GREATER_EQUAL "13.0")
-    set(CMAKE_CUDA_ARCHITECTURES 75 80 90 100 120)
+    set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89 90 100 120)
   elseif(_cuda_version VERSION_GREATER_EQUAL "12.9")
-    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 90 100 120)
+    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90 100 120)
   elseif(_cuda_version VERSION_GREATER_EQUAL "12.8")
-    set(CMAKE_CUDA_ARCHITECTURES 60 70 80 90 100 120)
+    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80 86 89 90 100 120)
   elseif(_cuda_version VERSION_GREATER_EQUAL "11.8")
-    set(CMAKE_CUDA_ARCHITECTURES 60 70 80 90)
+    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80 86 89 90)
   else()
     message(FATAL_ERROR
       "No default architecture list configured for CUDA version '${_cuda_version}'. "
