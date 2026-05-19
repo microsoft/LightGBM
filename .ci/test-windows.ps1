@@ -21,7 +21,7 @@ function Install-Conda-From-Miniforge {
         "/InstallationType=JustMe",
         "/KeepPkgCache=1",
         "/RegisterPython=0",
-        "/S",
+        "/S"
     ) ; Assert-Output $?
     Remove-Item $miniforgeInstaller
     Write-Output "Done installing conda with miniforge"
