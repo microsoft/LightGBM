@@ -225,7 +225,8 @@ elif [[ $TASK == "cuda" ]]; then
             export CUDAARCHS="60;61;62;70;75;80;86;87;89;90-real;90-virtual"
             ;;
         12.2)
-            export CUDAARCHS="70;75;80;86;87;89;90-real;90-virtual"
+            # always want one CI job testing the default behavior, where CUDAARCHS is unset
+            unset CUDAARCHS
             ;;
         12.9)
             export CUDAARCHS="70;75;80;86;87;89;90;100;120;121-real;121-virtual"

@@ -723,7 +723,7 @@ After compilation the executable and ``.so`` files will be in ``LightGBM/`` fold
 
 .. note::
 
-   Prior to ``LightGBM`` v4.7.0, by default th library built with support for most GPU architectures known to the local version of the CUDA Toolkit.
+   Prior to ``LightGBM`` v4.7.0, by default the library was built with support for most GPU architectures known to the local version of the CUDA Toolkit.
    From v4.7.0 onwards, by default only support for the local GPU's architecture is built.
 
    To build the library with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
