@@ -17,7 +17,7 @@ function Install-Conda-From-Miniforge {
     Write-Output "Installing conda with miniforge"
     Start-Process -FilePath $miniforgeInstaller -Wait -NoNewWindow -ArgumentList @(
         "/AddToPath=1",
-        "/D=$env:USERPROFILE\Miniforge3"
+        "/D=$env:USERPROFILE\Miniforge3",
         "/InstallationType=JustMe",
         "/KeepPkgCache=1",
         "/RegisterPython=0",
