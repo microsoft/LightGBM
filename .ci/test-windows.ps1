@@ -96,13 +96,17 @@ if ($env:TASK -eq "swig") {
 #
 # Installing via Miniforge is faster than doing a 'conda install conda' there.
 if ($env:APPVEYOR -eq "true") {
+    # remove old, outdated 'conda' preinstalled in the image
+    Remove-Item C:\Miniconda3-x64 -Force -Recurse -ErrorAction Ignore
+
+    # install from miniforge
     Install-Conda-From-Miniforge ; Assert-Output $?
-    Write-Output "conda info (after miniforge install):"
-    conda info
 }
 
 # setup for Python
 conda activate ; Assert-Output $?
+Write-Output "conda info (before updating conda):"
+conda info
 conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
 conda config --remove channels defaults ; Assert-Output $?
 conda config --add channels nodefaults ; Assert-Output $?
