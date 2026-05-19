@@ -67,23 +67,15 @@ if ($env:TASK -eq "swig") {
 
 # setup for Python
 conda activate ; Assert-Output $?
-Write-Output "conda info (before updating conda):"
-conda info
 conda config --set always_yes yes --set changeps1 no ; Assert-Output $?
 conda config --remove channels defaults ; Assert-Output $?
 conda config --add channels nodefaults ; Assert-Output $?
 conda config --add channels conda-forge ; Assert-Output $?
 conda config --set channel_priority strict ; Assert-Output $?
-
-# if ($env:PYTHON_VERSION -eq "3.10") {
-#     conda install -q -y --file  "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-conda-update-py310.txt" ; Assert-Output $?
-# } else {
-#     conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
-# }
 conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
 
 # print output of 'conda info', to help in submitting bug reports
-Write-Output "conda info (after updating conda):"
+Write-Output "conda info:"
 conda info
 
 if ($env:PYTHON_VERSION -eq "3.10") {
@@ -166,7 +158,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
         'graph.render(view=True)',
         'graph.render(view=False)'
     ) | Set-Content "plot_example.py"
-    conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
+    conda install -y --quiet -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
     # Run all examples
     foreach ($file in @(Get-ChildItem *.py)) {
         @(
