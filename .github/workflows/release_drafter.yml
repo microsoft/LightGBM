@@ -3,7 +3,7 @@ name: Release Drafter
 on:
   push:
     branches:
-      - master
+      - main
 
 # only 1 job running in the repo at any time
 concurrency:
