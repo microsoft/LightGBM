@@ -1011,6 +1011,10 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   bool use_differential_feature_in_pairwise_ranking = false;
 
+  // desc = whether to restrict differential-feature bin search with a lookup table based on the paired original-feature bins
+  // desc = used only in ``pairwise_lambdarank`` application when differential features are enabled
+  bool pairwise_lambdarank_use_bin_lookup_table = false;
+
   // desc = whether to additionaly perform indirect document comparison in pairwise ranking
   // desc = used only in ``pairwise_lambdarank`` application
   bool pairwise_lambdarank_model_indirect_comparison = false;

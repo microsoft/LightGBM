@@ -737,7 +737,7 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const;
 
-  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const bool use_raw_data_in_pairwise_ranking_diff) const;
+  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const bool use_raw_data_in_pairwise_ranking_diff, const bool use_pairwise_bin_lookup) const;
 
   template <bool USE_QUANT_GRAD, int HIST_BITS>
   TrainingShareStates* GetShareStates(
@@ -745,7 +745,8 @@ class Dataset {
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
       bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins,
       const bool use_pairwise_ranking,
-      const bool use_raw_data_in_pairwise_ranking_diff) const;
+      const bool use_raw_data_in_pairwise_ranking_diff,
+      const bool use_pairwise_bin_lookup) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 

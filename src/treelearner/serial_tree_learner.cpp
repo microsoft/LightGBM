@@ -90,12 +90,12 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
       share_state_.reset(dataset->GetShareStates<true, 32>(
         reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-        config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values));
+        config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values, config_->pairwise_lambdarank_use_bin_lookup_table));
     } else {
       share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(),
           col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-          config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values));
+          config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values, config_->pairwise_lambdarank_use_bin_lookup_table));
     }
   } else {
     CHECK_NOTNULL(share_state_);
@@ -104,12 +104,12 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
       share_state_.reset(dataset->GetShareStates<true, 32>(
           reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
           col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-          share_state_->is_col_wise, !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values));
+          share_state_->is_col_wise, !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values, config_->pairwise_lambdarank_use_bin_lookup_table));
     } else {
       share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
           is_constant_hessian, share_state_->is_col_wise,
-          !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values));
+          !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank"), config_->pairwise_lambdarank_keep_raw_feature_values, config_->pairwise_lambdarank_use_bin_lookup_table));
     }
   }
   CHECK_NOTNULL(share_state_);
