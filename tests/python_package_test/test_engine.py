@@ -187,12 +187,8 @@ def test_weighted_percentile_inside_label_range(objective):
     train = lgb.Dataset(X, label=y, weight=w)
     gbm = lgb.train(params, train, num_boost_round=1)
     preds = gbm.predict(X)
-    assert np.all(preds >= y.min() - 1e-6), (
-        f"{objective}: prediction {preds.min()} fell below min(y)={y.min()}"
-    )
-    assert np.all(preds <= y.max() + 1e-6), (
-        f"{objective}: prediction {preds.max()} rose above max(y)={y.max()}"
-    )
+    assert np.all(preds >= y.min() - 1e-6), f"{objective}: prediction {preds.min()} fell below min(y)={y.min()}"
+    assert np.all(preds <= y.max() + 1e-6), f"{objective}: prediction {preds.max()} rose above max(y)={y.max()}"
     # For regression_l1 the single-leaf prediction is exactly the weighted
     # median of y; verify it matches the expected 2 + 1/3.
     if objective == "regression_l1":
