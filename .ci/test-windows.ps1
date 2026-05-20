@@ -101,6 +101,11 @@ if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
 }
 
+# ensure system-installed MinGW libraries are found before conda's
+if ($env:COMPILER -eq "MINGW") {
+    $env:PATH = @("C:/mingw64/bin", "$env:PATH") -join ";"
+}
+
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
     cmake -B build -S . -A x64 ; Assert-Output $?
