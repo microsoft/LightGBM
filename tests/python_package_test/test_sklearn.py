@@ -1712,17 +1712,17 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
         pytest.param("numpy", "auto", False, id="numpy-explicit-auto"),
         # numpy with user-supplied names → has feature_names_in_
         pytest.param("numpy", "custom", True, id="numpy-custom"),
-        # pandas → has feature_names_in_ (column names)
-        pytest.param("pandas", "unset", True, id="pandas-default"),
-        pytest.param("pandas", "auto", True, id="pandas-explicit-auto"),
-        pytest.param("pandas", "custom", True, id="pandas-custom"),
-        # pyarrow → has feature_names_in_ (column names)
-        pytest.param("pyarrow", "unset", True, id="pyarrow-default"),
-        pytest.param("pyarrow", "auto", True, id="pyarrow-explicit-auto"),
-        pytest.param("pyarrow", "custom", True, id="pyarrow-custom"),
+        # pd_DataFrame → has feature_names_in_ (column names)
+        pytest.param("pd_DataFrame", "unset", True, id="pd_DataFrame-default"),
+        pytest.param("pd_DataFrame", "auto", True, id="pd_DataFrame-explicit-auto"),
+        pytest.param("pd_DataFrame", "custom", True, id="pd_DataFrame-custom"),
+        # pa_Table → has feature_names_in_ (column names)
+        pytest.param("pa_Table", "unset", True, id="pa_Table-default"),
+        pytest.param("pa_Table", "auto", True, id="pa_Table-explicit-auto"),
+        pytest.param("pa_Table", "custom", True, id="pa_Table-custom"),
     ],
 )
-@pytest.mark.parametrize("predict_X_type", ["numpy", "pandas", "pyarrow"])
+@pytest.mark.parametrize("predict_X_type", ["numpy", "pd_DataFrame", "pa_Table"])
 def test_feature_names_in_and_predict_warning(
     fit_X_type,
     feature_name_arg,
@@ -1734,7 +1734,7 @@ def test_feature_names_in_and_predict_warning(
     Covers all combinations of fit X type, feature_name argument, and predict X type.
     Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798.
     """
-    if (fit_X_type == "pyarrow" or predict_X_type == "pyarrow") and not PYARROW_INSTALLED:
+    if (fit_X_type == "pa_Table" or predict_X_type == "pa_Table") and not PYARROW_INSTALLED:
         pytest.skip("pyarrow not installed")
 
     X_np = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
@@ -1745,7 +1745,7 @@ def test_feature_names_in_and_predict_warning(
 
     if fit_X_type == "numpy":
         X_fit = X_np
-    elif fit_X_type == "pandas":
+    elif fit_X_type == "pd_DataFrame":
         X_fit = pd_DataFrame(X_np, columns=col_names)
     else:
         X_fit = pa_Table.from_pandas(pd_DataFrame(X_np, columns=col_names))
@@ -1771,7 +1771,7 @@ def test_feature_names_in_and_predict_warning(
     # feature_name_: always accessible, reflects actual names used internally
     if feature_name_arg == "custom":
         assert model.feature_name_ == custom_names
-    elif fit_X_type in ("pandas", "pyarrow"):
+    elif fit_X_type in ("pd_DataFrame", "pa_Table"):
         assert model.feature_name_ == col_names
     else:
         assert model.feature_name_ == [f"Column_{i}" for i in range(n_features)]
@@ -1782,14 +1782,14 @@ def test_feature_names_in_and_predict_warning(
     # prepare predict input
     if predict_X_type == "numpy":
         X_predict = X_np[:2]
-    elif predict_X_type == "pandas":
+    elif predict_X_type == "pd_DataFrame":
         X_predict = pd_DataFrame(X_np[:2], columns=col_names)
     else:
         X_predict = pa_Table.from_pandas(pd_DataFrame(X_np[:2], columns=col_names))
 
     # sklearn 1.6+ warns when predict X is a numpy array (no feature names) and the model
     # was fitted with named features (feature_names_in_ accessible).
-    # pandas/pyarrow predict bypasses sklearn's validate_data(), so no sklearn warning is raised.
+    # pd_DataFrame/pa_Table predict bypasses sklearn's validate_data(), so no sklearn warning is raised.
     expect_warning = (
         expect_has_feature_names_in_ and predict_X_type == "numpy" and SKLEARN_VERSION_GTE_1_6
     )
