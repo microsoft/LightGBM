@@ -111,7 +111,11 @@ if ($env:TASK -eq "regular") {
 } elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
+    if ($env:COMPILER -eq "MINGW") {
+        Set-Location dist; pip install @(Get-ChildItem *.gz) -v --config-setting=cmake.args=-G"MinGW Makefiles" ; Assert-Output $?
+    } else {
+        Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
+    }
 } elseif ($env:TASK -eq "bdist") {
     # Import the Chocolatey profile module so that the RefreshEnv command
     # invoked below properly updates the current PowerShell session environment.
@@ -129,11 +133,8 @@ if ($env:TASK -eq "regular") {
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } else {
-    if ($env:COMPILER -eq "MINGW") {
-        sh ./build-python.sh install --mingw ; Assert-Output $?
-    } else {
-        sh ./build-python.sh install; Assert-Output $?
-    }
+    Write-Output "Unrecognized task: $env:TASK"
+    exit 1
 }
 
 if ($env:TASK -eq "sdist") {
