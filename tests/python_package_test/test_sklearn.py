@@ -1705,7 +1705,7 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
 
 
 @pytest.mark.parametrize(
-    "fit_X_type,feature_name_arg,expect_has_feature_names_in_",
+    ("fit_X_type", "feature_name_arg", "expect_has_feature_names_in_"),
     [
         # numpy with no explicit feature names → no feature_names_in_ (fix for #6798)
         pytest.param("numpy", "unset", False, id="numpy-default"),
@@ -1790,9 +1790,7 @@ def test_feature_names_in_and_predict_warning(
     # sklearn 1.6+ warns when predict X is a numpy array (no feature names) and the model
     # was fitted with named features (feature_names_in_ accessible).
     # pd_DataFrame/pa_Table predict bypasses sklearn's validate_data(), so no sklearn warning is raised.
-    expect_warning = (
-        expect_has_feature_names_in_ and predict_X_type == "numpy" and SKLEARN_VERSION_GTE_1_6
-    )
+    expect_warning = expect_has_feature_names_in_ and predict_X_type == "numpy" and SKLEARN_VERSION_GTE_1_6
     if expect_warning:
         with pytest.warns(UserWarning, match="does not have valid feature names"):
             model.predict(X_predict)
