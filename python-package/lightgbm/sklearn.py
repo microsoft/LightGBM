@@ -1057,7 +1057,7 @@ class LGBMModel(_LGBMModelBase):
             feature_name=feature_name,
             params=params,
         )
-        self._fitted_with_feature_names = train_set.has_non_default_feature_names
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)

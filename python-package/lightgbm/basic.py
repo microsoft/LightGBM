@@ -3578,10 +3578,6 @@ class Dataset:
         )
         return self
 
-    @property
-    def has_non_default_feature_names(self):
-        return self._has_non_default_feature_names
-
 
 _LGBM_CustomObjectiveFunction = Callable[
     [np.ndarray, Dataset],
