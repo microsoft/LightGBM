@@ -393,9 +393,11 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   SetInitScoresFromIterator(init_score, init_score + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetInitScore(const ArrowChunkedArray& array) {
   SetInitScoresFromIterator(array.begin<double>(), array.end<double>());
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
   if (num_init_score_ <= 0) {
@@ -450,9 +452,11 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   SetLabelsFromIterator(label, label + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetLabel(const ArrowChunkedArray& array) {
   SetLabelsFromIterator(array.begin<label_t>(), array.end<label_t>());
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {
   if (labels == nullptr) {
@@ -505,9 +509,11 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   SetWeightsFromIterator(weights, weights + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetWeights(const ArrowChunkedArray& array) {
   SetWeightsFromIterator(array.begin<label_t>(), array.end<label_t>());
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
   if (!weights) {
@@ -573,9 +579,11 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   SetQueriesFromIterator(query, query + len);
 }
 
+#ifndef LGB_R_BUILD
 void Metadata::SetQuery(const ArrowChunkedArray& array) {
   SetQueriesFromIterator(array.begin<data_size_t>(), array.end<data_size_t>());
 }
+#endif  // LGB_R_BUILD
 
 void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
   std::lock_guard<std::mutex> lock(mutex_);
