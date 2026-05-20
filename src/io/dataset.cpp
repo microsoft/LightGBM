@@ -2226,13 +2226,28 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
       }
       differential_feature_bin_mappers->operator[](i).reset(new BinMapper());
       std::vector<double> forced_upper_bounds;
-      differential_feature_bin_mappers->operator[](i)->FindBin(
-        sampled_differential_values[i].data(),
-        static_cast<int>(sampled_differential_values[i].size()),
-        static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
-        config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
-        BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
-      );
+      if (config.use_ternary_differential_feature_bin) {
+        differential_feature_bin_mappers->operator[](i)->FindBin(
+          sampled_differential_values[i].data(),
+          static_cast<int>(sampled_differential_values[i].size()),
+          static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
+          3, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
+          BinType::NumericalBin, false, false, forced_upper_bounds, true
+        );
+        const BinMapper* bin_mapper = differential_feature_bin_mappers->operator[](i).get();
+        Log::Warning("num_bin = %d", bin_mapper->num_bin());
+        for (uint32_t bin = 0; bin < static_cast<uint32_t>(bin_mapper->num_bin()); ++bin) {
+          Log::Warning("bin = %d, upper_bound = %f", bin, bin_mapper->bin_upper_bound(bin));
+        }
+      } else {
+        differential_feature_bin_mappers->operator[](i)->FindBin(
+          sampled_differential_values[i].data(),
+          static_cast<int>(sampled_differential_values[i].size()),
+          static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
+          config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
+          BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
+        );
+      }
 
       if (config.pairwise_lambdarank_use_bin_lookup_table) {
         // second pass, to restrict the range of bins for differential features

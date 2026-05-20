@@ -140,31 +140,37 @@ class MultiValDensePairwiseLambdarankBin
 
         for (const int j : active_diff_feature_slots_) {
           const float* feature_values = diff_feature_raw_data_ptrs_[j];
-          const int original_feature_slot = diff_feature_to_original_feature_slot_[j];
-          uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[original_feature_slot]);
-          uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[original_feature_slot]);
+          // const int original_feature_slot = diff_feature_to_original_feature_slot_[j];
+          // uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[original_feature_slot]);
+          // uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[original_feature_slot]);
           const double diff_value =
               static_cast<double>(feature_values[first_idx]) -
               static_cast<double>(feature_values[second_idx]);
 
-          if (first_bin >= original_feature_bin_value_offsets_[j]) {
-            first_bin -= original_feature_bin_value_offsets_[j];
-          } else {
-            CHECK_EQ(first_bin, 0);
-            first_bin = original_feature_most_freq_bins_[j];
+          uint32_t diff_bin = 0;
+          if (diff_value > kEpsilon) {
+            diff_bin = 2;
+          } else if (diff_value > -kEpsilon) {
+            diff_bin = 1;
           }
-          if (second_bin >= original_feature_bin_value_offsets_[j]) {
-            second_bin -= original_feature_bin_value_offsets_[j];
-          } else {
-            CHECK_EQ(second_bin, 0);
-            second_bin = original_feature_most_freq_bins_[j];
-          }
+          // if (first_bin >= original_feature_bin_value_offsets_[j]) {
+          //   first_bin -= original_feature_bin_value_offsets_[j];
+          // } else {
+          //   CHECK_EQ(first_bin, 0);
+          //   first_bin = original_feature_most_freq_bins_[j];
+          // }
+          // if (second_bin >= original_feature_bin_value_offsets_[j]) {
+          //   second_bin -= original_feature_bin_value_offsets_[j];
+          // } else {
+          //   CHECK_EQ(second_bin, 0);
+          //   second_bin = original_feature_most_freq_bins_[j];
+          // }
 
-          const uint32_t diff_bin =
-              diff_feature_bin_mappers_[j]->ValueToBinWithPairwiseRangeUnchecked(
-                  diff_value, first_bin, second_bin, original_feature_slot);
-          // The original row-wise bins already exclude feature-group offsets.
-          // Differential features still need the single-feature-group packing fix below.
+          // const uint32_t diff_bin =
+          //     diff_feature_bin_mappers_[j]->ValueToBinWithPairwiseRangeUnchecked(
+          //         diff_value, first_bin, second_bin, original_feature_slot);
+          // // The original row-wise bins already exclude feature-group offsets.
+          // // Differential features still need the single-feature-group packing fix below.
           const uint32_t bin = diff_bin + diff_feature_bin_value_offsets_[j];
           const auto ti = (bin + diff_feature_hist_offsets_[j]) << 1;
           grad[ti] += gradient;

@@ -1228,6 +1228,18 @@ Objective Parameters
 
    -  used only in ``pairwise_lambdarank`` application
 
+-  ``use_ternary_differential_feature_bin`` :raw-html:`<a id="use_ternary_differential_feature_bin" title="Permalink to this parameter" href="#use_ternary_differential_feature_bin">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use ternary differential feature bins
+
+   -  used only in ``pairwise_lambdarank`` application and with use_differential_feature_in_pairwise_ranking = true
+
+-  ``pairwise_lambdarank_use_bin_lookup_table`` :raw-html:`<a id="pairwise_lambdarank_use_bin_lookup_table" title="Permalink to this parameter" href="#pairwise_lambdarank_use_bin_lookup_table">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to restrict differential-feature bin search with a lookup table based on the paired original-feature bins
+
+   -  used only in ``pairwise_lambdarank`` application when differential features are enabled
+
 -  ``pairwise_lambdarank_model_indirect_comparison`` :raw-html:`<a id="pairwise_lambdarank_model_indirect_comparison" title="Permalink to this parameter" href="#pairwise_lambdarank_model_indirect_comparison">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  whether to additionaly perform indirect document comparison in pairwise ranking

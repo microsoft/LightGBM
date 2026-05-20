@@ -352,7 +352,7 @@ std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const
 void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
                         int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                         bool use_missing, bool zero_as_missing,
-                        const std::vector<double>& forced_upper_bounds) {
+                        const std::vector<double>& forced_upper_bounds, bool force_ternary_bin) {
   pairwise_bin_num_ = 0;
   pairwise_bin_ranges_.clear();
   int na_cnt = 0;
@@ -421,7 +421,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   std::vector<int> cnt_in_bin;  // count of data points in each bin.
   int num_distinct_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
-    if (missing_type_ == MissingType::Zero) {
+    if (force_ternary_bin) {
+      bin_upper_bound_ = std::vector<double>{-kEpsilon, kEpsilon, std::numeric_limits<double>::infinity()};
+    } else if (missing_type_ == MissingType::Zero) {
       bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt,
                                                   min_data_in_bin, forced_upper_bounds);
       if (bin_upper_bound_.size() == 2) {

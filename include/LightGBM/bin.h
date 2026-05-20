@@ -126,6 +126,8 @@ class BinMapper {
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
   inline double sparse_rate() const { return sparse_rate_; }
 
+  double bin_upper_bound(uint32_t bin) const { return bin_upper_bound_[bin]; }
+
   /*!
   * \brief Save binary data to file
   * \param file File want to write
@@ -196,6 +198,8 @@ class BinMapper {
       static_cast<size_t>(pairwise_bin_num_) * pairwise_bin_num_ * 2;
   }
 
+  
+
   void InitPairwiseBinRanges(uint32_t num_original_bin, int inner_feature_index);
 
   void SetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin,
@@ -214,9 +218,10 @@ class BinMapper {
   * \param use_missing True to enable missing value handle
   * \param zero_as_missing True to use zero as missing value
   * \param forced_upper_bounds Vector of split points that must be used (if this has size less than max_bin, remaining splits are found by the algorithm)
+  * \param force_ternary_bin enforce ternary bin
   */
   void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
-               bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
+               bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds, bool force_ternary_bin = false);
 
   /*!
   * \brief Serializing this object to buffer

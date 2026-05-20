@@ -43,11 +43,17 @@ uint32_t DensePairwiseRankingDiffBin<VAL_T, IS_4BIT>::GetBinAt(const data_size_t
     const double first_value = raw_values_->at(first_data_index);
     const double second_value = raw_values_->at(second_data_index);
     diff_value = first_value - second_value;
+    uint32_t diff_bin = 0;
+    if (diff_value > kEpsilon) {
+      diff_bin = 2;
+    } else if (diff_value > -kEpsilon) {
+      diff_bin = 1;
+    }
     // Log::Warning("first_value = %f, second_value = %f", first_value, second_value);
-    const uint32_t min_bin = diff_bin_offsets_->at(0);
-    const uint32_t most_freq_bin = diff_bin_mappers_->at(0)->GetMostFreqBin();
-    const uint32_t diff_bin = diff_bin_mappers_->at(0)->ValueToBin(diff_value);
-    return diff_bin + min_bin - static_cast<uint32_t>(most_freq_bin == 0);
+    // const uint32_t min_bin = diff_bin_offsets_->at(0);
+    // const uint32_t most_freq_bin = diff_bin_mappers_->at(0)->GetMostFreqBin();
+    // const uint32_t diff_bin = diff_bin_mappers_->at(0)->ValueToBin(diff_value);
+    return diff_bin + diff_bin_offset_;
   }
 }
 

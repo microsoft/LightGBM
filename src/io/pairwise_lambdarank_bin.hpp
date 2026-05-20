@@ -541,6 +541,8 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
     bin_offsets_ = bin_offsets;
     diff_bin_offsets_ = diff_bin_offsets;
     raw_values_ = raw_values;
+    diff_bin_offset_ = diff_bin_offsets_->at(0) - static_cast<uint32_t>(diff_bin_mappers_->at(0)->GetMostFreqBin() == 0);
+    CHECK_GE(diff_bin_offsets_->at(0), static_cast<uint32_t>(diff_bin_mappers_->at(0)->GetMostFreqBin() == 0));
   }
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
@@ -570,6 +572,7 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
   const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
   const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
   const std::vector<float>* raw_values_;
+  uint32_t diff_bin_offset_;
 };
 
 template <typename VAL_T>

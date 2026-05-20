@@ -315,6 +315,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "label_gain",
   "lambdarank_position_bias_regularization",
   "use_differential_feature_in_pairwise_ranking",
+  "use_ternary_differential_feature_bin",
   "pairwise_lambdarank_use_bin_lookup_table",
   "pairwise_lambdarank_model_indirect_comparison",
   "pairwise_lambdarank_model_conditional_rel",
@@ -664,6 +665,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "use_differential_feature_in_pairwise_ranking", &use_differential_feature_in_pairwise_ranking);
 
+  GetBool(params, "use_ternary_differential_feature_bin", &use_ternary_differential_feature_bin);
+
   GetBool(params, "pairwise_lambdarank_use_bin_lookup_table", &pairwise_lambdarank_use_bin_lookup_table);
 
   GetBool(params, "pairwise_lambdarank_model_indirect_comparison", &pairwise_lambdarank_model_indirect_comparison);
@@ -858,6 +861,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[lambdarank_position_bias_regularization: " << lambdarank_position_bias_regularization << "]\n";
   str_buf << "[use_differential_feature_in_pairwise_ranking: " << use_differential_feature_in_pairwise_ranking << "]\n";
+  str_buf << "[use_ternary_differential_feature_bin: " << use_ternary_differential_feature_bin << "]\n";
   str_buf << "[pairwise_lambdarank_use_bin_lookup_table: " << pairwise_lambdarank_use_bin_lookup_table << "]\n";
   str_buf << "[pairwise_lambdarank_model_indirect_comparison: " << pairwise_lambdarank_model_indirect_comparison << "]\n";
   str_buf << "[pairwise_lambdarank_model_conditional_rel: " << pairwise_lambdarank_model_conditional_rel << "]\n";
@@ -1025,6 +1029,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"label_gain", {}},
     {"lambdarank_position_bias_regularization", {}},
     {"use_differential_feature_in_pairwise_ranking", {}},
+    {"use_ternary_differential_feature_bin", {}},
     {"pairwise_lambdarank_use_bin_lookup_table", {}},
     {"pairwise_lambdarank_model_indirect_comparison", {}},
     {"pairwise_lambdarank_model_conditional_rel", {}},
@@ -1195,6 +1200,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"label_gain", "vector<double>"},
     {"lambdarank_position_bias_regularization", "double"},
     {"use_differential_feature_in_pairwise_ranking", "bool"},
+    {"use_ternary_differential_feature_bin", "bool"},
     {"pairwise_lambdarank_use_bin_lookup_table", "bool"},
     {"pairwise_lambdarank_model_indirect_comparison", "bool"},
     {"pairwise_lambdarank_model_conditional_rel", "bool"},
