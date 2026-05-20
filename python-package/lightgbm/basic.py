@@ -824,6 +824,21 @@ def _pandas_to_numpy(
         return data.to_numpy(dtype=target_dtype, na_value=np.nan)
 
 
+def _data_will_have_feature_names(
+    data: Any,
+    feature_name: _LGBM_FeatureNameConfiguration,
+) -> bool:
+    """Return True if this data/feature_name combination will have non-default feature names.
+
+    Mirrors the feature-name resolution logic in Dataset._lazy_init().
+    When support for new data types with built-in column names is added (e.g. polars),
+    this function and _lazy_init() should be updated together.
+    """
+    if feature_name != "auto":
+        return True
+    return isinstance(data, pd_DataFrame) or _is_pyarrow_table(data)
+
+
 def _data_from_pandas(
     data: pd_DataFrame,
     feature_name: _LGBM_FeatureNameConfiguration,
@@ -3070,6 +3085,7 @@ class Dataset:
         """
         if feature_name != "auto":
             self.feature_name = feature_name
+            self._has_non_default_feature_names = True
         if self._handle is not None and feature_name is not None and feature_name != "auto":
             if len(feature_name) != self.num_feature():
                 raise ValueError(
