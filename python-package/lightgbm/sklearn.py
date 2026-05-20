@@ -675,6 +675,7 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
+        self._fitted_with_feature_names = None
         if not SKLEARN_INSTALLED:
             raise LightGBMError(
                 "scikit-learn is required for lightgbm.sklearn. "
@@ -1056,7 +1057,7 @@ class LGBMModel(_LGBMModelBase):
             feature_name=feature_name,
             params=params,
         )
-        self._fitted_with_feature_names = train_set._has_non_default_feature_names
+        self._fitted_with_feature_names = train_set.has_non_default_feature_names
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
