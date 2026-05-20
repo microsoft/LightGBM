@@ -13,7 +13,7 @@ branches:
 environment:
   matrix:
     - COMPILER: MSVC
-      TASK: python
+      TASK: regular
 
 clone_depth: 5
 

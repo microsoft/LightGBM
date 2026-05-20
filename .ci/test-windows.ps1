@@ -128,7 +128,7 @@ if ($env:TASK -eq "regular") {
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
-} elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
+} else {
     if ($env:COMPILER -eq "MINGW") {
         sh ./build-python.sh install --mingw ; Assert-Output $?
     } else {
@@ -136,7 +136,7 @@ if ($env:TASK -eq "regular") {
     }
 }
 
-if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+if ($env:TASK -eq "sdist") {
     # cannot test C API with "sdist" task
     $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 } else {
@@ -150,7 +150,7 @@ if ($env:TASK -eq "bdist") {
 
 pytest $tests ; Assert-Output $?
 
-if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+if ($env:TASK -eq "regular") {
     Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
     # Prevent interactive window mode
