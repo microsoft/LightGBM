@@ -1013,8 +1013,6 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        self._fitted_with_feature_names = isinstance(X, (pd_DataFrame, pa_Table))
-
         if not isinstance(X, (pd_DataFrame, pa_Table)):
             _X, _y = _LGBMValidateData(
                 self,
@@ -1058,6 +1056,7 @@ class LGBMModel(_LGBMModelBase):
             feature_name=feature_name,
             params=params,
         )
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)

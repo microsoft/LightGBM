@@ -1859,6 +1859,13 @@ class Dataset:
         self._params_back_up: Optional[Dict[str, Any]] = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
+        # True when feature names come from a named data source (pandas/pyarrow columns)
+        # or from a user-provided feature_name list; False when LightGBM will auto-generate
+        # names like Column_0, Column_1, etc.  Confirmed/updated during _lazy_init().
+        if feature_name != "auto":
+            self._has_non_default_feature_names: bool = True
+        else:
+            self._has_non_default_feature_names = isinstance(data, pd_DataFrame) or _is_pyarrow_table(data)
 
     def __del__(self) -> None:
         try:
@@ -2141,6 +2148,11 @@ class Dataset:
             )
         elif _is_pyarrow_table(data) and feature_name == "auto":
             feature_name = data.column_names
+
+        # 'feature_name == "auto"' after the block above means no feature names were provided
+        # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
+        # LightGBM will assign auto-generated names like Column_0, Column_1, etc.
+        self._has_non_default_feature_names = feature_name != "auto"
 
         # process for args
         params = {} if params is None else params

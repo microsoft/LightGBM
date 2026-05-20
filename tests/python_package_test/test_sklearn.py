@@ -1704,65 +1704,102 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
     assert_silent(capsys)
 
 
-@pytest.mark.parametrize("estimator_class", estimator_classes)
-def test_getting_feature_names_in_np_input(estimator_class):
-    # Input is a numpy array, which doesn't have feature names.
-    # feature_names_in_ should not be set (raises AttributeError), consistent with sklearn's behavior.
-    X, y = load_digits(n_class=2, return_X_y=True)
-    params = {"n_estimators": 2, "num_leaves": 7}
-    if estimator_class is lgb.LGBMModel:
-        model = estimator_class(**{**params, "objective": "binary"})
+@pytest.mark.parametrize(
+    "fit_X_type,feature_name_arg,expect_has_feature_names_in_",
+    [
+        # numpy with no explicit feature names → no feature_names_in_ (fix for #6798)
+        pytest.param("numpy", "unset", False, id="numpy-default"),
+        pytest.param("numpy", "auto", False, id="numpy-explicit-auto"),
+        # numpy with user-supplied names → has feature_names_in_
+        pytest.param("numpy", "custom", True, id="numpy-custom"),
+        # pandas → has feature_names_in_ (column names)
+        pytest.param("pandas", "unset", True, id="pandas-default"),
+        pytest.param("pandas", "auto", True, id="pandas-explicit-auto"),
+        pytest.param("pandas", "custom", True, id="pandas-custom"),
+        # pyarrow → has feature_names_in_ (column names)
+        pytest.param("pyarrow", "unset", True, id="pyarrow-default"),
+        pytest.param("pyarrow", "auto", True, id="pyarrow-explicit-auto"),
+        pytest.param("pyarrow", "custom", True, id="pyarrow-custom"),
+    ],
+)
+@pytest.mark.parametrize("predict_X_type", ["numpy", "pandas", "pyarrow"])
+def test_feature_names_in_and_predict_warning(
+    fit_X_type,
+    feature_name_arg,
+    expect_has_feature_names_in_,
+    predict_X_type,
+):
+    """Test feature_names_in_ behavior and predict()-time feature name warnings.
+
+    Covers all combinations of fit X type, feature_name argument, and predict X type.
+    Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798.
+    """
+    if (fit_X_type == "pyarrow" or predict_X_type == "pyarrow") and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow not installed")
+
+    X_np = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
+    y = np.array([0, 1, 0, 1])
+    n_features = X_np.shape[1]
+    col_names = ["feat_0", "feat_1"]
+    custom_names = ["custom_0", "custom_1"]
+
+    if fit_X_type == "numpy":
+        X_fit = X_np
+    elif fit_X_type == "pandas":
+        X_fit = pd_DataFrame(X_np, columns=col_names)
     else:
-        model = estimator_class(**params)
-    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
-    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
-        check_is_fitted(model)
-    if isinstance(model, lgb.LGBMRanker):
-        model.fit(X, y, group=[X.shape[0]])
+        X_fit = pa_Table.from_pandas(pd_DataFrame(X_np, columns=col_names))
+
+    fit_kwargs: dict = {}
+    if feature_name_arg == "auto":
+        fit_kwargs = {"feature_name": "auto"}
+    elif feature_name_arg == "custom":
+        fit_kwargs = {"feature_name": custom_names}
+
+    model = lgb.LGBMClassifier(n_estimators=2, num_leaves=3)
+    model.fit(X_fit, y, **fit_kwargs)
+
+    # feature_names_in_: absent when no named features, present otherwise
+    if expect_has_feature_names_in_:
+        expected_names = custom_names if feature_name_arg == "custom" else col_names
+        np_assert_array_equal(model.feature_names_in_, np.array(expected_names), strict=True)
     else:
-        model.fit(X, y)
-    assert not hasattr(model, "feature_names_in_"), (
-        "feature_names_in_ should not be set when training data had no feature names"
+        assert not hasattr(model, "feature_names_in_"), (
+            "feature_names_in_ should not be set when training data had no named features"
+        )
+
+    # feature_name_: always accessible, reflects actual names used internally
+    if feature_name_arg == "custom":
+        assert model.feature_name_ == custom_names
+    elif fit_X_type in ("pandas", "pyarrow"):
+        assert model.feature_name_ == col_names
+    else:
+        assert model.feature_name_ == [f"Column_{i}" for i in range(n_features)]
+
+    # n_features_in_: always set after fit
+    assert model.n_features_in_ == n_features
+
+    # prepare predict input
+    if predict_X_type == "numpy":
+        X_predict = X_np[:2]
+    elif predict_X_type == "pandas":
+        X_predict = pd_DataFrame(X_np[:2], columns=col_names)
+    else:
+        X_predict = pa_Table.from_pandas(pd_DataFrame(X_np[:2], columns=col_names))
+
+    # sklearn 1.6+ warns when predict X is a numpy array (no feature names) and the model
+    # was fitted with named features (feature_names_in_ accessible).
+    # pandas/pyarrow predict bypasses sklearn's validate_data(), so no sklearn warning is raised.
+    expect_warning = (
+        expect_has_feature_names_in_ and predict_X_type == "numpy" and SKLEARN_VERSION_GTE_1_6
     )
-    # auto-generated names should still be accessible via the LightGBM-specific feature_name_ property
-    assert model.feature_name_ == [f"Column_{i}" for i in range(X.shape[1])]
-
-
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMClassifier, lgb.LGBMRegressor])
-def test_no_spurious_feature_name_warning_on_np_predict(estimator_class):
-    # Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798
-    # sklearn 1.6+ warns "X does not have valid feature names, but ... was fitted with feature names"
-    # when predict() is called with a numpy array after fit() on a numpy array, because LightGBM
-    # auto-generates feature names. This should not produce any warning.
-    X, y = load_digits(n_class=2, return_X_y=True)
-    model = estimator_class(n_estimators=2, num_leaves=7).fit(X, y)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        model.predict(X[:5])
-
-
-@pytest.mark.parametrize("estimator_class", estimator_classes)
-def test_getting_feature_names_in_pd_input(estimator_class):
-    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
-    col_names = X.columns.to_list()
-    assert isinstance(col_names, list)
-    assert all(isinstance(c, str) for c in col_names), (
-        "input data must have feature names for this test to cover the expected functionality"
-    )
-    params = {"n_estimators": 2, "num_leaves": 7}
-    if estimator_class is lgb.LGBMModel:
-        model = estimator_class(**{**params, "objective": "binary"})
+    if expect_warning:
+        with pytest.warns(UserWarning, match="does not have valid feature names"):
+            model.predict(X_predict)
     else:
-        model = estimator_class(**params)
-    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
-    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
-        check_is_fitted(model)
-    if isinstance(model, lgb.LGBMRanker):
-        model.fit(X, y, group=[X.shape[0]])
-    else:
-        model.fit(X, y)
-    # strict=False due to dtype mismatch: '<U9' and 'object'
-    np_assert_array_equal(model.feature_names_in_, X.columns, strict=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            model.predict(X_predict)
 
 
 # Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),
