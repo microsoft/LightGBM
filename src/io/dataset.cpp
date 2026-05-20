@@ -503,12 +503,13 @@ void PushDataToMultiValBin(
     data_size_t num_data, const std::vector<uint32_t> most_freq_bins,
     const std::vector<uint32_t> offsets,
     std::vector<std::vector<std::unique_ptr<BinIterator>>>* iters,
-    MultiValBin* ret) {
+    MultiValBin* ret,
+    const std::vector<const BinMapper*>& /*original_bin_mappers*/) {
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
   Log::Warning("num_data = %d", num_data);
   if (ret->IsSparse()) {
-    // Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
+    Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data;
@@ -546,6 +547,15 @@ void PushDataToMultiValBin(
               // for dense multi value bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
               cur_data[j] = cur_bin;
+              // if (cur_bin == 255) {
+              //   CHECK_GT(original_bin_mappers[j]->GetMostFreqBin(), 0);
+              // }
+              // if (original_bin_mappers[j]->GetMostFreqBin() == 0) {
+              //   CHECK_LT(cur_bin, 255);
+              // }
+              // if (original_bin_mappers[j]->GetMostFreqBin() > 0) {
+              //   CHECK_GT(cur_bin, 1);
+              // }
             }
             ret->PushOneRow(tid, i, cur_data);
           }
@@ -593,7 +603,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
   std::vector<const BinMapper*> diff_bin_mappers;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
                                            num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, std::vector<const BinMapper*>(), false, nullptr, offsets, std::vector<int>(), std::vector<int>()));
-  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get(), diff_bin_mappers);
   ret->FinishLoad();
   return ret.release();
 }
@@ -607,6 +617,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   std::unique_ptr<MultiValBin> ret;
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
+  std::vector<uint32_t> num_bins;
   int ncol = 0;
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
@@ -625,6 +636,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
+        num_bins.push_back(bin_mapper->num_bin());
 #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
@@ -633,6 +645,8 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       }
     } else {
       most_freq_bins.push_back(0);
+      CHECK_EQ(feature_groups_[gid]->num_feature_, 1);
+      num_bins.push_back(feature_groups_[gid]->bin_mappers_[0]->num_bin());
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
@@ -658,9 +672,11 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     const int num_original_features = (static_cast<int>(most_freq_bins.size()) - num_used_differential_groups_) / 2;
     std::vector<uint32_t> original_most_freq_bins;
     std::vector<uint32_t> original_offsets;
+    std::vector<const BinMapper*> original_feature_bin_mappers_ordered;
     for (int i = 0; i < num_original_features; ++i) {
       original_most_freq_bins.push_back(most_freq_bins[i]);
       original_offsets.push_back(offsets[i]);
+      original_feature_bin_mappers_ordered.push_back(FeatureBinMapper(i));
     }
     original_offsets.push_back(offsets[num_original_features]);
     // std::ofstream fout("mutli_val_bin_meta_info_pairwise.txt");
@@ -682,18 +698,20 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
         new BinMapper(*FeatureBinMapper(original_feature_slot)));
       diff_feature_to_original_feature_slot.push_back(original_feature_slot);
       diff_feature_to_raw_feature_index.push_back(numeric_feature_map_[original_feature_slot]);
+      Log::Warning("diff_feature_index = %d, original_feature_slot = %d", diff_feature_index, original_feature_slot);
     }
 
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
         num_original_data, offsets.back(), num_original_features,
         1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, original_feature_bin_mappers, use_pairwise_bin_lookup, &raw_data_, offsets, diff_feature_to_original_feature_slot, diff_feature_to_raw_feature_index));
-    PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get());
+    PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get(), original_feature_bin_mappers_ordered);
   } else {
+    std::vector<const BinMapper*> original_feature_bin_mappers_ordered;
     ret.reset(MultiValBin::CreateMultiValBin(
         num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
         1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, original_feature_bin_mappers, use_pairwise_bin_lookup, &raw_data_, offsets, diff_feature_to_original_feature_slot, diff_feature_to_raw_feature_index));
-    PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+    PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get(), original_feature_bin_mappers_ordered);
     // std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
     // fout << "original_most_freq_bins" << std::endl;
     // for (size_t i = 0; i < most_freq_bins.size(); ++i) {
@@ -999,7 +1017,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
       train_num_queries_ = dataset->train_num_queries_;
     }
     // TODO(shiyu1994): verify the difference in training and validation results even when they share the same dataset
-    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, train_query_boundaries_, train_num_queries_, &diff_feature_bin_mappers, config);
+    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, train_query_boundaries_, train_num_queries_, &diff_feature_bin_mappers, config, dataset);
   }
 
   used_feature_map_.clear();
@@ -2152,7 +2170,8 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
   const data_size_t* query_boundaries,
   const data_size_t num_queries,
   std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
-  const Config& config) const {
+  const Config& config,
+  const Dataset* dataset) const {
   const int num_original_features = static_cast<int>(sample_values.size());
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config.min_data_in_leaf * num_total_sample_data) / num_data_);
@@ -2264,7 +2283,7 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
           }
         }
         differential_feature_bin_mappers->operator[](i)->InitPairwiseBinRanges(
-          static_cast<uint32_t>(bin_mappers[i]->num_bin()));
+          static_cast<uint32_t>(bin_mappers[i]->num_bin()), dataset->InnerFeatureIndex(i));
         for (const auto& pairwise_bin_entry : paired_bin_to_diff_bin_set) {
           if (!pairwise_bin_entry.second.empty()) {
             differential_feature_bin_mappers->operator[](i)->SetPairwiseBinRange(

@@ -1107,7 +1107,8 @@ class Dataset {
     const data_size_t* query_boundaries,
     const data_size_t num_queries,
     std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
-    const Config& config) const;
+    const Config& config,
+    const Dataset* dataset) const;
 
   void CopySubrowHostPart(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 

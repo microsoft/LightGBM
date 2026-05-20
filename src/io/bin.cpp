@@ -49,6 +49,7 @@ BinMapper::BinMapper(const BinMapper& other) {
   most_freq_bin_ = other.most_freq_bin_;
   pairwise_bin_num_ = other.pairwise_bin_num_;
   pairwise_bin_ranges_ = other.pairwise_bin_ranges_;
+  inner_feature_index_ = other.inner_feature_index_;
 }
 
 BinMapper::BinMapper(const void* memory) {
@@ -58,7 +59,7 @@ BinMapper::BinMapper(const void* memory) {
 BinMapper::~BinMapper() {
 }
 
-void BinMapper::InitPairwiseBinRanges(uint32_t num_original_bin) {
+void BinMapper::InitPairwiseBinRanges(uint32_t num_original_bin, int inner_feature_index) {
   pairwise_bin_num_ = num_original_bin;
   pairwise_bin_ranges_.clear();
   if (pairwise_bin_num_ == 0 || num_bin_ <= 0) {
@@ -73,6 +74,7 @@ void BinMapper::InitPairwiseBinRanges(uint32_t num_original_bin) {
     pairwise_bin_ranges_[i] = 0;
     pairwise_bin_ranges_[i + 1] = max_bin;
   }
+  inner_feature_index_ = inner_feature_index;
 }
 
 void BinMapper::SetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin,
@@ -86,8 +88,6 @@ void BinMapper::SetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin,
   const size_t offset = (static_cast<size_t>(first_bin) * pairwise_bin_num_ + second_bin) * 2;
   pairwise_bin_ranges_[offset] = min_bin;
   pairwise_bin_ranges_[offset + 1] = max_bin;
-
-  Log::Warning("min_bin = %d, max_bin = %d, num_bin_ = %d", min_bin, max_bin, num_bin_);
 }
 
 bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {

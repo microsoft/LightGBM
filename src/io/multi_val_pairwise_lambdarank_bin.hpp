@@ -51,12 +51,17 @@ class MultiValDensePairwiseLambdarankBin
     diff_feature_bin_mappers_.reserve(num_diff_features_);
     diff_feature_hist_offsets_.reserve(num_diff_features_);
     diff_feature_bin_value_offsets_.reserve(num_diff_features_);
+    original_feature_bin_value_offsets_.reserve(num_diff_features_);
     diff_feature_raw_data_ptrs_.reserve(num_diff_features_);
+    original_feature_most_freq_bins_.reserve(num_diff_features_);
     for (int j = 0; j < num_diff_features_; ++j) {
       diff_feature_bin_mappers_.emplace_back(diff_feature_bin_mappers[j]);
       diff_feature_hist_offsets_.push_back(all_offsets[2 * this->num_feature_ + j]);
       diff_feature_bin_value_offsets_.push_back(
           1u - static_cast<uint32_t>(diff_feature_bin_mappers_[j]->GetMostFreqBin() == 0));
+      original_feature_bin_value_offsets_.push_back(
+          1u - static_cast<uint32_t>(original_feature_bin_mappers[j]->GetMostFreqBin() == 0));
+      original_feature_most_freq_bins_.push_back(original_feature_bin_mappers[j]->GetMostFreqBin());
       if (raw_data != nullptr && !raw_data->empty()) {
         const int raw_feature_index = diff_feature_to_raw_feature_index[j];
         CHECK_GE(raw_feature_index, 0);
@@ -71,8 +76,6 @@ class MultiValDensePairwiseLambdarankBin
         diff_feature_raw_data_ptrs_.push_back(nullptr);
       }
     }
-
-    (void)original_feature_bin_mappers;
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
@@ -138,15 +141,28 @@ class MultiValDensePairwiseLambdarankBin
         for (const int j : active_diff_feature_slots_) {
           const float* feature_values = diff_feature_raw_data_ptrs_[j];
           const int original_feature_slot = diff_feature_to_original_feature_slot_[j];
-          const uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[original_feature_slot]);
-          const uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[original_feature_slot]);
+          uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[original_feature_slot]);
+          uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[original_feature_slot]);
           const double diff_value =
               static_cast<double>(feature_values[first_idx]) -
               static_cast<double>(feature_values[second_idx]);
 
+          if (first_bin >= original_feature_bin_value_offsets_[j]) {
+            first_bin -= original_feature_bin_value_offsets_[j];
+          } else {
+            CHECK_EQ(first_bin, 0);
+            first_bin = original_feature_most_freq_bins_[j];
+          }
+          if (second_bin >= original_feature_bin_value_offsets_[j]) {
+            second_bin -= original_feature_bin_value_offsets_[j];
+          } else {
+            CHECK_EQ(second_bin, 0);
+            second_bin = original_feature_most_freq_bins_[j];
+          }
+
           const uint32_t diff_bin =
               diff_feature_bin_mappers_[j]->ValueToBinWithPairwiseRangeUnchecked(
-                  diff_value, first_bin, second_bin);
+                  diff_value, first_bin, second_bin, original_feature_slot);
           // The original row-wise bins already exclude feature-group offsets.
           // Differential features still need the single-feature-group packing fix below.
           const uint32_t bin = diff_bin + diff_feature_bin_value_offsets_[j];
@@ -209,6 +225,8 @@ class MultiValDensePairwiseLambdarankBin
   std::vector<int> diff_feature_to_original_feature_slot_;
   std::vector<uint32_t> diff_feature_hist_offsets_;
   std::vector<uint32_t> diff_feature_bin_value_offsets_;
+  std::vector<uint32_t> original_feature_bin_value_offsets_;
+  std::vector<uint32_t> original_feature_most_freq_bins_;
   std::vector<const float*> diff_feature_raw_data_ptrs_;
   std::vector<int> active_diff_feature_slots_;
   int num_diff_features_;

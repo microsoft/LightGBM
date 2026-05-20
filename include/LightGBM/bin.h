@@ -175,7 +175,7 @@ class BinMapper {
   inline uint32_t ValueToBin(double value) const;
   inline uint32_t ValueToBin(double value, uint32_t min_bin, uint32_t max_bin) const;
   inline uint32_t ValueToBinWithPairwiseRange(double value, uint32_t first_bin, uint32_t second_bin) const;
-  inline uint32_t ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin) const;
+  inline uint32_t ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin, int original_feature_slot) const;
   inline std::pair<uint32_t, uint32_t> GetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin) const;
 
   /*!
@@ -196,7 +196,7 @@ class BinMapper {
       static_cast<size_t>(pairwise_bin_num_) * pairwise_bin_num_ * 2;
   }
 
-  void InitPairwiseBinRanges(uint32_t num_original_bin);
+  void InitPairwiseBinRanges(uint32_t num_original_bin, int inner_feature_index);
 
   void SetPairwiseBinRange(uint32_t first_bin, uint32_t second_bin,
                            uint32_t min_bin, uint32_t max_bin);
@@ -275,6 +275,7 @@ class BinMapper {
   uint32_t most_freq_bin_;
   uint32_t pairwise_bin_num_;
   std::vector<uint32_t> pairwise_bin_ranges_;
+  int inner_feature_index_;
 };
 
 /*! \brief Iterator for one bin column */
@@ -778,10 +779,10 @@ inline uint32_t BinMapper::ValueToBinWithPairwiseRange(double value, uint32_t fi
   if (bin_type_ != BinType::NumericalBin || !HasPairwiseBinRanges() || first_bin >= pairwise_bin_num_ || second_bin >= pairwise_bin_num_) {
     return ValueToBin(value);
   }
-  return ValueToBinWithPairwiseRangeUnchecked(value, first_bin, second_bin);
+  return ValueToBinWithPairwiseRangeUnchecked(value, first_bin, second_bin, -1);
 }
 
-inline uint32_t BinMapper::ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin) const {
+inline uint32_t BinMapper::ValueToBinWithPairwiseRangeUnchecked(double value, uint32_t first_bin, uint32_t second_bin, int original_feature_slot) const {
   if (std::isnan(value)) {
     if (missing_type_ == MissingType::NaN) {
       return static_cast<uint32_t>(num_bin_ - 1);
@@ -789,9 +790,14 @@ inline uint32_t BinMapper::ValueToBinWithPairwiseRangeUnchecked(double value, ui
       value = 0.0f;
     }
   }
+
+  // if (first_bin >= pairwise_bin_num_ || second_bin >= pairwise_bin_num_) {
+  //   Log::Warning("first_bin = %d, second_bin = %d, pairwise_bin_num_ = %d, inner_feature_index_ = %d, original_feature_slot = %d", first_bin, second_bin, pairwise_bin_num_, inner_feature_index_, original_feature_slot);
+  // }
+
   const size_t range_offset = (static_cast<size_t>(first_bin) * pairwise_bin_num_ + second_bin) * 2;
-  const uint32_t lower = pairwise_bin_ranges_[range_offset];
-  const uint32_t upper = pairwise_bin_ranges_[range_offset + 1];
+  const uint32_t lower = pairwise_bin_ranges_.at(range_offset);
+  const uint32_t upper = pairwise_bin_ranges_.at(range_offset + 1);
   constexpr uint32_t kLinearSearchThreshold = 8;
   if (upper - lower <= kLinearSearchThreshold) {
     for (uint32_t bin = lower; bin < upper; ++bin) {
