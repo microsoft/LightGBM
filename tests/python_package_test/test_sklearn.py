@@ -1764,9 +1764,9 @@ def test_feature_names_in_and_predict_warning(
         expected_names = custom_names if feature_name_arg == "custom" else col_names
         np_assert_array_equal(model.feature_names_in_, np.array(expected_names), strict=True)
     else:
-        assert not hasattr(model, "feature_names_in_"), (
-            "feature_names_in_ should not be set when training data had no named features"
-        )
+        assert not hasattr(model, "feature_names_in_")
+        with pytest.raises(AttributeError, match="The training data did not have feature names"):
+            model.feature_names_in_
 
     # feature_name_: always accessible, reflects actual names used internally
     if feature_name_arg == "custom":
