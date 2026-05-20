@@ -676,7 +676,6 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
-        self._fitted_with_feature_names = None
         if not SKLEARN_INSTALLED:
             raise LightGBMError(
                 "scikit-learn is required for lightgbm.sklearn. "
@@ -710,6 +709,7 @@ class LGBMModel(_LGBMModelBase):
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
+        self._fitted_with_feature_names: Optional[bool] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1383,8 +1383,13 @@ class LGBMModel(_LGBMModelBase):
         """Intercept calls to delete ``feature_names_in_``.
 
         Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
-        on estimators when a new training dataset that doesn't have feature names is passed.
-        This is handled via ``_fitted_with_feature_names``, so deletion is simply not possible here.
+        on estimators when a new training dataset that doesn't have features is passed.
+        LightGBM has custom handling of feature names and has chosen to opt out of this behavior.
+
+        However, that behavior is coupled to ``scikit-learn`` automatically updating
+        ``n_features_in_`` in those same code paths, which is necessary for compliance
+        with its API (via argument ``reset`` to functions like ``validate_data()`` and
+        ``check_array()``).
 
         .. note::
 
