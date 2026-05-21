@@ -1822,7 +1822,7 @@ def test_feature_names_in_and_predict_warning(
     # feature names from keyword arg should be used, not any from the input data
     np_assert_array_equal(model.feature_names_in_, np.array(custom_names), strict=True)
     assert model.feature_name_ == custom_names
-    assert model.feature_names_in_ == custom_names
+    np_assert_array_equal(model.feature_names_in_, np.array(custom_names), strict=True)
     assert model.n_features_in_ == n_features
 
     # predict() should not raise a warning if input has feature names
