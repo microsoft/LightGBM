@@ -42,6 +42,7 @@ class MultiValDensePairwiseLambdarankBin
       : MultiValPairwiseLambdarankBin<BIN_TYPE, LightGBM::MultiValDenseBin>(
             num_data, num_bin, num_feature, offsets),
         diff_feature_to_original_feature_slot_(diff_feature_to_original_feature_slot),
+        pointwise_histogram_buffers_(OMP_NUM_THREADS()),
         use_fast_pairwise_bin_lookup_(use_pairwise_bin_lookup) {
     this->paired_ranking_item_global_index_map_ =
         paired_ranking_item_global_index_map;
@@ -117,6 +118,19 @@ class MultiValDensePairwiseLambdarankBin
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
+    const auto base_offset = this->offsets_.back();
+    const data_size_t num_original_data = this->num_data_;
+    const int tid = omp_get_thread_num();
+    CHECK_LT(tid, static_cast<int>(pointwise_histogram_buffers_.size()));
+    PointwiseHistogramBuffer& pointwise_buffer = pointwise_histogram_buffers_[tid];
+    pointwise_buffer.Reset(num_original_data, static_cast<size_t>(end - start));
+    std::vector<hist_t>& first_gradients = pointwise_buffer.first_gradients;
+    std::vector<hist_t>& first_hessians = pointwise_buffer.first_hessians;
+    std::vector<hist_t>& second_gradients = pointwise_buffer.second_gradients;
+    std::vector<hist_t>& second_hessians = pointwise_buffer.second_hessians;
+    std::vector<data_size_t>& first_touched = pointwise_buffer.first_touched;
+    std::vector<data_size_t>& second_touched = pointwise_buffer.second_touched;
+    const uint32_t stamp = pointwise_buffer.stamp;
 
     if (!active_diff_feature_slots_.empty() && use_fast_pairwise_bin_lookup_) {
       const float* diff_feature_raw_values = diff_feature_raw_values_.data();
@@ -147,26 +161,11 @@ class MultiValDensePairwiseLambdarankBin
             this->paired_ranking_item_global_index_map_[idx].first;
         const data_size_t second_idx =
             this->paired_ranking_item_global_index_map_[idx].second;
-        const auto first_j_start = this->RowPtr(first_idx);
-        const BIN_TYPE* first_data_ptr = this->data_.data() + first_j_start;
         const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
         const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
 
-        const auto second_j_start = this->RowPtr(second_idx);
-        const BIN_TYPE* second_data_ptr = this->data_.data() + second_j_start;
-        const auto base_offset = this->offsets_.back();
-
-        for (int j = 0; j < this->num_feature_; ++j) {
-          const uint32_t first_bin = static_cast<uint32_t>(first_data_ptr[j]);
-          const auto first_ti = (first_bin + this->offsets_[j]) << 1;
-          grad[first_ti] += gradient;
-          hess[first_ti] += hessian;
-
-          const uint32_t second_bin = static_cast<uint32_t>(second_data_ptr[j]);
-          const auto second_ti = (second_bin + this->offsets_[j] + base_offset) << 1;
-          grad[second_ti] += gradient;
-          hess[second_ti] += hessian;
-        }
+        pointwise_buffer.AddFirst(first_idx, gradient, hessian, stamp);
+        pointwise_buffer.AddSecond(second_idx, gradient, hessian, stamp);
 
         const float* first_row_diff_feature_raw_values =
             diff_feature_raw_values +
@@ -240,26 +239,11 @@ class MultiValDensePairwiseLambdarankBin
             this->paired_ranking_item_global_index_map_[idx].first;
         const data_size_t second_idx =
             this->paired_ranking_item_global_index_map_[idx].second;
-        const auto first_j_start = this->RowPtr(first_idx);
-        const BIN_TYPE* first_data_ptr = this->data_.data() + first_j_start;
         const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
         const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-        for (int j = 0; j < this->num_feature_; ++j) {
-          const uint32_t bin = static_cast<uint32_t>(first_data_ptr[j]);
-          const auto ti = (bin + this->offsets_[j]) << 1;
-          grad[ti] += gradient;
-          hess[ti] += hessian;
-        }
 
-        const auto second_j_start = this->RowPtr(second_idx);
-        const BIN_TYPE* second_data_ptr = this->data_.data() + second_j_start;
-        const auto base_offset = this->offsets_.back();
-        for (int j = 0; j < this->num_feature_; ++j) {
-          const uint32_t bin = static_cast<uint32_t>(second_data_ptr[j]);
-          const auto ti = (bin + this->offsets_[j] + base_offset) << 1;
-          grad[ti] += gradient;
-          hess[ti] += hessian;
-        }
+        pointwise_buffer.AddFirst(first_idx, gradient, hessian, stamp);
+        pointwise_buffer.AddSecond(second_idx, gradient, hessian, stamp);
 
         if (active_diff_feature_slots_.empty()) {
           continue;
@@ -285,9 +269,91 @@ class MultiValDensePairwiseLambdarankBin
         }
       }
     }
+    for (const data_size_t row_idx : first_touched) {
+      const BIN_TYPE* data_ptr = this->data_.data() + this->RowPtr(row_idx);
+      const hist_t gradient = first_gradients[row_idx];
+      const hist_t hessian = first_hessians[row_idx];
+      for (int j = 0; j < this->num_feature_; ++j) {
+        const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+        const auto ti = (bin + this->offsets_[j]) << 1;
+        grad[ti] += gradient;
+        hess[ti] += hessian;
+      }
+    }
+    for (const data_size_t row_idx : second_touched) {
+      const BIN_TYPE* data_ptr = this->data_.data() + this->RowPtr(row_idx);
+      const hist_t gradient = second_gradients[row_idx];
+      const hist_t hessian = second_hessians[row_idx];
+      for (int j = 0; j < this->num_feature_; ++j) {
+        const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+        const auto ti = (bin + this->offsets_[j] + base_offset) << 1;
+        grad[ti] += gradient;
+        hess[ti] += hessian;
+      }
+    }
   }
 
  private:
+  struct PointwiseHistogramBuffer {
+    std::vector<hist_t> first_gradients;
+    std::vector<hist_t> first_hessians;
+    std::vector<hist_t> second_gradients;
+    std::vector<hist_t> second_hessians;
+    std::vector<uint32_t> first_stamps;
+    std::vector<uint32_t> second_stamps;
+    std::vector<data_size_t> first_touched;
+    std::vector<data_size_t> second_touched;
+    uint32_t stamp = 0;
+
+    void Reset(data_size_t num_data, size_t reserve_size) {
+      const size_t size = static_cast<size_t>(num_data);
+      if (first_gradients.size() != size) {
+        first_gradients.assign(size, 0.0);
+        first_hessians.assign(size, 0.0);
+        second_gradients.assign(size, 0.0);
+        second_hessians.assign(size, 0.0);
+        first_stamps.assign(size, 0);
+        second_stamps.assign(size, 0);
+        stamp = 0;
+      } else if (stamp == std::numeric_limits<uint32_t>::max()) {
+        std::fill(first_stamps.begin(), first_stamps.end(), 0);
+        std::fill(second_stamps.begin(), second_stamps.end(), 0);
+        stamp = 0;
+      }
+      ++stamp;
+      first_touched.clear();
+      second_touched.clear();
+      if (first_touched.capacity() < reserve_size) {
+        first_touched.reserve(reserve_size);
+      }
+      if (second_touched.capacity() < reserve_size) {
+        second_touched.reserve(reserve_size);
+      }
+    }
+
+    void AddFirst(data_size_t idx, score_t gradient, score_t hessian, uint32_t current_stamp) {
+      if (first_stamps[idx] != current_stamp) {
+        first_stamps[idx] = current_stamp;
+        first_gradients[idx] = 0.0;
+        first_hessians[idx] = 0.0;
+        first_touched.push_back(idx);
+      }
+      first_gradients[idx] += gradient;
+      first_hessians[idx] += hessian;
+    }
+
+    void AddSecond(data_size_t idx, score_t gradient, score_t hessian, uint32_t current_stamp) {
+      if (second_stamps[idx] != current_stamp) {
+        second_stamps[idx] = current_stamp;
+        second_gradients[idx] = 0.0;
+        second_hessians[idx] = 0.0;
+        second_touched.push_back(idx);
+      }
+      second_gradients[idx] += gradient;
+      second_hessians[idx] += hessian;
+    }
+  };
+
   void InitDiffFeatureRawValueBuffer(data_size_t num_data) {
     num_active_diff_features_ = static_cast<int>(active_diff_feature_slots_.size());
     if (num_active_diff_features_ == 0) {
@@ -321,6 +387,7 @@ class MultiValDensePairwiseLambdarankBin
   std::vector<uint32_t> active_diff_feature_hist_offsets_;
   std::vector<uint32_t> active_diff_feature_bin_value_offsets_;
   std::vector<const BinMapper*> active_diff_feature_bin_mappers_;
+  mutable std::vector<PointwiseHistogramBuffer> pointwise_histogram_buffers_;
   int num_diff_features_;
   int num_active_diff_features_ = 0;
   bool use_fast_pairwise_bin_lookup_;
