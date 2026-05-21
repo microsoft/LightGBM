@@ -1704,100 +1704,139 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
     assert_silent(capsys)
 
 
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_cannot_access_feature_names_before_fitting(estimator_class):
+    model = estimator_class()
+    with pytest.raises(lgb.compat.LGBMNotFittedError):  # noqa: PT011
+        model.feature_name_
+    with pytest.raises(lgb.compat.LGBMNotFittedError):  # noqa: PT011
+        model.feature_names_in_
+    with pytest.raises(lgb.compat.LGBMNotFittedError):  # noqa: PT011
+        model.n_features_
+    with pytest.raises(lgb.compat.LGBMNotFittedError):  # noqa: PT011
+        model.n_features_in_
+
+
 @pytest.mark.parametrize(
-    ("fit_X_type", "feature_name_arg", "expect_has_feature_names_in_"),
+    "predict_X_type",
     [
-        # numpy with no explicit feature names → no feature_names_in_ (fix for #6798)
-        pytest.param("numpy", "unset", False, id="numpy-default"),
-        pytest.param("numpy", "auto", False, id="numpy-explicit-auto"),
-        # numpy with user-supplied names → has feature_names_in_
-        pytest.param("numpy", "custom", True, id="numpy-custom"),
-        # pd_DataFrame → has feature_names_in_ (column names)
-        pytest.param("pd_DataFrame", "unset", True, id="pd_DataFrame-default"),
-        pytest.param("pd_DataFrame", "auto", True, id="pd_DataFrame-explicit-auto"),
-        pytest.param("pd_DataFrame", "custom", True, id="pd_DataFrame-custom"),
-        # pa_Table → has feature_names_in_ (column names)
-        pytest.param("pa_Table", "unset", True, id="pa_Table-default"),
-        pytest.param("pa_Table", "auto", True, id="pa_Table-explicit-auto"),
-        pytest.param("pa_Table", "custom", True, id="pa_Table-custom"),
+        pytest.param("numpy", id="predict=numpy"),
+        pytest.param("pd_DataFrame", id="predict=pd_DataFrame"),
+        pytest.param("pa_Table", id="predict=pa_Table"),
     ],
 )
-@pytest.mark.parametrize("predict_X_type", ["numpy", "pd_DataFrame", "pa_Table"])
+@pytest.mark.parametrize(
+    "fit_X_type",
+    [
+        pytest.param("numpy", id="fit=numpy"),
+        pytest.param("pd_DataFrame", id="fit=pd_DataFrame"),
+        pytest.param("pa_Table", id="fit=pa_Table"),
+    ],
+)
+@pytest.mark.filterwarnings("error:.*feature name.*:UserWarning:sklearn")
 def test_feature_names_in_and_predict_warning(
-    fit_X_type,
-    feature_name_arg,
-    expect_has_feature_names_in_,
     predict_X_type,
+    fit_X_type,
 ):
     """Test feature_names_in_ behavior and predict()-time feature name warnings.
 
-    Covers all combinations of fit X type, feature_name argument, and predict X type.
+    Should cover all combinations of fit X type, feature_name argument, and predict X type.
     Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798.
     """
-    if (fit_X_type == "pa_Table" or predict_X_type == "pa_Table") and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow not installed")
+    if fit_X_type.startswith("pa_") or predict_X_type.startswith("pa_"):
+        pa = pytest.importorskip("pyarrow")
+        pd = pytest.importorskip("pandas")
+    elif fit_X_type.startswith("pd_") or predict_X_type.startswith("pd_"):
+        pd = pytest.importorskip("pandas")
 
     X_np = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
     y = np.array([0, 1, 0, 1])
     n_features = X_np.shape[1]
     col_names = ["feat_0", "feat_1"]
-    custom_names = ["custom_0", "custom_1"]
+    default_names = ["Column_0", "Column_1"]
 
     if fit_X_type == "numpy":
         X_fit = X_np
     elif fit_X_type == "pd_DataFrame":
-        X_fit = pd_DataFrame(X_np, columns=col_names)
+        X_fit = pd.DataFrame(X_np, columns=col_names)
     else:
-        X_fit = pa_Table.from_pandas(pd_DataFrame(X_np, columns=col_names))
+        X_fit = pa.Table.from_pandas(pd.DataFrame(X_np, columns=col_names))
 
-    fit_kwargs: dict = {}
-    if feature_name_arg == "auto":
-        fit_kwargs = {"feature_name": "auto"}
-    elif feature_name_arg == "custom":
-        fit_kwargs = {"feature_name": custom_names}
-
-    model = lgb.LGBMClassifier(n_estimators=2, num_leaves=3)
-    model.fit(X_fit, y, **fit_kwargs)
-
-    # feature_names_in_: absent when no named features, present otherwise
-    if expect_has_feature_names_in_:
-        expected_names = custom_names if feature_name_arg == "custom" else col_names
-        np_assert_array_equal(model.feature_names_in_, np.array(expected_names), strict=True)
-    else:
-        assert not hasattr(model, "feature_names_in_")
-        with pytest.raises(AttributeError, match="The training data did not have feature names"):
-            model.feature_names_in_
-
-    # feature_name_: always accessible, reflects actual names used internally
-    if feature_name_arg == "custom":
-        assert model.feature_name_ == custom_names
-    elif fit_X_type in ("pd_DataFrame", "pa_Table"):
-        assert model.feature_name_ == col_names
-    else:
-        assert model.feature_name_ == [f"Column_{i}" for i in range(n_features)]
-
-    # n_features_in_: always set after fit
-    assert model.n_features_in_ == n_features
-
-    # prepare predict input
     if predict_X_type == "numpy":
         X_predict = X_np[:2]
     elif predict_X_type == "pd_DataFrame":
-        X_predict = pd_DataFrame(X_np[:2], columns=col_names)
+        X_predict = pd.DataFrame(X_np[:2], columns=col_names)
     else:
-        X_predict = pa_Table.from_pandas(pd_DataFrame(X_np[:2], columns=col_names))
+        X_predict = pa.Table.from_pandas(pd.DataFrame(X_np[:2], columns=col_names))
 
-    # sklearn 1.6+ warns when predict X is a numpy array (no feature names) and the model
-    # was fitted with named features (feature_names_in_ accessible).
-    # pd_DataFrame/pa_Table predict bypasses sklearn's validate_data(), so no sklearn warning is raised.
-    expect_warning = expect_has_feature_names_in_ and predict_X_type == "numpy" and SKLEARN_VERSION_GTE_1_6
-    if expect_warning:
-        with pytest.warns(UserWarning, match="does not have valid feature names"):
-            model.predict(X_predict)
-    else:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            model.predict(X_predict)
+    # arguments to warnings.filterwarnings() that match scikit-learn's warning
+    warning_kwargs = {
+        "category": UserWarning,
+        "module": "sklearn",
+        "message": ".*feature names.*",
+    }
+
+    # input types where LightGBM supports 'feature_name="auto"'
+    types_with_feat_names = {"pa_Table", "pd_DataFrame"}
+
+    # case 1: no 'feature_names' passed to fit() and "feature_name='auto'" should have identical behavior
+    for fit_kwargs in ({}, {"feature_name": "auto"}):
+        model = lgb.LGBMClassifier(n_estimators=2, num_leaves=3).fit(X_fit, y, **fit_kwargs)
+
+        # n_features_in_: always set after fit
+        assert model.n_features_in_ == n_features
+
+        # feature_name_: always accessible, reflects actual names used internally
+        # feature_names_in_: absent when no named features, present otherwise
+        if fit_X_type in types_with_feat_names:
+            np_assert_array_equal(model.feature_names_in_, np.array(col_names), strict=True)
+            assert model.feature_name_ == col_names
+        else:
+            assert model.feature_name_ == default_names
+            with pytest.raises(AttributeError, match="The training data did not have feature names"):
+                model.feature_names_in_
+
+        # predict() should not raise a warning if the input did not have feature names
+        if SKLEARN_VERSION_GTE_1_6:
+            # fmt:off
+            if (
+                fit_X_type in types_with_feat_names
+                and
+                predict_X_type not in types_with_feat_names
+            ):
+            # fmt:on
+                # warning may be raised (and was from at least scikit-learn 1.6)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", **warning_kwargs)
+                    model.predict(X_predict)
+            else:
+                # expect no warning
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("error", **warning_kwargs)
+                    model.predict(X_predict)
+
+    # case 2: 'feature_names=custom_names' (different from column names) passed to fit()
+    custom_names = ["custom_0", "custom_1"]
+    model = lgb.LGBMClassifier(n_estimators=2, num_leaves=3).fit(X_fit, y, feature_name=custom_names)
+
+    # feature names from keyword arg should be used, not any from the input data
+    np_assert_array_equal(model.feature_names_in_, np.array(custom_names), strict=True)
+    assert model.feature_name_ == custom_names
+    assert model.feature_names_in_ == custom_names
+    assert model.n_features_in_ == n_features
+
+    # predict() should not raise a warning if input has feature names
+    if SKLEARN_VERSION_GTE_1_6:
+        if predict_X_type in types_with_feat_names:
+            # expect no warning
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error", **warning_kwargs)
+                model.predict(X_predict)
+        else:
+            # warning may be raised (and was from at least scikit-learn 1.6)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", **warning_kwargs)
+                model.predict(X_predict)
 
 
 # Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),

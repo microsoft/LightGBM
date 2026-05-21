@@ -962,8 +962,10 @@ def test_set_feature_name_updates_has_non_default_feature_names(rng):
     assert ds._has_non_default_feature_names is False
     ds.construct()
     assert ds._has_non_default_feature_names is False
+    assert ds.get_feature_name() == ["Column_0", "Column_1", "Column_2"]
     ds.set_feature_name(["a", "b", "c"])
     assert ds._has_non_default_feature_names is True
+    assert ds.get_feature_name() == ["a", "b", "c"]
 
 
 # NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)

@@ -18,7 +18,6 @@ from .basic import (
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
-    _data_will_have_feature_names,
     _LGBM_BoosterBestScoreType,
     _LGBM_CategoricalFeatureConfiguration,
     _LGBM_EvalFunctionResultType,
@@ -1057,8 +1056,8 @@ class LGBMModel(_LGBMModelBase):
             categorical_feature=categorical_feature,
             feature_name=feature_name,
             params=params,
-        )
-        self._fitted_with_feature_names = _data_will_have_feature_names(_X, feature_name)
+        ).construct()
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
