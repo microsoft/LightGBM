@@ -2100,30 +2100,47 @@ class Dataset:
         """Filter ``params`` to ``Dataset``-relevant parameters."""
         if params is None:
             return {}
-        # no min_data, nthreads and verbose in this function
         dataset_params = _ConfigAliases.get(
             "bin_construct_sample_cnt",
             "categorical_feature",
             "data_random_seed",
+            "device_type",
             "enable_bundle",
             "feature_pre_filter",
             "forcedbins_filename",
+            "force_col_wise",
+            "force_row_wise",
+            "gpu_device_id",
+            "gpu_device_id_list",
+            "gpu_platform_id",
+            "gpu_use_dp",
             "group_column",
             "header",
             "ignore_column",
             "is_enable_sparse",
             "label_column",
             "linear_tree",
+            "local_listen_port",
+            "machine_list_file_name",
+            "machines",
             "max_bin",
             "max_bin_by_feature",
             "min_data_in_bin",
+            "num_gpu",
+            "num_machines",
+            "num_threads",
+            "parser_config_file",
             "pre_partition",
             "precise_float_parser",
+            "seed",
+            "time_out",
             "two_round",
             "use_missing",
             "weight_column",
+            "verbose",
             "zero_as_missing",
         )
+
         return {k: v for k, v in params.items() if k in dataset_params}
 
     def _lazy_init(

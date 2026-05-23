@@ -1056,6 +1056,7 @@ class LGBMModel(_LGBMModelBase):
             categorical_feature=categorical_feature,
             feature_name=feature_name,
             params=params,
+            free_raw_data=False,
         ).construct()
         self._fitted_with_feature_names = train_set._has_non_default_feature_names
 
