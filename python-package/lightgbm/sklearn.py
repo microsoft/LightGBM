@@ -1055,7 +1055,8 @@ class LGBMModel(_LGBMModelBase):
             categorical_feature=categorical_feature,
             feature_name=feature_name,
             params=params,
-        )
+            free_raw_data=False,
+        ).construct()
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
@@ -1358,7 +1359,6 @@ class LGBMModel(_LGBMModelBase):
     @property
     def feature_names_in_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
-
         .. versionadded:: 4.5.0
         """
         if not self.__sklearn_is_fitted__():

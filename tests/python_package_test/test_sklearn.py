@@ -1594,6 +1594,15 @@ def test_continue_training_with_model():
     assert gbm.evals_result_["valid_0"]["multi_logloss"][-1] < init_gbm.evals_result_["valid_0"]["multi_logloss"][-1]
 
 
+def test_booster_does_not_hold_datasets():
+    """fit() should clear the Dataset objects stored on the Booster"""
+    data = load_iris(return_X_y=False)
+    clf = lgb.LGBMClassifier(n_estimators=2, max_depth=2)
+    clf.fit(data.data, data.target)
+    assert not hasattr(clf.booster_, "train_set")
+    assert not hasattr(clf.booster_, "valid_sets")
+
+
 def test_actual_number_of_trees():
     X = [[1, 2, 3], [1, 2, 3]]
     y = [1.0, 1.0]

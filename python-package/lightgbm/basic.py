@@ -2032,31 +2032,7 @@ class Dataset:
             The used parameters in this Dataset object.
         """
         if self.params is not None:
-            # no min_data, nthreads and verbose in this function
-            dataset_params = _ConfigAliases.get(
-                "bin_construct_sample_cnt",
-                "categorical_feature",
-                "data_random_seed",
-                "enable_bundle",
-                "feature_pre_filter",
-                "forcedbins_filename",
-                "group_column",
-                "header",
-                "ignore_column",
-                "is_enable_sparse",
-                "label_column",
-                "linear_tree",
-                "max_bin",
-                "max_bin_by_feature",
-                "min_data_in_bin",
-                "pre_partition",
-                "precise_float_parser",
-                "two_round",
-                "use_missing",
-                "weight_column",
-                "zero_as_missing",
-            )
-            return {k: v for k, v in self.params.items() if k in dataset_params}
+            return self.__select_dataset_params(self.params)
         else:
             return {}
 
@@ -2112,6 +2088,54 @@ class Dataset:
         self.set_init_score(init_score)
         return self
 
+    @staticmethod
+    def __select_dataset_params(params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Filter ``params`` to ``Dataset``-relevant parameters."""
+        if params is None:
+            return {}
+        dataset_params = _ConfigAliases.get(
+            "bin_construct_sample_cnt",
+            "categorical_feature",
+            "data_random_seed",
+            "device_type",
+            "enable_bundle",
+            "feature_pre_filter",
+            "forcedbins_filename",
+            "force_col_wise",
+            "force_row_wise",
+            "gpu_device_id",
+            "gpu_device_id_list",
+            "gpu_platform_id",
+            "gpu_use_dp",
+            "group_column",
+            "header",
+            "ignore_column",
+            "is_enable_sparse",
+            "label_column",
+            "linear_tree",
+            "local_listen_port",
+            "machine_list_file_name",
+            "machines",
+            "max_bin",
+            "max_bin_by_feature",
+            "min_data_in_bin",
+            "num_gpu",
+            "num_machines",
+            "num_threads",
+            "parser_config_file",
+            "pre_partition",
+            "precise_float_parser",
+            "seed",
+            "time_out",
+            "two_round",
+            "use_missing",
+            "weight_column",
+            "verbose",
+            "zero_as_missing",
+        )
+
+        return {k: v for k, v in params.items() if k in dataset_params}
+
     def _lazy_init(
         self,
         data: Optional[_LGBM_TrainDataType],
@@ -2143,7 +2167,10 @@ class Dataset:
             feature_name = data.column_names
 
         # process for args
-        params = {} if params is None else params
+        if params is None:
+            params = {}
+        else:
+            params = self.__select_dataset_params(params)
         args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
         for key in params.keys():
             if key in args_names:
@@ -2580,7 +2607,7 @@ class Dataset:
                             np.repeat(range(len(group_info)), repeats=group_info)[self.used_indices], return_counts=True
                         )
                     self._handle = ctypes.c_void_p()
-                    params_str = _param_dict_to_str(self.params)
+                    params_str = _param_dict_to_str(self.__select_dataset_params(self.params))
                     _safe_call(
                         _LIB.LGBM_DatasetGetSubset(
                             self.reference.construct()._handle,
