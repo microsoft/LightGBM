@@ -12,8 +12,6 @@ from .utils import np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
-from pl.testing import assert_frame_equal  # noqa: E402
-
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -379,6 +377,8 @@ def test_polars_feature_name_manual():
 
 
 def test_get_data_polars_frame():
+    from polars.testing import assert_frame_equal  # noqa: PLC0415
+
     original_frame = generate_simple_polars_frame()
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
@@ -391,6 +391,8 @@ def test_get_data_polars_frame():
 
 
 def test_get_data_polars_frame_subset(rng):
+    from polars.testing import assert_frame_equal  # noqa: PLC0415
+
     original_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()

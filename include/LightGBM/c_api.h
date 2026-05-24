@@ -50,11 +50,11 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
 
 #if defined(_MSC_VER)
-#  define LIGHTGBM_DEPRECATED(msg) __declspec(deprecated(msg))
+#  define LIGHTGBM_DEPRECATED(msg) __declspec(deprecated(msg))  /*! \brief Deprecated function */
 #elif defined(__GNUC__) || defined(__clang__)
-#  define LIGHTGBM_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#  define LIGHTGBM_DEPRECATED(msg) __attribute__((deprecated(msg)))  /*! \brief Deprecated function */
 #else
-#  define LIGHTGBM_DEPRECATED(msg)
+#  define LIGHTGBM_DEPRECATED(msg)  /*! \brief Deprecated function */
 #endif
 
 /*!
