@@ -12,13 +12,7 @@ from .utils import np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
-try:
-    # We import this explicitly to fail the tests using `assert_frame_equal` if `polars` is
-    # installed but does not provide the `testing` submodule. We need to explicitly import
-    # this as `pl.testing` fails otherwise.
-    from polars.testing import assert_frame_equal
-except ImportError:
-    pass
+from pl.testing import assert_frame_equal  # noqa: E402
 
 
 # ----------------------------------------------------------------------------------------------- #

@@ -49,6 +49,14 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 #define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
 
+#if defined(_MSC_VER)
+#  define LIGHTGBM_DEPRECATED(msg) __declspec(deprecated(msg))
+#elif defined(__GNUC__) || defined(__clang__)
+#  define LIGHTGBM_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#else
+#  define LIGHTGBM_DEPRECATED(msg)
+#endif
+
 /*!
  * \brief Get string message of the last error.
  * \return Error information
@@ -450,6 +458,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_DEPRECATED("Use LGBM_DatasetCreateFromArrowStream instead.")
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
                                                   struct ArrowArray* chunks,
                                                   struct ArrowSchema* schema,
@@ -584,6 +593,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \param schema Pointer to the schema of all Arrow arrays
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_DEPRECATED("Use LGBM_DatasetSetFieldFromArrowStream instead.")
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                                     const char* field_name,
                                                     int64_t n_chunks,
@@ -1480,6 +1490,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_DEPRECATED("Use LGBM_BoosterPredictForArrowStream instead.")
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                                   int64_t n_chunks,
                                                   struct ArrowArray* chunks,

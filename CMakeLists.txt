@@ -716,6 +716,7 @@ if(BUILD_CPP_TEST)
     CPP_TEST_SOURCES
       tests/cpp_tests/test_array_args.cpp
       tests/cpp_tests/test_arrow.cpp
+      tests/cpp_tests/test_arrow_deprecated.cpp
       tests/cpp_tests/test_byte_buffer.cpp
       tests/cpp_tests/test_chunked_array.cpp
       tests/cpp_tests/test_common.cpp
