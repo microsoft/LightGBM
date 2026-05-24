@@ -175,6 +175,103 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
     return [[z for z in arg if z is not None] for arg in args]
 
 
+_SUPPORTED_DISTRIBUTED_EMPTY_EVAL_METRICS = {
+    "binary_error",
+    "binary_logloss",
+    "cross_entropy",
+    "cross_entropy_lambda",
+    "fair",
+    "gamma",
+    "huber",
+    "kullback_leibler",
+    "l1",
+    "l2",
+    "mape",
+    "multiclass",
+    "multiclassova",
+    "multi_error",
+    "multi_logloss",
+    "poisson",
+    "quantile",
+    "regression",
+    "regression_l1",
+    "r2",
+    "rmse",
+    "tweedie",
+}
+
+
+def _slice_empty(data: _DaskPart) -> _DaskPart:
+    return data[:0]
+
+
+def _has_custom_eval_metric(eval_metric: Optional[_LGBM_ScikitEvalMetricType]) -> bool:
+    if eval_metric is None:
+        return False
+    if callable(eval_metric):
+        return True
+    if isinstance(eval_metric, list):
+        return any(callable(metric) for metric in eval_metric)
+    return False
+
+
+def _is_no_metric(metric: Any) -> bool:
+    return isinstance(metric, str) and metric.lower() in {"", "na", "none", "null"}
+
+
+def _get_eval_metric_builtin_names(eval_metric: Optional[_LGBM_ScikitEvalMetricType]) -> List[str]:
+    if isinstance(eval_metric, str):
+        return [eval_metric]
+    if isinstance(eval_metric, list):
+        return [metric for metric in eval_metric if isinstance(metric, str)]
+    return []
+
+
+def _get_eval_metric_names(
+    params: Dict[str, Any], eval_metric: Optional[_LGBM_ScikitEvalMetricType], model_factory: Type[LGBMModel]
+) -> List[str]:
+    metric_names = []
+    metric_names.extend(_get_eval_metric_builtin_names(eval_metric))
+
+    param_metric = next((params[param] for param in _ConfigAliases.get("metric") if param in params), None)
+    if isinstance(param_metric, str):
+        metric_names.append(param_metric)
+    elif isinstance(param_metric, list):
+        metric_names.extend(metric for metric in param_metric if isinstance(metric, str))
+    elif param_metric is None:
+        objective = params.get("objective")
+        if isinstance(objective, str):
+            metric_names.append(objective)
+        elif issubclass(model_factory, LGBMRegressor):
+            metric_names.append("l2")
+        elif issubclass(model_factory, LGBMClassifier):
+            metric_names.append("binary_logloss")
+        elif issubclass(model_factory, LGBMRanker):
+            metric_names.append("ndcg")
+
+    return [metric for metric in metric_names if not _is_no_metric(metric)]
+
+
+def _is_supported_distributed_empty_eval_metric(metric: str) -> bool:
+    metric = metric.lower()
+    return metric in _SUPPORTED_DISTRIBUTED_EMPTY_EVAL_METRICS or metric.startswith("multi_error@")
+
+
+def _uses_true_empty_eval_participation(
+    params: Dict[str, Any],
+    eval_metric: Optional[_LGBM_ScikitEvalMetricType],
+    model_factory: Type[LGBMModel],
+    eval_group: Optional[List[_DaskVectorLike]],
+) -> bool:
+    if _has_custom_eval_metric(eval_metric):
+        return False
+    if issubclass(model_factory, LGBMRanker) or eval_group is not None:
+        return False
+
+    metric_names = _get_eval_metric_names(params=params, eval_metric=eval_metric, model_factory=model_factory)
+    return bool(metric_names) and all(_is_supported_distributed_empty_eval_metric(metric) for metric in metric_names)
+
+
 def _pad_eval_names(
     *,
     lgbm_model: LGBMModel,
@@ -204,6 +301,8 @@ def _train_part(
     return_model: bool,
     time_out: int,
     remote_socket: _RemoteSocket,
+    use_true_empty_eval_participation: bool,
+    required_eval_names: Optional[List[str]],
     **kwargs: Any,
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -315,14 +414,20 @@ def _train_part(
             x_e, y_e, w_e, init_score_e, g_e = _remove_list_padding(x_e, y_e, w_e, init_score_e, g_e)
             if x_e:
                 local_eval_set.append((_concat(x_e), _concat(y_e)))
+            elif use_true_empty_eval_participation:
+                local_eval_set.append((_slice_empty(data), _slice_empty(label)))
             else:
                 missing_eval_component_idx.append(i)
                 continue
 
             if w_e:
                 local_eval_sample_weight.append(_concat(w_e))
+            elif use_true_empty_eval_participation and local_eval_sample_weight is not None:
+                local_eval_sample_weight.append(_slice_empty(weight if weight is not None else label))
             if init_score_e:
                 local_eval_init_score.append(_concat(init_score_e))
+            elif use_true_empty_eval_participation and local_eval_init_score is not None:
+                local_eval_init_score.append(_slice_empty(init_score if init_score is not None else label))
             if g_e:
                 local_eval_group.append(_concat(g_e))
 
@@ -377,9 +482,9 @@ def _train_part(
         if getattr(model, "fitted_", False):
             model.booster_.free_network()
 
-    if n_evals:
+    if n_evals or required_eval_names:
         # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.
-        model = _pad_eval_names(lgbm_model=model, required_names=evals_result_names)
+        model = _pad_eval_names(lgbm_model=model, required_names=required_eval_names or evals_result_names)
 
     return model if return_model else None
 
@@ -613,6 +718,20 @@ def _train(
             parts[i]["init_score"] = init_score_parts[i]
 
     eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
+    use_true_empty_eval_participation = bool(eval_set) and _uses_true_empty_eval_participation(
+        params=params,
+        eval_metric=eval_metric,
+        model_factory=model_factory,
+        eval_group=eval_group,
+    )
+    if use_true_empty_eval_participation:
+        params["enable_distributed_additive_eval_metric"] = True
+    else:
+        params.pop("enable_distributed_additive_eval_metric", None)
+    required_eval_names = None
+    if eval_set:
+        required_eval_names = eval_names or [f"valid_{i}" for i in range(len(eval_set))]
+
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
@@ -661,6 +780,10 @@ def _train(
                         eval_sets[parts_idx][-1][0].append(x_e)  # type: ignore[index, union-attr]
                         eval_sets[parts_idx][-1][1].append(y_e)  # type: ignore[index, union-attr]
 
+                if use_true_empty_eval_participation:
+                    for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                        eval_sets[parts_idx].append(([None], [None]))
+
             if eval_sample_weight:
                 if eval_sample_weight[i] is sample_weight:
                     for parts_idx in range(n_parts):
@@ -681,6 +804,10 @@ def _train(
                         else:
                             eval_sample_weights[parts_idx][-1].append(w_e)  # type: ignore[union-attr]
 
+                    if use_true_empty_eval_participation:
+                        for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                            eval_sample_weights[parts_idx].append([None])
+
             if eval_init_score:
                 if eval_init_score[i] is init_score:
                     for parts_idx in range(n_parts):
@@ -698,6 +825,10 @@ def _train(
                             eval_init_scores[parts_idx].append([init_score_e])
                         else:
                             eval_init_scores[parts_idx][-1].append(init_score_e)  # type: ignore[union-attr]
+
+                    if use_true_empty_eval_participation:
+                        for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                            eval_init_scores[parts_idx].append([None])
 
             if eval_group:
                 if eval_group[i] is group:
@@ -746,7 +877,7 @@ def _train(
 
     # Check that all workers were provided some of eval_set. Otherwise warn user that validation
     # data artifacts may not be populated depending on worker returning final estimator.
-    if eval_set:
+    if eval_set and not use_true_empty_eval_participation:
         for worker in worker_map:
             has_eval_set = False
             for part in worker_map[worker]:
@@ -844,6 +975,8 @@ def _train(
             time_out=params.get("time_out", 120),
             remote_socket=worker_to_socket_future.get(worker, None),
             return_model=(worker == master_worker),
+            use_true_empty_eval_participation=use_true_empty_eval_participation,
+            required_eval_names=required_eval_names,
             workers=[worker],
             allow_other_workers=False,
             pure=False,

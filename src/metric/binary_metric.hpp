@@ -7,6 +7,7 @@
 #define LIGHTGBM_SRC_METRIC_BINARY_METRIC_HPP_
 
 #include <LightGBM/metric.h>
+#include <LightGBM/network.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
@@ -24,7 +25,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
  public:
-  explicit BinaryMetric(const Config&) {
+  explicit BinaryMetric(const Config& config) :config_(config) {
   }
 
   virtual ~BinaryMetric() {
@@ -93,7 +94,15 @@ class BinaryMetric: public Metric {
         }
       }
     }
-    double loss = sum_loss / sum_weights_;
+    double sum_weights = sum_weights_;
+    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+      sum_loss = Network::GlobalSyncUpBySum(sum_loss);
+      sum_weights = Network::GlobalSyncUpBySum(sum_weights);
+    }
+    if (sum_weights <= 0.0f) {
+      Log::Fatal("Validation data has no positive total weight");
+    }
+    double loss = sum_loss / sum_weights;
     return std::vector<double>(1, loss);
   }
 
@@ -108,6 +117,7 @@ class BinaryMetric: public Metric {
   double sum_weights_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
+  Config config_;
 };
 
 /*!
