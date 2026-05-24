@@ -458,8 +458,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_DEPRECATED("Use LGBM_DatasetCreateFromArrowStream instead.")
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+LIGHTGBM_C_EXPORT LIGHTGBM_DEPRECATED("Use LGBM_DatasetCreateFromArrowStream instead.")
+int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
                                                   struct ArrowArray* chunks,
                                                   struct ArrowSchema* schema,
                                                   const char* parameters,
@@ -593,8 +593,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \param schema Pointer to the schema of all Arrow arrays
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_DEPRECATED("Use LGBM_DatasetSetFieldFromArrowStream instead.")
-LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
+LIGHTGBM_C_EXPORT LIGHTGBM_DEPRECATED("Use LGBM_DatasetSetFieldFromArrowStream instead.")
+int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                                     const char* field_name,
                                                     int64_t n_chunks,
                                                     struct ArrowArray* chunks,
@@ -1490,8 +1490,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_DEPRECATED("Use LGBM_BoosterPredictForArrowStream instead.")
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+LIGHTGBM_C_EXPORT LIGHTGBM_DEPRECATED("Use LGBM_BoosterPredictForArrowStream instead.")
+int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                                   int64_t n_chunks,
                                                   struct ArrowArray* chunks,
                                                   struct ArrowSchema* schema,
