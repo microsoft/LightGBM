@@ -708,7 +708,7 @@ class LGBMModel(_LGBMModelBase):
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
-        self._fitted_with_feature_names: Optional[bool] = None
+        self._fitted_with_feature_names: bool = False
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
