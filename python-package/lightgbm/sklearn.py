@@ -1056,9 +1056,7 @@ class LGBMModel(_LGBMModelBase):
             categorical_feature=categorical_feature,
             feature_name=feature_name,
             params=params,
-            free_raw_data=False,
-        ).construct()
-        self._fitted_with_feature_names = train_set._has_non_default_feature_names
+        )
 
         valid_sets: List[Dataset] = []
         eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
@@ -1143,6 +1141,10 @@ class LGBMModel(_LGBMModelBase):
         # The related property self._n_features_in, which populates self.n_features_in_,
         # is set BEFORE fitting.
         self._n_features = self._Booster.num_feature()
+
+        # This attribute informs self.features_in_, but isn't set until here
+        # because Dataset.construct(), called by train(), is responsible for updating it.
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
 
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
