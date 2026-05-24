@@ -208,14 +208,6 @@ try:
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
-"""graphviz"""
-try:
-    import graphviz  # noqa: F401
-
-    GRAPHVIZ_INSTALLED = True
-except ImportError:
-    GRAPHVIZ_INSTALLED = False
-
 """dask"""
 try:
     from dask import delayed

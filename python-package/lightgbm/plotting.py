@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
-from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
+from .compat import MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
 __all__ = [
@@ -472,10 +472,10 @@ def _to_graphviz(
     See:
       - https://graphviz.readthedocs.io/en/stable/api.html#digraph
     """
-    if GRAPHVIZ_INSTALLED:
+    try:
         from graphviz import Digraph  # noqa: PLC0415
-    else:
-        raise ImportError("You must install graphviz and restart your session to plot tree.")
+    except ImportError as err:
+        raise ImportError("You must install graphviz and restart your session to plot tree.") from err
 
     def add(
         root: Dict[str, Any], total_count: int, parent: Optional[str], decision: Optional[str], highlight: bool
