@@ -1769,7 +1769,7 @@ def test_feature_names_in_and_predict_warning(
     elif fit_X_type == "pd_DataFrame":
         X_fit = pd.DataFrame(X_np, columns=col_names)
     elif fit_X_type == "pl_DataFrame":
-        X_fit = pl.DataFrame(X_np, columns=col_names)
+        X_fit = pl.DataFrame(X_np, schema=col_names)
     else:
         X_fit = pa.Table.from_pandas(pd.DataFrame(X_np, columns=col_names))
 
@@ -1778,7 +1778,7 @@ def test_feature_names_in_and_predict_warning(
     elif predict_X_type == "pd_DataFrame":
         X_predict = pd.DataFrame(X_np[:2], columns=col_names)
     elif predict_X_type == "pl_DataFrame":
-        X_predict = pl.DataFrame(X_np[:2], columns=col_names)
+        X_predict = pl.DataFrame(X_np[:2], schema=col_names)
     else:
         X_predict = pa.Table.from_pandas(pd.DataFrame(X_np[:2], columns=col_names))
 
