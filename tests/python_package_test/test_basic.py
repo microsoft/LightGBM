@@ -957,6 +957,17 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
 
 
+def test_set_feature_name_updates_has_non_default_feature_names(rng):
+    ds = lgb.Dataset(data=rng.standard_normal(size=(100, 3)), label=rng.integers(0, 2, size=100))
+    assert ds._has_non_default_feature_names is False
+    ds.construct()
+    assert ds._has_non_default_feature_names is False
+    assert ds.get_feature_name() == ["Column_0", "Column_1", "Column_2"]
+    ds.set_feature_name(["a", "b", "c"])
+    assert ds._has_non_default_feature_names is True
+    assert ds.get_feature_name() == ["a", "b", "c"]
+
+
 # NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
 @pytest.mark.parametrize(("max_depth", "num_leaves"), [(-1, 3), (-1, 50), (5, 3), (5, 31), (5, 32), (8, 3), (8, 31)])
 def test_max_depth_warning_is_not_raised_if_num_leaves_is_also_provided(capsys, num_leaves, max_depth):
