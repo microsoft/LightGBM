@@ -1077,130 +1077,176 @@ def _continuous_label_data():
     return _split_train_valid_data(X, y)
 
 
-def test_eval_set_binary_logloss_uses_all_distributed_validation_data(cluster):
-    X, y = make_classification(
-        n_samples=3000,
-        n_features=20,
-        n_informative=8,
-        weights=[0.55, 0.45],
-        random_state=3,
-    )
+def _binary_classification_data():
+    X, y = make_classification(n_samples=3000, n_features=20, n_informative=8, weights=[0.55, 0.45], random_state=3)
     X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
-    # Make validation chunks have distinct local metrics, so reporting one worker's
-    # metric instead of the global metric would fail this test.
+    # Force validation chunks to have distinct local metrics: integer class labels {0, 1}
+    # so reporting one worker's metric instead of the global metric would fail this test.
     y_valid[:500] = 0
     y_valid[500:] = 1
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMClassifier(client=client, **_dask_metric_model_params())
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)], eval_metric="binary_logloss")
-
-        proba = dask_model.predict_proba(dX_valid).compute()[:, 1]
-        expected_logloss = log_loss(y_valid, proba, labels=[0, 1])
-        _assert_reported_metric_matches_global_score(dask_model, "binary_logloss", expected_logloss)
+    return X_train, X_valid, y_train, y_valid
 
 
-def test_eval_set_regression_l2_uses_all_distributed_validation_data(cluster):
-    X, y = make_regression(
-        n_samples=3000,
-        n_features=20,
-        n_informative=8,
-        noise=0.5,
-        random_state=3,
-    )
+def _multiclass_data():
+    X, y = make_blobs(n_samples=3000, centers=[[-4, -4], [4, 4], [-4, 4]], cluster_std=2.0, random_state=3)
     X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
+    # Force validation chunks to have distinct local metrics: integer class labels {0, 1}
+    # so reporting one worker's metric instead of the global metric would fail this test.
+    y_valid[:500] = 0
+    y_valid[500:] = 1
+    return X_train, X_valid, y_train, y_valid
+
+
+def _regression_data():
+    X, y = make_regression(n_samples=3000, n_features=20, n_informative=8, noise=0.5, random_state=3)
+    X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
+    # Force validation chunks to have distinct local metrics: shift the second half of y_valid
+    # so reporting one worker's metric instead of the global metric would fail this test.
     y_valid[500:] += 100.0
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMRegressor(client=client, **_dask_metric_model_params())
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)], eval_metric="l2")
-
-        pred = dask_model.predict(dX_valid).compute()
-        expected_l2 = np.mean((y_valid - pred) ** 2)
-        _assert_reported_metric_matches_global_score(dask_model, "l2", expected_l2)
+    return X_train, X_valid, y_train, y_valid
 
 
-def test_eval_set_regression_r2_uses_all_distributed_validation_data(cluster):
-    X, y = make_regression(
-        n_samples=3000,
-        n_features=20,
-        n_informative=8,
-        noise=0.5,
-        random_state=3,
-    )
-    X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
-    y_valid[500:] += 300.0
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMRegressor(client=client, **_dask_metric_model_params())
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)], eval_metric="r2")
-
-        pred = dask_model.predict(dX_valid).compute()
-        expected_r2 = r2_score(y_valid, pred)
-        _assert_reported_metric_matches_global_score(dask_model, "r2", expected_r2)
-
-
-def test_eval_set_multiclass_logloss_uses_all_distributed_validation_data(cluster):
-    X, y = make_blobs(
-        n_samples=3000,
-        centers=[[-4, -4], [4, 4], [-4, 4]],
-        cluster_std=2.0,
-        random_state=3,
-    )
-    X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
-    # Make validation chunks have distinct local metrics, so reporting one worker's
-    # metric instead of the global metric would fail this test.
-    y_valid[:500] = 0
-    y_valid[500:] = 1
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMClassifier(
-            client=client,
-            objective="multiclass",
-            num_class=3,
-            **_dask_metric_model_params(),
-        )
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)], eval_metric="multi_logloss")
-
-        proba = dask_model.predict_proba(dX_valid).compute()
-        expected_logloss = log_loss(y_valid, proba, labels=[0, 1, 2])
-        _assert_reported_metric_matches_global_score(dask_model, "multi_logloss", expected_logloss)
-
-
-def test_eval_set_cross_entropy_uses_all_distributed_validation_data(cluster):
+def _bounded_continuous_label_data():
     X_train, X_valid, y_train, y_valid = _continuous_label_data()
-    # Make validation chunks have distinct local metrics, so reporting one worker's
-    # metric instead of the global metric would fail this test.
+    # Force validation chunks to have distinct local metrics while keeping labels in (0, 1)
+    # required by cross_entropy / kullback_leibler / cross_entropy_lambda metrics
+    # (KL evaluates log(y_valid); xentropy needs labels bounded in [0, 1]).
     y_valid[:500] = 0.1 + 0.2 * y_valid[:500]
     y_valid[500:] = 0.7 + 0.2 * y_valid[500:]
+    return X_train, X_valid, y_train, y_valid
+
+
+def _expected_binary_logloss(model, dX_valid, y_valid):
+    proba = model.predict_proba(dX_valid).compute()[:, 1]
+    return log_loss(y_valid, proba, labels=[0, 1])
+
+
+def _expected_l2(model, dX_valid, y_valid):
+    pred = model.predict(dX_valid).compute()
+    return np.mean((y_valid - pred) ** 2)
+
+
+def _expected_r2(model, dX_valid, y_valid):
+    pred = model.predict(dX_valid).compute()
+    return r2_score(y_valid, pred)
+
+
+def _expected_multi_logloss(model, dX_valid, y_valid):
+    proba = model.predict_proba(dX_valid).compute()
+    return log_loss(y_valid, proba, labels=[0, 1, 2])
+
+
+def _expected_cross_entropy(model, dX_valid, y_valid):
+    pred = np.clip(model.predict(dX_valid).compute(), 1.0e-12, 1.0 - 1.0e-12)
+    return -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
+
+
+def _expected_kullback_leibler(model, dX_valid, y_valid):
+    cross_entropy = _expected_cross_entropy(model, dX_valid, y_valid)
+    label_entropy = np.mean(y_valid * np.log(y_valid) + (1.0 - y_valid) * np.log(1.0 - y_valid))
+    return cross_entropy + label_entropy
+
+
+def _expected_cross_entropy_lambda(model, dX_valid, y_valid):
+    hhat = model.predict(dX_valid).compute()
+    pred = np.clip(1.0 - np.exp(-hhat), 1.0e-12, 1.0 - 1.0e-12)
+    return -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
+
+
+_DISTRIBUTED_METRIC_SCENARIOS = [
+    pytest.param(
+        _binary_classification_data,
+        lgb.DaskLGBMClassifier,
+        {},
+        "binary_logloss",
+        "binary_logloss",
+        _expected_binary_logloss,
+        id="binary_logloss",
+    ),
+    pytest.param(
+        _regression_data,
+        lgb.DaskLGBMRegressor,
+        {},
+        "l2",
+        "l2",
+        _expected_l2,
+        id="regression_l2",
+    ),
+    pytest.param(
+        _regression_data,
+        lgb.DaskLGBMRegressor,
+        {},
+        "r2",
+        "r2",
+        _expected_r2,
+        id="regression_r2",
+    ),
+    pytest.param(
+        _multiclass_data,
+        lgb.DaskLGBMClassifier,
+        {"objective": "multiclass", "num_class": 3},
+        "multi_logloss",
+        "multi_logloss",
+        _expected_multi_logloss,
+        id="multi_logloss",
+    ),
+    pytest.param(
+        _bounded_continuous_label_data,
+        lgb.DaskLGBMRegressor,
+        {"objective": "cross_entropy", "metric": "cross_entropy"},
+        None,
+        "cross_entropy",
+        _expected_cross_entropy,
+        id="cross_entropy",
+    ),
+    pytest.param(
+        _bounded_continuous_label_data,
+        lgb.DaskLGBMRegressor,
+        {"objective": "cross_entropy", "metric": "kullback_leibler"},
+        None,
+        "kullback_leibler",
+        _expected_kullback_leibler,
+        id="kullback_leibler",
+    ),
+    pytest.param(
+        _bounded_continuous_label_data,
+        lgb.DaskLGBMRegressor,
+        {"objective": "cross_entropy_lambda", "metric": "cross_entropy_lambda"},
+        None,
+        "cross_entropy_lambda",
+        _expected_cross_entropy_lambda,
+        id="cross_entropy_lambda",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("make_data", "estimator_cls", "estimator_kwargs", "eval_metric", "metric_key", "compute_expected"),
+    _DISTRIBUTED_METRIC_SCENARIOS,
+)
+def test_eval_set_uses_all_distributed_validation_data(
+    make_data, estimator_cls, estimator_kwargs, eval_metric, metric_key, compute_expected, cluster
+):
+    X_train, X_valid, y_train, y_valid = make_data()
 
     with Client(cluster) as client:
         dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
 
-        dask_model = lgb.DaskLGBMRegressor(
-            client=client,
-            objective="cross_entropy",
-            metric="cross_entropy",
-            **_dask_metric_model_params(),
-        )
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)])
+        dask_model = estimator_cls(client=client, **estimator_kwargs, **_dask_metric_model_params())
+        fit_kwargs = {"eval_set": [(dX_valid, dy_valid)]}
+        if eval_metric is not None:
+            fit_kwargs["eval_metric"] = eval_metric
+        dask_model.fit(dX, dy, **fit_kwargs)
 
-        pred = dask_model.predict(dX_valid).compute()
-        pred = np.clip(pred, 1.0e-12, 1.0 - 1.0e-12)
-        expected_loss = -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
-        _assert_reported_metric_matches_global_score(dask_model, "cross_entropy", expected_loss)
+        expected_score = compute_expected(dask_model, dX_valid, y_valid)
+        _assert_reported_metric_matches_global_score(dask_model, metric_key, expected_score)
 
 
 def test_eval_set_cross_entropy_with_weights_and_empty_participant(cluster):
     X_train, X_valid, y_train, y_valid = _continuous_label_data()
+    # Force validation chunks to have distinct local metrics while keeping labels in (0, 1)
+    # for cross_entropy. Combined with 1000-row chunks below, this also leaves the 4th worker
+    # with no eval rows, exercising the empty-participant path.
     y_valid[:500] = 0.1 + 0.2 * y_valid[:500]
     y_valid[500:] = 0.7 + 0.2 * y_valid[500:]
     w_valid = np.ones_like(y_valid)
@@ -1226,56 +1272,6 @@ def test_eval_set_cross_entropy_with_weights_and_empty_participant(cluster):
         losses = -(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
         expected_loss = np.average(losses, weights=w_valid)
         _assert_reported_metric_matches_global_score(dask_model, "cross_entropy", expected_loss)
-
-
-def test_eval_set_kullback_leibler_uses_all_distributed_validation_data(cluster):
-    X_train, X_valid, y_train, y_valid = _continuous_label_data()
-    # Make validation chunks have distinct local metrics, so reporting one worker's
-    # metric instead of the global metric would fail this test.
-    y_valid[:500] = 0.1 + 0.2 * y_valid[:500]
-    y_valid[500:] = 0.7 + 0.2 * y_valid[500:]
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMRegressor(
-            client=client,
-            objective="cross_entropy",
-            metric="kullback_leibler",
-            **_dask_metric_model_params(),
-        )
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)])
-
-        pred = dask_model.predict(dX_valid).compute()
-        pred = np.clip(pred, 1.0e-12, 1.0 - 1.0e-12)
-        cross_entropy = -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
-        label_entropy = np.mean(y_valid * np.log(y_valid) + (1.0 - y_valid) * np.log(1.0 - y_valid))
-        expected_loss = cross_entropy + label_entropy
-        _assert_reported_metric_matches_global_score(dask_model, "kullback_leibler", expected_loss)
-
-
-def test_eval_set_cross_entropy_lambda_uses_all_distributed_validation_data(cluster):
-    X_train, X_valid, y_train, y_valid = _continuous_label_data()
-    # Make validation chunks have distinct local metrics, so reporting one worker's
-    # metric instead of the global metric would fail this test.
-    y_valid[:500] = 0.1 + 0.2 * y_valid[:500]
-    y_valid[500:] = 0.7 + 0.2 * y_valid[500:]
-
-    with Client(cluster) as client:
-        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
-
-        dask_model = lgb.DaskLGBMRegressor(
-            client=client,
-            objective="cross_entropy_lambda",
-            metric="cross_entropy_lambda",
-            **_dask_metric_model_params(),
-        )
-        dask_model.fit(dX, dy, eval_set=[(dX_valid, dy_valid)])
-
-        hhat = dask_model.predict(dX_valid).compute()
-        pred = np.clip(1.0 - np.exp(-hhat), 1.0e-12, 1.0 - 1.0e-12)
-        expected_loss = -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
-        _assert_reported_metric_matches_global_score(dask_model, "cross_entropy_lambda", expected_loss)
 
 
 @pytest.mark.parametrize("task", ["binary-classification", "regression", "ranking"])
