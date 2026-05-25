@@ -201,6 +201,27 @@ _SUPPORTED_DISTRIBUTED_EMPTY_EVAL_METRICS = {
 }
 
 
+_lgbmmodel_doc_distributed_eval_metric_note = """
+    Note
+    ----
+    For supported built-in eval metrics, validation scores reported in
+    ``evals_result_`` and ``best_score_`` are aggregated across Dask workers
+    and reflect the full distributed validation set. Aggregation is supported
+    for additive pointwise metrics: ``binary_logloss``, ``binary_error``,
+    ``l1``, ``l2``, ``rmse``, ``huber``, ``fair``, ``poisson``, ``quantile``,
+    ``mape``, ``gamma``, ``tweedie``, ``r2``, ``multi_logloss``,
+    ``multi_error``, ``multi_error@k``, ``cross_entropy``,
+    ``cross_entropy_lambda``, and ``kullback_leibler``.
+
+    For other metrics, including those requiring global ordering or
+    query-level semantics (``auc``, ``average_precision``, ``auc_mu``,
+    ``ndcg``, ``map``) and custom Python eval functions, the reported
+    validation score is computed locally on a single worker's slice of the
+    validation data and may differ from the score over the full distributed
+    validation set.
+    """
+
+
 def _slice_empty(data: _DaskPart) -> _DaskPart:
     return data[:0]
 
@@ -1437,6 +1458,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
+    {_lgbmmodel_doc_distributed_eval_metric_note}
         """
 
     def predict(
@@ -1649,6 +1671,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
+    {_lgbmmodel_doc_distributed_eval_metric_note}
         """
 
     def predict(
@@ -1835,6 +1858,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
+    {_lgbmmodel_doc_distributed_eval_metric_note}
         """
 
     def predict(
