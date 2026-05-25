@@ -140,9 +140,9 @@ class CrossEntropyMetric : public Metric {
     if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
-    }
-    if (sum_weights <= 0.0f) {
-      Log::Fatal("Validation data has no positive total weight");
+      if (sum_weights <= 0.0f) {
+        Log::Fatal("Validation data has no positive total weight");
+      }
     }
     double loss = sum_loss / sum_weights;
     return std::vector<double>(1, loss);
@@ -239,9 +239,9 @@ class CrossEntropyLambdaMetric : public Metric {
     if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       denominator = Network::GlobalSyncUpBySum(denominator);
-    }
-    if (denominator <= 0.0f) {
-      Log::Fatal("Validation data has no positive total weight");
+      if (denominator <= 0.0f) {
+        Log::Fatal("Validation data has no positive total weight");
+      }
     }
     return std::vector<double>(1, sum_loss / denominator);
   }
@@ -353,9 +353,9 @@ class KullbackLeiblerDivergence : public Metric {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_label_entropy = Network::GlobalSyncUpBySum(sum_label_entropy);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
-    }
-    if (sum_weights <= 0.0f) {
-      Log::Fatal("Validation data has no positive total weight");
+      if (sum_weights <= 0.0f) {
+        Log::Fatal("Validation data has no positive total weight");
+      }
     }
     double loss = (sum_label_entropy + sum_loss) / sum_weights;
     return std::vector<double>(1, loss);
