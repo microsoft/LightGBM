@@ -708,6 +708,7 @@ class LGBMModel(_LGBMModelBase):
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
+        self._fitted_with_feature_names: bool = False
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1141,6 +1142,10 @@ class LGBMModel(_LGBMModelBase):
         # is set BEFORE fitting.
         self._n_features = self._Booster.num_feature()
 
+        # This attribute informs self.features_in_, but isn't set until here
+        # because Dataset.construct(), called by train(), is responsible for updating it.
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
+
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
@@ -1359,10 +1364,20 @@ class LGBMModel(_LGBMModelBase):
     def feature_names_in_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
 
+        Only available when training data had feature names (e.g. a pandas DataFrame).
+        When training was done with data without feature names (e.g. a numpy array),
+        accessing this attribute raises ``AttributeError``.
+
         .. versionadded:: 4.5.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
+        if not self._fitted_with_feature_names:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute 'feature_names_in_'. "
+                "The training data did not have feature names "
+                "(e.g. was a numpy array rather than a pandas DataFrame)."
+            )
         return np.array(self.feature_name_)
 
     @feature_names_in_.deleter
@@ -1371,8 +1386,7 @@ class LGBMModel(_LGBMModelBase):
 
         Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
         on estimators when a new training dataset that doesn't have features is passed.
-        LightGBM automatically assigns feature names to such datasets
-        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
+        LightGBM has custom handling of feature names and has chosen to opt out of this behavior.
 
         However, that behavior is coupled to ``scikit-learn`` automatically updating
         ``n_features_in_`` in those same code paths, which is necessary for compliance
