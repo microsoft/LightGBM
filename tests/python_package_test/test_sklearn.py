@@ -1728,6 +1728,7 @@ def test_cannot_access_feature_names_before_fitting(estimator_class):
         pytest.param("numpy", id="predict=numpy"),
         pytest.param("pd_DataFrame", id="predict=pd_DataFrame"),
         pytest.param("pa_Table", id="predict=pa_Table"),
+        pytest.param("pl_DataFrame", id="predict=pl_DataFrame"),
     ],
 )
 @pytest.mark.parametrize(
@@ -1736,6 +1737,7 @@ def test_cannot_access_feature_names_before_fitting(estimator_class):
         pytest.param("numpy", id="fit=numpy"),
         pytest.param("pd_DataFrame", id="fit=pd_DataFrame"),
         pytest.param("pa_Table", id="fit=pa_Table"),
+        pytest.param("pl_DataFrame", id="fit=pl_DataFrame"),
     ],
 )
 @pytest.mark.filterwarnings("error:.*feature name.*:UserWarning:sklearn")
@@ -1753,6 +1755,8 @@ def test_feature_names_in_and_predict_warning(
         pd = pytest.importorskip("pandas")
     elif fit_X_type.startswith("pd_") or predict_X_type.startswith("pd_"):
         pd = pytest.importorskip("pandas")
+    elif fit_X_type.startswith("pl_") or predict_X_type.startswith("pl_"):
+        pl = pytest.importorskip("polars")
 
     X_np = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
     y = np.array([0, 1, 0, 1])
@@ -1764,6 +1768,8 @@ def test_feature_names_in_and_predict_warning(
         X_fit = X_np
     elif fit_X_type == "pd_DataFrame":
         X_fit = pd.DataFrame(X_np, columns=col_names)
+    elif fit_X_type == "pl_DataFrame":
+        X_fit = pl.DataFrame(X_np, columns=col_names)
     else:
         X_fit = pa.Table.from_pandas(pd.DataFrame(X_np, columns=col_names))
 
@@ -1771,6 +1777,8 @@ def test_feature_names_in_and_predict_warning(
         X_predict = X_np[:2]
     elif predict_X_type == "pd_DataFrame":
         X_predict = pd.DataFrame(X_np[:2], columns=col_names)
+    elif predict_X_type == "pl_DataFrame":
+        X_predict = pl.DataFrame(X_np[:2], columns=col_names)
     else:
         X_predict = pa.Table.from_pandas(pd.DataFrame(X_np[:2], columns=col_names))
 
@@ -1782,7 +1790,7 @@ def test_feature_names_in_and_predict_warning(
     }
 
     # input types where LightGBM supports 'feature_name="auto"'
-    types_with_feat_names = {"pa_Table", "pd_DataFrame"}
+    types_with_feat_names = {"pa_Table", "pd_DataFrame", "pl_DataFrame"}
 
     # case 1: no 'feature_names' passed to fit() and "feature_name='auto'" should have identical behavior
     for fit_kwargs in ({}, {"feature_name": "auto"}):
