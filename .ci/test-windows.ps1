@@ -147,7 +147,7 @@ if ($env:TASK -eq "bdist") {
     $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
-pytest $tests ; Assert-Output $?
+pytest -ra $tests ; Assert-Output $?
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
     Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"

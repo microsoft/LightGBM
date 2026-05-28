@@ -130,7 +130,7 @@ if [[ $TASK == "sdist" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp "./dist/lightgbm-${LGB_VER}.tar.gz" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
     fi
-    pytest ./tests/python_package_test || exit 1
+    pytest -ra ./tests/python_package_test || exit 1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
@@ -177,7 +177,7 @@ elif [[ $TASK == "bdist" ]]; then
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install -v ./dist/*.whl || exit 1
-    pytest ./tests || exit 1
+    pytest -ra ./tests || exit 1
     exit 0
 fi
 
@@ -192,13 +192,13 @@ if [[ $TASK == "gpu" ]]; then
             --config-settings=cmake.define.USE_GPU=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_GPU=ON
@@ -217,13 +217,13 @@ elif [[ $TASK == "cuda" ]]; then
             --config-settings=cmake.define.USE_CUDA=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_CUDA=ON
@@ -237,13 +237,13 @@ elif [[ $TASK == "mpi" ]]; then
             --config-settings=cmake.define.USE_MPI=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_MPI=ON -DUSE_DEBUG=ON
@@ -255,7 +255,7 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 sh ./build-python.sh install --precompile || exit 1
-pytest ./tests || exit 1
+pytest -ra ./tests || exit 1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
