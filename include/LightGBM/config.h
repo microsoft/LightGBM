@@ -409,7 +409,8 @@ struct Config {
   bool first_metric_only = false;
 
   // [no-save]
-  // Internal flag used by Dask to aggregate supported additive validation metrics in distributed training.
+  // desc = internal flag used by Dask to aggregate supported additive validation metrics in distributed training
+  // desc = **Note**: this is not meant to be used directly by users
   bool enable_distributed_additive_eval_metric = false;
 
   // alias = max_tree_output, max_leaf_output
