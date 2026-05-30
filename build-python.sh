@@ -299,7 +299,16 @@ if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
         BUILD_SDIST=false
         BUILD_WHEEL=true
+        # Preserve --no-isolation, but clear cmake-related args
+        _keep_no_isolation=false
+        case " ${BUILD_ARGS} " in
+            *" --no-isolation "*) _keep_no_isolation=true ;;
+        esac
         BUILD_ARGS=""
+        if test "${_keep_no_isolation}" = true; then
+            BUILD_ARGS="--no-isolation"
+        fi
+        unset _keep_no_isolation
         rm -rf \
             ./cmake \
             ./CMakeLists.txt \
