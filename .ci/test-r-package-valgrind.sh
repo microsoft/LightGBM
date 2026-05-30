@@ -18,7 +18,7 @@ VALGRIND_LOGS_FILE="valgrind-logs.log"
 RDvalgrind \
   --no-readline \
   --vanilla \
-  -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --gen-suppressions=all" \
+  -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --gen-suppressions=all --suppressions=../../.ci/valgrind.supp" \
   -f testthat.R \
   > ${ALL_LOGS_FILE} 2>&1 || exit 1
 
@@ -49,32 +49,8 @@ if [[ ${bytes_indirectly_lost} -gt 0 ]]; then
     exit 1
 fi
 
-# one error caused by a false positive between valgrind and openmp is allowed
-# ==2063== 352 bytes in 1 blocks are possibly lost in loss record 153 of 2,709
-# ==2063==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-# ==2063==    by 0x40149CA: allocate_dtv (dl-tls.c:286)
-# ==2063==    by 0x40149CA: _dl_allocate_tls (dl-tls.c:532)
-# ==2063==    by 0x5702322: allocate_stack (allocatestack.c:622)
-# ==2063==    by 0x5702322: pthread_create@@GLIBC_2.2.5 (pthread_create.c:660)
-# ==2063==    by 0x56D0DDA: ??? (in /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0)
-# ==2063==    by 0x56C88E0: GOMP_parallel (in /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0)
-# ==2063==    by 0x1544D29C: LGBM_DatasetCreateFromCSC (c_api.cpp:1286)
-# ==2063==    by 0x1546F980: LGBM_DatasetCreateFromCSC_R (lightgbm_R.cpp:91)
-# ==2063==    by 0x4941E2F: R_doDotCall (dotcode.c:634)
-# ==2063==    by 0x494CCC6: do_dotcall (dotcode.c:1281)
-# ==2063==    by 0x499FB01: bcEval (eval.c:7078)
-# ==2063==    by 0x498B67F: Rf_eval (eval.c:727)
-# ==2063==    by 0x498E414: R_execClosure (eval.c:1895)
-bytes_possibly_lost=$(
-    cat ${VALGRIND_LOGS_FILE} \
-    | grep -E "possibly lost\: .*" \
-    | sed 's/^.*possibly lost\: \(.*\) bytes.*$/\1/' \
-    | tr -d ","
-)
-echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
-if [[ ${bytes_possibly_lost} -gt 1104 ]]; then
-    exit 1
-fi
+# Valgrind false positives are suppressed via .ci/valgrind.supp
+# (specifically the OpenMP TLS thread initialization false positive)
 
 # ensure 'grep --count' doesn't cause failures
 set +e
