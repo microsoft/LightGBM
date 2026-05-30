@@ -711,6 +711,7 @@ class LGBMModel(_LGBMModelBase):
         self._fitted_with_feature_names: bool = False
         self._n_features: int = -1
         self._n_features_in: int = -1
+        self._feature_names_in: Optional[np.ndarray] = None
         self._classes: Optional[np.ndarray] = None
         self._n_classes: int = -1
         self.set_params(**kwargs)
@@ -1400,6 +1401,21 @@ class LGBMModel(_LGBMModelBase):
             functions used internally in ``lightgbm``.
         """
         pass
+
+    @feature_names_in_.setter
+    def feature_names_in_(self, value: np.ndarray) -> None:
+        """Set feature names from dataset used in ``fit``.
+
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn`` expects to be able to directly
+        set this property in functions like ``validate_data()``.
+
+        .. note::
+
+            Do not call ``estimator.feature_names_in_ = some_array`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        self._feature_names_in = value
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
