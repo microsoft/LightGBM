@@ -4867,3 +4867,26 @@ def test_equal_predict_from_row_major_and_col_major_data():
     preds_col = bst.predict(X_col)
 
     np.testing.assert_allclose(preds_row, preds_col)
+
+
+def test_get_split_value_histogram():
+    X, y = make_synthetic_regression()
+    params = {"num_leaves": 8, "verbose": -1, "min_data_in_leaf": 5}
+    bst = lgb.train(params, lgb.Dataset(X, y), num_boost_round=10)
+
+    hist, bin_edges = bst.get_split_value_histogram(0)
+    assert len(bin_edges) > 1
+    assert len(hist) == len(bin_edges) - 1
+
+    df = bst.trees_to_dataframe()
+    df_split = df[df["split_gain"].notna()]
+    feat0 = df_split[df_split["split_feature"] == "Column_0"]["threshold"]
+    expected = np.sort(feat0.unique())
+    np.testing.assert_array_equal(bin_edges, expected)
+
+    result = bst.get_split_value_histogram(0, xgboost_style=True)
+    assert len(result) > 0
+    np.testing.assert_allclose(result["SplitValue"].values, expected[1:])
+
+    assert bst.get_split_value_histogram(0, bins=3, xgboost_style=True) is not None
+    assert bst.get_split_value_histogram(0, bins="auto") is not None
