@@ -1220,3 +1220,31 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+def test_set_categorical_feature(rng):
+    X = rng.integers(1, 10, size=(100, 3))
+    y = rng.uniform(size=100)
+
+    ds = lgb.Dataset(X, label=y)
+    assert ds.categorical_feature == "auto"
+
+    result = ds.set_categorical_feature([0, 1])
+    assert result is ds
+    assert ds.categorical_feature == [0, 1]
+
+    result = ds.set_categorical_feature([0, 1])
+    assert result is ds
+
+    with pytest.warns(UserWarning, match="categorical_feature in Dataset is overridden"):
+        ds.set_categorical_feature([2])
+    assert ds.categorical_feature == [2]
+
+    ds2 = lgb.Dataset(X, label=y, categorical_feature=[0, 1])
+    result = ds2.set_categorical_feature("auto")
+    assert result is ds2
+
+    ds3 = lgb.Dataset(X, label=y, free_raw_data=True)
+    ds3.construct()
+    with pytest.raises(lgb.basic.LightGBMError, match="Cannot set categorical feature after freed raw data"):
+        ds3.set_categorical_feature([0])
