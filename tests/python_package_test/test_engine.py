@@ -2342,6 +2342,20 @@ def test_monotone_penalty_max():
         np_assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions, strict=True)
 
 
+def test_monotone_constraints_method_without_monotone_constraints(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        "monotone_constraints_method": "advanced",
+        "num_leaves": 5,
+        "verbosity": 0,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    stdout = capsys.readouterr().out
+    expected_msg = "monotone_constraints_method is set to \"advanced\" but monotone_constraints is not set"
+    assert expected_msg in stdout
+
+
 def test_max_bin_by_feature():
     col1 = np.arange(0, 100)[:, np.newaxis]
     col2 = np.zeros((100, 1))
