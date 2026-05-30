@@ -5166,9 +5166,9 @@ class Booster:
 
         bins : int, str or None, optional (default=None)
             The maximum number of bins.
-            If None, or int and > number of unique split values and ``xgboost_style=True``,
-            the number of bins equals number of unique split values.
-            If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+            If None, the bin edges are set to the unique split values of the feature.
+            If int and ``xgboost_style=True``, the number of bins is capped at the number of unique split values.
+            If str, it should be one of the values supported by ``numpy.histogram()``.
         xgboost_style : bool, optional (default=False)
             Whether the returned result should be in the same form as it is in XGBoost.
             If False, the returned value is tuple of 2 numpy arrays as it is in ``numpy.histogram()`` function.
@@ -5205,9 +5205,15 @@ class Booster:
         for tree_info in tree_infos:
             add(tree_info["tree_structure"])
 
-        if bins is None or isinstance(bins, int) and xgboost_style:
+        if bins is None:
+            unique_vals = np.unique(values)
+            if len(unique_vals) > 1:
+                bins = unique_vals
+            else:
+                bins = 1
+        elif isinstance(bins, int) and xgboost_style:
             n_unique = len(np.unique(values))
-            bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
+            bins = max(min(n_unique, bins), 1)
         hist, bin_edges = np.histogram(values, bins=bins)
         if xgboost_style:
             ret = np.column_stack((bin_edges[1:], hist))

@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
+from .utils import assert_subtree_valid, dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
 
 def test_basic(tmp_path):
@@ -1220,3 +1220,43 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+def test_shuffle_models(rng):
+    X, y = load_breast_cancer(return_X_y=True)
+    dtrain = lgb.Dataset(X, y)
+    bst = lgb.train(
+        params={"objective": "binary", "verbose": -1, "num_threads": 1},
+        train_set=dtrain,
+        num_boost_round=10,
+    )
+
+    result = bst.shuffle_models(start_iteration=0, end_iteration=5)
+    assert result is bst, "shuffle_models should return self"
+
+    dumped = bst.dump_model()
+    assert "tree_info" in dumped
+    assert len(dumped["tree_info"]) == 10
+    assert_subtree_valid(dumped["tree_info"][0]["tree_structure"])
+    assert_subtree_valid(dumped["tree_info"][5]["tree_structure"])
+
+    bst.shuffle_models()
+    dumped_full = bst.dump_model()
+    assert len(dumped_full["tree_info"]) == 10
+    for tree in dumped_full["tree_info"]:
+        assert_subtree_valid(tree["tree_structure"])
+
+
+def test_get_position(rng):
+    X = rng.standard_normal(size=(100, 3))
+    y = rng.integers(0, 2, size=100)
+    position = rng.uniform(size=100)
+
+    ds = lgb.Dataset(X, y, position=position, params={"verbose": -1})
+    ds.construct()
+    result = ds.get_position()
+    np.testing.assert_allclose(result, position)
+
+    ds_no_pos = lgb.Dataset(X, y, params={"verbose": -1})
+    ds_no_pos.construct()
+    assert ds_no_pos.get_position() is None
