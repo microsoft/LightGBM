@@ -709,6 +709,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
         self._fitted_with_feature_names: bool = False
+        self._fitted_feature_names: Optional[List[str]] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1145,6 +1146,7 @@ class LGBMModel(_LGBMModelBase):
         # This attribute informs self.features_in_, but isn't set until here
         # because Dataset.construct(), called by train(), is responsible for updating it.
         self._fitted_with_feature_names = train_set._has_non_default_feature_names
+        self._fitted_feature_names = self._Booster.feature_name()
 
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
@@ -1358,7 +1360,8 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
-        return self._Booster.feature_name()  # type: ignore[union-attr]
+        assert self._fitted_feature_names is not None
+        return self._fitted_feature_names
 
     @property
     def feature_names_in_(self) -> np.ndarray:
