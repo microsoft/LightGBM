@@ -101,11 +101,6 @@ if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
 }
 
-# ensure system-installed MinGW libraries are found before conda's
-if ($env:COMPILER -eq "MINGW") {
-    $env:PATH = @("C:/mingw64/bin", "$env:PATH") -join ";"
-}
-
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
     cmake -B build -S . -A x64 ; Assert-Output $?
@@ -116,11 +111,7 @@ if ($env:TASK -eq "regular") {
 } elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    if ($env:COMPILER -eq "MINGW") {
-        Set-Location dist; pip install @(Get-ChildItem *.gz) -v --config-setting=cmake.args=-G"MinGW Makefiles" ; Assert-Output $?
-    } else {
-        Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
-    }
+    Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
 } elseif ($env:TASK -eq "bdist") {
     # Import the Chocolatey profile module so that the RefreshEnv command
     # invoked below properly updates the current PowerShell session environment.
@@ -137,13 +128,15 @@ if ($env:TASK -eq "regular") {
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
-} else {
-    Write-Output "Unrecognized task: $env:TASK"
-    exit 1
+} elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
+    if ($env:COMPILER -eq "MINGW") {
+        sh ./build-python.sh install --mingw ; Assert-Output $?
+    } else {
+        sh ./build-python.sh install; Assert-Output $?
+    }
 }
 
-if ($env:TASK -eq "sdist") {
-    # cannot test C API with "sdist" task
+if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {    # cannot test C API with "sdist" task
     $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 } else {
     $tests = "$env:BUILD_SOURCESDIRECTORY/tests"
@@ -156,8 +149,7 @@ if ($env:TASK -eq "bdist") {
 
 pytest $tests ; Assert-Output $?
 
-if ($env:TASK -eq "regular") {
-    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
+if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
     # Prevent interactive window mode
     (Get-Content "plot_example.py").replace(
