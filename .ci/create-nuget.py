@@ -18,6 +18,8 @@ if __name__ == "__main__":
     windows_folder_path.mkdir(parents=True, exist_ok=True)
     build_folder_path = nuget_dir / "build"
     build_folder_path.mkdir(parents=True, exist_ok=True)
+    readme_source = nuget_dir.parent / "README_nuget.md"
+    copyfile(readme_source, nuget_dir / "README.md")
     print(f"Looking for libraries in '{source}'")
     copyfile(source / "lib_lightgbm.so", linux_folder_path / "lib_lightgbm.so")
     copyfile(source / "lib_lightgbm.dylib", osx_folder_path / "lib_lightgbm.dylib")
@@ -36,11 +38,13 @@ if __name__ == "__main__":
         <projectUrl>https://github.com/lightgbm-org/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>
+        <readme>README.md</readme>
         <copyright>Copyright {datetime.datetime.now().year} @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
         <dependencies> </dependencies>
     </metadata>
         <files>
+        <file src="README.md" target=""/>
         <file src="build\**" target="build"/>
         <file src="runtimes\**" target="runtimes"/>
         </files>
