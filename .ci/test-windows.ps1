@@ -86,7 +86,6 @@ if ($env:PYTHON_VERSION -eq "3.10") {
 
 $condaParams = @(
     "-y",
-    "--quiet"
     "-n", "$env:CONDA_ENV",
     "--file", "$env:CONDA_REQUIREMENT_FILE",
     "python=$env:PYTHON_VERSION[build=*_cp*]"
@@ -136,7 +135,8 @@ if ($env:TASK -eq "regular") {
     }
 }
 
-if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {    # cannot test C API with "sdist" task
+if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+    # cannot test C API with "sdist" task
     $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 } else {
     $tests = "$env:BUILD_SOURCESDIRECTORY/tests"
@@ -149,14 +149,15 @@ if ($env:TASK -eq "bdist") {
 
 pytest $tests ; Assert-Output $?
 
-if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
+if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
     # Prevent interactive window mode
     (Get-Content "plot_example.py").replace(
         'graph.render(view=True)',
         'graph.render(view=False)'
     ) | Set-Content "plot_example.py"
-    conda install -y --quiet -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
+    conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
     # Run all examples
     foreach ($file in @(Get-ChildItem *.py)) {
         @(
