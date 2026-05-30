@@ -304,6 +304,21 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_show_info_details(breast_cancer_split):
+    X_train, _, y_train, _ = breast_cancer_split
+    gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
+    gbm.fit(X_train, y_train)
+
+    show_info = ["internal_count", "data_percentage", "leaf_weight", "leaf_count"]
+    graph = lgb.create_tree_digraph(gbm, tree_index=0, show_info=show_info)
+    graph_body = "".join(graph.body)
+    assert "leaf" in graph_body
+    assert "count" in graph_body
+    assert "weight" in graph_body
+    assert "data" in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
 def test_tree_with_categories_below_max_category_values(tmp_path):
     X_train, y_train = _categorical_data(2, 10)
     params = {
