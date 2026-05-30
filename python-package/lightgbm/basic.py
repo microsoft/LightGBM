@@ -1859,6 +1859,13 @@ class Dataset:
         self._params_back_up: Optional[Dict[str, Any]] = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
+        # By default, LightGBM assigns features names like Column_0, Column_1, etc.
+        # These may be overridden during construction if that raw training data is in a format
+        # that includes feature names (like a pandas DataFrame) or if the 'feature_name' keyword argument
+        # is explicitly set.
+        #
+        # This is here mostly for scikit-learn's benefit, as it tracks whether input data had feature names.
+        self._has_non_default_feature_names: bool = False
 
     def __del__(self) -> None:
         try:
@@ -2141,6 +2148,11 @@ class Dataset:
             )
         elif _is_pyarrow_table(data) and feature_name == "auto":
             feature_name = data.column_names
+
+        # 'feature_name == "auto"' after the block above means no feature names were provided
+        # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
+        # LightGBM will assign auto-generated names like Column_0, Column_1, etc.
+        self._has_non_default_feature_names = feature_name != "auto"
 
         # process for args
         params = {} if params is None else params
@@ -3058,6 +3070,7 @@ class Dataset:
         """
         if feature_name != "auto":
             self.feature_name = feature_name
+            self._has_non_default_feature_names = True
         if self._handle is not None and feature_name is not None and feature_name != "auto":
             if len(feature_name) != self.num_feature():
                 raise ValueError(
