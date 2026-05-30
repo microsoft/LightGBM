@@ -709,6 +709,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
         self._fitted_with_feature_names: bool = False
+        self._cached_feature_name: Optional[List[str]] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1134,6 +1135,7 @@ class LGBMModel(_LGBMModelBase):
             init_model=init_model,
             callbacks=callbacks,
         )
+        self._cached_feature_name = None
 
         # This populates the property self.n_features_, the number of features in the fitted model,
         # and so should only be set after fitting.
@@ -1358,7 +1360,9 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
-        return self._Booster.feature_name()  # type: ignore[union-attr]
+        if self._cached_feature_name is None:
+            self._cached_feature_name = self._Booster.feature_name()  # type: ignore[union-attr]
+        return self._cached_feature_name
 
     @property
     def feature_names_in_(self) -> np.ndarray:
