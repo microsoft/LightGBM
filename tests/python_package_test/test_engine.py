@@ -2267,6 +2267,16 @@ def test_monotone_constraints(test_with_categorical_variable):
 
 
 @pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Monotone constraints are not yet supported by CUDA version")
+def test_monotone_constraints_method_without_constraints():
+    trainset = generate_trainset_for_monotone_constraints_tests()
+    for method in ["intermediate", "advanced"]:
+        params = {
+            "monotone_constraints_method": method,
+        }
+        lgb.train(params, trainset)
+
+
+@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Monotone constraints are not yet supported by CUDA version")
 def test_monotone_penalty():
     def are_first_splits_non_monotone(tree, n, monotone_constraints):
         if n <= 0:

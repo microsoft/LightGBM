@@ -458,6 +458,10 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
+  if ((monotone_constraints_method == "intermediate" || monotone_constraints_method == "advanced") && monotone_constraints.empty()) {
+    Log::Warning("\"%s\" monotone constraints method has no effect without providing monotone_constraints. Auto-set to \"basic\" method.", monotone_constraints_method.c_str());
+    monotone_constraints_method = "basic";
+  }
   if (max_depth > 0 && monotone_penalty >= max_depth) {
     Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
   }
