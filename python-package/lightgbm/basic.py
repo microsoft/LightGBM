@@ -4095,7 +4095,19 @@ class Booster:
         self : Booster
             Booster with new parameters.
         """
-        params_str = _param_dict_to_str(params)
+        if not params:
+            return self
+        if _ConfigAliases.aliases is None:
+            _ConfigAliases.aliases = _ConfigAliases._get_all_param_aliases()
+        all_known_keys = set()
+        for main_name, aliases in _ConfigAliases.aliases.items():
+            all_known_keys.add(main_name)
+            all_known_keys.update(aliases)
+        unknown_params = {k: v for k, v in params.items() if k not in all_known_keys}
+        known_params = {k: v for k, v in params.items() if k in all_known_keys}
+        for key in unknown_params:
+            _log_warning(f"Unknown parameter: {key}")
+        params_str = _param_dict_to_str(known_params)
         if params_str:
             _safe_call(
                 _LIB.LGBM_BoosterResetParameter(
@@ -4103,7 +4115,7 @@ class Booster:
                     _c_str(params_str),
                 )
             )
-        self.params.update(params)
+        self.params.update(known_params)
         return self
 
     def update(
