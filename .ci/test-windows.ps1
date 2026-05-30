@@ -106,6 +106,10 @@ if ($env:COMPILER -eq "MINGW") {
     $env:PATH = @("C:\msys64\mingw64\bin", "C:\msys64\usr\bin", "$env:PATH") -join ";"
 }
 
+Write-Output "PATH: $env:PATH"
+Write-Output "--- contents of C:\msys64 ---"
+Get-ChildItem -Recurse "C:\msys64"
+
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
     cmake -B build -S . -A x64 ; Assert-Output $?
