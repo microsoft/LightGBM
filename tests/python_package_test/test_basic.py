@@ -1220,3 +1220,19 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+def test_inner_predictor_predict_list():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(
+        X, y, test_size=0.1, random_state=2
+    )
+    ds = lgb.Dataset(X_train, label=y_train)
+    bst = lgb.train(
+        {"objective": "binary", "verbose": -1, "num_threads": 1},
+        ds,
+        num_boost_round=5,
+    )
+    pred_from_array = bst.predict(X_test)
+    pred_from_list = bst.predict(X_test.tolist())
+    np.testing.assert_allclose(pred_from_list, pred_from_array)
