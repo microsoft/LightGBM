@@ -304,6 +304,20 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
+def test_create_tree_digraph_with_dataframe_example_case(breast_cancer_split):
+    pd = pytest.importorskip("pandas")
+    X_train, _, y_train, _ = breast_cancer_split
+
+    X_train_df = pd.DataFrame(X_train)
+    gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
+    gbm.fit(X_train_df, y_train)
+
+    example_case = X_train_df.iloc[[0]]
+    graph = lgb.create_tree_digraph(gbm, example_case=example_case, tree_index=0)
+    assert isinstance(graph, graphviz.Digraph)
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
 def test_tree_with_categories_below_max_category_values(tmp_path):
     X_train, y_train = _categorical_data(2, 10)
     params = {
