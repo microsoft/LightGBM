@@ -74,7 +74,7 @@ else  # Linux
         elif [[ $COMPILER == "clang-17" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 wget
-            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+            wget --retry-connrefused --waitretry=5 --tries=5 -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-get update
