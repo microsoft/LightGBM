@@ -709,6 +709,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
         self._fitted_with_feature_names: bool = False
+        self._cached_feature_names: Optional[List[str]] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1355,10 +1356,16 @@ class LGBMModel(_LGBMModelBase):
         .. note::
 
             If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
+
+        .. note::
+
+            The result is cached after the first access to avoid repeated C API calls.
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
-        return self._Booster.feature_name()  # type: ignore[union-attr]
+        if self._cached_feature_names is None:
+            self._cached_feature_names = self._Booster.feature_name()  # type: ignore[union-attr]
+        return self._cached_feature_names
 
     @property
     def feature_names_in_(self) -> np.ndarray:
