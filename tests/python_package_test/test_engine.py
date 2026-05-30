@@ -1449,6 +1449,16 @@ def test_feature_name():
     assert feature_names == gbm.feature_name()
 
 
+def test_feature_name_whitespace_conflict_error_message():
+    import pandas as pd
+    X = pd.DataFrame([[1, 0.10], [2, 0.11]], columns=['_', ' '])
+    y = [0, 1]
+    train_data = lgb.Dataset(X, label=y)
+    params = {"objective": "binary", "metric": "binary_logloss", "verbose": -1}
+    with pytest.raises(lgb.basic.LightGBMError, match="whitespace"):
+        lgb.train(params, train_data, num_boost_round=1)
+
+
 def test_feature_name_with_non_ascii(rng, tmp_path):
     X_train = rng.normal(size=(100, 4))
     y_train = rng.normal(size=(100,))
