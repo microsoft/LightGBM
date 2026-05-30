@@ -139,6 +139,43 @@ def test_booster_rollback_one_iter(rng):
     assert bst.num_trees() == num_iterations - 2
 
 
+def test_booster_shuffle_models(rng):
+    X = rng.uniform(size=(100, 5))
+    y = rng.integers(0, 2, size=(100,))
+    X_test = rng.uniform(size=(10, 5))
+
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+    }
+    bst = lgb.Booster(params, train_data)
+
+    num_iterations = 10
+    for _ in range(num_iterations):
+        bst.update()
+
+    assert bst.current_iteration() == num_iterations
+    assert bst.num_trees() == num_iterations
+
+    pred_before = bst.predict(X_test)
+
+    result = bst.shuffle_models()
+
+    assert result is bst
+
+    assert bst.current_iteration() == num_iterations
+    assert bst.num_trees() == num_iterations
+
+    pred_after = bst.predict(X_test)
+    np.testing.assert_allclose(pred_before, pred_after)
+
+    bst.shuffle_models(start_iteration=0, end_iteration=5)
+
+    assert bst.current_iteration() == num_iterations
+    assert bst.num_trees() == num_iterations
+
+
 class NumpySequence(lgb.Sequence):
     def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
