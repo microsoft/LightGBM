@@ -101,11 +101,9 @@ if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
 }
 
+# ensure system-installed MinGW libraries are found before conda's
 if ($env:COMPILER -eq "MINGW") {
-    # The MSYS2 base layer is pre-installed on GitHub Actions runners but the
-    # MinGW64 toolchain packages are not. Install them before updating PATH.
-    C:\msys64\usr\bin\pacman.exe -S --noconfirm --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-make
-    $env:PATH = @("C:\msys64\mingw64\bin", "C:\msys64\usr\bin", "$env:PATH") -join ";"
+    $env:PATH = @("C:/mingw64/bin", "$env:PATH") -join ";"
 }
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"

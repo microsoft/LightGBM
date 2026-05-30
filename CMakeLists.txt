@@ -180,7 +180,13 @@ if(USE_OPENMP)
     else()
         find_package(OpenMP REQUIRED)
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    if(WIN32 AND MINGW)
+        # Compile-only, not link: GCC treats -fopenmp as a link flag too, which
+        # implicitly adds -lgomp dynamically. We link libgomp statically below instead.
+        add_compile_options(${OpenMP_CXX_FLAGS})
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
 
 if(USE_GPU)
@@ -351,7 +357,7 @@ if(UNIX OR MINGW OR CYGWIN)
 endif()
 
 if(WIN32 AND MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
 # Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
@@ -710,6 +716,23 @@ if(BUILD_CPP_TEST)
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
   target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
+endif()
+
+# On MinGW, statically link libgomp and libwinpthread to keep lib_lightgbm.dll self-contained.
+# The conda environment installs llvm-openmp, which may load its own libgomp-1.dll into the
+# Python process before ctypes loads lib_lightgbm.dll. That mismatched DLL would cause
+# WinError 127 (procedure not found) when lib_lightgbm.dll tries to import GCC 14+ symbols.
+# Removing the dynamic libgomp dependency eliminates the version-conflict at load time.
+if(WIN32 AND MINGW AND USE_OPENMP)
+    if(NOT BUILD_STATIC_LIB)
+        target_link_options(_lightgbm PRIVATE -Wl,-Bstatic,-lgomp,-lwinpthread,-Bdynamic)
+    endif()
+    if(BUILD_CLI)
+        target_link_options(lightgbm PRIVATE -Wl,-Bstatic,-lgomp,-lwinpthread,-Bdynamic)
+    endif()
+    if(BUILD_CPP_TEST)
+        target_link_options(testlightgbm PRIVATE -Wl,-Bstatic,-lgomp,-lwinpthread,-Bdynamic)
+    endif()
 endif()
 
 if(BUILD_CLI)
