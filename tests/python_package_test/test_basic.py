@@ -619,6 +619,23 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
 
 
+def test_get_position():
+    X = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+
+    ds = lgb.Dataset(X)
+    ds.construct()
+    assert ds.get_position() is None
+    assert ds.position is None
+
+    pos = np.array([1.0, 2.0, 3.0])
+    ds.set_position(pos)
+    np_assert_array_equal(ds.get_position(), pos, strict=True)
+
+    ds2 = lgb.Dataset(X)
+    ds2.construct()
+    assert ds2.get_position() is None
+
+
 def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
