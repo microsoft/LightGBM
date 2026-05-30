@@ -668,6 +668,7 @@ if(__BUILD_FOR_R)
   endif()
   target_link_libraries(lightgbm_objs PUBLIC ${R_LIB})
   target_link_libraries(lightgbm_capi_objs PUBLIC ${R_LIB})
+  target_link_libraries(_lightgbm PUBLIC ${R_LIB})
 endif()
 
 #-- Google C++ tests
