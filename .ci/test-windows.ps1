@@ -103,7 +103,7 @@ if ($env:TASK -ne "bdist") {
 
 # ensure system-installed MinGW libraries are found before conda's
 if ($env:COMPILER -eq "MINGW") {
-    $env:PATH = @("C:/usr/msys64/bin", "$env:PATH") -join ";"
+    $env:PATH = @("C:\msys64\mingw64\bin", "C:\msys64\usr\bin", "$env:PATH") -join ";"
 }
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
