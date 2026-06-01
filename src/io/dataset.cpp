@@ -929,6 +929,7 @@ void Dataset::CopySubrowToDevice(const Dataset* fullset,
   #endif  // USE_CUDA
 }
 
+#ifndef LGB_R_BUILD
 bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray &ca) {
   std::string name(field_name);
   name = Common::Trim(name);
@@ -945,6 +946,7 @@ bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray 
   }
   return true;
 }
+#endif  // LGB_R_BUILD
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
                             data_size_t num_element) {
