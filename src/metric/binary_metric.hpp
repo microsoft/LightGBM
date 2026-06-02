@@ -95,7 +95,7 @@ class BinaryMetric: public Metric {
       }
     }
     double sum_weights = sum_weights_;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
       if (sum_weights <= 0.0f) {
@@ -203,6 +203,9 @@ class AUCMetric: public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+    if (num_data_ == 0) {
+      return std::vector<double>(1, 1.0f);
+    }
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -314,6 +317,9 @@ class AveragePrecisionMetric: public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+    if (num_data_ == 0) {
+      return std::vector<double>(1, 1.0f);
+    }
     // get indices sorted by score, descending order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {

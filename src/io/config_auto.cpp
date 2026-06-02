@@ -224,7 +224,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "early_stopping_round",
   "early_stopping_min_delta",
   "first_metric_only",
-  "enable_distributed_additive_eval_metric",
   "max_delta_step",
   "lambda_l1",
   "lambda_l2",
@@ -409,8 +408,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK_GE(early_stopping_min_delta, 0.0);
 
   GetBool(params, "first_metric_only", &first_metric_only);
-
-  GetBool(params, "enable_distributed_additive_eval_metric", &enable_distributed_additive_eval_metric);
 
   GetDouble(params, "max_delta_step", &max_delta_step);
 
@@ -840,7 +837,6 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
     {"early_stopping_min_delta", {}},
     {"first_metric_only", {}},
-    {"enable_distributed_additive_eval_metric", {}},
     {"max_delta_step", {"max_tree_output", "max_leaf_output"}},
     {"lambda_l1", {"reg_alpha", "l1_regularization"}},
     {"lambda_l2", {"reg_lambda", "lambda", "l2_regularization"}},
@@ -987,7 +983,6 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"early_stopping_round", "int"},
     {"early_stopping_min_delta", "double"},
     {"first_metric_only", "bool"},
-    {"enable_distributed_additive_eval_metric", "bool"},
     {"max_delta_step", "double"},
     {"lambda_l1", "double"},
     {"lambda_l2", "double"},

@@ -93,7 +93,7 @@ class RegressionMetric: public Metric {
       }
     }
     double sum_weights = sum_weights_;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
       if (sum_weights <= 0.0f) {
@@ -361,7 +361,7 @@ class R2Metric: public Metric {
       }
       sum_weights_ = local_sum_weights;
     }
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_label = Network::GlobalSyncUpBySum(sum_label);
       sum_weights_ = Network::GlobalSyncUpBySum(sum_weights_);
       if (sum_weights_ <= 0.0f) {
@@ -386,7 +386,7 @@ class R2Metric: public Metric {
       }
     }
     total_sum_squares_ = local_total_sum_squares;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       total_sum_squares_ = Network::GlobalSyncUpBySum(total_sum_squares_);
     }
   }
@@ -427,7 +427,7 @@ class R2Metric: public Metric {
       }
     }
 
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       residual_sum_squares = Network::GlobalSyncUpBySum(residual_sum_squares);
     }
     double r2 = 1.0 - (residual_sum_squares / total_sum_squares_);

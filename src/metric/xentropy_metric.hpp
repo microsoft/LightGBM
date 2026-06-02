@@ -137,7 +137,7 @@ class CrossEntropyMetric : public Metric {
       }
     }
     double sum_weights = sum_weights_;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
       if (sum_weights <= 0.0f) {
@@ -236,7 +236,7 @@ class CrossEntropyLambdaMetric : public Metric {
     }
     // Weights are part of the cross_entropy_lambda loss formula, not the denominator.
     double denominator = static_cast<double>(num_data_);
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       denominator = Network::GlobalSyncUpBySum(denominator);
       if (denominator <= 0.0f) {
@@ -349,7 +349,7 @@ class KullbackLeiblerDivergence : public Metric {
     }
     double sum_weights = sum_weights_;
     double sum_label_entropy = sum_label_entropy_;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_label_entropy = Network::GlobalSyncUpBySum(sum_label_entropy);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);

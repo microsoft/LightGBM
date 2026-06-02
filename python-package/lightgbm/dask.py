@@ -175,32 +175,6 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
     return [[z for z in arg if z is not None] for arg in args]
 
 
-_SUPPORTED_DISTRIBUTED_EMPTY_EVAL_METRICS = {
-    "binary_error",
-    "binary_logloss",
-    "cross_entropy",
-    "cross_entropy_lambda",
-    "fair",
-    "gamma",
-    "huber",
-    "kullback_leibler",
-    "l1",
-    "l2",
-    "mape",
-    "multiclass",
-    "multiclassova",
-    "multi_error",
-    "multi_logloss",
-    "poisson",
-    "quantile",
-    "regression",
-    "regression_l1",
-    "r2",
-    "rmse",
-    "tweedie",
-}
-
-
 _lgbmmodel_doc_distributed_eval_metric_note = """
     Note
     ----
@@ -226,40 +200,72 @@ def _slice_empty(data: _DaskPart) -> _DaskPart:
     return data[:0]
 
 
-def _has_custom_eval_metric(eval_metric: Optional[_LGBM_ScikitEvalMetricType]) -> bool:
-    if eval_metric is None:
+# Built-in additive metrics whose per-worker (sum_loss, sum_weights) values are aggregated by
+# the C++ side via Network::GlobalSyncUpBySum when num_machines > 1. Workers with no local eval
+# data can register a zero-row placeholder eval Dataset and still produce the correct global
+# score (placeholder contributes 0 to both sums). Non-additive metrics (auc, average_precision,
+# auc_mu, ndcg, map) and custom Python eval functions compute per-worker only, so a zero-row
+# placeholder would silently corrupt the reported score on the worker that returns the model.
+_AGGREGATED_DISTRIBUTED_EVAL_METRICS = {
+    "binary_error",
+    "binary_logloss",
+    "cross_entropy",
+    "cross_entropy_lambda",
+    "fair",
+    "gamma",
+    "huber",
+    "kullback_leibler",
+    "l1",
+    "l2",
+    "mape",
+    "multiclass",
+    "multiclassova",
+    "multi_error",
+    "multi_logloss",
+    "poisson",
+    "quantile",
+    "regression",
+    "regression_l1",
+    "r2",
+    "rmse",
+    "tweedie",
+}
+
+
+def _eval_metrics_are_distributed_aggregated(
+    params: Dict[str, Any],
+    eval_metric: Optional[_LGBM_ScikitEvalMetricType],
+    model_factory: Type[LGBMModel],
+    eval_group: Optional[List[_DaskVectorLike]],
+) -> bool:
+    """Return True iff every eval metric this fit will report is in the additive set.
+
+    The C++ side aggregates these across workers. Custom Python eval metrics, rankers
+    (ndcg/map require group info), and any explicit eval_group → False.
+    """
+    if issubclass(model_factory, LGBMRanker) or eval_group is not None:
         return False
-    if callable(eval_metric):
-        return True
-    if isinstance(eval_metric, list):
-        return any(callable(metric) for metric in eval_metric)
-    return False
 
+    def _collect(value: Any) -> List[str]:
+        if value is None:
+            return []
+        if callable(value):
+            return ["__custom__"]
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, list):
+            out: List[str] = []
+            for v in value:
+                if callable(v):
+                    out.append("__custom__")
+                elif isinstance(v, str):
+                    out.append(v)
+            return out
+        return []
 
-def _is_no_metric(metric: Any) -> bool:
-    return isinstance(metric, str) and metric.lower() in {"", "na", "none", "null"}
-
-
-def _get_eval_metric_builtin_names(eval_metric: Optional[_LGBM_ScikitEvalMetricType]) -> List[str]:
-    if isinstance(eval_metric, str):
-        return [eval_metric]
-    if isinstance(eval_metric, list):
-        return [metric for metric in eval_metric if isinstance(metric, str)]
-    return []
-
-
-def _get_eval_metric_names(
-    params: Dict[str, Any], eval_metric: Optional[_LGBM_ScikitEvalMetricType], model_factory: Type[LGBMModel]
-) -> List[str]:
-    metric_names = []
-    metric_names.extend(_get_eval_metric_builtin_names(eval_metric))
-
-    param_metric = next((params[param] for param in _ConfigAliases.get("metric") if param in params), None)
-    if isinstance(param_metric, str):
-        metric_names.append(param_metric)
-    elif isinstance(param_metric, list):
-        metric_names.extend(metric for metric in param_metric if isinstance(metric, str))
-    elif param_metric is None:
+    metric_names = _collect(eval_metric)
+    param_metric = next((params[p] for p in _ConfigAliases.get("metric") if p in params), None)
+    if param_metric is None:
         objective = params.get("objective")
         if isinstance(objective, str):
             metric_names.append(objective)
@@ -267,30 +273,19 @@ def _get_eval_metric_names(
             metric_names.append("l2")
         elif issubclass(model_factory, LGBMClassifier):
             metric_names.append("binary_logloss")
-        elif issubclass(model_factory, LGBMRanker):
-            metric_names.append("ndcg")
+    else:
+        metric_names.extend(_collect(param_metric))
 
-    return [metric for metric in metric_names if not _is_no_metric(metric)]
-
-
-def _is_supported_distributed_empty_eval_metric(metric: str) -> bool:
-    metric = metric.lower()
-    return metric in _SUPPORTED_DISTRIBUTED_EMPTY_EVAL_METRICS or metric.startswith("multi_error@")
-
-
-def _uses_true_empty_eval_participation(
-    params: Dict[str, Any],
-    eval_metric: Optional[_LGBM_ScikitEvalMetricType],
-    model_factory: Type[LGBMModel],
-    eval_group: Optional[List[_DaskVectorLike]],
-) -> bool:
-    if _has_custom_eval_metric(eval_metric):
-        return False
-    if issubclass(model_factory, LGBMRanker) or eval_group is not None:
+    no_metric_sentinels = {"", "na", "none", "null"}
+    metric_names = [m for m in metric_names if not (isinstance(m, str) and m.lower() in no_metric_sentinels)]
+    if not metric_names:
         return False
 
-    metric_names = _get_eval_metric_names(params=params, eval_metric=eval_metric, model_factory=model_factory)
-    return bool(metric_names) and all(_is_supported_distributed_empty_eval_metric(metric) for metric in metric_names)
+    def _supported(metric: str) -> bool:
+        m = metric.lower()
+        return m in _AGGREGATED_DISTRIBUTED_EVAL_METRICS or m.startswith("multi_error@")
+
+    return all(m != "__custom__" and _supported(m) for m in metric_names)
 
 
 def _pad_eval_names(
@@ -322,7 +317,7 @@ def _train_part(
     return_model: bool,
     time_out: int,
     remote_socket: _RemoteSocket,
-    use_true_empty_eval_participation: bool,
+    eval_metrics_are_distributed_aggregated: bool,
     required_eval_names: Optional[List[str]],
     **kwargs: Any,
 ) -> Optional[LGBMModel]:
@@ -375,6 +370,11 @@ def _train_part(
             local_eval_sample_weight = []
         if has_eval_init_score:
             local_eval_init_score = []
+        # Remember whether this worker had eval_sample_weight/eval_init_score entries
+        # before the per-eval-index loop starts stripping padding, so we can distinguish
+        # "padded to empty" (use zero-row weight) from "never had data" (don't pass).
+        worker_had_eval_sample_weight = has_eval_sample_weight
+        worker_had_eval_init_score = has_eval_init_score
         if is_ranker:
             local_eval_group = []
 
@@ -435,19 +435,19 @@ def _train_part(
             x_e, y_e, w_e, init_score_e, g_e = _remove_list_padding(x_e, y_e, w_e, init_score_e, g_e)
             if x_e:
                 local_eval_set.append((_concat(x_e), _concat(y_e)))
-            elif use_true_empty_eval_participation:
-                local_eval_set.append((_slice_empty(data), _slice_empty(label)))
             else:
-                missing_eval_component_idx.append(i)
-                continue
+                # A zero-row placeholder. This keeps the collective balanced for additive
+                # objective metrics (binary_logloss, multi_logloss, l2) which are always
+                # present and always call GlobalSyncUpBySum.
+                local_eval_set.append((_slice_empty(data), _slice_empty(label)))
 
             if w_e:
                 local_eval_sample_weight.append(_concat(w_e))
-            elif use_true_empty_eval_participation and local_eval_sample_weight is not None:
+            elif worker_had_eval_sample_weight:
                 local_eval_sample_weight.append(_slice_empty(weight if weight is not None else label))
             if init_score_e:
                 local_eval_init_score.append(_concat(init_score_e))
-            elif use_true_empty_eval_participation and local_eval_init_score is not None:
+            elif worker_had_eval_init_score:
                 local_eval_init_score.append(_slice_empty(init_score if init_score is not None else label))
             if g_e:
                 local_eval_group.append(_concat(g_e))
@@ -459,9 +459,13 @@ def _train_part(
         if eval_class_weight:
             kwargs["eval_class_weight"] = [eval_class_weight[i] for i in eval_component_idx]
 
-    if local_eval_set is None:
+    if not local_eval_set:
         local_eval_X = None
         local_eval_y = None
+        local_eval_sample_weight = None
+        local_eval_init_score = None
+        local_eval_group = None
+        local_eval_names = None
     else:
         local_eval_X = tuple(X for X, _ in local_eval_set)
         local_eval_y = tuple(y for _, y in local_eval_set)
@@ -684,6 +688,8 @@ def _train(
 
     params = deepcopy(params)
 
+    is_ranker = issubclass(model_factory, LGBMRanker)
+
     # capture whether local_listen_port or its aliases were provided
     listen_port_in_params = any(alias in params for alias in _ConfigAliases.get("local_listen_port"))
 
@@ -739,19 +745,16 @@ def _train(
             parts[i]["init_score"] = init_score_parts[i]
 
     eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
-    use_true_empty_eval_participation = bool(eval_set) and _uses_true_empty_eval_participation(
+    required_eval_names = None
+    if eval_set:
+        required_eval_names = eval_names or [f"valid_{i}" for i in range(len(eval_set))]
+
+    eval_metrics_are_distributed_aggregated = bool(eval_set) and _eval_metrics_are_distributed_aggregated(
         params=params,
         eval_metric=eval_metric,
         model_factory=model_factory,
         eval_group=eval_group,
     )
-    if use_true_empty_eval_participation:
-        params["enable_distributed_additive_eval_metric"] = True
-    else:
-        params.pop("enable_distributed_additive_eval_metric", None)
-    required_eval_names = None
-    if eval_set:
-        required_eval_names = eval_names or [f"valid_{i}" for i in range(len(eval_set))]
 
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
@@ -801,7 +804,7 @@ def _train(
                         eval_sets[parts_idx][-1][0].append(x_e)  # type: ignore[index, union-attr]
                         eval_sets[parts_idx][-1][1].append(y_e)  # type: ignore[index, union-attr]
 
-                if use_true_empty_eval_participation:
+                if eval_metrics_are_distributed_aggregated or not is_ranker:
                     for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
                         eval_sets[parts_idx].append(([None], [None]))
 
@@ -825,9 +828,8 @@ def _train(
                         else:
                             eval_sample_weights[parts_idx][-1].append(w_e)  # type: ignore[union-attr]
 
-                    if use_true_empty_eval_participation:
-                        for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
-                            eval_sample_weights[parts_idx].append([None])
+                    for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                        eval_sample_weights[parts_idx].append([None])
 
             if eval_init_score:
                 if eval_init_score[i] is init_score:
@@ -847,9 +849,8 @@ def _train(
                         else:
                             eval_init_scores[parts_idx][-1].append(init_score_e)  # type: ignore[union-attr]
 
-                    if use_true_empty_eval_participation:
-                        for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
-                            eval_init_scores[parts_idx].append([None])
+                    for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                        eval_init_scores[parts_idx].append([None])
 
             if eval_group:
                 if eval_group[i] is group:
@@ -896,21 +897,19 @@ def _train(
     for key, workers in who_has.items():
         worker_map[next(iter(workers))].append(key_to_part_dict[key])
 
-    # Check that all workers were provided some of eval_set. Otherwise warn user that validation
-    # data artifacts may not be populated depending on worker returning final estimator.
-    if eval_set and not use_true_empty_eval_participation:
+    # When eval metrics include non-additive metrics (auc, ndcg, map, custom Python), the
+    # reported score reflects only the local slice of the worker that returns the final
+    # estimator and may differ from the score over the full distributed validation set.
+    # For additive metrics, eval data may also not be allocated to all workers (e.g. when
+    # eval set is very small with only one partition).
+    if eval_set and eval_set[0][0].npartitions < len(worker_map):
+        # eval_set has fewer partitions than training workers — some workers likely
+        # did not receive eval data, so evals_result_ / best_score_ may be unreliable.
         for worker in worker_map:
-            has_eval_set = False
-            for part in worker_map[worker]:
-                if "eval_set" in part.result():  # type: ignore[attr-defined]
-                    has_eval_set = True
-                    break
-
-            if not has_eval_set:
-                _log_warning(
-                    f"Worker {worker} was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable. "
-                    "Try rebalancing data across workers."
-                )
+            _log_warning(
+                f"Worker {worker} was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable. "
+                "Try rebalancing data across workers."
+            )
 
     # assign general validation set settings to fit kwargs.
     if eval_names:
@@ -996,7 +995,7 @@ def _train(
             time_out=params.get("time_out", 120),
             remote_socket=worker_to_socket_future.get(worker, None),
             return_model=(worker == master_worker),
-            use_true_empty_eval_participation=use_true_empty_eval_participation,
+            eval_metrics_are_distributed_aggregated=eval_metrics_are_distributed_aggregated,
             required_eval_names=required_eval_names,
             workers=[worker],
             allow_other_workers=False,

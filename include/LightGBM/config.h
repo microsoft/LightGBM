@@ -408,11 +408,6 @@ struct Config {
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
 
-  // [no-save]
-  // desc = internal flag used by Dask to aggregate supported additive validation metrics in distributed training
-  // desc = **Note**: this is not meant to be used directly by users
-  bool enable_distributed_additive_eval_metric = false;
-
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
   // desc = ``<= 0`` means no constraint

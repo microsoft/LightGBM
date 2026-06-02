@@ -117,7 +117,7 @@ class MulticlassMetric: public Metric {
       }
     }
     double sum_weights = sum_weights_;
-    if (config_.enable_distributed_additive_eval_metric && Network::num_machines() > 1) {
+    if (Network::num_machines() > 1) {
       sum_loss = Network::GlobalSyncUpBySum(sum_loss);
       sum_weights = Network::GlobalSyncUpBySum(sum_weights);
       if (sum_weights <= 0.0f) {
@@ -246,6 +246,9 @@ class AucMuMetric : public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+    if (num_data_ == 0) {
+      return std::vector<double>(1, 1.0f);
+    }
     // the notation follows that used in the paper introducing the auc-mu metric:
     // https://proceedings.mlr.press/v97/kleiman19a.html
 
