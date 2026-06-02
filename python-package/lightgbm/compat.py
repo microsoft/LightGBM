@@ -156,15 +156,6 @@ except ImportError:
     _LGBMValidateData = None
     _sklearn_version = None
 
-# additional scikit-learn imports only for type hints
-if TYPE_CHECKING:
-    # sklearn.utils.Tags can be imported unconditionally once
-    # lightgbm's minimum scikit-learn version is 1.6 or higher
-    try:
-        from sklearn.utils import Tags as _sklearn_Tags
-    except ImportError:
-        _sklearn_Tags = None
-
 
 """pandas"""
 try:
@@ -199,22 +190,6 @@ except ImportError:
             pass
 
     concat = None
-
-"""matplotlib"""
-try:
-    import matplotlib  # noqa: F401
-
-    MATPLOTLIB_INSTALLED = True
-except ImportError:
-    MATPLOTLIB_INSTALLED = False
-
-"""graphviz"""
-try:
-    import graphviz  # noqa: F401
-
-    GRAPHVIZ_INSTALLED = True
-except ImportError:
-    GRAPHVIZ_INSTALLED = False
 
 """dask"""
 try:
