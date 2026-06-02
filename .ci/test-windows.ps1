@@ -78,8 +78,8 @@ conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Out
 Write-Output "conda info:"
 conda info
 
-if ($env:PYTHON_VERSION -eq "3.9") {
-    $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py39.txt"
+if ($env:PYTHON_VERSION -eq "3.10") {
+    $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py310.txt"
 } else {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
@@ -147,7 +147,7 @@ if ($env:TASK -eq "bdist") {
     $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
-pytest $tests ; Assert-Output $?
+pytest -ra $tests ; Assert-Output $?
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
     Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"

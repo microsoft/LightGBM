@@ -57,7 +57,7 @@ jobs:
         with:
           fetch-depth: 5
           persist-credentials: false
-          submodules: false
+          submodules: true
       - name: Setup and run tests
         shell: bash
         run: |
@@ -92,7 +92,7 @@ jobs:
       - name: Test documentation
         shell: bash --noprofile --norc {0}
         run: |
-          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit 1
+          Rscript .ci/build-docs.R || exit 1
           num_doc_files_changed=$(
               git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
           )

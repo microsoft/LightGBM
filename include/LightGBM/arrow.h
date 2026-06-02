@@ -83,9 +83,9 @@ namespace LightGBM {
  */
 class ArrowChunkedArray {
   /* List of length `n` for `n` chunks containing the individual Arrow arrays. */
-  std::vector<const ArrowArray*> chunks_;
+  std::vector<ArrowArray*> chunks_;
   /* Schema for all chunks. */
-  const ArrowSchema* schema_;
+  ArrowSchema* schema_;
   /* List of length `n + 1` for `n` chunks containing the offsets for each chunk. */
   std::vector<int64_t> chunk_offsets_;
   /* Indicator whether this chunked array needs to call the arrays' release callbacks.
@@ -108,7 +108,7 @@ class ArrowChunkedArray {
    * @param chunks A list with the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowChunkedArray(std::vector<const ArrowArray*> chunks, const ArrowSchema* schema)
+  inline ArrowChunkedArray(std::vector<ArrowArray*> chunks, ArrowSchema* schema)
       : releases_arrow_(false) {
     chunks_ = chunks;
     schema_ = schema;
@@ -122,8 +122,8 @@ class ArrowChunkedArray {
    * @param chunks A C-style array containing the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowChunkedArray(int64_t n_chunks, const struct ArrowArray* chunks,
-                           const struct ArrowSchema* schema)
+  inline ArrowChunkedArray(int64_t n_chunks, struct ArrowArray* chunks,
+                           struct ArrowSchema* schema)
       : releases_arrow_(true) {
     chunks_.reserve(n_chunks);
     for (int64_t k = 0; k < n_chunks; ++k) {
@@ -141,11 +141,11 @@ class ArrowChunkedArray {
     for (size_t i = 0; i < chunks_.size(); ++i) {
       auto chunk = chunks_[i];
       if (chunk->release) {
-        chunk->release(const_cast<ArrowArray*>(chunk));
+        chunk->release(chunk);
       }
     }
     if (schema_->release) {
-      schema_->release(const_cast<ArrowSchema*>(schema_));
+      schema_->release(schema_);
     }
   }
 
@@ -161,7 +161,7 @@ class ArrowChunkedArray {
   /* ----------------------------------------- ITERATOR ---------------------------------------- */
   template <typename T>
   class Iterator {
-    using getter_fn = std::function<T(const ArrowArray*, int64_t)>;
+    using getter_fn = std::function<T(ArrowArray*, int64_t)>;
 
     /* Reference to the chunked array that this iterator iterates over. */
     const ArrowChunkedArray& array_;
@@ -232,8 +232,8 @@ class ArrowChunkedArray {
 class ArrowTable {
   std::vector<ArrowChunkedArray> columns_;
   const int64_t n_chunks_;
-  const ArrowArray* chunks_ptr_;
-  const ArrowSchema* schema_ptr_;
+  ArrowArray* chunks_ptr_;
+  ArrowSchema* schema_ptr_;
 
  public:
   /**
@@ -243,11 +243,11 @@ class ArrowTable {
    * @param chunks A C-style array containing the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowTable(int64_t n_chunks, const ArrowArray* chunks, const ArrowSchema* schema)
+  inline ArrowTable(int64_t n_chunks, ArrowArray* chunks, ArrowSchema* schema)
       : n_chunks_(n_chunks), chunks_ptr_(chunks), schema_ptr_(schema) {
     columns_.reserve(schema->n_children);
     for (int64_t j = 0; j < schema->n_children; ++j) {
-      std::vector<const ArrowArray*> children_chunks;
+      std::vector<ArrowArray*> children_chunks;
       children_chunks.reserve(n_chunks);
       for (int64_t k = 0; k < n_chunks; ++k) {
         if (chunks[k].length == 0) continue;
