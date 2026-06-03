@@ -3,6 +3,10 @@ channels = ["conda-forge"]
 name = "lightgbm"
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
+[dependencies]
+python = "3.10.*"
+numpy = "*"
+
 [feature.py310.dependencies]
 # direct dependencies
 cffi = "1.15.*"

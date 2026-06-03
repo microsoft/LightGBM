@@ -23,6 +23,7 @@ install:
   - git submodule update --init --recursive  # get `external_libs` folder
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
+  - powershell.exe -ExecutionPolicy ByPass -c "irm https://pixi.sh/install.ps1 | iex"
   - set PATH=C:\Users\appveyor\.pixi\bin;%PATH%
   - ps: |
       $env:APPVEYOR = "true"
@@ -31,7 +32,6 @@ install:
       # tell scripts where to put artifacts
       # (this variable name is left over from when jobs ran on Azure DevOps)
       $env:BUILD_ARTIFACTSTAGINGDIRECTORY = "$env:APPVEYOR_BUILD_FOLDER/artifacts"
-      powershell.exe -ExecutionPolicy ByPass -c "irm https://pixi.sh/install.ps1 | iex"
 
 build: false
 
