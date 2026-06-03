@@ -110,7 +110,7 @@ if ($env:TASK -eq "regular") {
 } elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
+    Set-Location dist; pip install --no-deps @(Get-ChildItem *.gz) -v ; Assert-Output $?
 } elseif ($env:TASK -eq "bdist") {
     # Import the Chocolatey profile module so that the RefreshEnv command
     # invoked below properly updates the current PowerShell session environment.
@@ -124,7 +124,7 @@ if ($env:TASK -eq "regular") {
     # TODO: restore --integrated-opencl as part of https://github.com/lightgbm-org/LightGBM/issues/6968
     sh "build-python.sh" bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
+    Set-Location dist; pip install --no-deps @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
     if ($env:COMPILER -eq "MINGW") {
