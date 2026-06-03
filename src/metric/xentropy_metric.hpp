@@ -72,7 +72,7 @@ inline static double YentLoss(double p) {
 //
 class CrossEntropyMetric : public Metric {
  public:
-  explicit CrossEntropyMetric(const Config& config) :config_(config) {}
+  explicit CrossEntropyMetric(const Config&) {}
   virtual ~CrossEntropyMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -167,16 +167,15 @@ class CrossEntropyMetric : public Metric {
   double sum_weights_;
   /*! \brief Name of this metric */
   std::vector<std::string> name_;
-  Config config_;
 };
 
 //
-// CrossEntropyLambdaMetric : "xentlambda" : (optional) weights have a different meaning than for "xentropy"
+// CrossEntropyLambdaMetric : "xentlambda": (optional) weights have a different meaning than for "xentropy"
 // ATTENTION: Supposed to be used when the objective also is "xentlambda"
 //
 class CrossEntropyLambdaMetric : public Metric {
  public:
-  explicit CrossEntropyLambdaMetric(const Config& config) :config_(config) {}
+  explicit CrossEntropyLambdaMetric(const Config&) {}
   virtual ~CrossEntropyLambdaMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -263,7 +262,6 @@ class CrossEntropyLambdaMetric : public Metric {
   const label_t* weights_;
   /*! \brief Name of this metric */
   std::vector<std::string> name_;
-  Config config_;
 };
 
 //
@@ -271,7 +269,7 @@ class CrossEntropyLambdaMetric : public Metric {
 //
 class KullbackLeiblerDivergence : public Metric {
  public:
-  explicit KullbackLeiblerDivergence(const Config& config) :config_(config) {}
+  explicit KullbackLeiblerDivergence(const Config&) {}
   virtual ~KullbackLeiblerDivergence() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -382,7 +380,6 @@ class KullbackLeiblerDivergence : public Metric {
   double sum_label_entropy_;
   /*! \brief Name of this metric */
   std::vector<std::string> name_;
-  Config config_;
 };
 
 }  // end namespace LightGBM

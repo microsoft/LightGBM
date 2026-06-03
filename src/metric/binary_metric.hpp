@@ -25,7 +25,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
  public:
-  explicit BinaryMetric(const Config& config) :config_(config) {
+  explicit BinaryMetric(const Config&) {
   }
 
   virtual ~BinaryMetric() {
@@ -117,7 +117,6 @@ class BinaryMetric: public Metric {
   double sum_weights_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
-  Config config_;
 };
 
 /*!
