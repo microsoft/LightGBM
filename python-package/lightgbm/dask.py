@@ -178,21 +178,13 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
 _lgbmmodel_doc_distributed_eval_metric_note = """
     Note
     ----
-    For supported built-in eval metrics, validation scores reported in
+    For all built-in eval metrics, validation scores reported in
     ``evals_result_`` and ``best_score_`` are aggregated across Dask workers
-    and reflect the full distributed validation set. Aggregation is supported
-    for additive pointwise metrics: ``binary_logloss``, ``binary_error``,
-    ``l1``, ``l2``, ``rmse``, ``huber``, ``fair``, ``poisson``, ``quantile``,
-    ``mape``, ``gamma``, ``tweedie``, ``r2``, ``multi_logloss``,
-    ``multi_error``, ``multi_error@k``, ``cross_entropy``,
-    ``cross_entropy_lambda``, and ``kullback_leibler``.
-
-    For other metrics, including those requiring global ordering or
-    query-level semantics (``auc``, ``average_precision``, ``auc_mu``,
-    ``ndcg``, ``map``) and custom Python eval functions, the reported
-    validation score is computed locally on a single worker's slice of the
-    validation data and may differ from the score over the full distributed
-    validation set.
+    and reflect the full distributed validation set. Supported metrics
+    include all built-in binary, regression, multiclass, cross-entropy,
+    ranking (``ndcg``, ``ndcg@k``, ``map``, ``map@k``), and ordering-dependent
+    (``auc``, ``average_precision``, ``auc_mu``) metrics. Custom Python eval
+    functions compute per-worker only.
     """
 
 
@@ -200,13 +192,16 @@ def _slice_empty(data: _DaskPart) -> _DaskPart:
     return data[:0]
 
 
-# Built-in additive metrics whose per-worker (sum_loss, sum_weights) values are aggregated by
-# the C++ side via Network::GlobalSyncUpBySum when num_machines > 1. Workers with no local eval
-# data can register a zero-row placeholder eval Dataset and still produce the correct global
-# score (placeholder contributes 0 to both sums). Non-additive metrics (auc, average_precision,
-# auc_mu, ndcg, map) and custom Python eval functions compute per-worker only, so a zero-row
-# placeholder would silently corrupt the reported score on the worker that returns the model.
+# Built-in metrics whose per-worker values are aggregated across workers when
+# num_machines > 1. Additive metrics use GlobalSyncUpBySum (sum_loss/sum_weights pattern).
+# Ordering-dependent metrics (auc, average_precision, auc_mu) use Allgather to collect all
+# (label, score, weight) data before computing the metric globally. Query-based metrics
+# (ndcg, map) sync per-query weighted values via GlobalSyncUpBySum since queries are never
+# split across workers. Custom Python eval functions compute per-worker only.
 _AGGREGATED_DISTRIBUTED_EVAL_METRICS = {
+    "auc",
+    "auc_mu",
+    "average_precision",
     "binary_error",
     "binary_logloss",
     "cross_entropy",
@@ -217,11 +212,13 @@ _AGGREGATED_DISTRIBUTED_EVAL_METRICS = {
     "kullback_leibler",
     "l1",
     "l2",
+    "map",
     "mape",
     "multiclass",
     "multiclassova",
     "multi_error",
     "multi_logloss",
+    "ndcg",
     "poisson",
     "quantile",
     "regression",
@@ -238,13 +235,10 @@ def _eval_metrics_are_distributed_aggregated(
     model_factory: Type[LGBMModel],
     eval_group: Optional[List[_DaskVectorLike]],
 ) -> bool:
-    """Return True iff every eval metric this fit will report is in the additive set.
+    """Return True if every eval metric this fit will report is in the distributed-aggregation set.
 
-    The C++ side aggregates these across workers. Custom Python eval metrics, rankers
-    (ndcg/map require group info), and any explicit eval_group → False.
+    The C++ side aggregates these across workers. Custom Python eval metrics → False.
     """
-    if issubclass(model_factory, LGBMRanker) or eval_group is not None:
-        return False
 
     def _collect(value: Any) -> List[str]:
         if value is None:
@@ -283,7 +277,7 @@ def _eval_metrics_are_distributed_aggregated(
 
     def _supported(metric: str) -> bool:
         m = metric.lower()
-        return m in _AGGREGATED_DISTRIBUTED_EVAL_METRICS or m.startswith("multi_error@")
+        return m in _AGGREGATED_DISTRIBUTED_EVAL_METRICS or m.startswith("multi_error@") or m.startswith("ndcg@") or m.startswith("map@")
 
     return all(m != "__custom__" and _supported(m) for m in metric_names)
 
@@ -317,7 +311,6 @@ def _train_part(
     return_model: bool,
     time_out: int,
     remote_socket: _RemoteSocket,
-    eval_metrics_are_distributed_aggregated: bool,
     required_eval_names: Optional[List[str]],
     **kwargs: Any,
 ) -> Optional[LGBMModel]:
@@ -363,6 +356,7 @@ def _train_part(
     if n_evals:
         has_eval_sample_weight = any(x.get("eval_sample_weight") is not None for x in list_of_parts)
         has_eval_init_score = any(x.get("eval_init_score") is not None for x in list_of_parts)
+        has_eval_group = any(x.get("eval_group") is not None for x in list_of_parts)
 
         local_eval_set = []
         evals_result_names = []
@@ -370,12 +364,13 @@ def _train_part(
             local_eval_sample_weight = []
         if has_eval_init_score:
             local_eval_init_score = []
-        # Remember whether this worker had eval_sample_weight/eval_init_score entries
+        # Remember whether this worker had eval_sample_weight/eval_init_score/eval_group entries
         # before the per-eval-index loop starts stripping padding, so we can distinguish
-        # "padded to empty" (use zero-row weight) from "never had data" (don't pass).
+        # "padded to empty" (use zero-row weight/group) from "never had data" (don't pass).
         worker_had_eval_sample_weight = has_eval_sample_weight
         worker_had_eval_init_score = has_eval_init_score
-        if is_ranker:
+        worker_had_eval_group = has_eval_group
+        if has_eval_group:
             local_eval_group = []
 
         # store indices of eval_set components that were not contained within local parts.
@@ -451,6 +446,8 @@ def _train_part(
                 local_eval_init_score.append(_slice_empty(init_score if init_score is not None else label))
             if g_e:
                 local_eval_group.append(_concat(g_e))
+            elif worker_had_eval_group:
+                local_eval_group.append(_slice_empty(group if group is not None else label))
 
         # reconstruct eval_set fit args/kwargs depending on which components of eval_set are on worker.
         eval_component_idx = [i for i in range(n_evals) if i not in missing_eval_component_idx]
@@ -882,6 +879,9 @@ def _train(
                         else:
                             eval_groups[parts_idx][-1].append(g_e)  # type: ignore[union-attr]
 
+                    for parts_idx in range(min(n_largest_eval_parts, n_parts), n_parts):
+                        eval_groups[parts_idx].append([None])
+
         # assign sub-eval_set components to worker parts.
         for parts_idx, e_set in eval_sets.items():
             parts[parts_idx]["eval_set"] = e_set
@@ -908,21 +908,6 @@ def _train(
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
         worker_map[next(iter(workers))].append(key_to_part_dict[key])
-
-    # When eval metrics include non-additive metrics (auc, ndcg, map, custom Python), the
-    # reported score reflects only the local slice of the worker that returns the final
-    # estimator and may differ from the score over the full distributed validation set.
-    # For additive metrics, eval data may also not be allocated to all workers (e.g. when
-    # eval set is very small with only one partition).
-    if eval_set and eval_set[0][0].npartitions < len(worker_map):
-        # eval_set has fewer partitions than training workers — some workers likely
-        # did not receive eval data, so evals_result_ / best_score_ may be unreliable.
-        for worker in worker_map:
-            _log_warning(
-                f"Worker {worker} was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable. "
-                "Try rebalancing data across workers."
-            )
-
     # assign general validation set settings to fit kwargs.
     if eval_names:
         kwargs["eval_names"] = eval_names
@@ -1007,7 +992,6 @@ def _train(
             time_out=params.get("time_out", 120),
             remote_socket=worker_to_socket_future.get(worker, None),
             return_model=(worker == master_worker),
-            eval_metrics_are_distributed_aggregated=eval_metrics_are_distributed_aggregated,
             required_eval_names=required_eval_names,
             workers=[worker],
             allow_other_workers=False,

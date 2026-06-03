@@ -11,6 +11,8 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
+#include "gather_eval_data.hpp"
+
 #include <string>
 #include <algorithm>
 #include <sstream>
@@ -202,8 +204,70 @@ class AUCMetric: public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
-    if (num_data_ == 0) {
+    if (num_data_ == 0 && Network::num_machines() == 1) {
       return std::vector<double>(1, 1.0f);
+    }
+    if (Network::num_machines() > 1) {
+      std::vector<label_t> all_labels;
+      std::vector<double> all_scores;
+      std::vector<label_t> all_weights;
+      bool has_weights;
+      GatherEvalData(label_, score, weights_, num_data_, 1,
+                     all_labels, all_scores, all_weights, has_weights);
+      data_size_t n = static_cast<data_size_t>(all_labels.size());
+      if (n == 0) {
+        return std::vector<double>(1, 1.0f);
+      }
+      const label_t* lbl = all_labels.data();
+      const double* scr = all_scores.data();
+      const label_t* w = has_weights ? all_weights.data() : nullptr;
+      double sw = 0.0;
+      if (has_weights) {
+        for (data_size_t i = 0; i < n; ++i) sw += w[i];
+      } else {
+        sw = static_cast<double>(n);
+      }
+      std::vector<data_size_t> sorted_idx(n);
+      for (data_size_t i = 0; i < n; ++i) sorted_idx[i] = i;
+      Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(),
+          [scr](data_size_t a, data_size_t b) { return scr[a] > scr[b]; });
+      double cur_pos = 0.0, sum_pos = 0.0, accum = 0.0, cur_neg = 0.0;
+      double threshold = scr[sorted_idx[0]];
+      if (w == nullptr) {
+        for (data_size_t i = 0; i < n; ++i) {
+          const label_t cur_label = lbl[sorted_idx[i]];
+          const double cur_score = scr[sorted_idx[i]];
+          if (cur_score != threshold) {
+            threshold = cur_score;
+            accum += cur_neg * (cur_pos * 0.5 + sum_pos);
+            sum_pos += cur_pos;
+            cur_neg = cur_pos = 0.0;
+          }
+          cur_neg += (cur_label <= 0);
+          cur_pos += (cur_label > 0);
+        }
+      } else {
+        for (data_size_t i = 0; i < n; ++i) {
+          const label_t cur_label = lbl[sorted_idx[i]];
+          const double cur_score = scr[sorted_idx[i]];
+          const label_t cur_weight = w[sorted_idx[i]];
+          if (cur_score != threshold) {
+            threshold = cur_score;
+            accum += cur_neg * (cur_pos * 0.5 + sum_pos);
+            sum_pos += cur_pos;
+            cur_neg = cur_pos = 0.0;
+          }
+          cur_neg += (cur_label <= 0) * cur_weight;
+          cur_pos += (cur_label > 0) * cur_weight;
+        }
+      }
+      accum += cur_neg * (cur_pos * 0.5 + sum_pos);
+      sum_pos += cur_pos;
+      double auc = 1.0;
+      if (sum_pos > 0.0 && sum_pos != sw) {
+        auc = accum / (sum_pos * (sw - sum_pos));
+      }
+      return std::vector<double>(1, auc);
     }
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
@@ -316,8 +380,75 @@ class AveragePrecisionMetric: public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
-    if (num_data_ == 0) {
+    if (num_data_ == 0 && Network::num_machines() == 1) {
       return std::vector<double>(1, 1.0f);
+    }
+    if (Network::num_machines() > 1) {
+      std::vector<label_t> all_labels;
+      std::vector<double> all_scores;
+      std::vector<label_t> all_weights;
+      bool has_weights;
+      GatherEvalData(label_, score, weights_, num_data_, 1,
+                     all_labels, all_scores, all_weights, has_weights);
+      data_size_t n = static_cast<data_size_t>(all_labels.size());
+      if (n == 0) {
+        return std::vector<double>(1, 1.0f);
+      }
+      const label_t* lbl = all_labels.data();
+      const double* scr = all_scores.data();
+      const label_t* w = has_weights ? all_weights.data() : nullptr;
+      double sw = 0.0;
+      if (has_weights) {
+        for (data_size_t i = 0; i < n; ++i) sw += w[i];
+      }
+      std::vector<data_size_t> sorted_idx(n);
+      for (data_size_t i = 0; i < n; ++i) sorted_idx[i] = i;
+      Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(),
+          [scr](data_size_t a, data_size_t b) { return scr[a] > scr[b]; });
+      double cur_actual_pos = 0.0, sum_actual_pos = 0.0, sum_pred_pos = 0.0;
+      double accum_prec = 1.0, accum = 0.0, cur_neg = 0.0;
+      double threshold = scr[sorted_idx[0]];
+      if (w == nullptr) {
+        for (data_size_t i = 0; i < n; ++i) {
+          const label_t cur_label = lbl[sorted_idx[i]];
+          const double cur_score = scr[sorted_idx[i]];
+          if (cur_score != threshold) {
+            threshold = cur_score;
+            sum_actual_pos += cur_actual_pos;
+            sum_pred_pos += cur_actual_pos + cur_neg;
+            accum_prec = sum_actual_pos / sum_pred_pos;
+            accum += cur_actual_pos * accum_prec;
+            cur_neg = cur_actual_pos = 0.0;
+          }
+          cur_neg += (cur_label <= 0);
+          cur_actual_pos += (cur_label > 0);
+        }
+      } else {
+        for (data_size_t i = 0; i < n; ++i) {
+          const label_t cur_label = lbl[sorted_idx[i]];
+          const double cur_score = scr[sorted_idx[i]];
+          const label_t cur_weight = w[sorted_idx[i]];
+          if (cur_score != threshold) {
+            threshold = cur_score;
+            sum_actual_pos += cur_actual_pos;
+            sum_pred_pos += cur_actual_pos + cur_neg;
+            accum_prec = sum_actual_pos / sum_pred_pos;
+            accum += cur_actual_pos * accum_prec;
+            cur_neg = cur_actual_pos = 0.0;
+          }
+          cur_neg += (cur_label <= 0) * cur_weight;
+          cur_actual_pos += (cur_label > 0) * cur_weight;
+        }
+      }
+      sum_actual_pos += cur_actual_pos;
+      sum_pred_pos += cur_actual_pos + cur_neg;
+      accum_prec = sum_actual_pos / sum_pred_pos;
+      accum += cur_actual_pos * accum_prec;
+      double ap = 1.0;
+      if (sum_actual_pos > 0.0 && sum_actual_pos != sw) {
+        ap = accum / sum_actual_pos;
+      }
+      return std::vector<double>(1, ap);
     }
     // get indices sorted by score, descending order
     std::vector<data_size_t> sorted_idx;

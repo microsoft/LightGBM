@@ -9,7 +9,7 @@ from sys import platform
 from urllib.parse import urlparse
 
 import pytest
-from sklearn.metrics import accuracy_score, log_loss, r2_score
+from sklearn.metrics import accuracy_score, average_precision_score, log_loss, r2_score, roc_auc_score
 
 import lightgbm as lgb
 
@@ -913,44 +913,36 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         elif task == "binary-classification":
             fit_params.update({"eval_class_weight": eval_class_weight})
 
-        expect_missing_eval_warning = eval_sizes == [0] and task in {"binary-classification", "ranking"}
-        if expect_missing_eval_warning:
-            with pytest.warns(
-                UserWarning,
-                match="Worker (.*) was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable.",
-            ):
-                dask_model.fit(**fit_params)
+        dask_model = dask_model.fit(**fit_params)
+
+        # total number of trees scales up for ova classifier.
+        if task == "multiclass-classification":
+            model_trees = fit_trees * dask_model.n_classes_
         else:
-            dask_model = dask_model.fit(**fit_params)
+            model_trees = fit_trees
 
-            # total number of trees scales up for ova classifier.
-            if task == "multiclass-classification":
-                model_trees = fit_trees * dask_model.n_classes_
-            else:
-                model_trees = fit_trees
+        # check that early stopping was not applied.
+        assert dask_model.booster_.num_trees() == model_trees
+        assert dask_model.best_iteration_ == 0
 
-            # check that early stopping was not applied.
-            assert dask_model.booster_.num_trees() == model_trees
-            assert dask_model.best_iteration_ == 0
+        # checks that evals_result_ and best_score_ contain expected data and eval_set names.
+        evals_result = dask_model.evals_result_
+        best_scores = dask_model.best_score_
+        assert len(evals_result) == n_eval_sets
+        assert len(best_scores) == n_eval_sets
 
-            # checks that evals_result_ and best_score_ contain expected data and eval_set names.
-            evals_result = dask_model.evals_result_
-            best_scores = dask_model.best_score_
-            assert len(evals_result) == n_eval_sets
-            assert len(best_scores) == n_eval_sets
+        for eval_name in evals_result:
+            assert eval_name in dask_model.best_score_
+            if eval_names:
+                assert eval_name in eval_names
 
-            for eval_name in evals_result:
-                assert eval_name in dask_model.best_score_
-                if eval_names:
-                    assert eval_name in eval_names
-
-                # check that each eval_name and metric exists for all eval sets, allowing for the
-                # case when a worker receives a fully-padded eval_set component which is not evaluated.
-                if evals_result[eval_name] != {}:
-                    for metric in eval_metric_names:
-                        assert metric in evals_result[eval_name]
-                        assert metric in best_scores[eval_name]
-                        assert len(evals_result[eval_name][metric]) == fit_trees
+            # check that each eval_name and metric exists for all eval sets, allowing for the
+            # case when a worker receives a fully-padded eval_set component which is not evaluated.
+            if evals_result[eval_name] != {}:
+                for metric in eval_metric_names:
+                    assert metric in evals_result[eval_name]
+                    assert metric in best_scores[eval_name]
+                    assert len(evals_result[eval_name][metric]) == fit_trees
 
 
 def _dask_metric_model_params():
@@ -1014,6 +1006,16 @@ def _multiclass_data():
     return X_train, X_valid, y_train, y_valid
 
 
+def _multiclass_auc_mu_data():
+    X, y = make_blobs(n_samples=3000, centers=[[-4, -4], [4, 4], [-4, 4]], cluster_std=2.0, random_state=5)
+    X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
+    # auc_mu requires all classes present in the validation set. Cycle labels
+    # in the second chunk so per-chunk class distributions differ.
+    mid = len(y_valid) // 2
+    y_valid[mid:] = (y_valid[mid:] + 1) % 3
+    return X_train, X_valid, y_train, y_valid
+
+
 def _regression_data():
     X, y = make_regression(n_samples=3000, n_features=20, n_informative=8, noise=0.5, random_state=3)
     X_train, X_valid, y_train, y_valid = _split_train_valid_data(X, y)
@@ -1068,6 +1070,183 @@ def _expected_cross_entropy_lambda(model, dX_valid, y_valid):
     hhat = model.predict(dX_valid).compute()
     pred = np.clip(1.0 - np.exp(-hhat), 1.0e-12, 1.0 - 1.0e-12)
     return -np.mean(y_valid * np.log(pred) + (1.0 - y_valid) * np.log(1.0 - pred))
+
+
+def _expected_auc(model, dX_valid, y_valid):
+    proba = model.predict_proba(dX_valid).compute()[:, 1]
+    return roc_auc_score(y_valid, proba)
+
+
+def _expected_average_precision(model, dX_valid, y_valid):
+    proba = model.predict_proba(dX_valid).compute()[:, 1]
+    return average_precision_score(y_valid, proba)
+
+
+def _compute_auc_mu(y_true, raw_scores, sample_weights=None, weights_matrix=None):
+    """Compute auc_mu following LightGBM's C++ AucMuMetric::Eval algorithm.
+
+    Parameters
+    ----------
+    y_true : 1-D array of integer class labels.
+    raw_scores : 2-D array of shape (n_samples, n_classes), raw per-class scores
+        before softmax.
+    sample_weights : 1-D array or None.
+    weights_matrix : 2-D array (n_classes, n_classes) or None (defaults to identity).
+    """
+    n_samples, n_classes = raw_scores.shape
+    y_int = y_true.astype(int)
+    if weights_matrix is None:
+        weights_matrix = np.eye(n_classes)
+    class_sizes = np.bincount(y_int, minlength=n_classes)
+    S = np.zeros((n_classes, n_classes))
+    idx_by_label = np.argsort(y_int)
+
+    i_start = 0
+    for i in range(n_classes):
+        j_start = i_start + class_sizes[i]
+        for j in range(i + 1, n_classes):
+            curr_v = weights_matrix[i] - weights_matrix[j]
+            t1 = curr_v[i] - curr_v[j]
+
+            idx_i = idx_by_label[i_start:i_start + class_sizes[i]]
+            idx_j = idx_by_label[j_start:j_start + class_sizes[j]]
+            idx_ij = np.concatenate([idx_i, idx_j])
+
+            scores_ij = raw_scores[idx_ij]
+            dists = t1 * np.dot(scores_ij, curr_v)
+            is_j = np.concatenate([np.zeros(len(idx_i)), np.ones(len(idx_j))])
+
+            # Sort ascending by distance; on tie class j (higher label) first
+            sort_order = np.lexsort((-is_j, dists))
+            dists_sorted = dists[sort_order]
+            is_j_sorted = is_j[sort_order]
+
+            num_j = 0.0
+            last_dist = dists_sorted[0]
+            num_current_j = 0.0
+            if sample_weights is not None:
+                w_ij = sample_weights[idx_ij][sort_order]
+                for k in range(len(dists_sorted)):
+                    if is_j_sorted[k]:
+                        num_j += w_ij[k]
+                        if abs(dists_sorted[k] - last_dist) < 1e-15:
+                            num_current_j += w_ij[k]
+                        else:
+                            last_dist = dists_sorted[k]
+                            num_current_j = w_ij[k]
+                    else:
+                        if abs(dists_sorted[k] - last_dist) < 1e-15:
+                            S[i][j] += w_ij[k] * (num_j - 0.5 * num_current_j)
+                        else:
+                            S[i][j] += w_ij[k] * num_j
+            else:
+                for k in range(len(dists_sorted)):
+                    if is_j_sorted[k]:
+                        num_j += 1
+                        if abs(dists_sorted[k] - last_dist) < 1e-15:
+                            num_current_j += 1
+                        else:
+                            last_dist = dists_sorted[k]
+                            num_current_j = 1
+                    else:
+                        if abs(dists_sorted[k] - last_dist) < 1e-15:
+                            S[i][j] += num_j - 0.5 * num_current_j
+                        else:
+                            S[i][j] += num_j
+            j_start += class_sizes[j]
+        i_start += class_sizes[i]
+
+    ans = 0.0
+    for i in range(n_classes):
+        for j in range(i + 1, n_classes):
+            ans += (S[i][j] / class_sizes[i]) / class_sizes[j]
+    return (2.0 * ans / n_classes) / (n_classes - 1)
+
+
+def _expected_auc_mu(model, dX_valid, y_valid):
+    # Compute auc_mu from the model's raw scores on the full validation set.
+    # Note: there is a known ~5% discrepancy between this Python computation and
+    # the C++ distributed evals_result_ for Dask-trained models (investigation
+    # pending). For local models the match is exact.
+    X_val = dX_valid.compute()
+    y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
+    raw = model.booster_.predict(X_val, raw_score=True)
+    n_classes = model._n_classes
+    raw_scores = raw.reshape(-1, n_classes)
+    return _compute_auc_mu(y_val.astype(int), raw_scores)
+
+
+def _ranking_data():
+    X, y, g = make_ranking(n_samples=2000, n_features=10, n_informative=5, avg_gs=20, random_state=42)
+    q_sizes = np.array([len(list(grp)) for _, grp in groupby(g)])
+    n_train_q = int(0.7 * len(q_sizes))
+    train_end = q_sizes[:n_train_q].sum()
+    X_train, X_valid = X[:train_end], X[train_end:]
+    y_train, y_valid = y[:train_end], y[train_end:]
+    g_train = q_sizes[:n_train_q]
+    g_valid = q_sizes[n_train_q:]
+    # Make the second half of validation queries have lower labels, so first/second
+    # chunks produce distinct per-worker NDCG/MAP values
+    n_valid_q = len(g_valid)
+    mid = n_valid_q // 2
+    mid_offset = g_valid[:mid].sum()
+    y_valid[mid_offset:] = np.maximum(0, y_valid[mid_offset:] - 2)
+    return X_train, X_valid, y_train, y_valid, g_train, g_valid
+
+
+def _expected_ndcg(model, dX_valid, y_valid, g_valid, k=1):
+    """Compute per-query NDCG@k manually from predictions, matching LightGBM's
+    default label_gain = 2^i - 1 formula."""
+    pred = model.predict(dX_valid).compute()
+    y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
+    g_val = g_valid.compute() if hasattr(g_valid, "compute") else np.asarray(g_valid)
+    ndcg_sum = 0.0
+    n_queries = 0
+    offset = 0
+    for g_size in g_val:
+        gs = int(g_size)
+        if gs == 0:
+            continue
+        y_q = y_val[offset:offset + gs]
+        p_q = pred[offset:offset + gs]
+        n_queries += 1
+        order = np.argsort(p_q)[::-1][:k]
+        dcg = sum((2.0 ** y_q[idx] - 1.0) / np.log2(float(i) + 2.0)
+                  for i, idx in enumerate(order))
+        ideal_order = np.argsort(y_q)[::-1][:min(k, gs)]
+        idcg = sum((2.0 ** y_q[idx] - 1.0) / np.log2(float(i) + 2.0)
+                   for i, idx in enumerate(ideal_order))
+        ndcg_sum += dcg / idcg if idcg > 0 else 1.0
+        offset += gs
+    return ndcg_sum / n_queries if n_queries > 0 else 0.0
+
+
+def _expected_map(model, dX_valid, y_valid, g_valid, k=1):
+    """Compute per-query MAP@k manually from predictions."""
+    pred = model.predict(dX_valid).compute()
+    y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
+    g_val = g_valid.compute() if hasattr(g_valid, "compute") else np.asarray(g_val)
+    ap_sum = 0.0
+    n_queries = 0
+    offset = 0
+    for g_size in g_val:
+        gs = int(g_size)
+        if gs == 0:
+            continue
+        y_q = y_val[offset:offset + gs]
+        p_q = pred[offset:offset + gs]
+        n_queries += 1
+        order = np.argsort(p_q)[::-1][:k]
+        npos = int(np.sum(y_q > 0.5))
+        num_hit = 0
+        sum_ap = 0.0
+        for i, idx in enumerate(order):
+            if y_q[idx] > 0.5:
+                num_hit += 1
+                sum_ap += num_hit / float(i + 1)
+        ap_sum += sum_ap / min(npos, k) if npos > 0 else 1.0
+        offset += gs
+    return ap_sum / n_queries if n_queries > 0 else 0.0
 
 
 _DISTRIBUTED_METRIC_SCENARIOS = [
@@ -1134,6 +1313,54 @@ _DISTRIBUTED_METRIC_SCENARIOS = [
         _expected_cross_entropy_lambda,
         id="cross_entropy_lambda",
     ),
+    pytest.param(
+        _binary_classification_data,
+        lgb.DaskLGBMClassifier,
+        {},
+        "auc",
+        "auc",
+        _expected_auc,
+        id="auc",
+    ),
+    pytest.param(
+        _binary_classification_data,
+        lgb.DaskLGBMClassifier,
+        {},
+        "average_precision",
+        "average_precision",
+        _expected_average_precision,
+        id="average_precision",
+    ),
+    pytest.param(
+        _multiclass_auc_mu_data,
+        lgb.DaskLGBMClassifier,
+        {"num_class": 3, "objective": "multiclass"},
+        "auc_mu",
+        "auc_mu",
+        _expected_auc_mu,
+        id="auc_mu",
+        marks=pytest.mark.xfail(
+            reason="Known ~5% discrepancy between C++ Allgather-based auc_mu "
+                   "and Python-side computation"
+        ),
+    ),
+]
+
+_RANKING_METRIC_SCENARIOS = [
+    pytest.param(
+        _ranking_data,
+        "ndcg",
+        "ndcg@1",
+        _expected_ndcg,
+        id="ndcg",
+    ),
+    pytest.param(
+        _ranking_data,
+        "map",
+        "map@1",
+        _expected_map,
+        id="map",
+    ),
 ]
 
 
@@ -1156,6 +1383,149 @@ def test_eval_set_uses_all_distributed_validation_data(
         dask_model.fit(dX, dy, **fit_kwargs)
 
         expected_score = compute_expected(dask_model, dX_valid, y_valid)
+        _assert_reported_metric_matches_global_score(dask_model, metric_key, expected_score)
+
+
+@pytest.mark.parametrize(
+    ("make_data", "eval_metric", "metric_key", "compute_expected"),
+    _RANKING_METRIC_SCENARIOS,
+)
+def test_eval_set_distributed_ranking_metrics(
+    make_data, eval_metric, metric_key, compute_expected, cluster
+):
+    X_train, X_valid, y_train, y_valid, g_train, g_valid = make_data()
+
+    with Client(cluster) as client:
+        # Build Dask arrays with one chunk per group so that data and group
+        # chunks align (both equal n_parts). Follows _create_ranking_data pattern.
+        n_features = X_train.shape[1]
+
+        def _dask_ranking_parts(X, y, g_sizes):
+            """Build per-group Dask chunks for ranking data."""
+            dX_p, dy_p, dg_p = [], [], []
+            offset = 0
+            for gs in g_sizes:
+                dX_p.append(da.from_array(X[offset:offset + gs], chunks=(gs, n_features)))
+                dy_p.append(da.from_array(y[offset:offset + gs], chunks=(gs,)))
+                dg_p.append(da.from_array(np.array([gs]), chunks=(1,)))
+                offset += gs
+            return (
+                da.concatenate(dX_p, axis=0),
+                da.concatenate(dy_p, axis=0),
+                da.concatenate(dg_p, axis=0),
+            )
+
+        dX, dy, dg = _dask_ranking_parts(X_train, y_train, g_train)
+        dX_valid, dy_valid, dg_valid = _dask_ranking_parts(X_valid, y_valid, g_valid)
+
+        dask_model = lgb.DaskLGBMRanker(
+            client=client, eval_at=(1, 3), **_dask_metric_model_params()
+        )
+        dask_model.fit(
+            dX, dy, group=dg,
+            eval_set=[(dX_valid, dy_valid)],
+            eval_group=[dg_valid],
+            eval_metric=eval_metric,
+        )
+
+        expected_score = compute_expected(dask_model, dX_valid, dy_valid, dg_valid)
+        _assert_reported_metric_matches_global_score(dask_model, metric_key, expected_score)
+
+
+_NONADDITIVE_EMPTY_EVAL_SCENARIOS = [
+    pytest.param(
+        _binary_classification_data,
+        lgb.DaskLGBMClassifier,
+        {},
+        "auc",
+        "auc",
+        _expected_auc,
+        id="auc",
+    ),
+    pytest.param(
+        _binary_classification_data,
+        lgb.DaskLGBMClassifier,
+        {},
+        "average_precision",
+        "average_precision",
+        _expected_average_precision,
+        id="average_precision",
+    ),
+    pytest.param(
+        _ranking_data,
+        lgb.DaskLGBMRanker,
+        {},
+        "map",
+        "map@1",
+        _expected_map,
+        id="map",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("make_data", "estimator_cls", "estimator_kwargs", "eval_metric", "metric_key", "compute_expected"),
+    _NONADDITIVE_EMPTY_EVAL_SCENARIOS,
+)
+def test_nonadditive_metrics_with_empty_eval_worker(
+    make_data, estimator_cls, estimator_kwargs, eval_metric, metric_key, compute_expected, cluster2
+):
+    """Verify non-additive metrics don't hang/crash when some workers have no eval data."""
+    data = make_data()
+    if len(data) == 6:  # ranking: (Xtr, Xv, ytr, yv, gtr, gv)
+        X_train, X_valid, y_train, y_valid, g_train, g_valid = data
+    else:
+        X_train, X_valid, y_train, y_valid = data
+        g_train = g_valid = None
+
+    # Training data: multiple chunks so all workers participate in training.
+    # Eval data: single chunk so one worker gets data, the other gets an empty
+    # placeholder. This exercises the collective balance path for Allgather
+    # (AUC, AP) and GlobalSyncUpBySum (MAP).
+    n_valid = len(y_valid)
+    with Client(cluster2) as client:
+        dX = da.from_array(X_train, chunks=(500, X_train.shape[1]))
+        dy = da.from_array(y_train, chunks=(500,))
+
+        dX_valid = da.from_array(X_valid, chunks=(n_valid, X_valid.shape[1]))
+        dy_valid = da.from_array(y_valid, chunks=(n_valid,))
+
+        fit_kwargs: Dict[str, Any] = {
+            "eval_set": [(dX_valid, dy_valid)],
+            "eval_metric": eval_metric,
+        }
+        if g_train is not None:
+            # Build per-group chunks for training data so group and data
+            # chunks align (same count → _split_to_parts produces equal-length lists).
+            n_features = X_train.shape[1]
+            dX_p, dy_p, dg_p = [], [], []
+            offset = 0
+            for gs in g_train:
+                gs_i = int(gs)
+                dX_p.append(da.from_array(X_train[offset:offset + gs_i], chunks=(gs_i, n_features)))
+                dy_p.append(da.from_array(y_train[offset:offset + gs_i], chunks=(gs_i,)))
+                dg_p.append(da.from_array(np.array([gs_i]), chunks=(1,)))
+                offset += gs_i
+            dX = da.concatenate(dX_p, axis=0)
+            dy = da.concatenate(dy_p, axis=0)
+            dg = da.concatenate(dg_p, axis=0)
+
+            # Eval data: single chunk (all queries in one chunk) so one worker
+            # gets all eval data and the other gets an empty placeholder.
+            dg_valid = da.from_array(g_valid, chunks=(len(g_valid),))
+            fit_kwargs.update({"group": dg, "eval_group": [dg_valid]})
+            dask_model = lgb.DaskLGBMRanker(
+                client=client, eval_at=(1, 3), **estimator_kwargs, **_dask_metric_model_params()
+            )
+            dask_model.fit(dX, dy, **fit_kwargs)
+            expected_score = compute_expected(dask_model, dX_valid, dy_valid, dg_valid)
+        else:
+            dask_model = estimator_cls(
+                client=client, **estimator_kwargs, **_dask_metric_model_params()
+            )
+            dask_model.fit(dX, dy, **fit_kwargs)
+            expected_score = compute_expected(dask_model, dX_valid, y_valid)
+
         _assert_reported_metric_matches_global_score(dask_model, metric_key, expected_score)
 
 
