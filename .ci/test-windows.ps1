@@ -68,6 +68,7 @@ if ($env:TASK -eq "swig") {
 if ($env:PYTHON_VERSION -eq "3.10") {
     pixi install -e py310 ; Assert-Output $?
     $activation = ((& pixi shell-hook -e py310 --shell powershell) -join "`n")
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingInvokeExpression", "")]
     Invoke-Expression $activation ; Assert-Output $?
 } else {
     # update conda env
@@ -97,7 +98,12 @@ if ($env:PYTHON_VERSION -eq "3.10") {
     # print output of 'conda list', to help in submitting bug reports
     Write-Output "conda list:"
     conda list -n $env:CONDA_ENV
-    conda activate $env:CONDA_ENV
+
+    # 'bdist' job invokes 'RefreshEnv' to update PATH from the registry (which may have been modified
+    # by building in OpenCL support), so defer activating the conda environment until later for those builds.
+    if ($env:TASK -ne "bdist") {
+        conda activate $env:CONDA_ENV
+    }
 }
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
@@ -120,6 +126,9 @@ if ($env:TASK -eq "regular") {
 
     Write-Output "Current OpenCL drivers:"
     Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+
+    # (re-) activate conda environment, in case any activation logic was overridden by that 'RefreshEnv' call above
+    conda activate $env:CONDA_ENV
 
     # TODO: restore --integrated-opencl as part of https://github.com/lightgbm-org/LightGBM/issues/6968
     sh "build-python.sh" bdist_wheel ; Assert-Output $?
