@@ -6,8 +6,24 @@ This document is for LightGBM maintainers.
 
 ### Locked Environments with `pixi`
 
-1. edit `pixi.toml` manually
-2.
+This project uses `pixi` for tasks and CI jobs that run with a locked set of dependencies.
+
+In general, updating these environments looks like:
+
+1. manually modify `pixi.toml`
+2. run `pixi install`
+
+And running inside one looks like:
+
+```shell
+# interactive shell
+pixi shell -e py310
+
+# run a task
+pixi run -e py310 python -c "import pandas; print(pandas.__version__)"
+```
+
+See https://pixi.prefix.dev/latest/ for more details.
 
 
 ## Releasing
