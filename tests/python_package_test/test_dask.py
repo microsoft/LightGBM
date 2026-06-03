@@ -1083,7 +1083,14 @@ def _expected_average_precision(model, dX_valid, y_valid):
 
 
 def _compute_auc_mu(y_true, raw_scores, sample_weights=None, weights_matrix=None):
-    """Compute auc_mu following LightGBM's C++ AucMuMetric::Eval algorithm.
+    """Compute auc_mu matching the reference paper implementation.
+
+    Reimplements Kleiman & Page, "AUC Mu" (ICML 2019):
+    https://github.com/kleimanr/auc_mu
+
+    Matches LightGBM's C++ AucMuMetric::Eval: OvO AUCs with
+    Mahalanobis projection, class-j-first tie-breaking, and uniform
+    average over class pairs.
 
     Parameters
     ----------
@@ -1091,20 +1098,24 @@ def _compute_auc_mu(y_true, raw_scores, sample_weights=None, weights_matrix=None
     raw_scores : 2-D array of shape (n_samples, n_classes), raw per-class scores
         before softmax.
     sample_weights : 1-D array or None.
-    weights_matrix : 2-D array (n_classes, n_classes) or None (defaults to identity).
+    weights_matrix : 2-D array (n_classes, n_classes) or None.
+        Defaults to ones-off-diagonal (same as LightGBM's default).
     """
     n_samples, n_classes = raw_scores.shape
     y_int = y_true.astype(int)
     if weights_matrix is None:
-        weights_matrix = np.eye(n_classes)
+        # LightGBM default: ones off-diagonal, zero diagonal
+        weights_matrix = np.ones((n_classes, n_classes)) - np.eye(n_classes)
     class_sizes = np.bincount(y_int, minlength=n_classes)
     S = np.zeros((n_classes, n_classes))
     idx_by_label = np.argsort(y_int)
 
     i_start = 0
     for i in range(n_classes):
-        j_start = i_start + class_sizes[i]
+        j_start = i_start
         for j in range(i + 1, n_classes):
+            j_start += class_sizes[j - 1]  # advance to start of class j
+
             curr_v = weights_matrix[i] - weights_matrix[j]
             t1 = curr_v[i] - curr_v[j]
 
@@ -1153,7 +1164,6 @@ def _compute_auc_mu(y_true, raw_scores, sample_weights=None, weights_matrix=None
                             S[i][j] += num_j - 0.5 * num_current_j
                         else:
                             S[i][j] += num_j
-            j_start += class_sizes[j]
         i_start += class_sizes[i]
 
     ans = 0.0
@@ -1340,8 +1350,8 @@ _DISTRIBUTED_METRIC_SCENARIOS = [
         _expected_auc_mu,
         id="auc_mu",
         marks=pytest.mark.xfail(
-            reason="Known ~5% discrepancy between C++ Allgather-based auc_mu "
-                   "and Python-side computation"
+            reason="Dask worker model divergence causes Allgather scores to "
+                   "be inconsistent across workers for multiclass"
         ),
     ),
 ]

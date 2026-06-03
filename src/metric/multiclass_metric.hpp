@@ -223,26 +223,30 @@ class AucMuMetric : public Metric {
     }
 
     // sort the data indices by true class
-    sorted_data_idx_ = std::vector<data_size_t>(num_data_, 0);
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      sorted_data_idx_[i] = i;
-    }
-    Common::ParallelSort(sorted_data_idx_.begin(), sorted_data_idx_.end(),
-      [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
+    // In distributed mode these are recomputed from the gathered data in Eval;
+    // only compute locally when running single-machine.
+    if (Network::num_machines() <= 1) {
+      sorted_data_idx_ = std::vector<data_size_t>(num_data_, 0);
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        sorted_data_idx_[i] = i;
+      }
+      Common::ParallelSort(sorted_data_idx_.begin(), sorted_data_idx_.end(),
+        [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
 
-    // get size of each class
-    class_sizes_ = std::vector<data_size_t>(num_class_, 0);
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      data_size_t curr_label = static_cast<data_size_t>(label_[i]);
-      ++class_sizes_[curr_label];
-    }
-
-    // get total weight of data in each class
-    class_data_weights_ = std::vector<double>(num_class_, 0);
-    if (weights_ != nullptr) {
+      // get size of each class
+      class_sizes_ = std::vector<data_size_t>(num_class_, 0);
       for (data_size_t i = 0; i < num_data_; ++i) {
         data_size_t curr_label = static_cast<data_size_t>(label_[i]);
-        class_data_weights_[curr_label] += weights_[i];
+        ++class_sizes_[curr_label];
+      }
+
+      // get total weight of data in each class
+      class_data_weights_ = std::vector<double>(num_class_, 0);
+      if (weights_ != nullptr) {
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          data_size_t curr_label = static_cast<data_size_t>(label_[i]);
+          class_data_weights_[curr_label] += weights_[i];
+        }
       }
     }
   }
@@ -284,8 +288,9 @@ class AucMuMetric : public Metric {
       auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
       int i_start = 0;
       for (int i = 0; i < num_class_; ++i) {
-        int j_start = i_start + cls_sizes[i];
+        int j_start = i_start;
         for (int j = i + 1; j < num_class_; ++j) {
+          j_start += cls_sizes[j - 1];  // advance to start of class j
           std::vector<double> curr_v;
           for (int k = 0; k < num_class_; ++k) {
             curr_v.emplace_back(class_weights_[i][k] - class_weights_[j][k]);
@@ -357,7 +362,6 @@ class AucMuMetric : public Metric {
               }
             }
           }
-          j_start += cls_sizes[j];
         }
         i_start += cls_sizes[i];
       }
@@ -380,8 +384,9 @@ class AucMuMetric : public Metric {
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;
     for (int i = 0; i < num_class_; ++i) {
-      int j_start = i_start + class_sizes_[i];
+      int j_start = i_start;
       for (int j = i + 1; j < num_class_; ++j) {
+        j_start += class_sizes_[j - 1];  // advance to start of class j
         std::vector<double> curr_v;
         for (int k = 0; k < num_class_; ++k) {
           curr_v.emplace_back(class_weights_[i][k] - class_weights_[j][k]);
@@ -459,7 +464,6 @@ class AucMuMetric : public Metric {
             }
           }
         }
-        j_start += class_sizes_[j];
       }
       i_start += class_sizes_[i];
     }

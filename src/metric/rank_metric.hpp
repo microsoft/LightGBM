@@ -91,11 +91,11 @@ class NDCGMetric:public Metric {
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     if (num_data_ == 0) {
+      std::vector<double> result(eval_at_.size(), 0.0f);
       if (Network::num_machines() > 1) {
         // Participate in collective with zero contribution to keep it balanced
         double sum_weights = 0.0;
         sum_weights = Network::GlobalSyncUpBySum(sum_weights);
-        std::vector<double> result(eval_at_.size(), 0.0f);
         for (size_t j = 0; j < result.size(); ++j) {
           result[j] = Network::GlobalSyncUpBySum(result[j]);
         }
@@ -105,7 +105,7 @@ class NDCGMetric:public Metric {
           }
         }
       }
-      return std::vector<double>(eval_at_.size(), 0.0f);
+      return result;
     }
     int num_threads = OMP_NUM_THREADS();
     // some buffers for multi-threading sum up
