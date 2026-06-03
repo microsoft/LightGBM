@@ -23,7 +23,7 @@ install:
   - git submodule update --init --recursive  # get `external_libs` folder
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-  - set PATH=C:\Users\appveyor\.pixi\bin;%PATH
+  - set PATH=C:\Users\appveyor\.pixi\bin;%PATH%
   - ps: |
       $env:APPVEYOR = "true"
       $env:CMAKE_BUILD_PARALLEL_LEVEL = 4
