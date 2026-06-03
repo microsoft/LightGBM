@@ -68,7 +68,6 @@ if ($env:TASK -eq "swig") {
 if ($env:PYTHON_VERSION -eq "3.10") {
     pixi install -e py310 ; Assert-Output $?
     $activation = ((& pixi shell-hook -e py310 --shell powershell) -join "`n")
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingInvokeExpression", "")]
     Invoke-Expression $activation ; Assert-Output $?
 } else {
     # update conda env

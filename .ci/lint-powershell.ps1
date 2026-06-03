@@ -7,7 +7,10 @@ $settings = @{
         'Error'
     )
     IncludeDefaultRules = $true
-    # Additional rules that are disabled by default
+    # Additional rules that are disabled by default.
+    #
+    # Some of the skips could be replaced with inline comments if PSScriptAnalyzer
+    # supports that in the future (https://github.com/PowerShell/PSScriptAnalyzer/issues/849).
     Rules = @{
         PSAvoidExclaimOperator = @{
             Enable = $true
@@ -18,6 +21,9 @@ $settings = @{
         }
         PSAvoidSemicolonsAsLineTerminators = @{
             Enable = $true
+        }
+        PSAvoidUsingInvokeExpression = @{
+            Enable = $false
         }
         PSPlaceCloseBrace = @{
             Enable = $true
@@ -55,4 +61,15 @@ $settings = @{
     }
 }
 
-Invoke-ScriptAnalyzer -Path ./ -Recurse -EnableExit -Settings $settings
+# this pre-listing of files can be removed whenever PSScriptAnalyzer adds support for exclusions.
+#
+# see:
+#
+#  * https://github.com/PowerShell/PSScriptAnalyzer/issues/561
+#  * https://github.com/PowerShell/vscode-powershell/issues/3048
+#
+$files = Get-ChildItem -Path ./ -Recurse -Filter '*.ps1' |
+    Where-Object { $_.FullName -notmatch '[/\\]\.pixi[/\\]' } |
+    Where-Object { $_.FullName -notmatch '[/\\]venv[/\\]' }
+
+Invoke-ScriptAnalyzer -Path $files -EnableExit -Settings $settings
