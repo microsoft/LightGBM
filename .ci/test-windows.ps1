@@ -66,7 +66,9 @@ if ($env:TASK -eq "swig") {
 
 # 'pixi' is used for end-of-life Python versions
 if ($env:PYTHON_VERSION -eq "3.10") {
-    (& pixi shell-hook -e py310 --shell powershell) | Invoke-Expression ; Assert-Output $?
+    pixi install -e py310 ; Assert-Output $?
+    $activation = ((& pixi shell-hook -e py310 --shell powershell) -join "`n")
+    Invoke-Expression $activation ; Assert-Output $?
 } else {
     # update conda env
     $env:CONDA_ENV = "test-env"
