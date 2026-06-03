@@ -2,6 +2,14 @@
 
 This document is for LightGBM maintainers.
 
+## Managing Dependencies
+
+### Locked Environments with `pixi`
+
+1. edit `pixi.toml` manually
+2.
+
+
 ## Releasing
 
 ### Step 1: Put up a Release PR

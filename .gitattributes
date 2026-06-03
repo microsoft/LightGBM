@@ -28,3 +28,7 @@
 # help git identify which files should be treated as binary
 *.ico binary
 *.png binary
+
+# SCM syntax highlighting & preventing 3-way merges
+# (added automatically by 'pixi init')
+pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff

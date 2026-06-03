@@ -475,6 +475,7 @@ dask-worker-space/
 
 # pixi environments
 .pixi
+!.pixi/config.toml
 
 # mypy
 .mypy_cache/

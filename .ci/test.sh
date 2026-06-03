@@ -101,25 +101,31 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $PYTHON_VERSION == "3.10" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py310.txt"
-else
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
+PYTHON_ENV_MANAGER="conda"
+if [[ "${PYTHON_VERSION}" == "3.10" ]]; then
+    PYTHON_ENV_MANAGER="pixi"
+    CI_PIXI_ENV="py310"
 fi
 
-conda create \
-    -y \
-    -n "${CONDA_ENV}" \
-    --file "${CONDA_REQUIREMENT_FILE}" \
-    "${CONDA_PYTHON_REQUIREMENT}" \
-|| exit 1
+# 'pixi' is used for end-of-life Python versions
+if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
+    eval "$(pixi shell-hook -e "${CI_PIXI_ENV}")"
+else
+    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
+    conda create \
+        -y \
+        -n "${CONDA_ENV}" \
+        --file "${CONDA_REQUIREMENT_FILE}" \
+        "${CONDA_PYTHON_REQUIREMENT}" \
+    || exit 1
 
-# print output of 'conda list', to help in submitting bug reports
-echo "conda list:"
-conda list -n ${CONDA_ENV}
+    # print output of 'conda list', to help in submitting bug reports
+    echo "conda list:"
+    conda list -n ${CONDA_ENV}
 
-# shellcheck disable=SC1091
-source activate $CONDA_ENV
+    # shellcheck disable=SC1091
+    source activate $CONDA_ENV
+fi
 
 cd "${BUILD_DIRECTORY}"
 
@@ -275,27 +281,38 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    # requirements for examples
-    conda install -y -n $CONDA_ENV \
-        'h5py>=3.10' \
-        'ipywidgets>=8.1.2' \
-        'notebook>=7.1.2'
+    # install optional plotting libraries
+    # (not necessary for pixi-managed environments, where they're just installed by default)
+    if [[ "${PYTHON_VERSION}" != "3.10" ]]; then
+        conda install -y -n $CONDA_ENV \
+            'h5py>=3.10' \
+            'ipywidgets>=8.1.2' \
+            'notebook>=7.1.2'
+    fi
     for f in *.py **/*.py; do python "${f}" || exit 1; done  # run all examples
     cd "$BUILD_DIRECTORY/examples/python-guide/notebooks"
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace ./*.ipynb || exit 1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall -n $CONDA_ENV --force --yes \
-        cffi \
-        dask \
-        distributed \
-        joblib \
-        matplotlib-base \
-        pandas \
-        psutil \
-        pyarrow \
-        python-graphviz \
-        scikit-learn || exit 1
+    PACKAGES_TO_REMOVE=(
+        cffi
+        dask
+        distributed
+        joblib
+        matplotlib-base
+        pandas
+        psutil
+        pyarrow
+        python-graphviz
+        scikit-learn
+    )
+    if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
+        pixi remove -e "${CI_PIXI_ENV}" \
+            "${PACKAGES_TO_REMOVE[@]}"
+    else
+        conda uninstall -n $CONDA_ENV --force --yes \
+            "${PACKAGES_TO_REMOVE[@]}"
+    fi
     python -c "import lightgbm" || exit 1
 fi
