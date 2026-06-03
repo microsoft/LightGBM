@@ -375,7 +375,7 @@ jobs:
           pattern: '*amd64*-liblightgbm'
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
-        uses: NuGet/setup-nuget@b26b823c478ee115be5c9403e62c90b0bf943843  # v3.1.0
+        uses: NuGet/setup-nuget@fd55a6f3b34392fa83fde1454582407d8c714123  # v4.0
       # ref: https://github.com/NuGet/setup-nuget/issues/168
       - name: Setup mono
         run: |
