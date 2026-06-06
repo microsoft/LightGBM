@@ -288,9 +288,8 @@ class AucMuMetric : public Metric {
       auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
       int i_start = 0;
       for (int i = 0; i < num_class_; ++i) {
-        int j_start = i_start;
+        int j_start = i_start + cls_sizes[i];
         for (int j = i + 1; j < num_class_; ++j) {
-          j_start += cls_sizes[j - 1];  // advance to start of class j
           std::vector<double> curr_v;
           for (int k = 0; k < num_class_; ++k) {
             curr_v.emplace_back(class_weights_[i][k] - class_weights_[j][k]);
@@ -362,6 +361,7 @@ class AucMuMetric : public Metric {
               }
             }
           }
+          j_start += cls_sizes[j];
         }
         i_start += cls_sizes[i];
       }
@@ -384,9 +384,8 @@ class AucMuMetric : public Metric {
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;
     for (int i = 0; i < num_class_; ++i) {
-      int j_start = i_start;
+      int j_start = i_start + class_sizes_[i];
       for (int j = i + 1; j < num_class_; ++j) {
-        j_start += class_sizes_[j - 1];  // advance to start of class j
         std::vector<double> curr_v;
         for (int k = 0; k < num_class_; ++k) {
           curr_v.emplace_back(class_weights_[i][k] - class_weights_[j][k]);
@@ -464,6 +463,7 @@ class AucMuMetric : public Metric {
             }
           }
         }
+        j_start += class_sizes_[j];
       }
       i_start += class_sizes_[i];
     }
