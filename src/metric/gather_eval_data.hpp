@@ -83,7 +83,10 @@ inline void GatherEvalData(
     if (*p) any_has_weights = true;
   }
 
-  // Allocate output
+  // Allocate output. all_scores is laid out class-major over total rows:
+  // [c0_row0..c0_row{total-1} | c1_row0..c1_row{total-1} | ...]
+  // This matches the single-machine score buffer layout, so callers can use
+  // the same indexing scr[total_data * m + a] in both paths.
   data_size_t total_scores = static_cast<data_size_t>(total_data) * num_class;
   all_labels.resize(total_data);
   all_scores.resize(total_scores);
@@ -94,7 +97,6 @@ inline void GatherEvalData(
 
   // Second pass: copy data
   data_size_t offset = 0;
-  data_size_t score_offset = 0;
   for (int i = 0; i < num_machines; ++i) {
     const char* p = all_buf.data() + size_start[i];
     comm_size_t nd_i;
@@ -108,9 +110,18 @@ inline void GatherEvalData(
       std::memcpy(all_labels.data() + offset, p, nd_i * sizeof(label_t));
       p += nd_i * sizeof(label_t);
 
-      comm_size_t score_bytes_i = nd_i * nc_i * static_cast<comm_size_t>(sizeof(double));
-      std::memcpy(all_scores.data() + score_offset, p, score_bytes_i);
-      p += score_bytes_i;
+      // Per-worker scores arrive class-major over the worker's local rows:
+      // [c0_row0..c0_row{nd_i-1} | c1_row0..c1_row{nd_i-1} | ...].
+      // Re-stripe into the global class-major layout so each class block lives
+      // contiguously across all workers.
+      const double* worker_scores = reinterpret_cast<const double*>(p);
+      for (comm_size_t m = 0; m < nc_i; ++m) {
+        std::memcpy(
+          all_scores.data() + static_cast<data_size_t>(m) * total_data + offset,
+          worker_scores + static_cast<data_size_t>(m) * nd_i,
+          nd_i * sizeof(double));
+      }
+      p += static_cast<comm_size_t>(nd_i) * nc_i * static_cast<comm_size_t>(sizeof(double));
 
       bool has_w = (*p != 0);
       p += 1;
@@ -122,7 +133,6 @@ inline void GatherEvalData(
       }
 
       offset += nd_i;
-      score_offset += static_cast<data_size_t>(nd_i) * static_cast<data_size_t>(nc_i);
     }
   }
 }

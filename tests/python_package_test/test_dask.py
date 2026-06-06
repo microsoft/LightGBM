@@ -1082,102 +1082,31 @@ def _expected_average_precision(model, dX_valid, y_valid):
     return average_precision_score(y_valid, proba)
 
 
-def _compute_auc_mu(y_true, raw_scores, sample_weights=None, weights_matrix=None):
-    """Compute auc_mu matching the reference paper implementation.
+def _compute_auc_mu(y_true, raw_scores):
+    """auc_mu reference implementation from Kleiman & Page, ICML 2019.
 
-    Reimplements Kleiman & Page, "AUC Mu" (ICML 2019):
-    https://github.com/kleimanr/auc_mu
-
-    Matches LightGBM's C++ AucMuMetric::Eval: OvO AUCs with
-    Mahalanobis projection, class-j-first tie-breaking, and uniform
-    average over class pairs.
-
-    Parameters
-    ----------
-    y_true : 1-D array of integer class labels.
-    raw_scores : 2-D array of shape (n_samples, n_classes), raw per-class scores
-        before softmax.
-    sample_weights : 1-D array or None.
-    weights_matrix : 2-D array (n_classes, n_classes) or None.
-        Defaults to ones-off-diagonal (same as LightGBM's default).
+    Uniform-weight OvO with the LightGBM-default ones-off-diagonal partition
+    matrix; per-pair AUC via sklearn on the projected scores.
     """
-    n_samples, n_classes = raw_scores.shape
+    n_classes = raw_scores.shape[1]
     y_int = y_true.astype(int)
-    if weights_matrix is None:
-        # LightGBM default: ones off-diagonal, zero diagonal
-        weights_matrix = np.ones((n_classes, n_classes)) - np.eye(n_classes)
-    class_sizes = np.bincount(y_int, minlength=n_classes)
-    S = np.zeros((n_classes, n_classes))
-    idx_by_label = np.argsort(y_int)
+    A = np.ones((n_classes, n_classes)) - np.eye(n_classes)
+    W = np.tri(n_classes, k=-1)
+    W /= W.sum()
 
-    i_start = 0
+    auc_total = 0.0
     for i in range(n_classes):
-        j_start = i_start
-        for j in range(i + 1, n_classes):
-            j_start += class_sizes[j - 1]  # advance to start of class j
-
-            curr_v = weights_matrix[i] - weights_matrix[j]
-            t1 = curr_v[i] - curr_v[j]
-
-            idx_i = idx_by_label[i_start:i_start + class_sizes[i]]
-            idx_j = idx_by_label[j_start:j_start + class_sizes[j]]
-            idx_ij = np.concatenate([idx_i, idx_j])
-
-            scores_ij = raw_scores[idx_ij]
-            dists = t1 * np.dot(scores_ij, curr_v)
-            is_j = np.concatenate([np.zeros(len(idx_i)), np.ones(len(idx_j))])
-
-            # Sort ascending by distance; on tie class j (higher label) first
-            sort_order = np.lexsort((-is_j, dists))
-            dists_sorted = dists[sort_order]
-            is_j_sorted = is_j[sort_order]
-
-            num_j = 0.0
-            last_dist = dists_sorted[0]
-            num_current_j = 0.0
-            if sample_weights is not None:
-                w_ij = sample_weights[idx_ij][sort_order]
-                for k in range(len(dists_sorted)):
-                    if is_j_sorted[k]:
-                        num_j += w_ij[k]
-                        if abs(dists_sorted[k] - last_dist) < 1e-15:
-                            num_current_j += w_ij[k]
-                        else:
-                            last_dist = dists_sorted[k]
-                            num_current_j = w_ij[k]
-                    else:
-                        if abs(dists_sorted[k] - last_dist) < 1e-15:
-                            S[i][j] += w_ij[k] * (num_j - 0.5 * num_current_j)
-                        else:
-                            S[i][j] += w_ij[k] * num_j
-            else:
-                for k in range(len(dists_sorted)):
-                    if is_j_sorted[k]:
-                        num_j += 1
-                        if abs(dists_sorted[k] - last_dist) < 1e-15:
-                            num_current_j += 1
-                        else:
-                            last_dist = dists_sorted[k]
-                            num_current_j = 1
-                    else:
-                        if abs(dists_sorted[k] - last_dist) < 1e-15:
-                            S[i][j] += num_j - 0.5 * num_current_j
-                        else:
-                            S[i][j] += num_j
-        i_start += class_sizes[i]
-
-    ans = 0.0
-    for i in range(n_classes):
-        for j in range(i + 1, n_classes):
-            ans += (S[i][j] / class_sizes[i]) / class_sizes[j]
-    return (2.0 * ans / n_classes) / (n_classes - 1)
+        preds_i = raw_scores[y_int == i]
+        for j in range(i):
+            preds_j = raw_scores[y_int == j]
+            scores = np.dot(np.vstack((preds_i, preds_j)), A[i] - A[j])
+            labels = np.concatenate([np.zeros(len(preds_i)), np.ones(len(preds_j))])
+            auc_total += W[i, j] * roc_auc_score(labels, scores)
+    return auc_total
 
 
 def _expected_auc_mu(model, dX_valid, y_valid):
     # Compute auc_mu from the model's raw scores on the full validation set.
-    # Note: there is a known ~5% discrepancy between this Python computation and
-    # the C++ distributed evals_result_ for Dask-trained models (investigation
-    # pending). For local models the match is exact.
     X_val = dX_valid.compute()
     y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
     raw = model.booster_.predict(X_val, raw_score=True)
@@ -1349,10 +1278,6 @@ _DISTRIBUTED_METRIC_SCENARIOS = [
         "auc_mu",
         _expected_auc_mu,
         id="auc_mu",
-        marks=pytest.mark.xfail(
-            reason="Dask worker model divergence causes Allgather scores to "
-                   "be inconsistent across workers for multiclass"
-        ),
     ),
 ]
 
