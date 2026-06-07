@@ -945,6 +945,60 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                     assert len(evals_result[eval_name][metric]) == fit_trees
 
 
+@pytest.mark.parametrize(
+    "task,metric_key",
+    [
+        ("binary-classification", "binary_logloss"),
+        ("regression", "l2"),
+        ("multiclass-classification", "multi_logloss"),
+    ],
+)
+def test_early_stopping_uses_global_metric(task, metric_key, cluster):
+    """Early stopping fires on the globally-aggregated eval metric and all
+    workers agree on best_iteration_."""
+    task_to_data = {
+        "binary-classification": _binary_classification_data,
+        "regression": _regression_data,
+        "multiclass-classification": _multiclass_data,
+    }
+    X_train, X_valid, y_train, y_valid = task_to_data[task]()
+
+    with Client(cluster) as client:
+        dX, dy, dX_valid, dy_valid = _as_dask_train_valid(X_train, X_valid, y_train, y_valid)
+
+        # Aggressive lr + high n_estimators so the model plateaus well before n_estimators.
+        model_params = {
+            **_dask_metric_model_params(),
+            "n_estimators": 1000,
+            "learning_rate": 0.3,
+        }
+        dask_model = task_to_dask_factory[task](client=client, **model_params)
+        dask_model.fit(
+            dX, dy,
+            eval_set=[(dX_valid, dy_valid)],
+            eval_metric=metric_key,
+            callbacks=[lgb.early_stopping(stopping_rounds=5, verbose=False)],
+        )
+
+        # Early stopping actually fired.
+        assert dask_model.booster_.num_trees() < model_params["n_estimators"], (
+            "early stopping did not fire; bump n_estimators or shrink stopping_rounds"
+        )
+        assert dask_model.best_iteration_ > 0
+
+        # best_score_ matches the recorded global metric at best_iteration_ (a
+        # per-worker local metric would diverge here).
+        recorded = dask_model.evals_result_["valid_0"][metric_key]
+        np.testing.assert_allclose(
+            dask_model.best_score_["valid_0"][metric_key],
+            recorded[dask_model.best_iteration_ - 1],
+        )
+
+        # best_iteration_ is the argmin of the loss series up to that point.
+        best_idx = dask_model.best_iteration_ - 1
+        assert recorded[best_idx] == min(recorded[: best_idx + 1])
+
+
 def _dask_metric_model_params():
     return {
         "n_estimators": 12,
@@ -1133,59 +1187,56 @@ def _ranking_data():
     return X_train, X_valid, y_train, y_valid, g_train, g_valid
 
 
-def _expected_ndcg(model, dX_valid, y_valid, g_valid, k=1):
-    """Compute per-query NDCG@k manually from predictions, matching LightGBM's
-    default label_gain = 2^i - 1 formula."""
+def _per_query_mean(model, dX_valid, y_valid, g_valid, score_query):
+    """Run model.predict, split into queries by group sizes, average
+    score_query(y_q, p_q) across non-empty queries."""
     pred = model.predict(dX_valid).compute()
     y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
     g_val = g_valid.compute() if hasattr(g_valid, "compute") else np.asarray(g_valid)
-    ndcg_sum = 0.0
-    n_queries = 0
-    offset = 0
+    total, n, offset = 0.0, 0, 0
     for g_size in g_val:
         gs = int(g_size)
         if gs == 0:
             continue
-        y_q = y_val[offset:offset + gs]
-        p_q = pred[offset:offset + gs]
-        n_queries += 1
-        order = np.argsort(p_q)[::-1][:k]
-        dcg = sum((2.0 ** y_q[idx] - 1.0) / np.log2(float(i) + 2.0)
-                  for i, idx in enumerate(order))
-        ideal_order = np.argsort(y_q)[::-1][:min(k, gs)]
-        idcg = sum((2.0 ** y_q[idx] - 1.0) / np.log2(float(i) + 2.0)
-                   for i, idx in enumerate(ideal_order))
-        ndcg_sum += dcg / idcg if idcg > 0 else 1.0
+        total += score_query(y_val[offset:offset + gs], pred[offset:offset + gs])
+        n += 1
         offset += gs
-    return ndcg_sum / n_queries if n_queries > 0 else 0.0
+    return total / n if n > 0 else 0.0
+
+
+def _ndcg_at_k(y_q, p_q, k):
+    """NDCG@k for one query, matching LightGBM's default label_gain = 2^y - 1."""
+    def dcg(idx_order):
+        return sum((2.0 ** y_q[idx] - 1.0) / np.log2(i + 2.0)
+                   for i, idx in enumerate(idx_order))
+    pred_top = np.argsort(p_q)[::-1][:k]
+    ideal_top = np.argsort(y_q)[::-1][:min(k, len(y_q))]
+    idcg = dcg(ideal_top)
+    return dcg(pred_top) / idcg if idcg > 0 else 1.0
+
+
+def _map_at_k(y_q, p_q, k):
+    """MAP@k for one query (binary relevance with threshold 0.5)."""
+    pred_top = np.argsort(p_q)[::-1][:k]
+    npos = int(np.sum(y_q > 0.5))
+    if npos == 0:
+        return 1.0
+    num_hit, sum_ap = 0, 0.0
+    for i, idx in enumerate(pred_top):
+        if y_q[idx] > 0.5:
+            num_hit += 1
+            sum_ap += num_hit / float(i + 1)
+    return sum_ap / min(npos, k)
+
+
+def _expected_ndcg(model, dX_valid, y_valid, g_valid, k=1):
+    return _per_query_mean(model, dX_valid, y_valid, g_valid,
+                           lambda y, p: _ndcg_at_k(y, p, k))
 
 
 def _expected_map(model, dX_valid, y_valid, g_valid, k=1):
-    """Compute per-query MAP@k manually from predictions."""
-    pred = model.predict(dX_valid).compute()
-    y_val = y_valid.compute() if hasattr(y_valid, "compute") else np.asarray(y_valid)
-    g_val = g_valid.compute() if hasattr(g_valid, "compute") else np.asarray(g_val)
-    ap_sum = 0.0
-    n_queries = 0
-    offset = 0
-    for g_size in g_val:
-        gs = int(g_size)
-        if gs == 0:
-            continue
-        y_q = y_val[offset:offset + gs]
-        p_q = pred[offset:offset + gs]
-        n_queries += 1
-        order = np.argsort(p_q)[::-1][:k]
-        npos = int(np.sum(y_q > 0.5))
-        num_hit = 0
-        sum_ap = 0.0
-        for i, idx in enumerate(order):
-            if y_q[idx] > 0.5:
-                num_hit += 1
-                sum_ap += num_hit / float(i + 1)
-        ap_sum += sum_ap / min(npos, k) if npos > 0 else 1.0
-        offset += gs
-    return ap_sum / n_queries if n_queries > 0 else 0.0
+    return _per_query_mean(model, dX_valid, y_valid, g_valid,
+                           lambda y, p: _map_at_k(y, p, k))
 
 
 _DISTRIBUTED_METRIC_SCENARIOS = [
@@ -1291,10 +1342,24 @@ _RANKING_METRIC_SCENARIOS = [
     ),
     pytest.param(
         _ranking_data,
+        "ndcg",
+        "ndcg@3",
+        lambda model, dX, y, g: _expected_ndcg(model, dX, y, g, k=3),
+        id="ndcg_at_3",
+    ),
+    pytest.param(
+        _ranking_data,
         "map",
         "map@1",
         _expected_map,
         id="map",
+    ),
+    pytest.param(
+        _ranking_data,
+        "map",
+        "map@3",
+        lambda model, dX, y, g: _expected_map(model, dX, y, g, k=3),
+        id="map_at_3",
     ),
 ]
 
