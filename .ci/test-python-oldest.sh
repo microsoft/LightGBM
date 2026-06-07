@@ -6,7 +6,7 @@ echo "installing lightgbm and its dependencies"
 pip install \
     --prefer-binary \
     --upgrade \
-    -constraint ./.ci/pip-envs/requirements-oldest.txt \
+    --constraint ./.ci/pip-envs/requirements-oldest.txt \
     "$(echo dist/*.whl)[arrow,pandas,scikit-learn]"
 
 echo "installed package versions:"
