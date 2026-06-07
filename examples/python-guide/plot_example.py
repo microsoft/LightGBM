@@ -5,10 +5,10 @@ import pandas as pd
 
 import lightgbm as lgb
 
-if lgb.compat.MATPLOTLIB_INSTALLED:
+try:
     import matplotlib.pyplot as plt
-else:
-    raise ImportError("You need to install matplotlib and restart your session for plot_example.py.")
+except ImportError as err:
+    raise ImportError("You need to install matplotlib and restart your session for plot_example.py.") from err
 
 print("Loading data...")
 # load or create your dataset
