@@ -112,7 +112,7 @@ fi
 
 # 'pixi' is used for end-of-life Python versions
 if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
-    eval "$(pixi shell-hook --locked -e "${CI_PIXI_ARGS[@]}")"
+    eval "$(pixi shell-hook --locked "${CI_PIXI_ARGS[@]}")"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
     conda create \
