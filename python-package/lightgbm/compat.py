@@ -156,6 +156,14 @@ except ImportError:
     _LGBMValidateData = None
     _sklearn_version = None
 
+# additional scikit-learn imports only for type hints
+if TYPE_CHECKING:
+    # sklearn.utils.Tags can be imported unconditionally once
+    # lightgbm's minimum scikit-learn version is 1.6 or higher
+    try:
+        from sklearn.utils import Tags as _sklearn_Tags
+    except ImportError:
+        _sklearn_Tags = None
 
 """pandas"""
 try:
@@ -190,67 +198,6 @@ except ImportError:
             pass
 
     concat = None
-
-"""dask"""
-try:
-    from dask import delayed
-    from dask.array import Array as dask_Array
-    from dask.array import from_delayed as dask_array_from_delayed
-    from dask.bag import from_delayed as dask_bag_from_delayed
-    from dask.dataframe import DataFrame as dask_DataFrame
-    from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, Future, default_client, wait
-
-    DASK_INSTALLED = True
-# catching 'ValueError' here because of this:
-# https://github.com/lightgbm-org/LightGBM/issues/6365#issuecomment-2002330003
-#
-# That's potentially risky as dask does some significant import-time processing,
-# like loading configuration from environment variables and files, and catching
-# ValueError here might hide issues with that config-loading.
-#
-# But in exchange, it's less likely that 'import lightgbm' will fail for
-# dask-related reasons, which is beneficial for any workloads that are using
-# lightgbm but not its Dask functionality.
-except (ImportError, ValueError):
-    DASK_INSTALLED = False
-
-    dask_array_from_delayed = None  # type: ignore[assignment]
-    dask_bag_from_delayed = None  # type: ignore[assignment]
-    delayed = None
-    default_client = None  # type: ignore[assignment]
-    wait = None  # type: ignore[assignment]
-
-    class Client:  # type: ignore
-        """Dummy class for dask.distributed.Client."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class Future:  # type: ignore
-        """Dummy class for dask.distributed.Future."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_Array:  # type: ignore
-        """Dummy class for dask.array.Array."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_DataFrame:  # type: ignore
-        """Dummy class for dask.dataframe.DataFrame."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_Series:  # type: ignore
-        """Dummy class for dask.dataframe.Series."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
 
 """pyarrow"""
 try:
