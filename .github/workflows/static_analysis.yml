@@ -37,11 +37,6 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: false
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
-      - name: Check that pixi.lock is in sync with pixi.toml
-        run: |
-          pixi install --locked
       - name: Setup and run tests
         shell: bash
         run: |

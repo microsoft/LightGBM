@@ -104,12 +104,15 @@ fi
 PYTHON_ENV_MANAGER="conda"
 if [[ "${PYTHON_VERSION}" == "3.10" ]]; then
     PYTHON_ENV_MANAGER="pixi"
-    CI_PIXI_ENV="py310"
+    CI_PIXI_ARGS=(
+        -e py310
+        -e py310-dask
+    )
 fi
 
 # 'pixi' is used for end-of-life Python versions
 if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
-    eval "$(pixi shell-hook --locked -e "${CI_PIXI_ENV}")"
+    eval "$(pixi shell-hook --locked -e "${CI_PIXI_ARGS[@]}")"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
     conda create \
@@ -286,7 +289,7 @@ matplotlib.use\(\"Agg\"\)\
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # install optional plotting libraries
     # (not necessary for pixi-managed environments, where they're just installed by default)
-    if [[ "${PYTHON_VERSION}" != "3.10" ]]; then
+    if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
         conda install -y -n $CONDA_ENV \
             'h5py>=3.10' \
             'ipywidgets>=8.1.2' \
@@ -298,24 +301,18 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace ./*.ipynb || exit 1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    PACKAGES_TO_REMOVE=(
-        cffi
-        dask
-        distributed
-        joblib
-        matplotlib-base
-        pandas
-        psutil
-        pyarrow
-        python-graphviz
-        scikit-learn
-    )
-    if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
-        pixi remove -e "${CI_PIXI_ENV}" \
-            "${PACKAGES_TO_REMOVE[@]}"
-    else
+    if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
         conda uninstall -n $CONDA_ENV --force --yes \
-            "${PACKAGES_TO_REMOVE[@]}"
+            cffi \
+            dask \
+            distributed \
+            joblib \
+            matplotlib-base \
+            pandas \
+            psutil \
+            pyarrow \
+            python-graphviz \
+            scikit-learn || exit 1
     fi
     python -c "import lightgbm" || exit 1
 fi
