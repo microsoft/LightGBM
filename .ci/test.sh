@@ -104,15 +104,12 @@ fi
 PYTHON_ENV_MANAGER="conda"
 if [[ "${PYTHON_VERSION}" == "3.10" ]]; then
     PYTHON_ENV_MANAGER="pixi"
-    CI_PIXI_ARGS=(
-        -e py310
-        -e py310-dask
-    )
+    CI_PIXI_ENV="py310"
 fi
 
 # 'pixi' is used for end-of-life Python versions
 if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
-    eval "$(pixi shell-hook --locked "${CI_PIXI_ARGS[@]}")"
+    eval "$(pixi shell-hook --locked -e "${CI_PIXI_ENV}")"
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
     conda create \
