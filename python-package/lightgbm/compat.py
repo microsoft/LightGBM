@@ -264,22 +264,24 @@ except ImportError:
 
 
 """cpu_count()"""
-try:
-    from joblib import cpu_count
 
-    def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-        return cpu_count(only_physical_cores=only_physical_cores)
-except ImportError:
+
+def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
+    ret: int
     try:
-        from psutil import cpu_count
+        from joblib import cpu_count  # noqa: I001,PLC0415
 
-        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-            return cpu_count(logical=not only_physical_cores) or 1
+        ret = cpu_count(only_physical_cores=only_physical_cores)
     except ImportError:
-        from multiprocessing import cpu_count
+        try:
+            from psutil import cpu_count  # noqa: I001,PLC0415
 
-        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-            return cpu_count()
+            ret = cpu_count(logical=not only_physical_cores) or 1
+        except ImportError:
+            from multiprocessing import cpu_count  # noqa: I001,PLC0415
+
+            ret = cpu_count()
+    return ret
 
 
 __all__: List[str] = []
