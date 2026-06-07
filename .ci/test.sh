@@ -289,7 +289,7 @@ matplotlib.use\(\"Agg\"\)\
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # install optional plotting libraries
     # (not necessary for pixi-managed environments, where they're just installed by default)
-    if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
+    if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
         conda install -y -n $CONDA_ENV \
             'h5py>=3.10' \
             'ipywidgets>=8.1.2' \
