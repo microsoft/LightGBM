@@ -595,7 +595,7 @@ def test_subclassing_get_params_works():
 
     try:
         import dask  # noqa: F401,PLC0415
-    except (ImportError, ValueError):
+    except lgb.dask._DaskImportErrorTypes:
         pass
 
     if "dask" in sys.modules:
