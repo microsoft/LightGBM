@@ -30,4 +30,5 @@ psutil = "5.9.3.*"
 pytest = "7.4.*"
 
 [environments]
+default = []
 py310 = ["py310"]
