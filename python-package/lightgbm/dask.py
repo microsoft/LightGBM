@@ -573,7 +573,8 @@ def _train(
     #   * 'num_threads': overridden to match nthreads on each Dask process
     for param_alias in _ConfigAliases.get("num_machines", "num_threads"):
         if param_alias in params:
-            _log_warning(f"Parameter {param_alias} will be ignored.")
+            if not (param_alias == "n_jobs" and params[param_alias] is None):
+                _log_warning(f"Parameter {param_alias} will be ignored.")
             params.pop(param_alias)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality

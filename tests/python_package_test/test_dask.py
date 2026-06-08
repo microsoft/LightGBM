@@ -4,6 +4,7 @@
 import inspect
 import re
 import socket
+import warnings
 from itertools import groupby
 from sys import platform
 from urllib.parse import urlparse
@@ -1209,6 +1210,19 @@ def test_warns_and_continues_on_unrecognized_tree_learner(cluster):
             dask_regressor = dask_regressor.fit(X, y)
 
         assert dask_regressor.fitted_
+
+
+def test_dask_estimator_does_not_warn_for_default_n_jobs(cluster):
+    with Client(cluster) as client:
+        X = da.random.random((1e3, 10))
+        y = da.random.random((1e3, 1))
+        dask_regressor = lgb.DaskLGBMRegressor(client=client, time_out=5, n_estimators=1, num_leaves=2)
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            dask_regressor.fit(X, y)
+
+        assert dask_regressor.fitted_
+        assert not [w for w in caught_warnings if "Parameter n_jobs will be ignored." in str(w.message)]
 
 
 @pytest.mark.parametrize("tree_learner", ["data_parallel", "voting_parallel"])
