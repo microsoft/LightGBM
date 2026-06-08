@@ -457,7 +457,19 @@ def _train_part(
         if eval_names:
             local_eval_names = [eval_names[i] for i in eval_component_idx]
         if eval_class_weight:
-            kwargs["eval_class_weight"] = [eval_class_weight[i] for i in eval_component_idx]
+            # Filter each class_weight dict to keys present in this worker's local eval slice.
+            # sklearn <=1.0.x raises on absent class keys; absent classes contribute zero rows
+            # anyway so the filtered weights are equivalent on this worker.
+            local_eval_class_weight: List[Optional[Union[dict, str]]] = []
+            for idx in eval_component_idx:
+                cw = eval_class_weight[idx]
+                if isinstance(cw, dict):
+                    present = set(np.unique(np.asarray(local_eval_set[idx][1])).tolist())
+                    filtered = {k: v for k, v in cw.items() if k in present}
+                    local_eval_class_weight.append(filtered if filtered else None)
+                else:
+                    local_eval_class_weight.append(cw)
+            kwargs["eval_class_weight"] = local_eval_class_weight
 
     if not local_eval_set:
         local_eval_X = None
