@@ -4862,7 +4862,7 @@ def test_equal_predict_from_row_major_and_col_major_data():
     np.testing.assert_allclose(preds_row, preds_col)
 
 
-@pytest.mark.skipif(getenv("TASK", "") != "cuda", reason="requires CUDA build")
+@pytest.mark.skipif(not BuildInfo.has_cuda, reason="requires CUDA build")
 def test_many_low_bin_features_does_not_sigfpe(rng):
     # Reproduces the SIGFPE in CalcConstructHistogramKernelDim where
     # MAX_NUM_COLUMN_PER_PARTITION reaching NUM_THREADS_PER_BLOCK drove
