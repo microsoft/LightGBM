@@ -901,8 +901,10 @@ class Booster {
 
 // explicitly declare symbols from LightGBM namespace
 using LightGBM::AllgatherFunction;
+#ifndef LGB_R_BUILD
 using LightGBM::ArrowChunkedArray;
 using LightGBM::ArrowTable;
+#endif  // LGB_R_BUILD
 using LightGBM::Booster;
 using LightGBM::Common::CheckElementsIntervalClosed;
 using LightGBM::Common::RemoveQuotationSymbol;
@@ -1643,9 +1645,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
-                                const struct ArrowArray* chunks,
-                                const struct ArrowSchema* schema,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
                                 const char* parameters,
                                 const DatasetHandle reference,
                                 DatasetHandle *out) {
@@ -1734,6 +1737,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
   *out = ret.release();
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
@@ -1856,11 +1860,12 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   int64_t n_chunks,
-                                  const struct ArrowArray* chunks,
-                                  const struct ArrowSchema* schema) {
+                                  ArrowArray* chunks,
+                                  ArrowSchema* schema) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   ArrowChunkedArray ca(n_chunks, chunks, schema);
@@ -1870,6 +1875,7 @@ int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
   }
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetField(DatasetHandle handle,
                          const char* field_name,
@@ -2616,10 +2622,11 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   API_END();
 }
 
+#ifndef LGB_R_BUILD
 int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 int64_t n_chunks,
-                                const struct ArrowArray* chunks,
-                                const struct ArrowSchema* schema,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
                                 int predict_type,
                                 int start_iteration,
                                 int num_iteration,
@@ -2666,6 +2673,7 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                        out_len);
   API_END();
 }
+#endif  // LGB_R_BUILD
 
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,
