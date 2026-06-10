@@ -842,14 +842,16 @@ def _data_from_pandas(
         feature_name = [str(col) for col in data.columns]
 
     # determine categorical features
-    cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
+    cat_cols = [
+        col for col, dtype in zip(data.columns, data.dtypes, strict=True) if isinstance(dtype, pd_CategoricalDtype)
+    ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not data[col].cat.ordered]
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
-        for col, category in zip(cat_cols, pandas_categorical):
+        for col, category in zip(cat_cols, pandas_categorical, strict=True):
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if cat_cols:  # cat_cols is list
@@ -1347,7 +1349,7 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for chunk, (start_idx_pred, end_idx_pred) in zip(
-                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:])
+                np.array_split(mat, sections), zip(n_preds_sections, n_preds_sections[1:], strict=True), strict=True
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_np2d(
@@ -1568,7 +1570,9 @@ class _InnerPredictor:
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.empty(sum(n_preds), dtype=np.float64)
             for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(
-                zip(sections, sections[1:]), zip(n_preds_sections, n_preds_sections[1:])
+                zip(sections, sections[1:], strict=True),
+                zip(n_preds_sections, n_preds_sections[1:], strict=True),
+                strict=True,
             ):
                 # avoid memory consumption by arrays concatenation operations
                 self.__inner_predict_csr(
@@ -1855,6 +1859,13 @@ class Dataset:
         self._params_back_up: Optional[Dict[str, Any]] = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
+        # By default, LightGBM assigns features names like Column_0, Column_1, etc.
+        # These may be overridden during construction if that raw training data is in a format
+        # that includes feature names (like a pandas DataFrame) or if the 'feature_name' keyword argument
+        # is explicitly set.
+        #
+        # This is here mostly for scikit-learn's benefit, as it tracks whether input data had feature names.
+        self._has_non_default_feature_names: bool = False
 
     def __del__(self) -> None:
         try:
@@ -2137,6 +2148,11 @@ class Dataset:
             )
         elif _is_pyarrow_table(data) and feature_name == "auto":
             feature_name = data.column_names
+
+        # 'feature_name == "auto"' after the block above means no feature names were provided
+        # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
+        # LightGBM will assign auto-generated names like Column_0, Column_1, etc.
+        self._has_non_default_feature_names = feature_name != "auto"
 
         # process for args
         params = {} if params is None else params
@@ -3054,6 +3070,7 @@ class Dataset:
         """
         if feature_name != "auto":
             self.feature_name = feature_name
+            self._has_non_default_feature_names = True
         if self._handle is not None and feature_name is not None and feature_name != "auto":
             if len(feature_name) != self.num_feature():
                 raise ValueError(

@@ -5,7 +5,6 @@ import inspect
 import re
 import socket
 from itertools import groupby
-from os import getenv
 from sys import platform
 from urllib.parse import urlparse
 
@@ -14,7 +13,11 @@ from sklearn.metrics import accuracy_score, r2_score
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal, sklearn_multiclass_custom_objective
+from .utils import (
+    BuildInfo,
+    np_assert_array_equal,
+    sklearn_multiclass_custom_objective,
+)
 
 if platform in {"cygwin", "win32"}:
     pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
@@ -53,9 +56,9 @@ task_to_local_factory = {
 }
 
 pytestmark = [
-    pytest.mark.skipif(getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface"),
-    pytest.mark.skipif(getenv("TASK", "") == "gpu", reason="Fails to run with GPU interface"),
-    pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(BuildInfo.has_cuda, reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(BuildInfo.has_gpu, reason="Fails to run with GPU interface"),
+    pytest.mark.skipif(BuildInfo.has_mpi, reason="Fails to run with MPI interface"),
 ]
 
 

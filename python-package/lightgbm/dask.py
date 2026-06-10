@@ -579,7 +579,7 @@ def _train(
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
-    parts = [{"data": x, "label": y} for (x, y) in zip(data_parts, label_parts)]
+    parts = [{"data": x, "label": y} for (x, y) in zip(data_parts, label_parts, strict=True)]
     n_parts = len(parts)
 
     if sample_weight is not None:
@@ -1096,8 +1096,6 @@ class _DaskLGBMModel:
         eval_at: Optional[Union[List[int], Tuple[int, ...]]] = None,
         **kwargs: Any,
     ) -> "_DaskLGBMModel":
-        if not DASK_INSTALLED:
-            raise LightGBMError("dask is required for lightgbm.dask")
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError("dask, pandas and scikit-learn are required for lightgbm.dask")
 
@@ -1206,12 +1204,16 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = LGBMClassifier.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
-    __init__.__doc__ = f"""
-        {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {_kwargs}{_after_kwargs}
-        """
+    _before_kwargs, _, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
+    __init__.__doc__ = (
+        _before_kwargs
+        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "    Dask client. \n"
+        + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
+        + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
+        + "**kwargs\n"
+        + _after_kwargs
+    )
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
@@ -1415,11 +1417,15 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
-    __init__.__doc__ = f"""
-        {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {_kwargs}{_after_kwargs}
-        """
+    __init__.__doc__ = (
+        _before_kwargs
+        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "    Dask client. \n"
+        + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
+        + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
+        + "**kwargs\n"
+        + _after_kwargs
+    )
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
@@ -1588,11 +1594,15 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
-    __init__.__doc__ = f"""
-        {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {_kwargs}{_after_kwargs}
-        """
+    __init__.__doc__ = (
+        _before_kwargs
+        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "    Dask client. \n"
+        + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
+        + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
+        + "**kwargs\n"
+        + _after_kwargs
+    )
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()

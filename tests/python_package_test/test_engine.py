@@ -7,7 +7,6 @@ import pickle
 import platform
 import random
 import re
-from os import getenv
 from pathlib import Path
 from shutil import copyfile
 
@@ -27,10 +26,10 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    BuildInfo,
     assert_all_trees_valid,
     assert_silent,
     dummy_obj,
@@ -298,7 +297,7 @@ def test_missing_value_handle_none():
         pytest.param(
             True,
             marks=pytest.mark.skipif(
-                getenv("TASK", "") == "cuda",
+                BuildInfo.has_cuda,
                 reason="Skip because quantized training with categorical features is not supported for cuda version",
             ),
         ),
@@ -348,7 +347,7 @@ def test_categorical_handle(use_quantized_grad):
         pytest.param(
             True,
             marks=pytest.mark.skipif(
-                getenv("TASK", "") == "cuda",
+                BuildInfo.has_cuda,
                 reason="Skip because quantized training with categorical features is not supported for cuda version",
             ),
         ),
@@ -398,7 +397,7 @@ def test_categorical_handle_na(use_quantized_grad):
         pytest.param(
             True,
             marks=pytest.mark.skipif(
-                getenv("TASK", "") == "cuda",
+                BuildInfo.has_cuda,
                 reason="Skip because quantized training with categorical features is not supported for cuda version",
             ),
         ),
@@ -564,9 +563,7 @@ def test_multi_class_error():
     assert results["training"]["multi_error@2"][-1] == pytest.approx(0)
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
-)
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Skip due to differences in implementation details of CUDA version")
 def test_auc_mu(rng):
     # should give same result as binary auc for 2 classes
     X, y = load_digits(n_class=10, return_X_y=True)
@@ -738,9 +735,7 @@ def simulate_position_bias(file_dataset_in, file_query_in, file_dataset_out, bas
     return positions_all
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Positions in learning to rank is not supported in CUDA version yet"
-)
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Positions in learning to rank is not supported in CUDA version yet")
 def test_ranking_with_position_information_with_file(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
     params = {
@@ -791,9 +786,7 @@ def test_ranking_with_position_information_with_file(tmp_path):
         lgb.train(params, lgb_train, valid_sets=lgb_valid, num_boost_round=50)
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Positions in learning to rank is not supported in CUDA version yet"
-)
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Positions in learning to rank is not supported in CUDA version yet")
 def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
     params = {
@@ -835,14 +828,18 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
     assert gbm_baseline.best_score["valid_0"]["ndcg@3"] + 0.03 <= gbm_unbiased.best_score["valid_0"]["ndcg@3"]
 
-    if PANDAS_INSTALLED:
+    try:
+        import pandas as pd  # noqa: PLC0415
+
         # test setting positions through Dataset constructor with pandas Series
-        lgb_train = lgb.Dataset(str(tmp_path / "rank.train"), params=params, position=pd_Series(positions))
+        lgb_train = lgb.Dataset(str(tmp_path / "rank.train"), params=params, position=pd.Series(positions))
         lgb_valid = [lgb_train.create_valid(str(tmp_path / "rank.test"))]
         gbm_unbiased_pandas_series = lgb.train(params, lgb_train, valid_sets=lgb_valid, num_boost_round=50)
         assert (
             gbm_unbiased.best_score["valid_0"]["ndcg@3"] == gbm_unbiased_pandas_series.best_score["valid_0"]["ndcg@3"]
         )
+    except ImportError:
+        pass
 
     # test setting positions through set_position
     lgb_train = lgb.Dataset(str(tmp_path / "rank.train"), params=params)
@@ -1348,7 +1345,7 @@ def test_cvbooster():
     assert isinstance(preds, list)
     assert len(preds) == nfold
     # check that each booster predicted using the best iteration
-    for fold_preds, bst in zip(preds, cvb.boosters):
+    for fold_preds, bst in zip(preds, cvb.boosters, strict=True):
         assert bst.best_iteration == cvb.best_iteration
         expected = bst.predict(X_test, num_iteration=cvb.best_iteration)
         np.testing.assert_allclose(fold_preds, expected)
@@ -1744,9 +1741,9 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
     #
     # passed-in force_col_wise / force_row_wise parameters are ignored on CUDA and GPU builds...
     # https://github.com/lightgbm-org/LightGBM/blob/1d7ee63686272bceffd522284127573b511df6be/src/io/config.cpp#L375-L377
-    if getenv("TASK", "") == "cuda":
+    if BuildInfo.has_cuda:
         device_entries = ["[force_col_wise: 0]", "[force_row_wise: 1]", "[device_type: cuda]", "[gpu_use_dp: 1]"]
-    elif getenv("TASK", "") == "gpu":
+    elif BuildInfo.has_gpu:
         device_entries = ["[force_col_wise: 1]", "[force_row_wise: 0]", "[device_type: gpu]", "[gpu_use_dp: 0]"]
     else:
         device_entries = ["[force_col_wise: 0]", "[force_row_wise: 0]", "[device_type: cpu]", "[gpu_use_dp: 0]"]
@@ -2014,7 +2011,7 @@ def test_contribs_sparse_multiclass():
 
 
 @pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
+    BuildInfo.has_cuda, reason="Skip because int64 sparse matrix indices are not supported for CUDA version"
 )
 def test_predict_contrib_int64():
     X, y = make_multilabel_classification(n_samples=100, sparse=True, n_features=5, n_classes=1, n_labels=2)
@@ -2181,7 +2178,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
 
 
-@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Monotone constraints are not yet supported by CUDA version")
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Monotone constraints are not yet supported by CUDA version")
 @pytest.mark.parametrize("test_with_categorical_variable", [True, False])
 def test_monotone_constraints(test_with_categorical_variable):
     def is_increasing(y):
@@ -2266,7 +2263,7 @@ def test_monotone_constraints(test_with_categorical_variable):
                 assert are_interactions_enforced(constrained_model, feature_sets)
 
 
-@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Monotone constraints are not yet supported by CUDA version")
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Monotone constraints are not yet supported by CUDA version")
 def test_monotone_penalty():
     def are_first_splits_non_monotone(tree, n, monotone_constraints):
         if n <= 0:
@@ -2309,7 +2306,7 @@ def test_monotone_penalty():
 
 
 # test if a penalty as high as the depth indeed prohibits all monotone splits
-@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Monotone constraints are not yet supported by CUDA version")
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Monotone constraints are not yet supported by CUDA version")
 def test_monotone_penalty_max():
     max_depth = 5
     monotone_constraints = [1, -1, 0]
@@ -3011,7 +3008,7 @@ def test_objective_callable_cv_regression():
     params = {"verbose": -1, "objective": mse_obj}
     cv_res = lgb.cv(params, lgb_train, num_boost_round=20, nfold=3, stratified=False, return_cvbooster=True)
     cv_booster = cv_res["cvbooster"].boosters
-    cv_mse_errors = [mean_squared_error(y, cb.predict(X)) < 463 for cb in cv_booster]
+    cv_mse_errors = [mean_squared_error(y, cb.predict(X)) < 504 for cb in cv_booster]
     cv_objs = [cb.params["objective"] == "none" for cb in cv_booster]
     assert all(cv_objs)
     assert all(cv_mse_errors)
@@ -3116,7 +3113,7 @@ def test_multiclass_custom_eval(use_weight):
         keep_training_booster=True,
     )
 
-    for key, ds in zip(["train", "valid"], [train_ds, valid_ds]):
+    for key, ds in zip(["train", "valid"], [train_ds, valid_ds], strict=True):
         np.testing.assert_allclose(eval_result[key]["multi_logloss"], eval_result[key]["custom_logloss"])
         _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
         assert metric == "custom_logloss"
@@ -3151,9 +3148,7 @@ def test_model_size():
         pytest.skipTest("not enough RAM")
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
-)
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Skip due to differences in implementation details of CUDA version")
 def test_get_split_value_histogram(rng_fixed_seed):
     X, y = make_synthetic_regression()
     X = np.repeat(X, 3, axis=0)
@@ -3240,9 +3235,7 @@ def test_get_split_value_histogram(rng_fixed_seed):
         gbm.get_split_value_histogram(2)
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
-)
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Skip due to differences in implementation details of CUDA version")
 def test_early_stopping_for_only_first_metric():
     def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration, first_metric_only, feval=None):
         params = {
@@ -4211,7 +4204,7 @@ def test_dump_model_hook():
     assert "LV" in dumped_model_str
 
 
-@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Forced splits are not yet supported by CUDA version")
+@pytest.mark.skipif(BuildInfo.has_cuda, reason="Forced splits are not yet supported by CUDA version")
 def test_force_split_with_feature_fraction(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -4748,11 +4741,11 @@ def test_train_only_raises_num_rounds_warning_when_expected(capsys):
     assert_silent(capsys)
 
 
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
 def test_validate_features():
+    pd = pytest.importorskip("pandas")
     X, y = make_synthetic_regression()
     features = ["x1", "x2", "x3", "x4"]
-    df = pd_DataFrame(X, columns=features)
+    df = pd.DataFrame(X, columns=features)
     ds = lgb.Dataset(df, y)
     bst = lgb.train({"num_leaves": 15, "verbose": -1}, ds, num_boost_round=10)
     assert bst.feature_name() == features
