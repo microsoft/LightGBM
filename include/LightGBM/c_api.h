@@ -1166,6 +1166,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
  * \param num_col Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction.
  *   To skip internal locks in ``LGBM_BoosterPredictForCSRSingleRowFast``, pass ``predict_disable_fast_lock=true``.
+ *   This is useful for applications serving multiple different models that control parallel execution themselves.
  *   Only do this when synchronization is handled outside of LightGBM.
  * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForCSRSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens
@@ -1358,6 +1359,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
  * \param ncol Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction.
  *   To skip internal locks in ``LGBM_BoosterPredictForMatSingleRowFast``, pass ``predict_disable_fast_lock=true``.
+ *   This is useful for applications serving multiple different models that control parallel execution themselves.
  *   Only do this when synchronization is handled outside of LightGBM.
  * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForMatSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens

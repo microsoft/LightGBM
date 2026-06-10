@@ -1060,6 +1060,8 @@ Predict Parameters
 
    -  if ``true``, LightGBM will not acquire its internal locks during fast single-row prediction
 
+   -  this is useful for applications serving predictions from multiple different models that control parallel execution themselves and can avoid unnecessary mutex contention in LightGBM
+
    -  **Note**: only set this to ``true`` when you guarantee that the same fast-config handle is not used concurrently and that the booster is not modified during prediction
 
 -  ``pred_early_stop`` :raw-html:`<a id="pred_early_stop" title="Permalink to this parameter" href="#pred_early_stop">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
