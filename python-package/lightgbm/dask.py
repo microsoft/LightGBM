@@ -267,6 +267,8 @@ def _eval_metrics_are_distributed_aggregated(
             metric_names.append("l2")
         elif issubclass(model_factory, LGBMClassifier):
             metric_names.append("binary_logloss")
+        elif issubclass(model_factory, LGBMRanker):
+            metric_names.append("ndcg")
     else:
         metric_names.extend(_collect(param_metric))
 
@@ -373,9 +375,6 @@ def _train_part(
         if has_eval_group:
             local_eval_group = []
 
-        # store indices of eval_set components that were not contained within local parts.
-        missing_eval_component_idx = []
-
         # consolidate parts of each individual eval component.
         for i in range(n_evals):
             x_e = []
@@ -450,7 +449,7 @@ def _train_part(
                 local_eval_group.append(_slice_empty(group if group is not None else label))
 
         # reconstruct eval_set fit args/kwargs depending on which components of eval_set are on worker.
-        eval_component_idx = [i for i in range(n_evals) if i not in missing_eval_component_idx]
+        eval_component_idx = list(range(n_evals))
         if eval_names:
             local_eval_names = [eval_names[i] for i in eval_component_idx]
         if eval_class_weight:
