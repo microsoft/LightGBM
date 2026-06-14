@@ -379,7 +379,7 @@ def _train_part(
             local_eval_group = []
 
         # store indices of eval_set components that were not contained within local parts.
-        missing_eval_component_idx: List[int] = []
+        missing_eval_component_idx = []
 
         # consolidate parts of each individual eval component.
         for i in range(n_evals):
@@ -474,9 +474,9 @@ def _train_part(
     if not local_eval_set:
         local_eval_X = None
         local_eval_y = None
-        local_eval_sample_weight = None  # type: ignore[assignment]
-        local_eval_init_score = None  # type: ignore[assignment]
-        local_eval_group = None  # type: ignore[assignment]
+        local_eval_sample_weight = None
+        local_eval_init_score = None
+        local_eval_group = None
         local_eval_names = None
     else:
         local_eval_X = tuple(X for X, _ in local_eval_set)
