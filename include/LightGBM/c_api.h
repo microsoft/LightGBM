@@ -1166,8 +1166,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
  * \param num_col Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction.
  *   To skip internal locks in ``LGBM_BoosterPredictForCSRSingleRowFast``, pass ``predict_disable_fast_lock=true``.
- *   This is useful for applications serving multiple different models that control parallel execution themselves.
- *   Only do this when synchronization is handled outside of LightGBM.
+ *   This is useful for advanced applications that handle synchronization outside LightGBM
+ *   and need to avoid per-call mutex overhead in low-latency fast single-row prediction.
+ *   Only do this when the same FastConfig handle is not used concurrently and the Booster is not modified or freed during prediction.
  * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForCSRSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens
  */
@@ -1195,6 +1196,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  *   or that number of threads will be used for these calls as well.
  *   If ``predict_disable_fast_lock=true`` was passed to ``LGBM_BoosterPredictForCSRSingleRowFastInit``,
  *   this call does not acquire LightGBM's internal locks. The caller must synchronize externally.
+ *   Do not use the same FastConfig handle concurrently or modify/free the Booster during prediction.
  *
  * \note
  * You should pre-allocate memory for ``out_result``:
@@ -1359,8 +1361,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
  * \param ncol Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction.
  *   To skip internal locks in ``LGBM_BoosterPredictForMatSingleRowFast``, pass ``predict_disable_fast_lock=true``.
- *   This is useful for applications serving multiple different models that control parallel execution themselves.
- *   Only do this when synchronization is handled outside of LightGBM.
+ *   This is useful for advanced applications that handle synchronization outside LightGBM
+ *   and need to avoid per-call mutex overhead in low-latency fast single-row prediction.
+ *   Only do this when the same FastConfig handle is not used concurrently and the Booster is not modified or freed during prediction.
  * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForMatSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens
  */
@@ -1388,6 +1391,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  *   or that number of threads will be used for these calls as well.
  *   If ``predict_disable_fast_lock=true`` was passed to ``LGBM_BoosterPredictForMatSingleRowFastInit``,
  *   this call does not acquire LightGBM's internal locks. The caller must synchronize externally.
+ *   Do not use the same FastConfig handle concurrently or modify/free the Booster during prediction.
  *
  * \param fastConfig_handle FastConfig object handle returned by ``LGBM_BoosterPredictForMatSingleRowFastInit``
  * \param data Single-row array data (no other way than row-major form).

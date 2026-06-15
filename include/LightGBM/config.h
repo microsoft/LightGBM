@@ -867,8 +867,8 @@ struct Config {
   // [no-save]
   // desc = used only with C API fast single-row prediction functions, such as ``LGBM_BoosterPredictForMatSingleRowFast``
   // desc = if ``true``, LightGBM will not acquire its internal locks during fast single-row prediction
-  // desc = useful for applications serving predictions from multiple different models that control parallel execution themselves and can avoid unnecessary mutex contention in LightGBM
-  // desc = **Note**: only set this to ``true`` when you guarantee that the same fast-config handle is not used concurrently and that the booster is not modified during prediction
+  // desc = useful for advanced applications that handle synchronization outside LightGBM and need to avoid per-call mutex overhead in low-latency fast single-row prediction
+  // desc = **Note**: only set this to ``true`` when you guarantee that the same fast-config handle is not used concurrently and that the booster is not modified or freed during prediction
   bool predict_disable_fast_lock = false;
 
   // [no-save]
