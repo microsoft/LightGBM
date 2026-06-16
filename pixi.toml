@@ -5,7 +5,7 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
 pip = "*"
-python = "3.10.*"
+python = ">=3.10"
 numpy = ">=1.21.3"
 scipy = "*"
 
