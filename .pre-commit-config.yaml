@@ -104,6 +104,8 @@ repos:
         pass_filenames: false
         verbose: true
         additional_dependencies:
+          - dask
+          - distributed
           - matplotlib>=3.9.1
           - pandas>=2.0
           - pyarrow>=17.0
