@@ -32,12 +32,10 @@ psutil = "5.9.3.*"
 pytest = "7.4.*"
 
 # dask dependencies are not needed on Windows, so split out separately here
-[feature.py310-dask.dependencies]
+[feature.py310.target.unix.dependencies]
 dask = "2022.12.*"
 distributed = "2022.12.*"
-python = "3.10.*"
 
 [environments]
 default = []
-py310 = ["py310", "py310-dask"]
-py310-windows = ["py310"]
+py310 = ["py310"]
