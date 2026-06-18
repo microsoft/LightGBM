@@ -1,0 +1,41 @@
+[workspace]
+channels = ["conda-forge"]
+name = "lightgbm"
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+
+[dependencies]
+pip = "*"
+python = ">=3.10"
+numpy = ">=1.21.3"
+scipy = "*"
+
+[feature.py310.dependencies]
+# direct dependencies
+cffi = "1.15.*"
+joblib = "1.3.*"
+matplotlib-base = "3.7.*"
+numpy = "1.22.*"
+pandas = "1.3.*"
+pyarrow = "16.0.*"
+python = "3.10.*"
+python-graphviz = "0.20.*"
+scikit-learn = "1.0.*"
+scipy = "1.7.*"
+
+# testing-only packages
+cloudpickle = "2.2.*"
+h5py = ">=3.10"
+ipywidgets = ">=8.1.2"
+jupyterlab = "4.5.*"
+pluggy = "1.0.*"
+psutil = "5.9.3.*"
+pytest = "7.4.*"
+
+# dask dependencies are not needed on Windows, so split out separately here
+[feature.py310.target.unix.dependencies]
+dask = "2022.12.*"
+distributed = "2022.12.*"
+
+[environments]
+default = []
+py310 = ["py310"]

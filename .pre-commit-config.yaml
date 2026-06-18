@@ -5,6 +5,7 @@ exclude: |
       external_libs|
       lightgbm-python|
       lightgbm_r|
+      \.pixi|
   )$
   |R-package/configure$
   |R-package/inst/Makevars$

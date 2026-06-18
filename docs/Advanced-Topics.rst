@@ -28,6 +28,12 @@ Categorical Feature Support
    It is best to use a contiguous range of integers started from zero.
    Floating point numbers in categorical features will be rounded towards 0.
 
+-  When using ``pandas.DataFrame`` inputs with columns of dtype ``category``, LightGBM will
+   align categories to those observed during training before converting them to integer values.
+   This ensures consistent encoding between training and prediction without additional preprocessing.
+
+-  At ``predict()`` time, categories not seen during training will be treated as missing values.
+
 -  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting (when ``#data`` is small or ``#category`` is large).
 
 -  For a categorical feature with high cardinality (``#category`` is large), it often works best to
