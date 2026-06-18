@@ -90,7 +90,7 @@ __BUILD_FOR_PYTHON = "ON"
 
 [tool.mypy]
 disallow_untyped_defs = true
-exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
+exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|.pixi/*|tests/*'
 ignore_missing_imports = true
 
 [tool.rstcheck]

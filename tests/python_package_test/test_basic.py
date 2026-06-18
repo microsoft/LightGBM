@@ -4,7 +4,6 @@ import numbers
 import re
 import warnings
 from copy import deepcopy
-from os import getenv
 from pathlib import Path
 
 import numpy as np
@@ -14,9 +13,8 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
+from .utils import BuildInfo, dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
 
 def test_basic(tmp_path):
@@ -51,7 +49,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv("TASK", "") != "cuda":
+    if BuildInfo.has_cuda:
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -554,7 +552,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     X = np.array([[1.0, 2.0], [3.0, 4.0]])
 
     position = np.array([0.0, 1.0], dtype=np.float32)
-    if getenv("TASK", "") == "cuda":
+    if BuildInfo.has_cuda:
         position = None
 
     dtrain = lgb.Dataset(
@@ -574,7 +572,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    if getenv("TASK", "") != "cuda":
+    if BuildInfo.has_cuda:
         np_assert_array_equal(dtrain.position, np.array([0.0, 1.0], dtype=np.float32), strict=True)
         np_assert_array_equal(dtrain.get_position(), np.array([0.0, 1.0], dtype=np.float32), strict=True)
     assert dtrain.weight == [0.5, 1.5]
@@ -606,7 +604,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_label(), expected_label, strict=True)
     np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
 
-    if getenv("TASK", "") != "cuda":
+    if not BuildInfo.has_cuda:
         expected_position = np.array([0.0, 1.0], dtype=np.float32)
         np_assert_array_equal(dtrain.position, expected_position, strict=True)
         np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
@@ -723,7 +721,7 @@ def test_list_to_1d_numpy(collection, dtype, rng):
 
     if collection.startswith("pd"):
         pd = pytest.importorskip("pandas")
-        y = pd_Series(y)
+        y = pd.Series(y)
         if pd.api.types.is_object_dtype(y):
             with pytest.raises(
                 ValueError,
@@ -762,9 +760,8 @@ def test_init_score_for_multiclass_classification(init_score_type, rng):
     if init_score_type == "array":
         init_score = np.array(init_score)
     elif init_score_type == "dataframe":
-        if not PANDAS_INSTALLED:
-            pytest.skip("Pandas is not installed.")
-        init_score = pd_DataFrame(init_score)
+        pd = pytest.importorskip("pandas")
+        init_score = pd.DataFrame(init_score)
     data = rng.uniform(size=(10, 2))
     ds = lgb.Dataset(data, init_score=init_score).construct()
     np.testing.assert_equal(ds.get_field("init_score"), init_score)
@@ -1082,7 +1079,7 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
         pytest.param(
             "position",
             marks=pytest.mark.skipif(
-                getenv("TASK", "") == "cuda",
+                BuildInfo.has_cuda,
                 reason="Positions in learning to rank is not supported in CUDA version yet",
             ),
         ),
