@@ -1866,6 +1866,7 @@ class Dataset:
         #
         # This is here mostly for scikit-learn's benefit, as it tracks whether input data had feature names.
         self._has_non_default_feature_names: bool = False
+        self.original_feature_name_ = []
 
     def __del__(self) -> None:
         try:
@@ -2146,14 +2147,19 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+            self.original_feature_name_ = feature_name
         elif _is_pyarrow_table(data) and feature_name == "auto":
             feature_name = data.column_names
+            self.original_feature_name_ = feature_name
 
         # 'feature_name == "auto"' after the block above means no feature names were provided
         # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
         # LightGBM will assign auto-generated names like Column_0, Column_1, etc.
         self._has_non_default_feature_names = feature_name != "auto"
 
+        if feature_name != "auto":
+            self.original_feature_name_ = feature_name
+        
         # process for args
         params = {} if params is None else params
         args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
@@ -3071,6 +3077,7 @@ class Dataset:
         if feature_name != "auto":
             self.feature_name = feature_name
             self._has_non_default_feature_names = True
+            self.original_feature_name_ = feature_name
         if self._handle is not None and feature_name is not None and feature_name != "auto":
             if len(feature_name) != self.num_feature():
                 raise ValueError(
