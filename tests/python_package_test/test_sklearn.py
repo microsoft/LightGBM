@@ -9,6 +9,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 import scipy.sparse
 from scipy.stats import spearmanr
