@@ -9,7 +9,6 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from numpy.testing import assert_array_equal
 import pytest
 import scipy.sparse
 from scipy.stats import spearmanr
@@ -1884,7 +1883,7 @@ def test_feature_names_in_():
         verbosity=-1,
     ).fit(X, y)
 
-    assert_array_equal(
+    np_assert_array_equal(
         model.feature_names_in_,
         X.columns.to_numpy(),
         strict=True,
