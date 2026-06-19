@@ -1863,6 +1863,32 @@ def _get_expected_failed_tests(estimator):
     return estimator._more_tags()["_xfail_checks"]
 
 
+def test_feature_names_in_():
+    """
+    Test that feature_names_in_ returns the same feature names as the input.
+    """
+    pd = pytest.importorskip("pandas")
+
+    X = pd.DataFrame(
+        {
+            "feature age": [1.0, 2.0, 3.0, 4.0],
+            "body mass index": [5.0, 6.0, 7.0, 8.0],
+        }
+    )
+    y = np.array([0, 1, 0, 1])
+
+    model = lgb.LGBMClassifier(
+        n_estimators=2,
+        num_leaves=3,
+        verbosity=-1,
+    ).fit(X, y)
+
+    assert_array_equal(
+        model.feature_names_in_,
+        X.columns.to_numpy(),
+        strict=True,
+    )
+
 @parametrize_with_checks(
     [ExtendedLGBMClassifier(), ExtendedLGBMRegressor(), lgb.LGBMClassifier(), lgb.LGBMRegressor()],
     expected_failed_checks=_get_expected_failed_tests,
