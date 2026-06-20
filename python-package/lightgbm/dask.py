@@ -279,7 +279,12 @@ def _eval_metrics_are_distributed_aggregated(
 
     def _supported(metric: str) -> bool:
         m = metric.lower()
-        return m in _AGGREGATED_DISTRIBUTED_EVAL_METRICS or m.startswith("multi_error@") or m.startswith("ndcg@") or m.startswith("map@")
+        return (
+            m in _AGGREGATED_DISTRIBUTED_EVAL_METRICS
+            or m.startswith("multi_error@")
+            or m.startswith("ndcg@")
+            or m.startswith("map@")
+        )
 
     return all(m != "__custom__" and _supported(m) for m in metric_names)
 
@@ -468,11 +473,11 @@ def _train_part(
             kwargs["eval_class_weight"] = local_eval_class_weight
 
     if not local_eval_set:
-        local_eval_X = None
-        local_eval_y = None
-        local_eval_sample_weight = None
-        local_eval_init_score = None
-        local_eval_group = None
+        local_eval_X = None  # type: ignore[assignment]
+        local_eval_y = None  # type: ignore[assignment]
+        local_eval_sample_weight = None  # type: ignore[assignment]
+        local_eval_init_score = None  # type: ignore[assignment]
+        local_eval_group = None  # type: ignore[assignment]
         local_eval_names = None
     else:
         local_eval_X = tuple(X for X, _ in local_eval_set)

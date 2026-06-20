@@ -10,12 +10,12 @@
 #include <LightGBM/network.h>
 #include <LightGBM/utils/log.h>
 
-#include "gather_eval_data.hpp"
-
 #include <string>
 #include <cmath>
 #include <utility>
 #include <vector>
+
+#include "gather_eval_data.hpp"
 
 namespace LightGBM {
 /*!

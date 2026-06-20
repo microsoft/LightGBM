@@ -6,6 +6,7 @@ import re
 import socket
 from itertools import groupby
 from sys import platform
+from typing import Any, Dict
 from urllib.parse import urlparse
 
 import pytest
@@ -946,7 +947,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
 
 @pytest.mark.parametrize(
-    "task,metric_key",
+    ("task", "metric_key"),
     [
         ("binary-classification", "binary_logloss"),
         ("regression", "l2"),
@@ -974,7 +975,8 @@ def test_early_stopping_uses_global_metric(task, metric_key, cluster):
         }
         dask_model = task_to_dask_factory[task](client=client, **model_params)
         dask_model.fit(
-            dX, dy,
+            dX,
+            dy,
             eval_set=[(dX_valid, dy_valid)],
             eval_metric=metric_key,
             callbacks=[lgb.early_stopping(stopping_rounds=5, verbose=False)],
@@ -1198,7 +1200,7 @@ def _per_query_mean(model, dX_valid, y_valid, g_valid, score_query):
         gs = int(g_size)
         if gs == 0:
             continue
-        total += score_query(y_val[offset:offset + gs], pred[offset:offset + gs])
+        total += score_query(y_val[offset : offset + gs], pred[offset : offset + gs])
         n += 1
         offset += gs
     return total / n if n > 0 else 0.0
@@ -1206,11 +1208,12 @@ def _per_query_mean(model, dX_valid, y_valid, g_valid, score_query):
 
 def _ndcg_at_k(y_q, p_q, k):
     """NDCG@k for one query, matching LightGBM's default label_gain = 2^y - 1."""
+
     def dcg(idx_order):
-        return sum((2.0 ** y_q[idx] - 1.0) / np.log2(i + 2.0)
-                   for i, idx in enumerate(idx_order))
+        return sum((2.0 ** y_q[idx] - 1.0) / np.log2(i + 2.0) for i, idx in enumerate(idx_order))
+
     pred_top = np.argsort(p_q)[::-1][:k]
-    ideal_top = np.argsort(y_q)[::-1][:min(k, len(y_q))]
+    ideal_top = np.argsort(y_q)[::-1][: min(k, len(y_q))]
     idcg = dcg(ideal_top)
     return dcg(pred_top) / idcg if idcg > 0 else 1.0
 
@@ -1230,13 +1233,11 @@ def _map_at_k(y_q, p_q, k):
 
 
 def _expected_ndcg(model, dX_valid, y_valid, g_valid, k=1):
-    return _per_query_mean(model, dX_valid, y_valid, g_valid,
-                           lambda y, p: _ndcg_at_k(y, p, k))
+    return _per_query_mean(model, dX_valid, y_valid, g_valid, lambda y, p: _ndcg_at_k(y, p, k))
 
 
 def _expected_map(model, dX_valid, y_valid, g_valid, k=1):
-    return _per_query_mean(model, dX_valid, y_valid, g_valid,
-                           lambda y, p: _map_at_k(y, p, k))
+    return _per_query_mean(model, dX_valid, y_valid, g_valid, lambda y, p: _map_at_k(y, p, k))
 
 
 _DISTRIBUTED_METRIC_SCENARIOS = [
@@ -1390,9 +1391,7 @@ def test_eval_set_uses_all_distributed_validation_data(
     ("make_data", "eval_metric", "metric_key", "compute_expected"),
     _RANKING_METRIC_SCENARIOS,
 )
-def test_eval_set_distributed_ranking_metrics(
-    make_data, eval_metric, metric_key, compute_expected, cluster
-):
+def test_eval_set_distributed_ranking_metrics(make_data, eval_metric, metric_key, compute_expected, cluster):
     X_train, X_valid, y_train, y_valid, g_train, g_valid = make_data()
 
     with Client(cluster) as client:
@@ -1405,8 +1404,8 @@ def test_eval_set_distributed_ranking_metrics(
             dX_p, dy_p, dg_p = [], [], []
             offset = 0
             for gs in g_sizes:
-                dX_p.append(da.from_array(X[offset:offset + gs], chunks=(gs, n_features)))
-                dy_p.append(da.from_array(y[offset:offset + gs], chunks=(gs,)))
+                dX_p.append(da.from_array(X[offset : offset + gs], chunks=(gs, n_features)))
+                dy_p.append(da.from_array(y[offset : offset + gs], chunks=(gs,)))
                 dg_p.append(da.from_array(np.array([gs]), chunks=(1,)))
                 offset += gs
             return (
@@ -1418,11 +1417,11 @@ def test_eval_set_distributed_ranking_metrics(
         dX, dy, dg = _dask_ranking_parts(X_train, y_train, g_train)
         dX_valid, dy_valid, dg_valid = _dask_ranking_parts(X_valid, y_valid, g_valid)
 
-        dask_model = lgb.DaskLGBMRanker(
-            client=client, eval_at=(1, 3), **_dask_metric_model_params()
-        )
+        dask_model = lgb.DaskLGBMRanker(client=client, eval_at=(1, 3), **_dask_metric_model_params())
         dask_model.fit(
-            dX, dy, group=dg,
+            dX,
+            dy,
+            group=dg,
             eval_set=[(dX_valid, dy_valid)],
             eval_group=[dg_valid],
             eval_metric=eval_metric,
@@ -1502,8 +1501,8 @@ def test_nonadditive_metrics_with_empty_eval_worker(
             offset = 0
             for gs in g_train:
                 gs_i = int(gs)
-                dX_p.append(da.from_array(X_train[offset:offset + gs_i], chunks=(gs_i, n_features)))
-                dy_p.append(da.from_array(y_train[offset:offset + gs_i], chunks=(gs_i,)))
+                dX_p.append(da.from_array(X_train[offset : offset + gs_i], chunks=(gs_i, n_features)))
+                dy_p.append(da.from_array(y_train[offset : offset + gs_i], chunks=(gs_i,)))
                 dg_p.append(da.from_array(np.array([gs_i]), chunks=(1,)))
                 offset += gs_i
             dX = da.concatenate(dX_p, axis=0)
@@ -1520,9 +1519,7 @@ def test_nonadditive_metrics_with_empty_eval_worker(
             dask_model.fit(dX, dy, **fit_kwargs)
             expected_score = compute_expected(dask_model, dX_valid, dy_valid, dg_valid)
         else:
-            dask_model = estimator_cls(
-                client=client, **estimator_kwargs, **_dask_metric_model_params()
-            )
+            dask_model = estimator_cls(client=client, **estimator_kwargs, **_dask_metric_model_params())
             dask_model.fit(dX, dy, **fit_kwargs)
             expected_score = compute_expected(dask_model, dX_valid, y_valid)
 

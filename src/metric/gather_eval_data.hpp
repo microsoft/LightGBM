@@ -36,8 +36,8 @@ inline void GatherEvalData(
   std::vector<char> local_buf(buf_size);
   char* ptr = local_buf.data();
 
-  comm_size_t nd = static_cast<comm_size_t>(num_data);
-  std::memcpy(ptr, &nd, sizeof(comm_size_t));
+  comm_size_t ndata = static_cast<comm_size_t>(num_data);
+  std::memcpy(ptr, &ndata, sizeof(comm_size_t));
   ptr += sizeof(comm_size_t);
 
   comm_size_t nc = static_cast<comm_size_t>(num_class);
@@ -73,13 +73,13 @@ inline void GatherEvalData(
   bool any_has_weights = false;
   for (int i = 0; i < num_machines; ++i) {
     const char* p = all_buf.data() + size_start[i];
-    comm_size_t nd_i;
-    std::memcpy(&nd_i, p, sizeof(comm_size_t));
-    total_data += static_cast<data_size_t>(nd_i);
+    comm_size_t ndata_i;
+    std::memcpy(&ndata_i, p, sizeof(comm_size_t));
+    total_data += static_cast<data_size_t>(ndata_i);
     p += sizeof(comm_size_t);
     comm_size_t nc_i;
     std::memcpy(&nc_i, p, sizeof(comm_size_t));
-    p += sizeof(comm_size_t) + nd_i * sizeof(label_t) + nd_i * nc_i * sizeof(double);
+    p += sizeof(comm_size_t) + ndata_i * sizeof(label_t) + ndata_i * nc_i * sizeof(double);
     if (*p) any_has_weights = true;
   }
 
@@ -99,40 +99,40 @@ inline void GatherEvalData(
   data_size_t offset = 0;
   for (int i = 0; i < num_machines; ++i) {
     const char* p = all_buf.data() + size_start[i];
-    comm_size_t nd_i;
-    std::memcpy(&nd_i, p, sizeof(comm_size_t));
+    comm_size_t ndata_i;
+    std::memcpy(&ndata_i, p, sizeof(comm_size_t));
     p += sizeof(comm_size_t);
     comm_size_t nc_i;
     std::memcpy(&nc_i, p, sizeof(comm_size_t));
     p += sizeof(comm_size_t);
 
-    if (nd_i > 0) {
-      std::memcpy(all_labels.data() + offset, p, nd_i * sizeof(label_t));
-      p += nd_i * sizeof(label_t);
+    if (ndata_i > 0) {
+      std::memcpy(all_labels.data() + offset, p, ndata_i * sizeof(label_t));
+      p += ndata_i * sizeof(label_t);
 
       // Per-worker scores arrive class-major over the worker's local rows:
-      // [c0_row0..c0_row{nd_i-1} | c1_row0..c1_row{nd_i-1} | ...].
+      // [c0_row0..c0_row{ndata_i-1} | c1_row0..c1_row{ndata_i-1} | ...].
       // Re-stripe into the global class-major layout so each class block lives
       // contiguously across all workers.
       const double* worker_scores = reinterpret_cast<const double*>(p);
       for (comm_size_t m = 0; m < nc_i; ++m) {
         std::memcpy(
           all_scores.data() + static_cast<data_size_t>(m) * total_data + offset,
-          worker_scores + static_cast<data_size_t>(m) * nd_i,
-          nd_i * sizeof(double));
+          worker_scores + static_cast<data_size_t>(m) * ndata_i,
+          ndata_i * sizeof(double));
       }
-      p += static_cast<comm_size_t>(nd_i) * nc_i * static_cast<comm_size_t>(sizeof(double));
+      p += static_cast<comm_size_t>(ndata_i) * nc_i * static_cast<comm_size_t>(sizeof(double));
 
       bool has_w = (*p != 0);
       p += 1;
 
       if (has_w) {
-        std::memcpy(all_weights.data() + offset, p, nd_i * sizeof(label_t));
+        std::memcpy(all_weights.data() + offset, p, ndata_i * sizeof(label_t));
       } else if (any_has_weights) {
-        std::fill(all_weights.data() + offset, all_weights.data() + offset + nd_i, static_cast<label_t>(1.0f));
+        std::fill(all_weights.data() + offset, all_weights.data() + offset + ndata_i, static_cast<label_t>(1.0f));
       }
 
-      offset += nd_i;
+      offset += ndata_i;
     }
   }
 }
