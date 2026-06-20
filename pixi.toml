@@ -4,6 +4,7 @@ name = "lightgbm"
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
+narwhals = ">=1.15"
 numpy = ">=1.21.3"
 pip = "*"
 python = ">=3.10"
