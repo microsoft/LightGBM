@@ -35,7 +35,9 @@ The LightGBM Python module can load data from:
 
 -  LibSVM (zero-based) / TSV / CSV format text file
 
--  NumPy 2D array(s), pandas DataFrame, pyarrow Table, SciPy sparse matrix
+-  NumPy 2D array(s), SciPy sparse matrix
+
+-  pandas DataFrame, polars DataFrame, pyarrow Table
 
 -  LightGBM binary file
 
