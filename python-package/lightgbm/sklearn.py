@@ -1381,7 +1381,7 @@ class LGBMModel(_LGBMModelBase):
                 "The training data did not have feature names "
                 "(e.g. was a numpy array rather than a pandas DataFrame)."
             )
-        return np.array(self.original_feature_name_)
+        return np.array(self.original_feature_name_, dtype=object)
 
     @feature_names_in_.deleter
     def feature_names_in_(self) -> None:
