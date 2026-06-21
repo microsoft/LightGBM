@@ -1889,7 +1889,7 @@ def test_feature_names_in_():
 
     np_assert_array_equal(
         model.feature_names_in_,
-        X.columns.to_numpy(),
+        X.columns.to_numpy(dtype=object),
         strict=True,
     )
 
