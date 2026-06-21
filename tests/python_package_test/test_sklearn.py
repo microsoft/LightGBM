@@ -1796,7 +1796,7 @@ def test_feature_names_in_and_predict_warning(
         # feature_name_: always accessible, reflects actual names used internally
         # feature_names_in_: absent when no named features, present otherwise
         if fit_X_type in types_with_feat_names:
-            np_assert_array_equal(model.feature_names_in_, np.array(col_names), strict=True)
+            np_assert_array_equal(model.feature_names_in_, np.array(col_names, dtype=object)), strict=True)
             assert model.feature_name_ == col_names
         else:
             assert model.feature_name_ == default_names
@@ -1827,9 +1827,9 @@ def test_feature_names_in_and_predict_warning(
     model = lgb.LGBMClassifier(n_estimators=2, num_leaves=3).fit(X_fit, y, feature_name=custom_names)
 
     # feature names from keyword arg should be used, not any from the input data
-    np_assert_array_equal(model.feature_names_in_, np.array(custom_names), strict=True)
+    np_assert_array_equal(model.feature_names_in_, np.array(custom_names, dtype=object)), strict=True)
     assert model.feature_name_ == custom_names
-    np_assert_array_equal(model.feature_names_in_, np.array(custom_names), strict=True)
+    np_assert_array_equal(model.feature_names_in_, np.array(custom_names, dtype=object)), strict=True)
     assert model.n_features_in_ == n_features
 
     # predict() should not raise a warning if input has feature names
