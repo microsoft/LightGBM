@@ -2068,7 +2068,7 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-            self.original_feature_name_ = feature_name
+            self.original_feature_name_ = np.array(feature_name, dtype=object)
         if nwd.is_into_dataframe(data) and feature_name == "auto":
             feature_name = nw.from_native(data).schema.names()
             self.original_feature_name_ = np.array(feature_name, dtype=object)
@@ -2079,7 +2079,7 @@ class Dataset:
         self._has_non_default_feature_names = feature_name != "auto"
 
         if feature_name != "auto":
-            self.original_feature_name_ = feature_name
+            self.original_feature_name_ = np.array(feature_name, dtype=object)
         
         # process for args
         params = {} if params is None else params
@@ -2978,7 +2978,7 @@ class Dataset:
         if feature_name != "auto":
             self.feature_name = feature_name
             self._has_non_default_feature_names = True
-            self.original_feature_name_ = feature_name
+            self.original_feature_name_ = np.array(feature_name, dtype=object)
         if self._handle is not None and feature_name is not None and feature_name != "auto":
             if len(feature_name) != self.num_feature():
                 raise ValueError(
