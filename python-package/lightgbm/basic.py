@@ -1787,7 +1787,7 @@ class Dataset:
         #
         # This is here mostly for scikit-learn's benefit, as it tracks whether input data had feature names.
         self._has_non_default_feature_names: bool = False
-        self.original_feature_name_ = []
+        self.original_feature_name_: np.ndarray = []
 
     def __del__(self) -> None:
         try:
@@ -2071,7 +2071,7 @@ class Dataset:
             self.original_feature_name_ = feature_name
         if nwd.is_into_dataframe(data) and feature_name == "auto":
             feature_name = nw.from_native(data).schema.names()
-            self.original_feature_name_ = feature_name
+            self.original_feature_name_ = np.array(feature_name, dtype=object)
 
         # 'feature_name == "auto"' after the block above means no feature names were provided
         # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
