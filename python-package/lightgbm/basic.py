@@ -1787,7 +1787,7 @@ class Dataset:
         #
         # This is here mostly for scikit-learn's benefit, as it tracks whether input data had feature names.
         self._has_non_default_feature_names: bool = False
-        self.original_feature_name_: np.ndarray = []
+        self.original_feature_name_: np.ndarray = np.array([], dtype=object)
 
     def __del__(self) -> None:
         try:
