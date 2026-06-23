@@ -229,6 +229,20 @@ def test_dataset_construct_groups(polars_type):
     np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
 
 
+# ------------------------------------------ POSITION ------------------------------------------- #
+
+
+@pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
+def test_dataset_construct_position(polars_type):
+    data = generate_dummy_polars_frame()
+    positions = pl.Series("position", [0, 1, 2, 3, 4], dtype=polars_type)
+    dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
+
+
 # ----------------------------------------- INIT SCORES ----------------------------------------- #
 
 
