@@ -97,10 +97,12 @@ jobs:
             task: sdist
             compiler: clang
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: windows-2022
             task: sdist
             compiler: MSVC
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: ubuntu-latest
             container: &ubuntu_latest_image ubuntu:22.04
             os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
@@ -190,6 +192,7 @@ jobs:
             compiler: clang-17
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
@@ -232,6 +235,7 @@ jobs:
             compiler: gcc
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -242,6 +246,7 @@ jobs:
             task: sdist
             compiler: gcc
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -290,6 +295,11 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
+      - name: Set up 'pixi' for jobs that need it
+        if: matrix.pixi-env != ''
+        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
+        with:
+          environments: ${{ matrix.pixi-env }}
       - name: Setup and run tests on Linux and macOS
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || endsWith(matrix.os, 'gpu-amd64')
         shell: bash

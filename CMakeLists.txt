@@ -123,6 +123,25 @@ include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
 set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
 include_directories(${FMT_INCLUDE_DIR})
 
+if(BUILD_CPP_TEST AND MSVC)
+  # Use /MT flag to statically link the C runtime. Must be set before
+  # add_subdirectory(nanoarrow) so the bundled library uses the same runtime
+  # as the test executable; otherwise linking fails with unresolved __imp_*
+  # symbols (e.g. __imp_realloc).
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+# nanoarrow is only needed by the Arrow-based C API entry points, which are
+# disabled for the R package (the R API never calls them). Skipping the
+# subdirectory keeps the package tarball free of nanoarrow sources, which
+# would otherwise trigger CRAN warnings about diagnostic-suppressing pragmas.
+if(NOT __BUILD_FOR_R)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/external_libs/nanoarrow" EXCLUDE_FROM_ALL)
+  if(NOT BUILD_STATIC_LIB)
+    set_target_properties(nanoarrow_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  endif()
+endif()
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -208,11 +227,6 @@ if(__INTEGRATE_OPENCL)
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
     endif()
-endif()
-
-if(BUILD_CPP_TEST AND MSVC)
-  # Use /MT flag to statically link the C runtime
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 if(USE_CUDA)
@@ -492,6 +506,9 @@ if(USE_ROCM)
 endif()
 
 add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
+if(NOT __BUILD_FOR_R)
+  target_link_libraries(lightgbm_objs PRIVATE nanoarrow_static)
+endif()
 
 if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
@@ -506,6 +523,9 @@ if(__BUILD_FOR_R)
 endif()
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
+if(NOT __BUILD_FOR_R)
+  target_link_libraries(lightgbm_capi_objs PRIVATE nanoarrow_static)
+endif()
 
 if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC)
@@ -696,6 +716,7 @@ if(BUILD_CPP_TEST)
     CPP_TEST_SOURCES
       tests/cpp_tests/test_array_args.cpp
       tests/cpp_tests/test_arrow.cpp
+      tests/cpp_tests/test_arrow_deprecated.cpp
       tests/cpp_tests/test_byte_buffer.cpp
       tests/cpp_tests/test_chunked_array.cpp
       tests/cpp_tests/test_common.cpp
@@ -709,7 +730,7 @@ if(BUILD_CPP_TEST)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs nanoarrow_static GTest::GTest)
 endif()
 
 if(BUILD_CLI)
