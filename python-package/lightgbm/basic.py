@@ -32,13 +32,7 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, pd_CategoricalDtype, pd_DataFrame, pd_Series
 
 if TYPE_CHECKING:
-    from typing import Literal
-
-    # typing.TypeGuard was only introduced in Python 3.10
-    try:
-        from typing import TypeGuard
-    except ImportError:
-        from typing_extensions import TypeGuard
+    from typing import Literal, TypeGuard
 
 
 __all__ = [
