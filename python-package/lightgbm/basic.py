@@ -777,7 +777,7 @@ def _data_from_narwhals(
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [data.get_column(col).cat.get_categories().to_list() for col in cat_cols]
     else:
-        if cat_cols and len(cat_cols) != len(pandas_categorical):
+        if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
     if cat_cols:  # cat_cols is list
         for col, categories in zip(cat_cols, pandas_categorical, strict=True):

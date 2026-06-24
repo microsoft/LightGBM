@@ -502,38 +502,41 @@ def test_polars_categorical_multiple_columns(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_validation_alignment(cat_type):
-    """Booster predictions on a polars valid frame match a numerically pre-encoded equivalent using train's codes."""
-    cats = ["a", "b", "c"]
+def test_polars_categorical_validation_uses_train_mapping(cat_type):
+    """A valid frame whose categorical column has a *different* category ordering must
+    still be encoded using train's category-to-code mapping."""
+    train_cats = ["a", "b", "c"]
+    valid_cats = ["c", "a", "b"]  # different order than train
+
     train_values = ["a", "b", "c"] * 30
     train_labels = [0, 1, 0] * 30
-    # subset of train's cats AND in different row order
     valid_values = ["c", "a", "c", "b", "a", "b", "c"] * 3
+
     train_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(train_values, cat_type, categories=cats),
+            "cat_col": _polars_cat_series(train_values, cat_type, categories=train_cats),
             "num_col": [float(i % 5) for i in range(len(train_values))],
         }
     )
     valid_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(valid_values, cat_type, categories=cats),
-            "num_col": [float(i % 5) for i in range(len(valid_values))],
-        }
-    )
-    pre_encoded_valid_df = pl.DataFrame(
-        {
-            "cat_col": pl.Series([float(cats.index(v)) for v in valid_values], dtype=pl.Float64),
+            "cat_col": _polars_cat_series(valid_values, cat_type, categories=valid_cats),
             "num_col": [float(i % 5) for i in range(len(valid_values))],
         }
     )
 
     train_ds = lgb.Dataset(train_df, label=train_labels, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
     bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, train_ds, num_boost_round=20)
+    assert train_ds.pandas_categorical == [train_cats]
 
-    assert train_ds.pandas_categorical == [cats]
-    assert bst.pandas_categorical == [cats]
-    np.testing.assert_allclose(bst.predict(valid_df), bst.predict(pre_encoded_valid_df))
+    # Reference: encode valid_values with train's mapping (a=0, b=1, c=2) and feed as a
+    # plain numpy array so the categorical path is bypassed entirely.
+    train_code = {c: i for i, c in enumerate(train_cats)}
+    pre_encoded = np.array(
+        [[float(train_code[v]), float(i % 5)] for i, v in enumerate(valid_values)],
+        dtype=np.float64,
+    )
+    np.testing.assert_allclose(bst.predict(valid_df), bst.predict(pre_encoded))
 
 
 @pytest.mark.parametrize(
