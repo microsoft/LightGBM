@@ -1086,6 +1086,8 @@ class _InnerPredictor:
                 categorical_feature="auto",
                 pandas_categorical=self.pandas_categorical,
             )[0]
+            if isinstance(data, pd_DataFrame):
+                data = _pandas_df_to_numpy(data)
 
         predict_type = _C_API_PREDICT_NORMAL
         if raw_score:
@@ -1130,13 +1132,6 @@ class _InnerPredictor:
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
-                start_iteration=start_iteration,
-                num_iteration=num_iteration,
-                predict_type=predict_type,
-            )
-        elif isinstance(data, pd_DataFrame):
-            preds, nrow = self.__pred_for_np2d(
-                mat=_pandas_df_to_numpy(data),
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
@@ -2067,6 +2062,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+            if isinstance(data, pd_DataFrame):
+                data = _pandas_df_to_numpy(data)
 
         # 'feature_name == "auto"' after the block above means no feature names were provided
         # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
@@ -2129,8 +2126,6 @@ class Dataset:
             self.__init_from_csc(csc=data, params_str=params_str, ref_dataset=ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(mat=data, params_str=params_str, ref_dataset=ref_dataset)
-        elif isinstance(data, pd_DataFrame):
-            self.__init_from_np2d(mat=_pandas_df_to_numpy(data), params_str=params_str, ref_dataset=ref_dataset)
         elif nwd.is_into_dataframe(data):
             self.__init_from_narwhals(data=nw.from_native(data), params_str=params_str, ref_dataset=ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
