@@ -534,7 +534,6 @@ def test_polars_categorical_validation_alignment(cat_type):
     np.testing.assert_allclose(bst.predict(valid_df), bst.predict(pre_encoded_valid_df))
 
 
-@pytest.mark.filterwarnings("ignore::pandas.errors.Pandas4Warning")
 @pytest.mark.parametrize(
     ("cat_type", "valid_values"),
     [
