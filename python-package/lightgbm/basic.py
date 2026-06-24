@@ -1086,6 +1086,8 @@ class _InnerPredictor:
                 categorical_feature="auto",
                 pandas_categorical=self.pandas_categorical,
             )[0]
+            # route pandas via the numpy path to preserve the zero-copy single-float-dtype fast path;
+            # other backends fall through to the Arrow C-stream path below
             if isinstance(data, pd_DataFrame):
                 data = _pandas_df_to_numpy(data)
 
@@ -2062,6 +2064,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+            # route pandas via the numpy path to preserve the zero-copy single-float-dtype fast path;
+            # other backends fall through to the Arrow C-stream path below
             if isinstance(data, pd_DataFrame):
                 data = _pandas_df_to_numpy(data)
 
