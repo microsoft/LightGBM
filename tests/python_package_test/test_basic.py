@@ -605,16 +605,54 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
 
     if not BuildInfo.has_cuda:
-        expected_position = np.array([0.0, 1.0], dtype=np.float32)
+        # NOTE: "position" is converted to int32 on the C++ side and remapped to dense
+        # internal indices in encounter order. Here the input [0, 1] is already dense
+        # starting from 0 in encounter order, so the remap is the identity.
+        expected_position = np.array([0, 1], dtype=np.int32)
         np_assert_array_equal(dtrain.position, expected_position, strict=True)
         np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-        # NOTE: "position" is converted to int32 on the C++ side
-        np_assert_array_equal(dtrain.get_field("position"), np.array([0.0, 1.0], dtype=np.int32), strict=True)
+        np_assert_array_equal(dtrain.get_field("position"), expected_position, strict=True)
 
     expected_weight = np.array([0.5, 1.5], dtype=np.float32)
     np_assert_array_equal(dtrain.weight, expected_weight, strict=True)
     np_assert_array_equal(dtrain.get_weight(), expected_weight, strict=True)
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
+
+
+@pytest.mark.skipif(
+    BuildInfo.has_cuda,
+    reason="Positions in learning to rank is not supported in CUDA version yet",
+)
+def test_set_position_updates_self_position_with_remapped_int32_values():
+    # Position values are remapped to dense int32 indices in the order they are first
+    # encountered. With input [3, 1, 0, 2, 4, 3, 1, 0, 2, 4]:
+    #   3 -> 0 (first encountered), 1 -> 1, 0 -> 2, 2 -> 3, 4 -> 4
+    X = np.arange(20, dtype=np.float64).reshape(10, 2)
+    y = np.arange(10, dtype=np.float64)
+    position = np.array([3, 1, 0, 2, 4, 3, 1, 0, 2, 4], dtype=np.int64)
+    expected = np.array([0, 1, 2, 3, 4, 0, 1, 2, 3, 4], dtype=np.int32)
+
+    # set via constructor
+    dtrain = lgb.Dataset(
+        X,
+        label=y,
+        position=position,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    np_assert_array_equal(dtrain.position, expected, strict=True)
+    np_assert_array_equal(dtrain.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain.get_field("position"), expected, strict=True)
+
+    # set via set_position() on an already-constructed Dataset
+    dtrain2 = lgb.Dataset(
+        X,
+        label=y,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    dtrain2.set_position(position)
+    np_assert_array_equal(dtrain2.position, expected, strict=True)
+    np_assert_array_equal(dtrain2.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain2.get_field("position"), expected, strict=True)
 
 
 def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
