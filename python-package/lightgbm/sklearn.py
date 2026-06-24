@@ -7,6 +7,9 @@ from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
+import narwhals as nw
+import narwhals.dependencies as nwd
+import narwhals.typing as nwt
 import numpy as np
 import scipy.sparse
 
@@ -45,7 +48,6 @@ from .compat import (
     _LGBMRegressorBase,
     _LGBMValidateData,
     _sklearn_version,
-    pa_Table,
     pd_DataFrame,
 )
 from .engine import train
@@ -65,7 +67,7 @@ _LGBM_ScikitMatrixLike = Union[
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
-    pa_Table,
+    nwt.IntoDataFrame,
     scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -1014,7 +1016,14 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if isinstance(X, pd_DataFrame):
+            _X, _y = X, y
+            self.n_features_in_ = _X.shape[1]
+        elif nwd.is_into_dataframe(X):
+            _X, _y = X, y
+            self.n_features_in_ = nw.from_native(X).shape[1]
+        else:
+            # NOTE: _LGBMValidateData() is also responsible for setting n_features_in_
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1032,11 +1041,6 @@ class LGBMModel(_LGBMModelBase):
                     sample_weight = _LGBMCheckSampleWeight(sample_weight, _X, allow_all_zero_weights=True)
                 else:
                     sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
-        else:
-            _X, _y = X, y
-
-            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
-            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -1045,7 +1049,7 @@ class LGBMModel(_LGBMModelBase):
             if sample_weight is None or len(sample_weight) == 0:
                 sample_weight = class_sample_weight
             else:
-                sample_weight = np.multiply(sample_weight, class_sample_weight)
+                sample_weight = np.multiply(sample_weight, class_sample_weight)  # type: ignore[arg-type]
 
         train_set = Dataset(
             data=_X,
@@ -1159,11 +1163,11 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, pyarrow Table, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
-            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples] or None, optional (default=None)",
-            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-            group_shape="numpy array, pandas Series, pyarrow Array, pyarrow ChunkedArray, list of int or float, or None, optional (default=None)",
+            X_shape="numpy array, pandas DataFrame, pyarrow Table, polars DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow ChunkedArray or polars Series of shape = [n_samples]",
+            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow ChunkedArray, polars Series of shape = [n_samples] or None, optional (default=None)",
+            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow ChunkedArray, pyarrow Table, polars Series, polars DataFrame of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
+            group_shape="numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)",
             eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
             eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
             eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)",
@@ -1186,7 +1190,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if not isinstance(X, pd_DataFrame) and not nwd.is_into_dataframe(X):
             X = _LGBMValidateData(
                 self,
                 X,

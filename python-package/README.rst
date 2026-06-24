@@ -61,6 +61,17 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 
 |
 
+Use LightGBM with Polars
+*************************
+
+To install all dependencies needed to use ``polars`` in LightGBM, append ``[polars]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[polars]'
+
+|
+
 Use LightGBM with Dask
 **********************
 

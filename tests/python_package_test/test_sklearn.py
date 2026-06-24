@@ -27,11 +27,7 @@ from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
     DASK_INSTALLED,
     PANDAS_INSTALLED,
-    PYARROW_INSTALLED,
     _sklearn_version,
-    pa_array,
-    pa_chunked_array,
-    pa_Table,
     pd_DataFrame,
     pd_Series,
 )
@@ -64,9 +60,9 @@ task_to_model_factory = {
     "regression": lgb.LGBMRegressor,
 }
 all_tasks = tuple(task_to_model_factory.keys())
-all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr")
-all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
-all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
+all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "pl_DataFrame", "scipy_csc", "scipy_csr")
+all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_ChunkedArray", "pl_Series")
+all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_ChunkedArray", "pl_Series")
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -1726,6 +1722,7 @@ def test_cannot_access_feature_names_before_fitting(estimator_class):
         pytest.param("numpy", id="predict=numpy"),
         pytest.param("pd_DataFrame", id="predict=pd_DataFrame"),
         pytest.param("pa_Table", id="predict=pa_Table"),
+        pytest.param("pl_DataFrame", id="predict=pl_DataFrame"),
     ],
 )
 @pytest.mark.parametrize(
@@ -1734,6 +1731,7 @@ def test_cannot_access_feature_names_before_fitting(estimator_class):
         pytest.param("numpy", id="fit=numpy"),
         pytest.param("pd_DataFrame", id="fit=pd_DataFrame"),
         pytest.param("pa_Table", id="fit=pa_Table"),
+        pytest.param("pl_DataFrame", id="fit=pl_DataFrame"),
     ],
 )
 @pytest.mark.filterwarnings("error:.*feature name.*:UserWarning:sklearn")
@@ -1749,8 +1747,10 @@ def test_feature_names_in_and_predict_warning(
     if fit_X_type.startswith("pa_") or predict_X_type.startswith("pa_"):
         pa = pytest.importorskip("pyarrow")
         pd = pytest.importorskip("pandas")
-    elif fit_X_type.startswith("pd_") or predict_X_type.startswith("pd_"):
+    if fit_X_type.startswith("pd_") or predict_X_type.startswith("pd_"):
         pd = pytest.importorskip("pandas")
+    if fit_X_type.startswith("pl_") or predict_X_type.startswith("pl_"):
+        pl = pytest.importorskip("polars")
 
     X_np = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
     y = np.array([0, 1, 0, 1])
@@ -1762,6 +1762,8 @@ def test_feature_names_in_and_predict_warning(
         X_fit = X_np
     elif fit_X_type == "pd_DataFrame":
         X_fit = pd.DataFrame(X_np, columns=col_names)
+    elif fit_X_type == "pl_DataFrame":
+        X_fit = pl.DataFrame(X_np, schema=col_names)
     else:
         X_fit = pa.Table.from_pandas(pd.DataFrame(X_np, columns=col_names))
 
@@ -1769,6 +1771,8 @@ def test_feature_names_in_and_predict_warning(
         X_predict = X_np[:2]
     elif predict_X_type == "pd_DataFrame":
         X_predict = pd.DataFrame(X_np[:2], columns=col_names)
+    elif predict_X_type == "pl_DataFrame":
+        X_predict = pl.DataFrame(X_np[:2], schema=col_names)
     else:
         X_predict = pa.Table.from_pandas(pd.DataFrame(X_np[:2], columns=col_names))
 
@@ -1780,7 +1784,7 @@ def test_feature_names_in_and_predict_warning(
     }
 
     # input types where LightGBM supports 'feature_name="auto"'
-    types_with_feat_names = {"pa_Table", "pd_DataFrame"}
+    types_with_feat_names = {"pa_Table", "pd_DataFrame", "pl_DataFrame"}
 
     # case 1: no 'feature_names' passed to fit() and "feature_name='auto'" should have identical behavior
     for fit_kwargs in ({}, {"feature_name": "auto"}):
@@ -2073,6 +2077,11 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
 
 
 def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]):
+        pa = pytest.importorskip("pyarrow")
+    if any(t.startswith("pl_") for t in [X_type, y_type, g_type]):
+        pl = pytest.importorskip("polars")
+
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -2093,7 +2102,9 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
     elif X_type == "pa_Table":
-        X = pa_Table.from_pandas(pd_DataFrame(X))
+        X = pa.Table.from_pandas(pd_DataFrame(X))
+    elif X_type == "pl_DataFrame":
+        X = pl.DataFrame(X)
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
@@ -2117,20 +2128,20 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
             init_score = pd_DataFrame(init_score)
         else:
             init_score = pd_Series(init_score)
-    elif y_type == "pa_Array":
-        y = pa_array(y)
-        weights = pa_array(weights)
-        if task == "multiclass-classification":
-            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
-        else:
-            init_score = pa_array(init_score)
     elif y_type == "pa_ChunkedArray":
-        y = pa_chunked_array([y])
-        weights = pa_chunked_array([weights])
+        y = pa.chunked_array([y])
+        weights = pa.chunked_array([weights])
         if task == "multiclass-classification":
-            init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
+            init_score = pa.Table.from_pandas(pd_DataFrame(init_score))
         else:
-            init_score = pa_chunked_array([init_score])
+            init_score = pa.chunked_array([init_score])
+    elif y_type == "pl_Series":
+        y = pl.Series(y)
+        weights = pl.Series(weights)
+        if task == "multiclass-classification":
+            init_score = pl.DataFrame(init_score)
+        else:
+            init_score = pl.Series(init_score)
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
@@ -2140,10 +2151,10 @@ def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
         g = g.astype("int").tolist()
     elif g_type == "pd_Series":
         g = pd_Series(g)
-    elif g_type == "pa_Array":
-        g = pa_array(g)
     elif g_type == "pa_ChunkedArray":
-        g = pa_chunked_array([g])
+        g = pa.chunked_array([g])
+    elif g_type == "pl_Series":
+        g = pl.Series(g)
     elif g_type != "numpy":
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
@@ -2219,9 +2230,6 @@ def test_classification_and_regression_minimally_work_with_all_accepted_data_typ
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow is not installed")
-
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
 
 
@@ -2236,9 +2244,6 @@ def test_ranking_minimally_works_with_all_accepted_data_types(
 ):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow is not installed")
-
     _run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 
 
