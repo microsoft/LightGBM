@@ -3118,8 +3118,6 @@ class Dataset:
             if isinstance(position, pd_Series) or not nwd.is_into_series(position):
                 position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
             self.set_field("position", position)
-            # NOTE: positions are remapped to dense internal indices on the C++ side
-            # (e.g. [0, 5, 9] -> [0, 1, 2]), so we deliberately skip re-reading them here.
         return self
 
     def get_feature_name(self) -> List[str]:
