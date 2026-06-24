@@ -2080,7 +2080,7 @@ class Dataset:
 
         if feature_name != "auto":
             self.original_feature_name_ = np.array(feature_name, dtype=object)
-        
+
         # process for args
         params = {} if params is None else params
         args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
