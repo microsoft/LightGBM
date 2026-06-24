@@ -137,6 +137,48 @@ def test_booster_rollback_one_iter(rng):
     assert bst.num_trees() == num_iterations - 2
 
 
+def test_shuffle_models(rng):
+    """Test that Booster.shuffle_models() reorders trees within [start_iteration, end_iteration)."""
+    X = rng.uniform(size=(100, 5))
+    y = rng.uniform(size=(100,))
+
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "regression",
+        "num_leaves": 3,
+        "verbose": -1,
+    }
+    num_iterations = 5
+    bst = lgb.train(params, train_data, num_boost_round=num_iterations)
+
+    def split_features(booster):
+        return [t["tree_structure"]["split_feature"] for t in booster.dump_model()["tree_info"]]
+
+    original_order = split_features(bst)
+    assert len(original_order) == num_iterations
+
+    result = bst.shuffle_models(start_iteration=2, end_iteration=4)
+
+    # shuffle_models() shuffles in place and returns self for method chaining
+    assert result is bst
+    assert bst.num_trees() == num_iterations
+
+    shuffled_order = split_features(bst)
+    # trees outside [start_iteration, end_iteration) must be untouched
+    assert shuffled_order[0] == original_order[0]
+    assert shuffled_order[1] == original_order[1]
+    assert shuffled_order[4] == original_order[4]
+    # trees inside [2, 4) are shuffled (deterministically, since the internal RNG is seeded)
+    assert sorted(shuffled_order[2:4]) == sorted(original_order[2:4])
+
+    # default arguments shuffle across the entire range of iterations
+    bst2 = lgb.train(params, train_data, num_boost_round=num_iterations)
+    original_order_2 = split_features(bst2)
+    bst2.shuffle_models()
+    assert bst2.num_trees() == num_iterations
+    assert sorted(split_features(bst2)) == sorted(original_order_2)
+
+
 class NumpySequence(lgb.Sequence):
     def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
@@ -1107,6 +1149,30 @@ def test_set_field_none_removes_field(rng, field_name):
 
     d.set_field(field_name, None)
     assert d.get_field(field_name) is None
+
+
+@pytest.mark.skipif(
+    BuildInfo.has_cuda,
+    reason="Positions in learning to rank is not supported in CUDA version yet",
+)
+def test_get_position_lazily_loads_from_field_when_not_cached(rng):
+    """Test that Dataset.get_position() falls back to get_field() when self.position isn't already cached."""
+    X = rng.uniform(size=(10, 1))
+    d = lgb.Dataset(X).construct()
+
+    # self.position is only populated by set_position()/Dataset(position=...), not by set_field()
+    assert d.position is None
+
+    position = [100, 20, 100, 10, 30, 10, 30, 10, 30, 30]
+    d.set_field("position", position)
+    assert d.position is None
+
+    expected = d.get_field("position")
+    result = d.get_position()
+
+    np_assert_array_equal(result, expected, strict=True)
+    # the lazily-fetched value should now be cached on the instance
+    np_assert_array_equal(d.position, expected, strict=True)
 
 
 def test_booster_eval_adds_new_valid_dataset() -> None:
