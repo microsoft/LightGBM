@@ -416,10 +416,12 @@ def test_get_data_polars_frame_subset(rng):
 
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
-# pl.Categorical columns share a process-wide categories dictionary by default, so categories
-# from unrelated columns leak into one another's `cat.get_categories()` output. Polars >=1.41
-# exposes `pl.Categories` for per-column scoping; we use a unique scope per helper call so each
-# test sees an isolated dictionary and can assert exact equality.
+# Starting with polars 1.41, pl.Categorical columns share a process-wide categories dictionary
+# by default, so categories from unrelated columns leak into one another's `cat.get_categories()`
+# output; pl.Categories was added to restore per-column scoping. We use a unique scope per helper
+# call when available so each test sees an isolated dictionary and can assert exact equality.
+# On older polars (<1.41), each pl.Categorical column already has its own local dictionary, so
+# no extra scoping is needed.
 _HAS_POLARS_CATEGORIES = hasattr(pl, "Categories")
 _cat_scope_counter = itertools.count()
 
