@@ -89,6 +89,13 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
+     // Fix #6830: check file exists before opening, instead of silently ignoring
+    std::ifstream check_file(config_->forcedsplits_filename.c_str());
+    if (!check_file.good()) {
+      Log::Fatal("forcedsplits_filename '%s' does not exist or cannot be opened.",
+                 config_->forcedsplits_filename.c_str());
+    }
+    check_file.close();
     std::ifstream forced_splits_file(config->forcedsplits_filename.c_str());
     std::stringstream buffer;
     buffer << forced_splits_file.rdbuf();
