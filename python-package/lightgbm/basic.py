@@ -3114,6 +3114,7 @@ class Dataset:
         if self._handle is not None and position is not None:
             position = _list_to_1d_numpy(data=position, dtype=np.int32, name="position")
             self.set_field("position", position)
+            self.position = self.get_field("position")  # original values can be modified at cpp side
         return self
 
     def get_feature_name(self) -> List[str]:

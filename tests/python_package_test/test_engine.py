@@ -848,9 +848,12 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     gbm_unbiased_set_position = lgb.train(params, lgb_train, valid_sets=lgb_valid, num_boost_round=50)
     assert gbm_unbiased.best_score["valid_0"]["ndcg@3"] == gbm_unbiased_set_position.best_score["valid_0"]["ndcg@3"]
 
-    # test get_position works
+    # test get_position works (positions are remapped to dense int32 indices on the C++
+    # side, so compare against get_field("position") rather than the original input)
     positions_from_get = lgb_train.get_position()
-    np_assert_array_equal(positions_from_get, positions, strict=True)
+    np_assert_array_equal(positions_from_get, lgb_train.get_field("position"), strict=True)
+    assert positions_from_get.dtype == np.int32
+    assert positions_from_get.shape == positions.shape
 
 
 def test_early_stopping():
