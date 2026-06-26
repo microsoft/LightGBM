@@ -165,7 +165,6 @@ if TYPE_CHECKING:
     except ImportError:
         _sklearn_Tags = None
 
-
 """pandas"""
 try:
     from pandas import DataFrame as pd_DataFrame
@@ -200,100 +199,25 @@ except ImportError:
 
     concat = None
 
-"""matplotlib"""
-try:
-    import matplotlib  # noqa: F401
-
-    MATPLOTLIB_INSTALLED = True
-except ImportError:
-    MATPLOTLIB_INSTALLED = False
-
-"""graphviz"""
-try:
-    import graphviz  # noqa: F401
-
-    GRAPHVIZ_INSTALLED = True
-except ImportError:
-    GRAPHVIZ_INSTALLED = False
-
-"""dask"""
-try:
-    from dask import delayed
-    from dask.array import Array as dask_Array
-    from dask.array import from_delayed as dask_array_from_delayed
-    from dask.bag import from_delayed as dask_bag_from_delayed
-    from dask.dataframe import DataFrame as dask_DataFrame
-    from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, Future, default_client, wait
-
-    DASK_INSTALLED = True
-# catching 'ValueError' here because of this:
-# https://github.com/lightgbm-org/LightGBM/issues/6365#issuecomment-2002330003
-#
-# That's potentially risky as dask does some significant import-time processing,
-# like loading configuration from environment variables and files, and catching
-# ValueError here might hide issues with that config-loading.
-#
-# But in exchange, it's less likely that 'import lightgbm' will fail for
-# dask-related reasons, which is beneficial for any workloads that are using
-# lightgbm but not its Dask functionality.
-except (ImportError, ValueError):
-    DASK_INSTALLED = False
-
-    dask_array_from_delayed = None  # type: ignore[assignment]
-    dask_bag_from_delayed = None  # type: ignore[assignment]
-    delayed = None
-    default_client = None  # type: ignore[assignment]
-    wait = None  # type: ignore[assignment]
-
-    class Client:  # type: ignore
-        """Dummy class for dask.distributed.Client."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class Future:  # type: ignore
-        """Dummy class for dask.distributed.Future."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_Array:  # type: ignore
-        """Dummy class for dask.array.Array."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_DataFrame:  # type: ignore
-        """Dummy class for dask.dataframe.DataFrame."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class dask_Series:  # type: ignore
-        """Dummy class for dask.dataframe.Series."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-
 """cpu_count()"""
-try:
-    from joblib import cpu_count
 
-    def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-        return cpu_count(only_physical_cores=only_physical_cores)
-except ImportError:
+
+def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
+    ret: int
     try:
-        from psutil import cpu_count
+        from joblib import cpu_count  # noqa: I001,PLC0415
 
-        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-            return cpu_count(logical=not only_physical_cores) or 1
+        ret = cpu_count(only_physical_cores=only_physical_cores)
     except ImportError:
-        from multiprocessing import cpu_count
+        try:
+            from psutil import cpu_count  # noqa: I001,PLC0415
 
-        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
-            return cpu_count()
+            ret = cpu_count(logical=not only_physical_cores) or 1
+        except ImportError:
+            from multiprocessing import cpu_count  # noqa: I001,PLC0415
+
+            ret = cpu_count()
+    return ret
 
 
 __all__: List[str] = []

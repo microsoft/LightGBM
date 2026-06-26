@@ -13,7 +13,7 @@ from collections import defaultdict
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -21,23 +21,12 @@ import scipy.sparse as ss
 
 from .basic import LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning
 from .compat import (
-    DASK_INSTALLED,
     PANDAS_INSTALLED,
     SKLEARN_INSTALLED,
-    Client,
-    Future,
     LGBMNotFittedError,
     concat,
-    dask_Array,
-    dask_array_from_delayed,
-    dask_bag_from_delayed,
-    dask_DataFrame,
-    dask_Series,
-    default_client,
-    delayed,
     pd_DataFrame,
     pd_Series,
-    wait,
 )
 from .sklearn import (
     LGBMClassifier,
@@ -58,10 +47,28 @@ __all__ = [
     "DaskLGBMRegressor",
 ]
 
-_DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
-_DaskMatrixLike = Union[dask_Array, dask_DataFrame]
-_DaskVectorLike = Union[dask_Array, dask_Series]
+if TYPE_CHECKING:
+    import dask
+    import distributed
+
+_DaskCollection = Union["dask.array.Array", "dask.dataframe.DataFrame", "dask.dataframe.Series"]
+_DaskMatrixLike = Union["dask.array.Array", "dask.dataframe.DataFrame"]
+_DaskVectorLike = Union["dask.array.Array", "dask.dataframe.Series"]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
+
+# catching 'ValueError' here because of this:
+# https://github.com/lightgbm-org/LightGBM/issues/6365#issuecomment-2002330003
+#
+# That's potentially risky as dask does some significant import-time processing,
+# like loading configuration from environment variables and files, and catching
+# ValueError here might hide issues with that config-loading.
+#
+# But in exchange, it's less likely that 'import lightgbm' will fail for
+# dask-related reasons, which is beneficial for any workloads that are using
+# lightgbm but not its Dask functionality.
+#
+# 'ValueError' can be removed when LightGBM's Dask floor is '>=2024.4.0'.
+_DaskImportErrorTypes = (ImportError, ValueError)
 
 
 class _RemoteSocket:
@@ -93,19 +100,21 @@ class _DatasetNames(Enum):
     GROUP = auto()
 
 
-def _get_dask_client(client: Optional[Client]) -> Client:
+def _get_dask_client(client: Optional["distributed.Client"]) -> "distributed.Client":
     """Choose a Dask client to use.
 
     Parameters
     ----------
-    client : dask.distributed.Client or None
+    client : distributed.Client or None
         Dask client.
 
     Returns
     -------
-    client : dask.distributed.Client
+    client : distributed.Client
         A Dask client.
     """
+    from dask.distributed import default_client  # noqa: PLC0415
+
     if client is None:
         return default_client()
     else:
@@ -114,9 +123,9 @@ def _get_dask_client(client: Optional[Client]) -> Client:
 
 def _assign_open_ports_to_workers(
     *,
-    client: Client,
+    client: "distributed.Client",
     workers: List[str],
-) -> Tuple[Dict[str, Future], Dict[str, int]]:
+) -> Tuple[Dict[str, "distributed.client.Future"], Dict[str, int]]:
     """Assign an open port to each worker.
 
     Returns
@@ -432,7 +441,7 @@ def _machines_to_worker_map(
 
 def _train(
     *,
-    client: Client,
+    client: "distributed.Client",
     data: _DaskMatrixLike,
     label: _DaskCollection,
     params: Dict[str, Any],
@@ -456,7 +465,7 @@ def _train(
 
     Parameters
     ----------
-    client : dask.distributed.Client
+    client : distributed.Client
         Dask client.
     data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
@@ -541,6 +550,12 @@ def _train(
     constructs ``machines`` from the list of Dask workers which hold some piece of the
     training data, assuming that each one will use the same ``local_listen_port``.
     """
+    try:
+        from dask import delayed  # noqa: PLC0415
+        from dask.distributed import wait  # noqa: PLC0415
+    except _DaskImportErrorTypes as err:
+        raise LightGBMError("dask is required for lightgbm.dask") from err
+
     params = deepcopy(params)
 
     # capture whether local_listen_port or its aliases were provided
@@ -775,7 +790,7 @@ def _train(
     machines = params.pop("machines")
 
     # figure out network params
-    worker_to_socket_future: Dict[str, Future] = {}
+    worker_to_socket_future: Dict[str, "distributed.client.Future"] = {}
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
@@ -912,13 +927,13 @@ def _predict(
     *,
     model: LGBMModel,
     data: _DaskMatrixLike,
-    client: Client,
+    client: "distributed.Client",
     raw_score: bool = False,
     pred_proba: bool = False,
     pred_leaf: bool = False,
     pred_contrib: bool = False,
     **kwargs: Any,
-) -> Union[dask_Array, List[dask_Array]]:
+) -> Union["dask.array.Array", List["dask.array.Array"]]:
     """Inner predict routine.
 
     Parameters
@@ -947,9 +962,18 @@ def _predict(
     X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
-    if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
-        raise LightGBMError("dask, pandas and scikit-learn are required for lightgbm.dask")
-    if isinstance(data, dask_DataFrame):
+    if not all((PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+        raise LightGBMError("pandas and scikit-learn are required for lightgbm.dask")
+
+    try:
+        import dask.array  # noqa: PLC0415
+        import dask.bag  # noqa: PLC0415
+        import dask.dataframe  # noqa: PLC0415
+        from dask import delayed  # noqa: PLC0415
+    except _DaskImportErrorTypes as err:
+        raise LightGBMError("dask is required for lightgbm.dask") from err
+
+    if isinstance(data, dask.dataframe.DataFrame):
         return data.map_partitions(
             _predict_part,
             model=model,
@@ -959,7 +983,7 @@ def _predict(
             pred_contrib=pred_contrib,
             **kwargs,
         ).values
-    elif isinstance(data, dask_Array):
+    elif isinstance(data, dask.array.Array):
         # for multi-class classification with sparse matrices, pred_contrib predictions
         # are returned as a list of sparse matrices (one per class)
         num_classes = model._n_classes
@@ -976,7 +1000,7 @@ def _predict(
             )
 
             delayed_chunks = data.to_delayed()
-            bag = dask_bag_from_delayed(delayed_chunks[:, 0])
+            bag = dask.bag.from_delayed(delayed_chunks[:, 0])
 
             @delayed
             def _extract(items: List[Any], i: int) -> Any:
@@ -989,14 +1013,14 @@ def _predict(
             num_cols = model.n_features_ + 1
 
             nrows_per_chunk = data.chunks[0]
-            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
+            out: List[List[dask.array.Array]] = [[] for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
             pred_meta = data._meta
 
             for j, partition in enumerate(preds.to_delayed()):
                 for i in range(num_classes):
-                    part = dask_array_from_delayed(
+                    part = dask.array.from_delayed(
                         value=_extract(partition, i),
                         shape=(nrows_per_chunk[j], num_cols),
                         meta=pred_meta,
@@ -1014,10 +1038,10 @@ def _predict(
 
             # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
             # Concatenate them to return a list of Dask Arrays.
-            out_arrays: List[dask_Array] = []
+            out_arrays: List[dask.array.Array] = []
             for i in range(num_classes):
                 out_arrays.append(
-                    dask_array_from_delayed(
+                    dask.array.from_delayed(
                         value=delayed(concat_fn)(out[i]),
                         shape=(data.shape[0], num_cols),
                         meta=pred_meta,
@@ -1055,8 +1079,8 @@ def _predict(
 
 class _DaskLGBMModel:
     @property
-    def client_(self) -> Client:
-        """:obj:`dask.distributed.Client`: Dask client.
+    def client_(self) -> "distributed.Client":
+        """:obj:`distributed.Client`: Dask client.
 
         This property can be passed in the constructor or updated
         with ``model.set_params(client=client)``.
@@ -1096,8 +1120,8 @@ class _DaskLGBMModel:
         eval_at: Optional[Union[List[int], Tuple[int, ...]]] = None,
         **kwargs: Any,
     ) -> "_DaskLGBMModel":
-        if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
-            raise LightGBMError("dask, pandas and scikit-learn are required for lightgbm.dask")
+        if not all((PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+            raise LightGBMError("pandas and scikit-learn are required for lightgbm.dask")
 
         params = self.get_params(True)  # type: ignore[attr-defined]
         params.pop("client", None)
@@ -1175,7 +1199,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
-        client: Optional[Client] = None,
+        client: Optional["distributed.Client"] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
@@ -1207,7 +1231,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _before_kwargs, _, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = (
         _before_kwargs
-        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "client : distributed.Client or None, optional (default=None)\n"
         + "    Dask client. \n"
         + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
         + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
@@ -1292,7 +1316,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> dask_Array:
+    ) -> "dask.array.Array":
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(
             model=self.to_local(),
@@ -1326,7 +1350,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> dask_Array:
+    ) -> "dask.array.Array":
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
         return _predict(
             model=self.to_local(),
@@ -1387,7 +1411,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
-        client: Optional[Client] = None,
+        client: Optional["distributed.Client"] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
@@ -1419,7 +1443,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = (
         _before_kwargs
-        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "client : distributed.Client or None, optional (default=None)\n"
         + "    Dask client. \n"
         + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
         + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
@@ -1504,7 +1528,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> dask_Array:
+    ) -> "dask.array.Array":
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(
             model=self.to_local(),
@@ -1564,7 +1588,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
-        client: Optional[Client] = None,
+        client: Optional["distributed.Client"] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
@@ -1596,7 +1620,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = (
         _before_kwargs
-        + "client : dask.distributed.Client or None, optional (default=None)\n"
+        + "client : distributed.Client or None, optional (default=None)\n"
         + "    Dask client. \n"
         + "    If ``None``, ``distributed.default_client()`` will be used at runtime.\n"
         + "    The Dask client used by this class will not be saved if the model object is pickled.\n"
@@ -1690,7 +1714,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> dask_Array:
+    ) -> "dask.array.Array":
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(
             model=self.to_local(),
