@@ -416,37 +416,44 @@ def test_get_data_polars_frame_subset(rng):
 
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
-# Starting with polars 1.41, pl.Categorical columns share a process-wide categories dictionary
-# by default, so categories from unrelated columns leak into one another's `cat.get_categories()`
-# output; pl.Categories was added to restore per-column scoping. We use a unique scope per helper
-# call when available so each test sees an isolated dictionary and can assert exact equality.
-# On older polars (<1.41), each pl.Categorical column already has its own local dictionary, so
-# no extra scoping is needed.
-_HAS_POLARS_CATEGORIES = hasattr(pl, "Categories")
-_cat_scope_counter = itertools.count()
 
+@pytest.fixture
+def polars_cat_series():
+    """Factory for categorical/enum series with per-test scope isolation.
 
-def _polars_cat_series(values, cat_type, categories=None):
-    """Build a polars categorical-like Series for the given dtype family.
-
-    cat_type: "categorical" -> pl.Categorical (unordered, scoped per call when supported)
-              "enum"        -> pl.Enum (ordered, fixed category list)
+    Starting with polars 1.41, pl.Categorical columns share a process-wide categories dictionary
+    by default, so categories from unrelated columns leak into one another's `cat.get_categories()`
+    output; pl.Categories was added to restore per-column scoping. We use a unique scope per call
+    when available so each test sees an isolated dictionary and can assert exact equality.
+    On older polars (<1.41), each pl.Categorical column already has its own local dictionary, so
+    no extra scoping is needed.
     """
-    if cat_type == "categorical":
-        if _HAS_POLARS_CATEGORIES:
-            scope = pl.Categories(name=f"lgbm_test_{next(_cat_scope_counter)}")
-            return pl.Series(values, dtype=pl.Categorical(categories=scope))
-        return pl.Series(values, dtype=pl.Categorical)
-    cats = categories if categories is not None else sorted(set(values))
-    return pl.Series(values).cast(pl.Enum(cats))
+    counter = itertools.count()
+    has_categories = hasattr(pl, "Categories")
+
+    def _make(values, cat_type, categories=None):
+        """Build a polars categorical-like Series for the given dtype family.
+
+        cat_type: "categorical" -> pl.Categorical (unordered, scoped per call when supported)
+                  "enum"        -> pl.Enum (ordered, fixed category list)
+        """
+        if cat_type == "categorical":
+            if has_categories:
+                scope = pl.Categories(name=f"lgbm_test_{next(counter)}")
+                return pl.Series(values, dtype=pl.Categorical(categories=scope))
+            return pl.Series(values, dtype=pl.Categorical)
+        cats = categories if categories is not None else sorted(set(values))
+        return pl.Series(values).cast(pl.Enum(cats))
+
+    return _make
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_basic(cat_type):
+def test_polars_categorical_basic(cat_type, polars_cat_series):
     """Explicit categorical_feature constructs successfully and metadata is captured."""
     df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(["a", "b", "a", "c", "b"], cat_type),
+            "cat_col": polars_cat_series(["a", "b", "a", "c", "b"], cat_type),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -461,11 +468,11 @@ def test_polars_categorical_basic(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_doesnt_modify_original(cat_type):
+def test_polars_categorical_doesnt_modify_original(cat_type, polars_cat_series):
     """Construction must not mutate the input DataFrame."""
     original_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(["a", "b", "a", "c"], cat_type),
+            "cat_col": polars_cat_series(["a", "b", "a", "c"], cat_type),
             "num_col": [1.0, 2.0, 3.0, 4.0],
         }
     )
@@ -482,12 +489,12 @@ def test_polars_categorical_doesnt_modify_original(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_multiple_columns(cat_type):
+def test_polars_categorical_multiple_columns(cat_type, polars_cat_series):
     """Two categorical columns alongside a numeric column are both encoded."""
     df = pl.DataFrame(
         {
-            "cat1": _polars_cat_series(["a", "b", "a", "c"], cat_type),
-            "cat2": _polars_cat_series(["x", "x", "y", "z"], cat_type),
+            "cat1": polars_cat_series(["a", "b", "a", "c"], cat_type),
+            "cat2": polars_cat_series(["x", "x", "y", "z"], cat_type),
             "num_col": [1.0, 2.0, 3.0, 4.0],
         }
     )
@@ -502,7 +509,7 @@ def test_polars_categorical_multiple_columns(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_validation_uses_train_mapping(cat_type):
+def test_polars_categorical_validation_uses_train_mapping(cat_type, polars_cat_series):
     """A valid frame whose categorical column has a *different* category ordering must
     still be encoded using train's category-to-code mapping."""
     train_cats = ["a", "b", "c"]
@@ -514,13 +521,13 @@ def test_polars_categorical_validation_uses_train_mapping(cat_type):
 
     train_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(train_values, cat_type, categories=train_cats),
+            "cat_col": polars_cat_series(train_values, cat_type, categories=train_cats),
             "num_col": [float(i % 5) for i in range(len(train_values))],
         }
     )
     valid_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(valid_values, cat_type, categories=valid_cats),
+            "cat_col": polars_cat_series(valid_values, cat_type, categories=valid_cats),
             "num_col": [float(i % 5) for i in range(len(valid_values))],
         }
     )
@@ -546,7 +553,7 @@ def test_polars_categorical_validation_uses_train_mapping(cat_type):
         ("enum", ["c", "a", "c"]),
     ],
 )
-def test_polars_categorical_matches_pandas(tmp_path, cat_type, valid_values):
+def test_polars_categorical_matches_pandas(tmp_path, cat_type, valid_values, polars_cat_series):
     """Polars-built Datasets (train + valid) match the pandas-built equivalents, including unseen-category handling."""
     pd = pytest.importorskip("pandas")
 
@@ -554,13 +561,13 @@ def test_polars_categorical_matches_pandas(tmp_path, cat_type, valid_values):
     train_values = ["a", "b", "c", "a"]
     polars_train = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(train_values, cat_type, categories=cats),
+            "cat_col": polars_cat_series(train_values, cat_type, categories=cats),
             "num_col": [1.0, 2.0, 3.0, 4.0],
         }
     )
     polars_valid = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(valid_values, cat_type, categories=cats),
+            "cat_col": polars_cat_series(valid_values, cat_type, categories=cats),
             "num_col": [5.0, 6.0, 7.0],
         }
     )
@@ -593,7 +600,7 @@ def test_polars_categorical_matches_pandas(tmp_path, cat_type, valid_values):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_high_cardinality(cat_type):
+def test_polars_categorical_high_cardinality(cat_type, polars_cat_series):
     """Construction works with a large number of unique categories."""
     rng = np.random.default_rng(42)
     categories = [f"cat_{i}" for i in range(1000)]
@@ -602,7 +609,7 @@ def test_polars_categorical_high_cardinality(cat_type):
 
     df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(values, cat_type, categories=categories),
+            "cat_col": polars_cat_series(values, cat_type, categories=categories),
             "num_col": rng.uniform(0, 10, size=5000),
         }
     )
@@ -617,7 +624,7 @@ def test_polars_categorical_high_cardinality(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
+def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type, polars_cat_series):
     """End-to-end: train, predict, save/load, predictions match."""
     train_values = ["a", "b", "a", "c", "b", "c"] * 10
     test_values = ["a", "b", "c", "a"]
@@ -625,14 +632,14 @@ def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
 
     train_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(train_values, cat_type, categories=cats),
+            "cat_col": polars_cat_series(train_values, cat_type, categories=cats),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 10,
         }
     )
     train_y = [0, 1, 0, 1, 0, 1] * 10
     test_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(test_values, cat_type, categories=cats),
+            "cat_col": polars_cat_series(test_values, cat_type, categories=cats),
             "num_col": [1.5, 2.5, 3.5, 4.5],
         }
     )
@@ -652,7 +659,7 @@ def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_pandas_categorical_predictions_match(cat_type):
+def test_polars_pandas_categorical_predictions_match(cat_type, polars_cat_series):
     """Polars-trained and pandas-trained models give identical predictions."""
     pd = pytest.importorskip("pandas")
 
@@ -661,7 +668,7 @@ def test_polars_pandas_categorical_predictions_match(cat_type):
 
     polars_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(values, cat_type, categories=cats),
+            "cat_col": polars_cat_series(values, cat_type, categories=cats),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
         }
     )
