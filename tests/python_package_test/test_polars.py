@@ -490,92 +490,66 @@ def test_polars_categorical_multiple_columns(cat_type):
 
 
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_validation_uses_train_mapping(cat_type):
-    """A valid frame whose categorical column has a *different* category ordering must
-    still be encoded using train's category-to-code mapping."""
+def test_polars_categorical_unseen_categories_at_inference(tmp_path, cat_type):
+    """Unseen categories in the predict frame are remapped via train's mapping, matching pandas references."""
+    pd = pytest.importorskip("pandas")
+
     train_cats = ["a", "b", "c"]
-    valid_cats = ["c", "a", "b"]  # different order than train
+    valid_cats = ["a", "c", "d"]  # different domain: contains unseen "d", missing "b"
 
-    train_values = ["a", "b", "c"] * 30
-    train_labels = [0, 1, 0] * 30
-    valid_values = ["c", "a", "c", "b", "a", "b", "c"] * 3
+    train_values = ["a", "b", "c", "a", "b", "c"] * 10
+    train_labels = [0, 1, 0, 1, 0, 1] * 10
+    valid_values = ["a", "d", "c", "a", "c", "d", "a"]
+    valid_labels = [0, 1, 0, 1, 0, 1, 0]
+    valid_num = [float(i % 5) for i in range(len(valid_values))]
 
-    train_df = pl.DataFrame(
+    polars_train = pl.DataFrame(
         {
             "cat_col": polars_cat_series(train_values, cat_type, categories=train_cats),
             "num_col": [float(i % 5) for i in range(len(train_values))],
         }
     )
-    valid_df = pl.DataFrame(
-        {
-            "cat_col": polars_cat_series(valid_values, cat_type, categories=valid_cats),
-            "num_col": [float(i % 5) for i in range(len(valid_values))],
-        }
-    )
-
-    train_ds = lgb.Dataset(train_df, label=train_labels, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
-    bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, train_ds, num_boost_round=20)
-    assert train_ds.pandas_categorical == [train_cats]
-
-    # Reference: encode valid_values with train's mapping (a=0, b=1, c=2) and feed as a
-    # plain numpy array so the categorical path is bypassed entirely.
-    train_code = {c: i for i, c in enumerate(train_cats)}
-    pre_encoded = np.array(
-        [[float(train_code[v]), float(i % 5)] for i, v in enumerate(valid_values)],
-        dtype=np.float64,
-    )
-    np.testing.assert_allclose(bst.predict(valid_df), bst.predict(pre_encoded))
-
-
-@pytest.mark.parametrize(
-    ("cat_type", "valid_values"),
-    [
-        ("categorical", ["a", "z", "c"]),  # unseen "z" -> null (Enum can't represent unseen)
-        ("enum", ["c", "a", "c"]),
-    ],
-)
-def test_polars_categorical_matches_pandas(tmp_path, cat_type, valid_values):
-    """Polars-built Datasets (train + valid) match the pandas-built equivalents, including unseen-category handling."""
-    pd = pytest.importorskip("pandas")
-
-    cats = ["a", "b", "c"]
-    train_values = ["a", "b", "c", "a"]
-    polars_train = pl.DataFrame(
-        {
-            "cat_col": polars_cat_series(train_values, cat_type, categories=cats),
-            "num_col": [1.0, 2.0, 3.0, 4.0],
-        }
-    )
     polars_valid = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(valid_values, cat_type, categories=cats),
-            "num_col": [5.0, 6.0, 7.0],
-        }
-    )
-    pandas_train = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(train_values, categories=cats, ordered=cat_type == "enum"),
-            "num_col": [1.0, 2.0, 3.0, 4.0],
-        }
-    )
-    pandas_valid = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(valid_values, categories=cats, ordered=cat_type == "enum"),
-            "num_col": [5.0, 6.0, 7.0],
+            "cat_col": polars_cat_series(valid_values, cat_type, categories=valid_cats),
+            "num_col": valid_num,
         }
     )
 
     params = {"min_data_in_bin": 1}
-    polars_train_ds = lgb.Dataset(polars_train, label=[0, 1, 0, 1], categorical_feature=["cat_col"], params=params)
+    polars_train_ds = lgb.Dataset(polars_train, label=train_labels, categorical_feature=["cat_col"], params=params)
+    polars_valid_ds = lgb.Dataset(polars_valid, label=valid_labels, reference=polars_train_ds, params=params)
     polars_train_ds.construct()
-    polars_valid_ds = lgb.Dataset(polars_valid, label=[1, 0, 1], reference=polars_train_ds, params=params)
     polars_valid_ds.construct()
-    pandas_train_ds = lgb.Dataset(pandas_train, label=[0, 1, 0, 1], categorical_feature=["cat_col"], params=params)
+
+    bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, polars_train_ds, num_boost_round=20)
+    # Reference 1: predictions match pre-encoded array with train's mapping (unseen -> NaN)
+    train_code = {c: i for i, c in enumerate(train_cats)}
+    pre_encoded = np.array(
+        [[train_code.get(v, np.nan), n] for v, n in zip(valid_values, valid_num, strict=True)],
+        dtype=np.float64,
+    )
+    np.testing.assert_allclose(bst.predict(polars_valid), bst.predict(pre_encoded))
+
+    # Reference 2: polars train/valid Datasets are equal to pandas equivalents
+    pandas_train = pd.DataFrame(
+        {
+            "cat_col": pd.Categorical(train_values, categories=train_cats, ordered=cat_type == "enum"),
+            "num_col": [float(i % 5) for i in range(len(train_values))],
+        }
+    )
+    pandas_valid = pd.DataFrame(
+        {
+            "cat_col": pd.Categorical(valid_values, categories=valid_cats, ordered=cat_type == "enum"),
+            "num_col": valid_num,
+        }
+    )
+    pandas_train_ds = lgb.Dataset(pandas_train, label=train_labels, categorical_feature=["cat_col"], params=params)
+    pandas_valid_ds = lgb.Dataset(pandas_valid, label=valid_labels, reference=pandas_train_ds, params=params)
     pandas_train_ds.construct()
-    pandas_valid_ds = lgb.Dataset(pandas_valid, label=[1, 0, 1], reference=pandas_train_ds, params=params)
     pandas_valid_ds.construct()
 
-    assert polars_train_ds.pandas_categorical == pandas_train_ds.pandas_categorical
+    assert polars_train_ds.pandas_categorical == pandas_train_ds.pandas_categorical == [train_cats]
     assert_datasets_equal(tmp_path, polars_train_ds, pandas_train_ds)
     assert_datasets_equal(tmp_path, polars_valid_ds, pandas_valid_ds)
 
