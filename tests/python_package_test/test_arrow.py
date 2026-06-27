@@ -510,3 +510,261 @@ def test_get_data_arrow_table_subset(rng):
         returned_col = subset_data[column_name]
         assert expected_col.type == returned_col.type
         assert pyarrow_array_equal(expected_col, returned_col)
+
+
+# ------------------------------------------- CATEGORICAL ----------------------------------------- #
+
+
+def test_arrow_categorical_basic():
+    """Explicit categorical_feature constructs successfully and metadata is captured."""
+    df = pa.table(
+        {
+            "cat_col": pa.array(["a", "b", "a", "c", "b"]).dictionary_encode(),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+        }
+    )
+    y = [0, 1, 0, 1, 0]
+
+    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert ds.pandas_categorical is not None
+    assert len(ds.pandas_categorical) == 1
+    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
+
+
+def test_arrow_categorical_doesnt_modify_original():
+    """Construction must not mutate the input Table."""
+    original_table = pa.table(
+        {
+            "cat_col": pa.array(["a", "b", "a", "c"]).dictionary_encode(),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
+        }
+    )
+    y = [0, 1, 0, 1]
+
+    original_values = original_table["cat_col"].to_pylist()
+    original_type = original_table["cat_col"].type
+
+    ds = lgb.Dataset(original_table, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert original_table["cat_col"].to_pylist() == original_values
+    assert original_table["cat_col"].type == original_type
+
+
+def test_arrow_categorical_multiple_columns():
+    """Two categorical columns alongside a numeric column are both encoded."""
+    df = pa.table(
+        {
+            "cat1": pa.array(["a", "b", "a", "c"]).dictionary_encode(),
+            "cat2": pa.array(["x", "x", "y", "z"]).dictionary_encode(),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
+        }
+    )
+    y = [0, 1, 0, 1]
+
+    ds = lgb.Dataset(df, label=y, categorical_feature=["cat1", "cat2"], params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert len(ds.pandas_categorical) == 2
+    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
+    assert sorted(ds.pandas_categorical[1]) == ["x", "y", "z"]
+
+
+def test_arrow_categorical_validation_uses_train_mapping():
+    """A valid table whose categorical column has a *different* category ordering must
+    still be encoded using train's category-to-code mapping."""
+    train_values = ["a", "b", "c"] * 30
+    train_labels = [0, 1, 0] * 30
+    valid_values = ["c", "a", "c", "b", "a", "b", "c"] * 3
+
+    train_table = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(
+                pa.array([0, 1, 2] * 30), pa.array(["a", "b", "c"])
+            ),
+            "num_col": pa.array([float(i % 5) for i in range(len(train_values))]),
+        }
+    )
+    valid_table = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(
+                pa.array([2, 0, 2, 1, 0, 1, 2] * 3), pa.array(["a", "b", "c"])
+            ),
+            "num_col": pa.array([float(i % 5) for i in range(len(valid_values))]),
+        }
+    )
+
+    train_ds = lgb.Dataset(
+        train_table, label=train_labels, categorical_feature=["cat_col"], params={"min_data_in_bin": 1}
+    )
+    bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, train_ds, num_boost_round=20)
+    assert train_ds.pandas_categorical == [["a", "b", "c"]]
+
+    # Reference: encode valid_values with train's mapping (a=0, b=1, c=2) and feed as a
+    # plain numpy array so the categorical path is bypassed entirely.
+    train_code = {c: i for i, c in enumerate(["a", "b", "c"])}
+    pre_encoded = np.array(
+        [[float(train_code[v]), float(i % 5)] for i, v in enumerate(valid_values)],
+        dtype=np.float64,
+    )
+    np.testing.assert_allclose(bst.predict(valid_table), bst.predict(pre_encoded))
+
+
+def test_arrow_categorical_matches_pandas(tmp_path):
+    """Arrow-built Datasets (train + valid) match the pandas-built equivalents."""
+    pd = pytest.importorskip("pandas")
+
+    train_values = ["a", "b", "c", "a"]
+    valid_values = ["c", "a", "c"]
+
+    arrow_train = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(
+                pa.array([0, 1, 2, 0]), pa.array(["a", "b", "c"])
+            ),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
+        }
+    )
+    arrow_valid = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(
+                pa.array([2, 0, 2]), pa.array(["a", "b", "c"])
+            ),
+            "num_col": pa.array([5.0, 6.0, 7.0]),
+        }
+    )
+    pandas_train = pd.DataFrame(
+        {
+            "cat_col": pd.Categorical(train_values, categories=["a", "b", "c"], ordered=False),
+            "num_col": [1.0, 2.0, 3.0, 4.0],
+        }
+    )
+    pandas_valid = pd.DataFrame(
+        {
+            "cat_col": pd.Categorical(valid_values, categories=["a", "b", "c"], ordered=False),
+            "num_col": [5.0, 6.0, 7.0],
+        }
+    )
+
+    params = {"min_data_in_bin": 1}
+    arrow_train_ds = lgb.Dataset(arrow_train, label=[0, 1, 0, 1], categorical_feature=["cat_col"], params=params)
+    arrow_train_ds.construct()
+    arrow_valid_ds = lgb.Dataset(arrow_valid, label=[1, 0, 1], reference=arrow_train_ds, params=params)
+    arrow_valid_ds.construct()
+    pandas_train_ds = lgb.Dataset(pandas_train, label=[0, 1, 0, 1], categorical_feature=["cat_col"], params=params)
+    pandas_train_ds.construct()
+    pandas_valid_ds = lgb.Dataset(pandas_valid, label=[1, 0, 1], reference=pandas_train_ds, params=params)
+    pandas_valid_ds.construct()
+
+    assert arrow_train_ds.pandas_categorical == pandas_train_ds.pandas_categorical
+    assert_datasets_equal(tmp_path, arrow_train_ds, pandas_train_ds)
+    assert_datasets_equal(tmp_path, arrow_valid_ds, pandas_valid_ds)
+
+
+def test_arrow_categorical_high_cardinality():
+    """Construction works with a large number of unique categories."""
+    rng = np.random.default_rng(42)
+    categories = [f"cat_{i}" for i in range(1000)]
+    values = categories + rng.choice(categories, size=4000).tolist()
+    indices = [categories.index(v) for v in values]
+
+    df = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(pa.array(indices), pa.array(categories)),
+            "num_col": pa.array(rng.uniform(0, 10, size=5000)),
+        }
+    )
+    y = rng.integers(0, 2, size=5000)
+
+    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"])
+    ds.construct()
+
+    assert ds.num_data() == 5000
+    assert ds.num_feature() == 2
+    assert len(ds.pandas_categorical[0]) == 1000
+
+
+def test_arrow_categorical_prediction_and_persistence(tmp_path):
+    """End-to-end: train, predict, save/load, predictions match."""
+    train_values = ["a", "b", "a", "c", "b", "c"] * 10
+    test_values = ["a", "b", "c", "a"]
+    cats = sorted(set(train_values))
+    train_indices = [cats.index(v) for v in train_values]
+    test_indices = [cats.index(v) for v in test_values]
+
+    train_table = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(pa.array(train_indices), pa.array(cats)),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 10),
+        }
+    )
+    train_y = [0, 1, 0, 1, 0, 1] * 10
+    test_table = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(pa.array(test_indices), pa.array(cats)),
+            "num_col": pa.array([1.5, 2.5, 3.5, 4.5]),
+        }
+    )
+
+    train_ds = lgb.Dataset(train_table, label=train_y, categorical_feature=["cat_col"])
+    bst = lgb.train({"objective": "binary", "verbose": -1}, train_ds, num_boost_round=10)
+
+    preds = bst.predict(test_table)
+    assert preds.shape == (4,)
+    assert all(0 <= p <= 1 for p in preds)
+
+    model_path = tmp_path / "categorical_model.txt"
+    bst.save_model(model_path)
+    loaded_bst = lgb.Booster(model_file=model_path)
+    assert loaded_bst.pandas_categorical == bst.pandas_categorical
+    np.testing.assert_allclose(preds, loaded_bst.predict(test_table))
+
+
+def test_arrow_pandas_categorical_predictions_match():
+    """Arrow-trained and pandas-trained models give identical predictions."""
+    pd = pytest.importorskip("pandas")
+
+    cats = sorted(["cat_a", "cat_b", "cat_c"])
+    values = ["cat_a", "cat_b", "cat_c", "cat_a", "cat_b"] * 20
+    indices = [cats.index(v) for v in values]
+
+    arrow_table = pa.table(
+        {
+            "cat_col": pa.DictionaryArray.from_arrays(pa.array(indices), pa.array(cats)),
+            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0] * 20),
+        }
+    )
+    pandas_df = pd.DataFrame(
+        {
+            "cat_col": pd.Categorical(values, categories=cats, ordered=False),
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
+        }
+    )
+    y = [0, 1, 0, 1, 0] * 20
+
+    arrow_ds = lgb.Dataset(arrow_table, label=y, categorical_feature=["cat_col"])
+    arrow_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, arrow_ds, num_boost_round=10)
+
+    pandas_ds = lgb.Dataset(pandas_df, label=y, categorical_feature=["cat_col"])
+    pandas_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, pandas_ds, num_boost_round=10)
+
+    np.testing.assert_allclose(arrow_bst.predict(arrow_table), pandas_bst.predict(pandas_df), rtol=1e-10)
+
+
+def test_arrow_categorical_auto_detected():
+    """categorical_feature='auto' picks up dictionary-encoded columns."""
+    df = pa.table(
+        {
+            "cat_col": pa.array(["x", "y", "x"]).dictionary_encode(),
+            "num_col": pa.array([1.0, 2.0, 3.0]),
+        }
+    )
+    y = [0, 1, 0]
+
+    ds = lgb.Dataset(df, label=y, categorical_feature="auto", params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert ds.params.get("categorical_column") == [0]
+    assert len(ds.pandas_categorical) == 1
