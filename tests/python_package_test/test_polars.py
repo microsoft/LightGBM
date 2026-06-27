@@ -416,11 +416,6 @@ def test_get_data_polars_frame_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-# polars < 1.32: pl.Categorical ordering attribute defaults to "physical", breaking nw.is_ordered_categorical
-# and causing plain Categorical to incorrectly report as ordered. Skip categorical tests on older versions.
-_POLARS_GE_1_32 = hasattr(pl, "__version__") and tuple(map(int, pl.__version__.split(".")[:2])) >= (1, 32)
-
-
 def polars_cat_series(values, cat_type, categories=None):
     """Build a polars categorical/enum series with isolated category scope.
 
@@ -428,13 +423,17 @@ def polars_cat_series(values, cat_type, categories=None):
               "enum"        -> pl.Enum (ordered, fixed category list)
     """
     if cat_type == "categorical":
-        scope = pl.Categories.random()
-        return pl.Series(values, dtype=pl.Categorical(categories=scope))
-    cats = categories if categories is not None else sorted(set(values))
-    return pl.Series(values).cast(pl.Enum(cats))
+        if hasattr(pl, "Categories"):
+            scope = pl.Categories.random()
+            return pl.Series(values, dtype=pl.Categorical(categories=scope, ordering="lexical"))
+        else:
+            return pl.Series(values, dtype=pl.Categorical(ordering="lexical"))
+    elif cat_type == "enum":
+        return pl.Series(values).cast(pl.Enum(categories or sorted(set(values))))
+    else:
+        raise ValueError(f"Invalid cat_type: {cat_type}")
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_basic(cat_type):
     """Explicit categorical_feature constructs successfully and metadata is captured."""
@@ -454,7 +453,6 @@ def test_polars_categorical_basic(cat_type):
     assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_doesnt_modify_original(cat_type):
     """Construction must not mutate the input DataFrame."""
@@ -476,7 +474,6 @@ def test_polars_categorical_doesnt_modify_original(cat_type):
     assert original_df["cat_col"].dtype == original_dtype
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_multiple_columns(cat_type):
     """Two categorical columns alongside a numeric column are both encoded."""
@@ -497,7 +494,6 @@ def test_polars_categorical_multiple_columns(cat_type):
     assert sorted(ds.pandas_categorical[1]) == ["x", "y", "z"]
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_unseen_categories_at_inference(tmp_path, cat_type):
     """Unseen categories in the predict frame are remapped via train's mapping, matching pandas references."""
@@ -563,7 +559,6 @@ def test_polars_categorical_unseen_categories_at_inference(tmp_path, cat_type):
     assert_datasets_equal(tmp_path, polars_valid_ds, pandas_valid_ds)
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_high_cardinality(cat_type):
     """Construction works with a large number of unique categories."""
@@ -588,7 +583,6 @@ def test_polars_categorical_high_cardinality(cat_type):
     assert len(ds.pandas_categorical[0]) == 1000
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
     """End-to-end: train, predict, save/load, predictions match."""
@@ -624,7 +618,6 @@ def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
     np.testing.assert_allclose(preds, loaded_bst.predict(test_df))
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 @pytest.mark.parametrize("cat_type", ["categorical", "enum"])
 def test_polars_pandas_categorical_predictions_match(cat_type):
     """Polars-trained and pandas-trained models give identical predictions."""
@@ -656,12 +649,11 @@ def test_polars_pandas_categorical_predictions_match(cat_type):
     np.testing.assert_allclose(polars_bst.predict(polars_df), pandas_bst.predict(pandas_df), rtol=1e-10)
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 def test_polars_categorical_auto_detected():
     """categorical_feature='auto' picks up unordered pl.Categorical columns."""
     df = pl.DataFrame(
         {
-            "cat_unordered": pl.Series(["x", "y", "x"], dtype=pl.Categorical),
+            "cat_unordered": pl.Series(["x", "y", "x"], dtype=pl.Categorical(ordering="lexical")),
             "num_col": [1.0, 2.0, 3.0],
         }
     )
@@ -674,7 +666,6 @@ def test_polars_categorical_auto_detected():
     assert len(ds.pandas_categorical) == 1
 
 
-@pytest.mark.skipif(not _POLARS_GE_1_32, reason="requires polars >= 1.32")
 def test_polars_enum_not_auto_detected():
     """categorical_feature='auto' does NOT pick up pl.Enum (ordered), but metadata is captured."""
     df = pl.DataFrame(
