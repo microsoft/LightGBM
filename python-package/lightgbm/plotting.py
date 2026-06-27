@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Booster, _MissingType, _data_from_narwhals, _is_zero, _log_warning, _pandas_df_to_numpy
+from .basic import Booster, _data_from_narwhals, _is_zero, _log_warning, _MissingType, _pandas_df_to_numpy
 from .compat import pd_DataFrame
 from .sklearn import LGBMModel
 
