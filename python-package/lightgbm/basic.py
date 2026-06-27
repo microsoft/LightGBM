@@ -12,6 +12,7 @@ import abc
 import ctypes
 import inspect
 import json
+import numbers
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
@@ -98,6 +99,7 @@ _LGBM_TrainDataType = Union[
     List["Sequence"],
     List[np.ndarray],
     nwt.IntoDataFrame,
+    nwt.IntoLazyFrame,
 ]
 _LGBM_LabelType = Union[
     List[float],
@@ -904,6 +906,76 @@ class Sequence(abc.ABC):
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __len__()")
 
 
+class _NarwhalsLazySequence(Sequence):
+    """Adapts a narwhals LazyFrame to LightGBM's Sequence API for out-of-core dataset construction.
+
+    Enables chunked loading from Polars scan_parquet/scan_csv (including S3 sources via
+    Polars' native S3 support) without materialising the full dataset into memory.
+
+    For Polars-backed lazy frames, each chunk is fetched with the native ``.slice()`` method
+    which avoids reading rows outside the requested window (important for columnar remote storage).
+    For all other backends the implementation falls back to materialising the needed window
+    via ``.head(offset + length).tail(length)`` — correct but less efficient for large offsets.
+
+    Parameters
+    ----------
+    lf : narwhals.LazyFrame
+        Lazy frame to wrap.  Must already be wrapped with ``nw.from_native()``.
+    batch_size : int, optional (default=65536)
+        Number of rows per read batch.
+    """
+
+    def __init__(self, lf: "nw.LazyFrame", batch_size: int = 65536) -> None:
+        schema = lf.collect_schema()
+        self._col_names: List[str] = list(schema.names())
+        self._lf = lf
+        # Keep a handle to the native frame; only Polars supports efficient .slice().
+        native = lf.to_native()
+        self._polars_native = native if nwd.is_polars_lazyframe(native) else None
+        # Row count: cheap on Polars and DuckDB, may trigger a full scan on Dask/Spark.
+        self._n_rows: int = lf.select(nw.len()).collect().item()
+        self.batch_size = batch_size
+
+    def __len__(self) -> int:
+        return self._n_rows
+
+    def __getitem__(self, idx: Any) -> np.ndarray:
+        if isinstance(idx, numbers.Integral):
+            # Scalar int: return a 1-D array (one row) as required by the Sequence protocol.
+            return self._fetch2d(int(idx), 1)[0]
+        elif isinstance(idx, slice):
+            start = idx.start or 0
+            stop = min(idx.stop if idx.stop is not None else self._n_rows, self._n_rows)
+            return self._fetch2d(start, max(0, stop - start))
+        elif isinstance(idx, (np.ndarray, list)):
+            # Random-index access used by LightGBM for histogram-binning sample selection.
+            # Fetch the smallest covering range and then sub-select locally to avoid
+            # issuing one remote read per row.
+            indices = np.sort(np.unique(np.asarray(idx, dtype=np.intp)))
+            if len(indices) == 0:
+                return np.empty((0, len(self._col_names)), dtype=np.float64)
+            lo, hi = int(indices[0]), int(indices[-1])
+            chunk = self._fetch2d(lo, hi - lo + 1)
+            return chunk[indices - lo]
+        else:
+            raise TypeError(f"Sequence index must be int, slice, or array-like, got {type(idx).__name__}")
+
+    def _fetch2d(self, offset: int, length: int) -> np.ndarray:
+        """Materialise ``length`` rows starting at ``offset`` and return a 2-D float64 array."""
+        if self._polars_native is not None:
+            # Fast path: Polars' .slice() reads only the requested row range,
+            # which is predicate-pushed to the storage layer for Parquet sources.
+            chunk = nw.from_native(self._polars_native.slice(offset, length)).collect()
+        else:
+            # Fallback for non-Polars backends: read from the beginning up to
+            # offset+length and keep the last ``length`` rows.
+            chunk = self._lf.head(offset + length).tail(length).collect()
+        cols = [np.asarray(chunk[col], dtype=np.float64) for col in self._col_names]
+        if len(cols) == 1:
+            return cols[0].reshape(-1, 1)
+        return np.column_stack(cols)
+
+
 class _InnerPredictor:
     """_InnerPredictor of LightGBM.
 
@@ -1702,7 +1774,7 @@ class Dataset:
 
     def __init__(
         self,
-        data: _LGBM_TrainDataType,
+        data: Union[_LGBM_TrainDataType, "nwt.IntoLazyFrame"],
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
         weight: Optional[_LGBM_WeightType] = None,
@@ -1713,14 +1785,18 @@ class Dataset:
         params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         position: Optional[_LGBM_PositionType] = None,
+        chunk_size: Optional[int] = None,
     ):
         """Initialize Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or polars DataFrame
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table, polars DataFrame, or narwhals LazyFrame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
+            If a narwhals-compatible LazyFrame (e.g. ``polars.scan_parquet(...)``), data is loaded in
+            chunks of ``chunk_size`` rows without fully materialising the frame — useful for datasets
+            stored in remote object stores such as Amazon S3.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1754,9 +1830,14 @@ class Dataset:
             If True, raw data is freed after constructing inner Dataset.
         position : numpy 1-D array, pandas Series or None, optional (default=None)
             Position of items used in unbiased learning-to-rank task.
+        chunk_size : int or None, optional (default=None)
+            Number of rows per read batch when ``data`` is a narwhals LazyFrame.
+            Defaults to 65536 when not specified.
+            Ignored for all other data types.
         """
         self._handle: Optional[_DatasetHandle] = None
         self.data = data
+        self._chunk_size: int = chunk_size if chunk_size is not None else 65536
         self.label = label
         self.reference = reference
         self.weight = weight
@@ -2061,8 +2142,13 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-        if nwd.is_into_dataframe(data) and feature_name == "auto":
+        if not nwd.is_narwhals_lazyframe(data) and nwd.is_into_dataframe(data) and feature_name == "auto":
             feature_name = nw.from_native(data).schema.names()
+        if nwd.is_narwhals_lazyframe(data) or nwd.is_polars_lazyframe(data):
+            nw_lf = nw.from_native(data) if not nwd.is_narwhals_lazyframe(data) else data
+            if feature_name == "auto":
+                feature_name = list(nw_lf.collect_schema().names())
+            data = _NarwhalsLazySequence(nw_lf, batch_size=self._chunk_size)
 
         # 'feature_name == "auto"' after the block above means no feature names were provided
         # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.
