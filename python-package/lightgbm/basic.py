@@ -732,6 +732,48 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
         )
 
 
+def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
+    """Check narwhals schema for unsupported dtypes."""
+    schema = data.schema
+    allowed_dtypes = (
+        nw.Int8,
+        nw.Int16,
+        nw.Int32,
+        nw.Int64,
+        nw.UInt8,
+        nw.UInt16,
+        nw.UInt32,
+        nw.UInt64,
+        # TODO: Add nw.Float16 once Narwhals supports it (https://github.com/narwhals-dev/narwhals/issues/3723)
+        nw.Float32,
+        nw.Float64,
+        nw.Boolean,
+        nw.Categorical,
+        nw.Enum,
+    )
+    bad_types = {
+        col: dtype
+        for col, dtype in schema.items()
+        if dtype not in allowed_dtypes
+        # TODO: Remove once Narwhals correctly infers `Categorical` dtypes with defined categories (https://github.com/narwhals-dev/narwhals/issues/3719)
+        and col not in data.select(ncs.categorical()).columns
+    }
+    # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
+    # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
+    if PANDAS_INSTALLED and data.implementation.is_pandas_like() and bad_types:
+        native_dtypes = data.to_native().dtypes
+        bad_types = {
+            column_name: dtype
+            for column_name, dtype in bad_types.items()
+            if not _is_allowed_numpy_dtype(native_dtypes[column_name].type)
+        }
+    if bad_types:
+        raise ValueError(
+            f"DataFrame dtypes must be int, float, bool, categorical or enum.\n"
+            f"Fields with bad dtypes: {', '.join(f'{col}: {dtype}' for col, dtype in bad_types.items())}"
+        )
+
+
 def _pandas_to_numpy(
     data: pd_DataFrame,
     target_dtype: "np.typing.DTypeLike",
@@ -764,14 +806,20 @@ def _data_from_narwhals(
 ) -> Tuple[Any, List[str], Union[List[str], List[int]], List[List]]:
     data = nw.from_native(data)
 
+    # validation
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError("Input data must be 2 dimensional and non empty.")
+    _check_for_bad_narwhals_dtypes(data)
 
     # determine feature names
     if feature_name == "auto":
         feature_name = [str(col) for col in data.schema.names()]
 
     # determine categorical features
+    # TODO: Simplify when Narwhals supports `Categorical` dtype inference with defined categories (https://github.com/narwhals-dev/narwhals/issues/3719)
+    # cat_cols = [col for col, dtype in data.schema.items() if dtype in (nw.Categorical, nw.Enum)]
+    # or, TODO: Simplify when Narwhals supports `ncs.enum()` selector (https://github.com/narwhals-dev/narwhals/issues/3720)
+    # cat_cols = data.select(ncs.categorical() | ncs.enum()).columns
     cat_cols = data.select(ncs.categorical()).columns + [col for col, dtype in data.schema.items() if dtype == nw.Enum]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not nw.is_ordered_categorical(data.get_column(col))]
     if pandas_categorical is None:  # train dataset

@@ -1,5 +1,6 @@
 # coding: utf-8
 import filecmp
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -681,3 +682,44 @@ def test_polars_enum_not_auto_detected():
 
     assert "categorical_column" not in ds.params
     assert len(ds.pandas_categorical) == 1
+
+
+# ---------------------------------------- DTYPE VALIDATION --------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ("dtype", "values", "init_args", "valid"),
+    [
+        # Valid dtypes
+        (pl.Int8, [1, 2, 3], {}, True),
+        (pl.Int16, [1, 2, 3], {}, True),
+        (pl.Int32, [1, 2, 3], {}, True),
+        (pl.Int64, [1, 2, 3], {}, True),
+        (pl.UInt8, [1, 2, 3], {}, True),
+        (pl.UInt16, [1, 2, 3], {}, True),
+        (pl.UInt32, [1, 2, 3], {}, True),
+        (pl.UInt64, [1, 2, 3], {}, True),
+        (pl.Float32, [1.0, 2.0, 3.0], {}, True),
+        (pl.Float64, [1.0, 2.0, 3.0], {}, True),
+        (pl.Boolean, [True, False, True], {}, True),
+        (pl.Categorical, ["a", "b", "c"], {}, True),
+        (pl.Enum, ["x", "y", "z"], {"categories": ["x", "y", "z"]}, True),
+        # Invalid dtypes
+        (pl.String, ["a", "b", "c"], {}, False),
+        (pl.Date, [date(2020, 1, 1), date(2020, 1, 2), date(2020, 1, 3)], {}, False),
+        (pl.Datetime, [datetime(2020, 1, 1), datetime(2020, 1, 2), datetime(2020, 1, 3)], {}, False),
+        (pl.Duration, [1, 2, 3], {"time_unit": "us"}, False),
+        (pl.Struct, [{"a": 1}, {"a": 2}, {"a": 3}], {"fields": {"a": pl.Int8}}, False),
+        (pl.List, [[1, 2], [3, 4], [5, 6]], {"inner": pl.Int8}, False),
+    ],
+)
+def test_narwhals_dtype_validation_for_polars(dtype, values, init_args, valid):
+    """Valid dtypes should construct; invalid dtypes should raise ValueError."""
+    df = pl.DataFrame({"col": pl.Series(values, dtype=dtype(**init_args)), "num_col": [1.0, 2.0, 3.0]})
+    y = [0, 1, 0]
+
+    if valid:
+        lgb.Dataset(df, label=y).construct()
+    else:
+        with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
+            lgb.Dataset(df, label=y).construct()

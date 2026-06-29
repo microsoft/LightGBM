@@ -519,7 +519,9 @@ def test_arrow_categorical_basic():
     """Explicit categorical_feature constructs successfully and metadata is captured."""
     df = pa.table(
         {
-            "cat_col": pa.array(["a", "b", "a", "c", "b"]).dictionary_encode(),
+            "cat_col": pa.array(
+                ["a", "b", "a", "c", "b"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())
+            ),
             "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0]),
         }
     )
@@ -537,7 +539,9 @@ def test_arrow_categorical_doesnt_modify_original():
     """Construction must not mutate the input Table."""
     original_table = pa.table(
         {
-            "cat_col": pa.array(["a", "b", "a", "c"]).dictionary_encode(),
+            "cat_col": pa.array(
+                ["a", "b", "a", "c"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())
+            ),
             "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
         }
     )
@@ -557,8 +561,8 @@ def test_arrow_categorical_multiple_columns():
     """Two categorical columns alongside a numeric column are both encoded."""
     df = pa.table(
         {
-            "cat1": pa.array(["a", "b", "a", "c"]).dictionary_encode(),
-            "cat2": pa.array(["x", "x", "y", "z"]).dictionary_encode(),
+            "cat1": pa.array(["a", "b", "a", "c"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
+            "cat2": pa.array(["x", "x", "y", "z"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
         }
     )
@@ -585,18 +589,15 @@ def test_arrow_categorical_unseen_categories_at_inference(tmp_path):
     valid_labels = [0, 1, 0, 1, 0, 1, 0]
     valid_num = [float(i % 5) for i in range(len(valid_values))]
 
-    train_indices = [train_cats.index(v) for v in train_values]
-    valid_indices = [valid_cats.index(v) for v in valid_values]
-
     arrow_train = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(train_indices), pa.array(train_cats)),
+            "cat_col": pa.array(train_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([float(i % 5) for i in range(len(train_values))]),
         }
     )
     arrow_valid = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(valid_indices), pa.array(valid_cats)),
+            "cat_col": pa.array(valid_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array(valid_num),
         }
     )
@@ -644,11 +645,10 @@ def test_arrow_categorical_high_cardinality():
     rng = np.random.default_rng(42)
     categories = [f"cat_{i}" for i in range(1000)]
     values = categories + rng.choice(categories, size=4000).tolist()
-    indices = [categories.index(v) for v in values]
 
     df = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(indices), pa.array(categories)),
+            "cat_col": pa.array(values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array(rng.uniform(0, 10, size=5000)),
         }
     )
@@ -666,20 +666,17 @@ def test_arrow_categorical_prediction_and_persistence(tmp_path):
     """End-to-end: train, predict, save/load, predictions match."""
     train_values = ["a", "b", "a", "c", "b", "c"] * 10
     test_values = ["a", "b", "c", "a"]
-    cats = sorted(set(train_values))
-    train_indices = [cats.index(v) for v in train_values]
-    test_indices = [cats.index(v) for v in test_values]
 
     train_table = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(train_indices), pa.array(cats)),
+            "cat_col": pa.array(train_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 10),
         }
     )
     train_y = [0, 1, 0, 1, 0, 1] * 10
     test_table = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(test_indices), pa.array(cats)),
+            "cat_col": pa.array(test_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([1.5, 2.5, 3.5, 4.5]),
         }
     )
@@ -704,11 +701,10 @@ def test_arrow_pandas_categorical_predictions_match():
 
     cats = sorted(["cat_a", "cat_b", "cat_c"])
     values = ["cat_a", "cat_b", "cat_c", "cat_a", "cat_b"] * 20
-    indices = [cats.index(v) for v in values]
 
     arrow_table = pa.table(
         {
-            "cat_col": pa.DictionaryArray.from_arrays(pa.array(indices), pa.array(cats)),
+            "cat_col": pa.array(values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0] * 20),
         }
     )
@@ -733,7 +729,7 @@ def test_arrow_categorical_auto_detected():
     """categorical_feature='auto' picks up dictionary-encoded columns."""
     df = pa.table(
         {
-            "cat_col": pa.array(["x", "y", "x"]).dictionary_encode(),
+            "cat_col": pa.array(["x", "y", "x"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
             "num_col": pa.array([1.0, 2.0, 3.0]),
         }
     )
@@ -744,3 +740,42 @@ def test_arrow_categorical_auto_detected():
 
     assert ds.params.get("categorical_column") == [0]
     assert len(ds.pandas_categorical) == 1
+
+
+# ---------------------------------------- DTYPE VALIDATION --------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ("dtype", "values", "init_args", "valid"),
+    [
+        # Valid dtypes
+        (pa.int8, [1, 2, 3], {}, True),
+        (pa.int16, [1, 2, 3], {}, True),
+        (pa.int32, [1, 2, 3], {}, True),
+        (pa.int64, [1, 2, 3], {}, True),
+        (pa.uint8, [1, 2, 3], {}, True),
+        (pa.uint16, [1, 2, 3], {}, True),
+        (pa.uint32, [1, 2, 3], {}, True),
+        (pa.uint64, [1, 2, 3], {}, True),
+        (pa.float32, [1.0, 2.0, 3.0], {}, True),
+        (pa.float64, [1.0, 2.0, 3.0], {}, True),
+        (pa.bool_, [True, False, True], {}, True),
+        (pa.dictionary, ["a", "b", "c"], {"index_type": pa.int32(), "value_type": pa.string()}, True),
+        # Invalid dtypes
+        (pa.string, ["a", "b", "c"], {}, False),
+        (pa.date32, [18262, 18263, 18264], {}, False),
+        (pa.timestamp, [1577836800000000, 1577923200000000, 1578009600000000], {"unit": "us"}, False),
+        (pa.duration, [1, 2, 3], {"unit": "us"}, False),
+        (pa.list_, [[1], [2], [3]], {"value_type": pa.int32()}, False),
+    ],
+)
+def test_narwhals_dtype_validation_for_arrow(dtype, values, init_args, valid):
+    """Valid dtypes should construct; invalid dtypes should raise ValueError."""
+    table = pa.table({"col": pa.array(values, type=dtype(**init_args)), "num_col": pa.array([1.0, 2.0, 3.0])})
+    y = [0, 1, 0]
+
+    if valid:
+        lgb.Dataset(table, label=y).construct()
+    else:
+        with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
+            lgb.Dataset(table, label=y).construct()
