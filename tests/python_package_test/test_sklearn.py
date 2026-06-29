@@ -3,6 +3,7 @@ import inspect
 import itertools
 import math
 import re
+import sys
 import warnings
 from functools import partial
 from pathlib import Path
@@ -25,7 +26,6 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
-    DASK_INSTALLED,
     PANDAS_INSTALLED,
     _sklearn_version,
     pd_DataFrame,
@@ -589,7 +589,12 @@ def test_subclassing_get_params_works():
             "learning_rate": 0.1,
         }
 
-    if DASK_INSTALLED:
+    try:
+        import dask  # noqa: F401,PLC0415
+    except lgb.dask._DaskImportErrorTypes:
+        pass
+
+    if "dask" in sys.modules:
         for est in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRanker, lgb.DaskLGBMRegressor]:
             assert est().get_params() == {
                 **expected_params,
