@@ -99,7 +99,6 @@ _LGBM_TrainDataType = Union[
     List["Sequence"],
     List[np.ndarray],
     nwt.IntoDataFrame,
-    nwt.IntoLazyFrame,
 ]
 _LGBM_LabelType = Union[
     List[float],
@@ -904,6 +903,50 @@ class Sequence(abc.ABC):
     def __len__(self) -> int:
         """Return row count of this sequence."""
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __len__()")
+
+    @staticmethod
+    def from_lazy_frame(lf: Any, chunk_size: int = 65536) -> "Sequence":
+        """Create a Sequence that reads a narwhals-compatible LazyFrame in batches.
+
+        This enables training on datasets that are too large to fit in RAM by streaming
+        data from disk or remote object stores (e.g. Amazon S3 via ``polars.scan_parquet``)
+        without ever materialising the full frame.
+
+        For Polars-backed frames, each batch is fetched with the native ``.slice()`` method,
+        which avoids reading rows outside the requested window — important for columnar
+        remote storage.  Other backends fall back to ``.head(offset + length).tail(length)``.
+
+        Parameters
+        ----------
+        lf : narwhals.LazyFrame or polars.LazyFrame
+            A narwhals-compatible lazy frame (e.g. ``polars.scan_parquet("s3://...")`` or
+            ``narwhals.from_native(polars.scan_parquet(...))``.
+        chunk_size : int, optional (default=65536)
+            Number of rows per read batch.
+
+        Returns
+        -------
+        result : Sequence
+            A Sequence that lazily fetches ``lf`` in batches of ``chunk_size`` rows.
+
+        Examples
+        --------
+        >>> import polars as pl
+        >>> import lightgbm as lgb
+        >>> lf = pl.scan_parquet("train.parquet")
+        >>> seq = lgb.Sequence.from_lazy_frame(lf, chunk_size=65536)
+        >>> ds = lgb.Dataset(seq, label=y, feature_name=lf.collect_schema().names())
+        >>> lgb.train(params, ds)
+
+        .. versionadded:: 4.7.0
+        """
+        if not (nwd.is_narwhals_lazyframe(lf) or nwd.is_polars_lazyframe(lf)):
+            raise TypeError(
+                f"Expected a narwhals-compatible LazyFrame, got {type(lf).__name__}. "
+                "Pass a Polars LazyFrame (e.g. pl.scan_parquet(...)) or wrap one with narwhals.from_native()."
+            )
+        nw_lf = lf if nwd.is_narwhals_lazyframe(lf) else nw.from_native(lf)
+        return _NarwhalsLazySequence(nw_lf, batch_size=chunk_size)
 
 
 class _NarwhalsLazySequence(Sequence):
@@ -1774,7 +1817,7 @@ class Dataset:
 
     def __init__(
         self,
-        data: Union[_LGBM_TrainDataType, "nwt.IntoLazyFrame"],
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
         weight: Optional[_LGBM_WeightType] = None,
@@ -1785,18 +1828,14 @@ class Dataset:
         params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         position: Optional[_LGBM_PositionType] = None,
-        chunk_size: Optional[int] = None,
     ):
         """Initialize Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table, polars DataFrame, or narwhals LazyFrame
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or polars DataFrame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-            If a narwhals-compatible LazyFrame (e.g. ``polars.scan_parquet(...)``), data is loaded in
-            chunks of ``chunk_size`` rows without fully materialising the frame — useful for datasets
-            stored in remote object stores such as Amazon S3.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1830,14 +1869,9 @@ class Dataset:
             If True, raw data is freed after constructing inner Dataset.
         position : numpy 1-D array, pandas Series or None, optional (default=None)
             Position of items used in unbiased learning-to-rank task.
-        chunk_size : int or None, optional (default=None)
-            Number of rows per read batch when ``data`` is a narwhals LazyFrame.
-            Defaults to 65536 when not specified.
-            Ignored for all other data types.
         """
         self._handle: Optional[_DatasetHandle] = None
         self.data = data
-        self._chunk_size: int = chunk_size if chunk_size is not None else 65536
         self.label = label
         self.reference = reference
         self.weight = weight
@@ -2142,13 +2176,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-        if not nwd.is_narwhals_lazyframe(data) and nwd.is_into_dataframe(data) and feature_name == "auto":
+        if nwd.is_into_dataframe(data) and feature_name == "auto":
             feature_name = nw.from_native(data).schema.names()
-        if nwd.is_narwhals_lazyframe(data) or nwd.is_polars_lazyframe(data):
-            nw_lf = nw.from_native(data) if not nwd.is_narwhals_lazyframe(data) else data
-            if feature_name == "auto":
-                feature_name = list(nw_lf.collect_schema().names())
-            data = _NarwhalsLazySequence(nw_lf, batch_size=self._chunk_size)
 
         # 'feature_name == "auto"' after the block above means no feature names were provided
         # by either the data type (DataFrame/pyarrow) or the user's 'feature_name' argument.

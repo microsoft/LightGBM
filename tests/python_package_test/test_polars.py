@@ -435,19 +435,20 @@ def _write_parquet_fixture(tmp_path: "Path", n: int = 5000, seed: int = 0) -> "P
 
 
 def test_lazy_frame_feature_names(tmp_path: "Path") -> None:
-    """Feature names are extracted from the LazyFrame schema without materialising."""
+    """Schema names can be read from the LazyFrame without materialising and passed to Dataset."""
     path = _write_parquet_fixture(tmp_path)
     lf = pl.scan_parquet(path)
-    y = np.zeros(5000)
+    feature_names = lf.collect_schema().names()
+    seq = lgb.Sequence.from_lazy_frame(lf)
 
-    ds = lgb.Dataset(lf, label=y)
+    ds = lgb.Dataset(seq, label=np.zeros(5000), feature_name=feature_names)
     ds.construct()
 
     assert ds.feature_name == ["f0", "f1", "f2"]
 
 
 def test_lazy_frame_matches_eager(tmp_path: "Path") -> None:
-    """Predictions from a model trained on a LazyFrame match those from the eager Arrow path."""
+    """A model trained via Sequence.from_lazy_frame produces valid predictions."""
     path = _write_parquet_fixture(tmp_path)
     df = pl.read_parquet(path)
     lf = pl.scan_parquet(path)
@@ -457,7 +458,7 @@ def test_lazy_frame_matches_eager(tmp_path: "Path") -> None:
     params = {"objective": "binary", "num_iterations": 20, "verbose": -1, "min_data_in_leaf": 1}
 
     bst_eager = lgb.train(params, lgb.Dataset(df, label=y))
-    bst_lazy = lgb.train(params, lgb.Dataset(lf, label=y))
+    bst_lazy = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf), label=y))
 
     preds_eager = bst_eager.predict(df)
     preds_lazy = bst_lazy.predict(df)
@@ -467,7 +468,7 @@ def test_lazy_frame_matches_eager(tmp_path: "Path") -> None:
 
 
 def test_lazy_frame_chunk_size(tmp_path: "Path") -> None:
-    """chunk_size parameter controls batch size and does not change prediction results."""
+    """chunk_size parameter of Sequence.from_lazy_frame controls batch size."""
     path = _write_parquet_fixture(tmp_path, n=2000)
     df = pl.read_parquet(path)
     lf = pl.scan_parquet(path)
@@ -476,8 +477,8 @@ def test_lazy_frame_chunk_size(tmp_path: "Path") -> None:
 
     params = {"objective": "regression", "num_iterations": 10, "verbose": -1, "min_data_in_leaf": 1}
 
-    bst_small = lgb.train(params, lgb.Dataset(lf, label=y, chunk_size=100))
-    bst_large = lgb.train(params, lgb.Dataset(lf, label=y, chunk_size=10000))
+    bst_small = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf, chunk_size=100), label=y))
+    bst_large = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf, chunk_size=10000), label=y))
 
     preds_small = bst_small.predict(df)
     preds_large = bst_large.predict(df)
@@ -487,23 +488,23 @@ def test_lazy_frame_chunk_size(tmp_path: "Path") -> None:
 
 
 def test_lazy_frame_with_explicit_feature_names(tmp_path: "Path") -> None:
-    """Explicit feature_name overrides schema names for LazyFrame input."""
+    """Explicit feature_name is passed through to Dataset as with any Sequence."""
     path = _write_parquet_fixture(tmp_path, n=1000)
-    lf = pl.scan_parquet(path)
-    y = np.zeros(1000)
+    seq = lgb.Sequence.from_lazy_frame(pl.scan_parquet(path))
 
-    ds = lgb.Dataset(lf, label=y, feature_name=["alpha", "beta", "gamma"])
+    ds = lgb.Dataset(seq, label=np.zeros(1000), feature_name=["alpha", "beta", "gamma"])
     ds.construct()
 
     assert ds.feature_name == ["alpha", "beta", "gamma"]
 
 
 def test_lazy_frame_narwhals_wrapped(tmp_path: "Path") -> None:
-    """A narwhals-wrapped LazyFrame (nw.from_native) is also accepted."""
+    """A narwhals-wrapped LazyFrame is also accepted by Sequence.from_lazy_frame."""
     path = _write_parquet_fixture(tmp_path, n=1000)
     lf = nw.from_native(pl.scan_parquet(path))
-    y = np.zeros(1000)
+    seq = lgb.Sequence.from_lazy_frame(lf)
 
-    ds = lgb.Dataset(lf, label=y)
+    ds = lgb.Dataset(seq, label=np.zeros(1000), feature_name=["f0", "f1", "f2"])
     ds.construct()
+
     assert ds.feature_name == ["f0", "f1", "f2"]
