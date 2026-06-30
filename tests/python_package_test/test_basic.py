@@ -1304,12 +1304,7 @@ try:
             # Invalid dtypes
             (pd.StringDtype, ["a", "b", "c"], {}, False),
             (pd.DatetimeTZDtype, ["2020-01-01", "2020-01-02", "2020-01-03"], {"tz": ZoneInfo("UTC")}, False),
-            (
-                pd.PeriodDtype,
-                [pd.Period("2020-01-01"), pd.Period("2020-01-02"), pd.Period("2020-01-03")],
-                {"freq": "D"},
-                False,
-            ),
+            (pd.PeriodDtype, [pd.Period("2024"), pd.Period("2025"), pd.Period("2026")], {"freq": "Y"}, False),
             (pd.IntervalDtype, [pd.Interval(0, 1), pd.Interval(1, 2), pd.Interval(2, 3)], {"subtype": "int64"}, False),
         ],
     )
