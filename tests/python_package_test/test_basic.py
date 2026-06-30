@@ -1299,6 +1299,7 @@ try:
             (pd.Float32Dtype, [1.0, 2.0, 3.0], {}, True),
             (pd.Float64Dtype, [1.0, 2.0, 3.0], {}, True),
             (pd.BooleanDtype, [True, False, True], {}, True),
+            (pd.SparseDtype, [1.0, 2.0, 3.0], {}, True),
             (pd.CategoricalDtype, ["a", "b", "c"], {"ordered": False}, True),
             (pd.CategoricalDtype, ["x", "y", "z"], {"ordered": True}, True),
             # Invalid dtypes
