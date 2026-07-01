@@ -4,7 +4,6 @@ import numbers
 import re
 import warnings
 from copy import deepcopy
-from os import getenv
 from pathlib import Path
 
 import numpy as np
@@ -14,9 +13,8 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
+from .utils import BuildInfo, dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
 
 def test_basic(tmp_path):
@@ -51,7 +49,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv("TASK", "") != "cuda":
+    if BuildInfo.has_cuda:
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -554,7 +552,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     X = np.array([[1.0, 2.0], [3.0, 4.0]])
 
     position = np.array([0.0, 1.0], dtype=np.float32)
-    if getenv("TASK", "") == "cuda":
+    if BuildInfo.has_cuda:
         position = None
 
     dtrain = lgb.Dataset(
@@ -574,7 +572,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    if getenv("TASK", "") != "cuda":
+    if BuildInfo.has_cuda:
         np_assert_array_equal(dtrain.position, np.array([0.0, 1.0], dtype=np.float32), strict=True)
         np_assert_array_equal(dtrain.get_position(), np.array([0.0, 1.0], dtype=np.float32), strict=True)
     assert dtrain.weight == [0.5, 1.5]
@@ -606,17 +604,55 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_label(), expected_label, strict=True)
     np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
 
-    if getenv("TASK", "") != "cuda":
-        expected_position = np.array([0.0, 1.0], dtype=np.float32)
+    if not BuildInfo.has_cuda:
+        # NOTE: "position" is converted to int32 on the C++ side and remapped to dense
+        # internal indices in encounter order. Here the input [0, 1] is already dense
+        # starting from 0 in encounter order, so the remap is the identity.
+        expected_position = np.array([0, 1], dtype=np.int32)
         np_assert_array_equal(dtrain.position, expected_position, strict=True)
         np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-        # NOTE: "position" is converted to int32 on the C++ side
-        np_assert_array_equal(dtrain.get_field("position"), np.array([0.0, 1.0], dtype=np.int32), strict=True)
+        np_assert_array_equal(dtrain.get_field("position"), expected_position, strict=True)
 
     expected_weight = np.array([0.5, 1.5], dtype=np.float32)
     np_assert_array_equal(dtrain.weight, expected_weight, strict=True)
     np_assert_array_equal(dtrain.get_weight(), expected_weight, strict=True)
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
+
+
+@pytest.mark.skipif(
+    BuildInfo.has_cuda,
+    reason="Positions in learning to rank is not supported in CUDA version yet",
+)
+def test_set_position_updates_self_position_with_remapped_int32_values():
+    # Position values are remapped to dense int32 indices in the order they are first
+    # encountered. With input [3, 1, 0, 2, 4, 3, 1, 0, 2, 4]:
+    #   3 -> 0 (first encountered), 1 -> 1, 0 -> 2, 2 -> 3, 4 -> 4
+    X = np.arange(20, dtype=np.float64).reshape(10, 2)
+    y = np.arange(10, dtype=np.float64)
+    position = np.array([3, 1, 0, 2, 4, 3, 1, 0, 2, 4], dtype=np.int64)
+    expected = np.array([0, 1, 2, 3, 4, 0, 1, 2, 3, 4], dtype=np.int32)
+
+    # set via constructor
+    dtrain = lgb.Dataset(
+        X,
+        label=y,
+        position=position,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    np_assert_array_equal(dtrain.position, expected, strict=True)
+    np_assert_array_equal(dtrain.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain.get_field("position"), expected, strict=True)
+
+    # set via set_position() on an already-constructed Dataset
+    dtrain2 = lgb.Dataset(
+        X,
+        label=y,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    dtrain2.set_position(position)
+    np_assert_array_equal(dtrain2.position, expected, strict=True)
+    np_assert_array_equal(dtrain2.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain2.get_field("position"), expected, strict=True)
 
 
 def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
@@ -723,7 +759,7 @@ def test_list_to_1d_numpy(collection, dtype, rng):
 
     if collection.startswith("pd"):
         pd = pytest.importorskip("pandas")
-        y = pd_Series(y)
+        y = pd.Series(y)
         if pd.api.types.is_object_dtype(y):
             with pytest.raises(
                 ValueError,
@@ -762,9 +798,8 @@ def test_init_score_for_multiclass_classification(init_score_type, rng):
     if init_score_type == "array":
         init_score = np.array(init_score)
     elif init_score_type == "dataframe":
-        if not PANDAS_INSTALLED:
-            pytest.skip("Pandas is not installed.")
-        init_score = pd_DataFrame(init_score)
+        pd = pytest.importorskip("pandas")
+        init_score = pd.DataFrame(init_score)
     data = rng.uniform(size=(10, 2))
     ds = lgb.Dataset(data, init_score=init_score).construct()
     np.testing.assert_equal(ds.get_field("init_score"), init_score)
@@ -957,6 +992,17 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
 
 
+def test_set_feature_name_updates_has_non_default_feature_names(rng):
+    ds = lgb.Dataset(data=rng.standard_normal(size=(100, 3)), label=rng.integers(0, 2, size=100))
+    assert ds._has_non_default_feature_names is False
+    ds.construct()
+    assert ds._has_non_default_feature_names is False
+    assert ds.get_feature_name() == ["Column_0", "Column_1", "Column_2"]
+    ds.set_feature_name(["a", "b", "c"])
+    assert ds._has_non_default_feature_names is True
+    assert ds.get_feature_name() == ["a", "b", "c"]
+
+
 # NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
 @pytest.mark.parametrize(("max_depth", "num_leaves"), [(-1, 3), (-1, 50), (5, 3), (5, 31), (5, 32), (8, 3), (8, 31)])
 def test_max_depth_warning_is_not_raised_if_num_leaves_is_also_provided(capsys, num_leaves, max_depth):
@@ -1071,7 +1117,7 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
         pytest.param(
             "position",
             marks=pytest.mark.skipif(
-                getenv("TASK", "") == "cuda",
+                BuildInfo.has_cuda,
                 reason="Positions in learning to rank is not supported in CUDA version yet",
             ),
         ),

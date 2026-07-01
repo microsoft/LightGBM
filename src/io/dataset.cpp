@@ -930,17 +930,35 @@ void Dataset::CopySubrowToDevice(const Dataset* fullset,
 }
 
 #ifndef LGB_R_BUILD
-bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray &ca) {
+bool Dataset::SetFieldFromArrow(const char* field_name, struct ArrowArrayStream* stream) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
-    metadata_.SetLabel(ca);
+    metadata_.SetLabel(stream);
   } else if (name == std::string("weight") || name == std::string("weights")) {
-    metadata_.SetWeights(ca);
+    metadata_.SetWeights(stream);
   } else if (name == std::string("init_score")) {
-    metadata_.SetInitScore(ca);
+    metadata_.SetInitScore(stream);
   } else if (name == std::string("query") || name == std::string("group")) {
-    metadata_.SetQuery(ca);
+    metadata_.SetQuery(stream);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::SetFieldFromArrow(const char* field_name, int64_t n_chunks,
+                                struct ArrowArray* chunks, struct ArrowSchema* schema) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("label") || name == std::string("target")) {
+    metadata_.SetLabel(n_chunks, chunks, schema);
+  } else if (name == std::string("weight") || name == std::string("weights")) {
+    metadata_.SetWeights(n_chunks, chunks, schema);
+  } else if (name == std::string("init_score")) {
+    metadata_.SetInitScore(n_chunks, chunks, schema);
+  } else if (name == std::string("query") || name == std::string("group")) {
+    metadata_.SetQuery(n_chunks, chunks, schema);
   } else {
     return false;
   }
