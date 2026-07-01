@@ -744,20 +744,14 @@ def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
         nw.UInt16,
         nw.UInt32,
         nw.UInt64,
-        # TODO: Add nw.Float16 once Narwhals supports it (https://github.com/narwhals-dev/narwhals/issues/3723)
+        nw.Float16,
         nw.Float32,
         nw.Float64,
         nw.Boolean,
         nw.Categorical,
         nw.Enum,
     )
-    bad_types = {
-        col: dtype
-        for col, dtype in schema.items()
-        if dtype not in allowed_dtypes
-        # TODO: Remove once Narwhals correctly infers `Categorical` dtypes with defined categories (https://github.com/narwhals-dev/narwhals/issues/3719)
-        and col not in data.select(ncs.categorical()).columns
-    }
+    bad_types = {col: dtype for col, dtype in schema.items() if dtype not in allowed_dtypes}
     # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
     # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
     if PANDAS_INSTALLED and data.implementation.is_pandas_like() and bad_types:
@@ -816,11 +810,7 @@ def _data_from_narwhals(
         feature_name = [str(col) for col in data.schema.names()]
 
     # determine categorical features
-    # TODO: Simplify when Narwhals supports `Categorical` dtype inference with defined categories (https://github.com/narwhals-dev/narwhals/issues/3719)
-    # cat_cols = [col for col, dtype in data.schema.items() if dtype in (nw.Categorical, nw.Enum)]
-    # or, TODO: Simplify when Narwhals supports `ncs.enum()` selector (https://github.com/narwhals-dev/narwhals/issues/3720)
-    # cat_cols = data.select(ncs.categorical() | ncs.enum()).columns
-    cat_cols = data.select(ncs.categorical()).columns + [col for col, dtype in data.schema.items() if dtype == nw.Enum]
+    cat_cols = data.select(ncs.by_dtype(nw.Categorical, nw.Enum)).columns
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not nw.is_ordered_categorical(data.get_column(col))]
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [data.get_column(col).cat.get_categories().to_list() for col in cat_cols]
