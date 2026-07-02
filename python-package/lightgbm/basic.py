@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List,
 
 import narwhals as nw
 import narwhals.dependencies as nwd
+import narwhals.dtypes as nw_dtypes
 import narwhals.selectors as ncs
 import narwhals.typing as nwt
 import numpy as np
@@ -733,25 +734,8 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 
 def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
-    """Check narwhals schema for unsupported dtypes."""
-    schema = data.schema
-    allowed_dtypes = (
-        nw.Int8,
-        nw.Int16,
-        nw.Int32,
-        nw.Int64,
-        nw.UInt8,
-        nw.UInt16,
-        nw.UInt32,
-        nw.UInt64,
-        nw.Float16,
-        nw.Float32,
-        nw.Float64,
-        nw.Boolean,
-        nw.Categorical,
-        nw.Enum,
-    )
-    bad_types = {col: dtype for col, dtype in schema.items() if dtype not in allowed_dtypes}
+    allowed_dtypes = (nw_dtypes.IntegerType, nw_dtypes.FloatType, nw.Boolean, nw.Categorical, nw.Enum)
+    bad_types = {col: dtype for col, dtype in data.schema.items() if not isinstance(dtype, allowed_dtypes)}
     # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
     # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
     if PANDAS_INSTALLED and data.implementation.is_pandas_like() and bad_types:
