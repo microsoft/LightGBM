@@ -224,13 +224,14 @@ elif [[ $TASK == "cuda" ]]; then
             --no-deps \
             --config-settings=cmake.define.USE_CUDA=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
+            'numpy<2.5' \
         || exit 1
         pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" || exit 1
+        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" 'numpy<2.5' || exit 1
         pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -250,13 +251,14 @@ elif [[ $TASK == "mpi" ]]; then
             --no-deps \
             --config-settings=cmake.define.USE_MPI=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
+            'numpy<2.5' \
         || exit 1
         pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" || exit 1
+        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" 'numpy<2.5' || exit 1
         pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
