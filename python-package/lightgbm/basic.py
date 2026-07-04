@@ -33,6 +33,9 @@ import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, pd_DataFrame, pd_Series
 
+_NARWHALS_MAJOR, _NARWHALS_MINOR, *_ = nw.__version__.split(".")
+_NARWHALS_VERSION_GTE_2_23 = (int(_NARWHALS_MAJOR), int(_NARWHALS_MINOR)) >= (2, 23)
+
 if TYPE_CHECKING:
     from typing import Literal, TypeGuard
 
@@ -736,6 +739,13 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
     allowed_dtypes = (nw_dtypes.IntegerType, nw_dtypes.FloatType, nw.Boolean, nw.Categorical, nw.Enum)
     bad_types = {col: dtype for col, dtype in data.schema.items() if not isinstance(dtype, allowed_dtypes)}
+    # workaround for narwhals < 2.23: Polars Categorical with defined categories is
+    # reported as Unknown in the schema but correctly selected by ncs.categorical()
+    # (https://github.com/narwhals-dev/narwhals/issues/3719)
+    # This workaround can be removed once minimum narwhals version is 2.23.
+    if not _NARWHALS_VERSION_GTE_2_23 and bad_types:
+        categorical_cols = set(data.select(ncs.categorical()).columns)
+        bad_types = {col: dtype for col, dtype in bad_types.items() if col not in categorical_cols}
     # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
     # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
     if PANDAS_INSTALLED and data.implementation.is_pandas_like() and bad_types:
@@ -794,7 +804,17 @@ def _data_from_narwhals(
         feature_name = [str(col) for col in data.schema.names()]
 
     # determine categorical features
-    cat_cols = data.select(ncs.by_dtype(nw.Categorical, nw.Enum)).columns
+    if _NARWHALS_VERSION_GTE_2_23:
+        cat_cols = data.select(ncs.by_dtype(nw.Categorical, nw.Enum)).columns
+    else:
+        # workaround for narwhals < 2.23:
+        # - ncs.by_dtype(nw.Enum) doesn't work (https://github.com/narwhals-dev/narwhals/issues/3720)
+        # - Polars Categorical with defined categories not in schema (https://github.com/narwhals-dev/narwhals/issues/3719)
+        # ncs.categorical() handles both Categorical variants but misses Enum; schema check catches Enum.
+        # This workaround can be removed once minimum narwhals version is 2.23.
+        cat_cols = data.select(ncs.categorical()).columns + [
+            col for col, dtype in data.schema.items() if dtype == nw.Enum
+        ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not nw.is_ordered_categorical(data.get_column(col))]
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [data.get_column(col).cat.get_categories().to_list() for col in cat_cols]
