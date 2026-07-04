@@ -7,6 +7,9 @@ from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
+import narwhals as nw
+import narwhals.dependencies as nwd
+import narwhals.typing as nwt
 import numpy as np
 import scipy.sparse
 
@@ -45,7 +48,6 @@ from .compat import (
     _LGBMRegressorBase,
     _LGBMValidateData,
     _sklearn_version,
-    pa_Table,
     pd_DataFrame,
 )
 from .engine import train
@@ -65,7 +67,7 @@ _LGBM_ScikitMatrixLike = Union[
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
-    pa_Table,
+    nwt.IntoDataFrame,
     scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -524,7 +526,7 @@ def _validate_eval_set_Xy(
             if len(eval_X) != len(eval_y):
                 raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
         if isinstance(eval_X, tuple) and isinstance(eval_y, tuple):
-            eval_set = list(zip(eval_X, eval_y))
+            eval_set = list(zip(eval_X, eval_y, strict=True))
         else:
             eval_set = [(eval_X, eval_y)]
     return eval_set
@@ -708,6 +710,7 @@ class LGBMModel(_LGBMModelBase):
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
+        self._fitted_with_feature_names: bool = False
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
@@ -1013,7 +1016,14 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if isinstance(X, pd_DataFrame):
+            _X, _y = X, y
+            self.n_features_in_ = _X.shape[1]
+        elif nwd.is_into_dataframe(X):
+            _X, _y = X, y
+            self.n_features_in_ = nw.from_native(X).shape[1]
+        else:
+            # NOTE: _LGBMValidateData() is also responsible for setting n_features_in_
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1031,11 +1041,6 @@ class LGBMModel(_LGBMModelBase):
                     sample_weight = _LGBMCheckSampleWeight(sample_weight, _X, allow_all_zero_weights=True)
                 else:
                     sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
-        else:
-            _X, _y = X, y
-
-            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
-            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -1044,7 +1049,7 @@ class LGBMModel(_LGBMModelBase):
             if sample_weight is None or len(sample_weight) == 0:
                 sample_weight = class_sample_weight
             else:
-                sample_weight = np.multiply(sample_weight, class_sample_weight)
+                sample_weight = np.multiply(sample_weight, class_sample_weight)  # type: ignore[arg-type]
 
         train_set = Dataset(
             data=_X,
@@ -1141,6 +1146,10 @@ class LGBMModel(_LGBMModelBase):
         # is set BEFORE fitting.
         self._n_features = self._Booster.num_feature()
 
+        # This attribute informs self.features_in_, but isn't set until here
+        # because Dataset.construct(), called by train(), is responsible for updating it.
+        self._fitted_with_feature_names = train_set._has_non_default_feature_names
+
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
@@ -1154,11 +1163,11 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, pyarrow Table, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
-            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples] or None, optional (default=None)",
-            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-            group_shape="numpy array, pandas Series, pyarrow Array, pyarrow ChunkedArray, list of int or float, or None, optional (default=None)",
+            X_shape="numpy array, pandas DataFrame, pyarrow Table, polars DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow ChunkedArray or polars Series of shape = [n_samples]",
+            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow ChunkedArray, polars Series of shape = [n_samples] or None, optional (default=None)",
+            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow ChunkedArray, pyarrow Table, polars Series, polars DataFrame of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
+            group_shape="numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)",
             eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
             eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
             eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)",
@@ -1181,7 +1190,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, (pd_DataFrame, pa_Table)):
+        if not isinstance(X, pd_DataFrame) and not nwd.is_into_dataframe(X):
             X = _LGBMValidateData(
                 self,
                 X,
@@ -1359,10 +1368,20 @@ class LGBMModel(_LGBMModelBase):
     def feature_names_in_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
 
+        Only available when training data had feature names (e.g. a pandas DataFrame).
+        When training was done with data without feature names (e.g. a numpy array),
+        accessing this attribute raises ``AttributeError``.
+
         .. versionadded:: 4.5.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
+        if not self._fitted_with_feature_names:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute 'feature_names_in_'. "
+                "The training data did not have feature names "
+                "(e.g. was a numpy array rather than a pandas DataFrame)."
+            )
         return np.array(self.feature_name_)
 
     @feature_names_in_.deleter
@@ -1371,8 +1390,7 @@ class LGBMModel(_LGBMModelBase):
 
         Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
         on estimators when a new training dataset that doesn't have features is passed.
-        LightGBM automatically assigns feature names to such datasets
-        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
+        LightGBM has custom handling of feature names and has chosen to opt out of this behavior.
 
         However, that behavior is coupled to ``scikit-learn`` automatically updating
         ``n_features_in_`` in those same code paths, which is necessary for compliance
@@ -1599,7 +1617,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
-        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_)))
+        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_), strict=True))
         if isinstance(self.class_weight, dict):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 

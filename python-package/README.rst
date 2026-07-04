@@ -37,6 +37,19 @@ You can install it by the following command: ``brew install libomp``.
 
 |
 
+Install Nightly Packages
+''''''''''''''''''''''''
+
+Python packages are built on each new commit to ``master`` and uploaded to https://anaconda.org/lightgbm-packages.
+
+Only the latest development version is available there, and can be installed like this:
+
+.. code:: sh
+
+   pip install --no-deps --index-url https://pypi.anaconda.org/lightgbm-packages/simple lightgbm
+
+|
+
 Use LightGBM with PyArrow
 *************************
 
@@ -45,6 +58,17 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 .. code:: sh
 
     pip install 'lightgbm[arrow]'
+
+|
+
+Use LightGBM with Polars
+*************************
+
+To install all dependencies needed to use ``polars`` in LightGBM, append ``[polars]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[polars]'
 
 |
 

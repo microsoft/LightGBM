@@ -185,7 +185,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-pip install --prefer-binary 'build>=0.10.0'
+python -m pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed
 # to build the Python-package
@@ -288,6 +288,36 @@ create_isolated_source_dir() {
         -R \
         external_libs/compute/include \
         ./lightgbm-python/external_libs/compute/include/
+
+    #############
+    # nanoarrow #
+    #############
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow
+    cp \
+        external_libs/nanoarrow/CMakeLists.txt \
+        external_libs/nanoarrow/LICENSE.txt \
+        external_libs/nanoarrow/NOTICE.txt \
+        ./lightgbm-python/external_libs/nanoarrow/
+    cp -R \
+        external_libs/nanoarrow/cmake \
+        ./lightgbm-python/external_libs/nanoarrow/cmake/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow
+    cp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.h \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.hpp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow_config.h.in \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/common/*.h \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/common/*.c \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/hpp/*.hpp \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
 }
 
 create_isolated_source_dir
@@ -388,7 +418,7 @@ if test "${INSTALL}" = true; then
         PACKAGE_FILE="$(echo dist/lightgbm*.tar.gz)"
     fi
     # shellcheck disable=SC2086
-    pip install \
+    python -m pip install \
         ${PIP_INSTALL_ARGS} \
         --force-reinstall \
         --no-cache-dir \
