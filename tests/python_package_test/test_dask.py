@@ -21,8 +21,8 @@ from .utils import (
 
 if platform in {"cygwin", "win32"}:
     pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
-if not lgb.compat.DASK_INSTALLED:
-    pytest.skip("Dask is not installed", allow_module_level=True)
+
+dask = pytest.importorskip("dask")
 
 import dask.array as da
 import dask.dataframe as dd
