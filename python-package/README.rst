@@ -37,6 +37,19 @@ You can install it by the following command: ``brew install libomp``.
 
 |
 
+Install Nightly Packages
+''''''''''''''''''''''''
+
+Python packages are built on each new commit to ``master`` and uploaded to https://anaconda.org/lightgbm-packages.
+
+Only the latest development version is available there, and can be installed like this:
+
+.. code:: sh
+
+   pip install --no-deps --index-url https://pypi.anaconda.org/lightgbm-packages/simple lightgbm
+
+|
+
 Use LightGBM with PyArrow
 *************************
 
@@ -45,6 +58,17 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 .. code:: sh
 
     pip install 'lightgbm[arrow]'
+
+|
+
+Use LightGBM with Polars
+*************************
+
+To install all dependencies needed to use ``polars`` in LightGBM, append ``[polars]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[polars]'
 
 |
 
@@ -184,6 +208,28 @@ Build CUDA Version
 .. code:: sh
 
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_CUDA=ON
+
+
+By default, the library will be built with support for a hard-coded list of GPU architectures
+based on the detected CUDA Toolkit version.
+
+To build the library with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
+
+.. code:: sh
+
+    # example: all Blackwell arches, including DGX Spark
+    pip install \
+      --no-binary lightgbm \
+      --config-settings=cmake.define.USE_CUDA=ON \
+      --config-settings=cmake.define.CMAKE_CUDA_ARCHITECTURES='100;120;121-real;121-virtual' \
+      'lightgbm>=4.7.0'
+
+    # example: just the local GPU
+    pip install \
+      --no-binary lightgbm \
+      --config-settings=cmake.define.USE_CUDA=ON \
+      --config-settings=cmake.define.CMAKE_CUDA_ARCHITECTURES='native' \
+      'lightgbm>=4.7.0'
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
