@@ -746,9 +746,9 @@ def test_arrow_categorical_auto_detected():
 
 
 @pytest.mark.parametrize(
-    ("dtype", "values", "init_args", "valid"),
+    ("dtype", "values", "init_args", "is_supported_dtype"),
     [
-        # Valid dtypes
+        # Supported dtypes
         (pa.int8, [1, 2, 3], {}, True),
         (pa.int16, [1, 2, 3], {}, True),
         (pa.int32, [1, 2, 3], {}, True),
@@ -761,7 +761,7 @@ def test_arrow_categorical_auto_detected():
         (pa.float64, [1.0, 2.0, 3.0], {}, True),
         (pa.bool_, [True, False, True], {}, True),
         (pa.dictionary, ["a", "b", "c"], {"index_type": pa.int32(), "value_type": pa.string()}, True),
-        # Invalid dtypes
+        # Unsupported dtypes
         (pa.string, ["a", "b", "c"], {}, False),
         (pa.date32, [18262, 18263, 18264], {}, False),
         (pa.timestamp, [1577836800000000, 1577923200000000, 1578009600000000], {"unit": "us"}, False),
@@ -769,12 +769,12 @@ def test_arrow_categorical_auto_detected():
         (pa.list_, [[1], [2], [3]], {"value_type": pa.int32()}, False),
     ],
 )
-def test_narwhals_dtype_validation_for_arrow(dtype, values, init_args, valid):
-    """Valid dtypes should construct; invalid dtypes should raise ValueError."""
+def test_narwhals_dtype_validation_for_arrow(dtype, values, init_args, is_supported_dtype):
+    """Supported dtypes should construct; unsupported dtypes should raise ValueError."""
     table = pa.table({"col": pa.array(values, type=dtype(**init_args)), "num_col": pa.array([1.0, 2.0, 3.0])})
     y = [0, 1, 0]
 
-    if valid:
+    if is_supported_dtype:
         lgb.Dataset(table, label=y).construct()
     else:
         with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
