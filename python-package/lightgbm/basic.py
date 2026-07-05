@@ -1041,6 +1041,13 @@ class _InnerPredictor:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, pyarrow Table or polars DataFrame
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+
+        .. versionadded: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded: 4.7.0
+            Support for ``polars`` inputs
+
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -1721,20 +1728,55 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or polars DataFrame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Label of the data.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         group : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
             If 'auto' and data is pandas DataFrame, pyarrow Table, or polars DataFrame, data columns names are used.
@@ -2563,18 +2605,53 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or polars DataFrame
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Label of the data.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         weight : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         group : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
         position : numpy 1-D array, pandas Series or None, optional (default=None)
@@ -2707,6 +2784,12 @@ class Dataset:
             The field name of the information.
         data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None
             The data to be set.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
 
         Returns
         -------
@@ -2989,6 +3072,12 @@ class Dataset:
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None
             The label information to be set into Dataset.
 
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         Returns
         -------
         self : Dataset
@@ -3018,6 +3107,12 @@ class Dataset:
         ----------
         weight : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None
             Weight to be set for each data point. Weights should be non-negative.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
 
         Returns
         -------
@@ -3052,6 +3147,12 @@ class Dataset:
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None
             Init score for Booster.
 
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         Returns
         -------
         self : Dataset
@@ -3077,6 +3178,12 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
 
         Returns
         -------
@@ -3170,6 +3277,12 @@ class Dataset:
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
         """
         if self.label is None:
             self.label = self.get_field("label")
@@ -3183,6 +3296,12 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
         """
         if self.weight is None:
             self.weight = self.get_field("weight")
@@ -3196,6 +3315,12 @@ class Dataset:
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
         """
         if self.init_score is None:
             self.init_score = self.get_field("init_score")
@@ -3208,6 +3333,12 @@ class Dataset:
         -------
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table, polars DataFrame, or None
             Raw data used in the Dataset construction.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
         """
         if self._handle is None:
             raise Exception("Cannot get data before construct Dataset")
@@ -3249,6 +3380,12 @@ class Dataset:
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
         """
         if self.group is None:
             self.group = self.get_field("group")
@@ -4641,6 +4778,13 @@ class Booster:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, pyarrow Table or polars DataFrame
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -4722,8 +4866,22 @@ class Booster:
         data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or polars DataFrame
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow ChunkedArray, polars Series or None
             Label for refit.
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         decay_rate : float, optional (default=0.9)
             Decay rate of refit,
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
@@ -4737,6 +4895,12 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         group : list, numpy 1-D array, pandas Series, pyarrow ChunkedArray, polars Series or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
@@ -4746,10 +4910,19 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
+
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow ChunkedArray, pyarrow Table (for multi-class task), polars Series, polars DataFrame (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0
+
+            .. versionadded: 4.2.0
+                Support for ``pyarrow`` inputs
+
+            .. versionadded: 4.7.0
+                Support for ``polars`` inputs
 
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names for ``data``.

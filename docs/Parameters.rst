@@ -1385,6 +1385,8 @@ GPU Parameters
 
    -  if empty, the devices with the smallest IDs will be used
 
+   -  *New in version 4.7.0*
+
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)

@@ -1133,6 +1133,7 @@ struct Config {
   // desc = list of CUDA device IDs
   // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``) and when ``num_gpu>1``
   // desc = if empty, the devices with the smallest IDs will be used
+  // desc = *New in version 4.7.0*
   std::string gpu_device_id_list = "";
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)

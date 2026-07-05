@@ -58,9 +58,12 @@ See `this SynapseML example`_ for additional information on using LightGBM on Sp
 Dask
 ^^^^
 
+LightGBM's Python-package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
+
 .. versionadded:: 3.2.0
 
-LightGBM's Python-package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
+.. versionadded:: 4.7.0
+    macOS support
 
 .. warning::
 
