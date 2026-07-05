@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -97,10 +97,12 @@ jobs:
             task: sdist
             compiler: clang
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: windows-2022
             task: sdist
             compiler: MSVC
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: ubuntu-latest
             container: &ubuntu_latest_image ubuntu:22.04
             os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
@@ -190,6 +192,7 @@ jobs:
             compiler: clang-17
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
@@ -232,6 +235,7 @@ jobs:
             compiler: gcc
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -242,6 +246,7 @@ jobs:
             task: sdist
             compiler: gcc
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -285,11 +290,16 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
+      - name: Set up 'pixi' for jobs that need it
+        if: matrix.pixi-env != ''
+        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
+        with:
+          environments: ${{ matrix.pixi-env }}
       - name: Setup and run tests on Linux and macOS
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || endsWith(matrix.os, 'gpu-amd64')
         shell: bash
@@ -362,7 +372,7 @@ jobs:
       - test
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -375,7 +385,7 @@ jobs:
           pattern: '*amd64*-liblightgbm'
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
-        uses: NuGet/setup-nuget@b26b823c478ee115be5c9403e62c90b0bf943843  # v3.1.0
+        uses: NuGet/setup-nuget@fd55a6f3b34392fa83fde1454582407d8c714123  # v4.0
       # ref: https://github.com/NuGet/setup-nuget/issues/168
       - name: Setup mono
         run: |
@@ -403,7 +413,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -439,7 +449,7 @@ jobs:
           - '3.10'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -461,6 +471,51 @@ jobs:
             -w /opt/lgb-build \
             python:${{ matrix.python_version }} \
             /bin/bash ./.ci/test-python-oldest.sh
+
+  upload-nightlies:
+    needs:
+      - test
+      - test-linux-aarch64
+    runs-on: ubuntu-latest
+    # publish whenever a new commit is pushed to 'master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: nightly-python-uploads
+      url: https://anaconda.org/lightgbm-packages/lightgbm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: setup
+        run: |
+          mkdir -p "${BUILD_ARTIFACTSTAGINGDIRECTORY}"
+          pip install --prefer-binary \
+            anaconda-auth \
+            anaconda-client
+      - name: download wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          merge-multiple: true
+          path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}
+          pattern: '*-wheel'
+          run-id: ${{ github.run_id }}
+      - name: download sdists
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: sdist
+          path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}
+          run-id: ${{ github.run_id }}
+      - name: upload to anaconda.org
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN_LIGHTGBM_PACKAGES }}
+        run: |
+          anaconda upload \
+            --package lightgbm \
+            --force \
+            -t pypi \
+            ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-*.tar.gz \
+            ${BUILD_ARTIFACTSTAGINGDIRECTORY}/*.whl
+
   all-python-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
