@@ -70,7 +70,7 @@ jobs:
     name: r-package-check-docs
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: rocker/verse
+    container: rocker/verse  # zizmor: ignore[unpinned-images]
     permissions:
       contents: read
     steps:
