@@ -721,6 +721,21 @@ Please refer to `this detailed guide`_ for **CUDA** libraries installation.
 
 After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
 
+.. note::
+
+   By default, the library will be built with support for a hard-coded list of GPU architectures
+   based on the detected CUDA Toolkit version.
+
+   To build the library with support for more architectures, set ``CMAKE_CUDA_ARCHITECTURES``.
+
+   .. code:: sh
+
+      # example: all Blackwell arches, including DGX Spark
+      cmake -B build -S . -DUSE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="100;120;121-real;121-virtual"
+
+      # example: just the local GPU
+      cmake -B build -S . -DUSE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="native"
+
 gcc
 ***
 

@@ -1,6 +1,10 @@
 name: CUDA Version
 
 on:
+  push:
+    # run on pushes to LightGBM branches matching certain names
+    branches:
+      - cuda-*
   # Run manually by clicking a button in the UI
   workflow_dispatch:
 
@@ -44,7 +48,13 @@ jobs:
           - method: wheel
             compiler: gcc
             python_version: "3.11"
-            cuda_version: "12.8.0"
+            cuda_version: "13.2.1"
+            linux_version: "ubuntu24.04"
+            task: cuda
+          - method: wheel
+            compiler: gcc
+            python_version: "3.11"
+            cuda_version: "12.9.1"
             linux_version: "ubuntu22.04"
             task: cuda
           - method: source
@@ -54,7 +64,7 @@ jobs:
             linux_version: "ubuntu22.04"
             task: cuda
           - method: pip
-            compiler: clang
+            compiler: gcc
             python_version: "3.12"
             cuda_version: "11.8.0"
             linux_version: "ubuntu20.04"
@@ -78,6 +88,8 @@ jobs:
           persist-credentials: false
           submodules: true
       - name: Setup and run tests
+        env:
+          CI_CUDA_VERSION: ${{ matrix.cuda_version }}
         run: |
           export BUILD_ARTIFACTSTAGINGDIRECTORY="${{ github.workspace }}/artifacts"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
