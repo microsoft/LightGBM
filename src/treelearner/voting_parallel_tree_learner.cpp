@@ -247,6 +247,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
 #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
     if (!this->col_sampler_.is_feature_used_bytree()[feature_index]) continue;
+    // AFS: skip features not selected by adaptive screening
+    if (this->config_->afs_enable && !this->afs_selected_features_[feature_index]) continue;
     if (this->parent_leaf_histogram_array_ != nullptr
       && !this->parent_leaf_histogram_array_[feature_index].is_splittable()) {
       this->smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);

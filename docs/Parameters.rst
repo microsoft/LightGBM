@@ -455,6 +455,54 @@ Learning Control Parameters
 
    -  random seed for selecting thresholds when ``extra_trees`` is true
 
+-  ``afs_enable`` :raw-html:`<a id="afs_enable" title="Permalink to this parameter" href="#afs_enable">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  enable Adaptive Feature Screening (AFS) to speed up training by only building histograms for top-gain features
+
+   -  after a warmup period, AFS ranks features by their historical gain EMA and only evaluates the top fraction
+
+-  ``afs_feature_ratio`` :raw-html:`<a id="afs_feature_ratio" title="Permalink to this parameter" href="#afs_feature_ratio">&#x1F517;&#xFE0E;</a>`, default = ``0.3``, type = double, constraints: ``0.0 < afs_feature_ratio <= 1.0``
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  fraction of features to keep after screening (e.g. 0.3 keeps top 30% features)
+
+-  ``afs_warmup_trees`` :raw-html:`<a id="afs_warmup_trees" title="Permalink to this parameter" href="#afs_warmup_trees">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int, constraints: ``afs_warmup_trees >= 0``
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  number of warmup trees where all features are evaluated to estimate per-feature gains
+
+-  ``afs_stochastic`` :raw-html:`<a id="afs_stochastic" title="Permalink to this parameter" href="#afs_stochastic">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  enable stochastic gain-weighted random sampling instead of deterministic top-K selection
+
+   -  when enabled, features are sampled with probability proportional to gain EMA raised to the power of ``afs_beta``
+
+-  ``afs_beta`` :raw-html:`<a id="afs_beta" title="Permalink to this parameter" href="#afs_beta">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``afs_beta >= 0.0``
+
+   -  used only when ``afs_stochastic`` is ``true``
+
+   -  concentration parameter controlling the exploration-exploitation tradeoff
+
+   -  0 = uniform random sampling, larger values = more concentrated on high-gain features
+
+-  ``afs_ema_alpha`` :raw-html:`<a id="afs_ema_alpha" title="Permalink to this parameter" href="#afs_ema_alpha">&#x1F517;&#xFE0E;</a>`, default = ``0.3``, type = double, constraints: ``0.0 < afs_ema_alpha < 1.0``
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  EMA smoothing parameter for tracking per-feature gains
+
+-  ``afs_freeze_unselected`` :raw-html:`<a id="afs_freeze_unselected" title="Permalink to this parameter" href="#afs_freeze_unselected">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  when true, do not decay EMA for features that were not selected (freeze their last-known estimate)
+
+   -  prevents permanent exclusion of features that were not evaluated
+
 -  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds

@@ -237,6 +237,16 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
   std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
+  /*! \brief AFS: current tree index for tracking warmup */
+  int afs_tree_index_ = 0;
+  /*! \brief AFS: exponential moving average of per-feature gains */
+  std::vector<double> afs_gain_ema_;
+  /*! \brief AFS: per-feature max gain observed in current tree */
+  std::vector<double> afs_feature_gain_current_tree_;
+  /*! \brief AFS: which features are selected for current tree */
+  std::vector<int8_t> afs_selected_features_;
+  /*! \brief AFS: random generator for stochastic feature sampling */
+  std::unique_ptr<Random> afs_random_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

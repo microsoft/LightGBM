@@ -132,7 +132,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     if (inner_feature_index == -1) {
       continue;
     }
-    if (this->col_sampler_.is_feature_used_bytree()[inner_feature_index]) {
+    if (this->col_sampler_.is_feature_used_bytree()[inner_feature_index]
+        && (!this->config_->afs_enable || this->afs_selected_features_[inner_feature_index])) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(inner_feature_index);
       auto num_bin = this->train_data_->FeatureNumBin(inner_feature_index);
@@ -224,8 +225,19 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
-  TREELEARNER_T::ConstructHistograms(
-      this->col_sampler_.is_feature_used_bytree(), true);
+  // AFS: apply feature screening to the used-feature mask before histogram construction
+  std::vector<int8_t> is_feature_used_bytree_afs;
+  const std::vector<int8_t>* feature_mask = &this->col_sampler_.is_feature_used_bytree();
+  if (this->config_->afs_enable) {
+    is_feature_used_bytree_afs = this->col_sampler_.is_feature_used_bytree();
+    for (int i = 0; i < this->num_features_; ++i) {
+      if (is_feature_used_bytree_afs[i] && !this->afs_selected_features_[i]) {
+        is_feature_used_bytree_afs[i] = 0;
+      }
+    }
+    feature_mask = &is_feature_used_bytree_afs;
+  }
+  TREELEARNER_T::ConstructHistograms(*feature_mask, true);
   const int smaller_leaf_index = this->smaller_leaf_splits_->leaf_index();
   const data_size_t local_data_on_smaller_leaf = this->data_partition_->leaf_count(smaller_leaf_index);
   if (local_data_on_smaller_leaf <= 0) {
@@ -233,7 +245,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
     // otherwise histogram contents from the previous iteration will be sent
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
-      if (this->col_sampler_.is_feature_used_bytree()[feature_index] == false)
+      if ((*feature_mask)[feature_index] == false)
         continue;
       const BinMapper* feature_bin_mapper = this->train_data_->FeatureBinMapper(feature_index);
       const int offset = static_cast<int>(feature_bin_mapper->GetMostFreqBin() == 0);
@@ -254,7 +266,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   global_timer.Start("DataParallelTreeLearner::ReduceHistogram::Copy");
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
-    if (this->col_sampler_.is_feature_used_bytree()[feature_index] == false)
+    if ((*feature_mask)[feature_index] == false)
       continue;
     // copy to buffer
     if (this->config_->use_quantized_grad) {
@@ -298,8 +310,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   }
   global_timer.Stop("DataParallelTreeLearner::ReduceHistogram::ReduceScatter");
   global_timer.Stop("DataParallelTreeLearner::ReduceHistogram");
-  this->FindBestSplitsFromHistograms(
-      this->col_sampler_.is_feature_used_bytree(), true, tree);
+  this->FindBestSplitsFromHistograms(*feature_mask, true, tree);
 }
 
 template <typename TREELEARNER_T>
