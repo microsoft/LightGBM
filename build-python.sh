@@ -185,6 +185,11 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# ref: https://cmake.org/cmake/help/latest/variable/CMAKE_CUDA_ARCHITECTURES.html
+if [ -n "${CUDAARCHS:-}" ]; then
+    BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_CUDA_ARCHITECTURES=${CUDAARCHS}"
+fi
+
 python -m pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed

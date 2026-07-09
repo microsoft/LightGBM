@@ -50,7 +50,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -592,7 +592,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         np_assert_array_equal(dtrain.position, np.array([0.0, 1.0], dtype=np.float32), strict=True)
         np_assert_array_equal(dtrain.get_position(), np.array([0.0, 1.0], dtype=np.float32), strict=True)
     assert dtrain.weight == [0.5, 1.5]

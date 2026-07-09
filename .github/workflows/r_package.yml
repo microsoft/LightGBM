@@ -221,7 +221,7 @@ jobs:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: wch1/r-debug
+    container: wch1/r-debug   # zizmor: ignore[unpinned-images]
     permissions:
       contents: read
     strategy:
@@ -278,7 +278,7 @@ jobs:
           - ubuntu-clang
           - ubuntu-gcc12
     runs-on: ubuntu-latest
-    container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
+    container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest   # zizmor: ignore[unpinned-images]
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3

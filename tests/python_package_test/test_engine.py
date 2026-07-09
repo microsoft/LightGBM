@@ -157,9 +157,13 @@ def test_regression(objective):
     assert evals_result["valid_0"]["l2"][-1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(
+    BuildInfo.has_cuda, reason="CUDA version has a different implementation of WeightedPercentileFun, not tested here"
+)
 @pytest.mark.parametrize("objective", ["regression_l1", "quantile", "mape"])
 def test_weighted_percentile_inside_label_range(objective):
-    # Regression test for issue #7151: WeightedPercentileFun used the wrong
+    # Regression test for https://github.com/lightgbm-org/LightGBM/issues/7151
+    # WeightedPercentileFun used the wrong
     # CDF segment for linear interpolation and could return values outside
     # [min(y), max(y)]. The pre-fix implementation produced a "weighted
     # median" of 1.0 for y=[2,3,4,5], w=[4,3,2,1], far below min(y)=2.
