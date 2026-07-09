@@ -228,6 +228,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "afs_beta",
   "afs_ema_alpha",
   "afs_freeze_unselected",
+  "afs_explore_c",
+  "afs_late_phase_frac",
+  "afs_rotate_frac",
   "early_stopping_round",
   "early_stopping_min_delta",
   "first_metric_only",
@@ -428,6 +431,17 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK_LT(afs_ema_alpha, 1.0);
 
   GetBool(params, "afs_freeze_unselected", &afs_freeze_unselected);
+
+  GetDouble(params, "afs_explore_c", &afs_explore_c);
+  CHECK_GE(afs_explore_c, 0.0);
+
+  GetDouble(params, "afs_late_phase_frac", &afs_late_phase_frac);
+  CHECK_GE(afs_late_phase_frac, 0.0);
+  CHECK_LE(afs_late_phase_frac, 1.0);
+
+  GetDouble(params, "afs_rotate_frac", &afs_rotate_frac);
+  CHECK_GE(afs_rotate_frac, 0.0);
+  CHECK_LE(afs_rotate_frac, 1.0);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
 
@@ -741,6 +755,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[afs_beta: " << afs_beta << "]\n";
   str_buf << "[afs_ema_alpha: " << afs_ema_alpha << "]\n";
   str_buf << "[afs_freeze_unselected: " << afs_freeze_unselected << "]\n";
+  str_buf << "[afs_explore_c: " << afs_explore_c << "]\n";
+  str_buf << "[afs_late_phase_frac: " << afs_late_phase_frac << "]\n";
+  str_buf << "[afs_rotate_frac: " << afs_rotate_frac << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
   str_buf << "[early_stopping_min_delta: " << early_stopping_min_delta << "]\n";
   str_buf << "[first_metric_only: " << first_metric_only << "]\n";
@@ -875,6 +892,9 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"afs_beta", {}},
     {"afs_ema_alpha", {}},
     {"afs_freeze_unselected", {}},
+    {"afs_explore_c", {}},
+    {"afs_late_phase_frac", {}},
+    {"afs_rotate_frac", {}},
     {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
     {"early_stopping_min_delta", {}},
     {"first_metric_only", {}},
@@ -1028,6 +1048,9 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"afs_beta", "double"},
     {"afs_ema_alpha", "double"},
     {"afs_freeze_unselected", "bool"},
+    {"afs_explore_c", "double"},
+    {"afs_late_phase_frac", "double"},
+    {"afs_rotate_frac", "double"},
     {"early_stopping_round", "int"},
     {"early_stopping_min_delta", "double"},
     {"first_metric_only", "bool"},

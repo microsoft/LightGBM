@@ -503,6 +503,40 @@ Learning Control Parameters
 
    -  prevents permanent exclusion of features that were not evaluated
 
+-  ``afs_explore_c`` :raw-html:`<a id="afs_explore_c" title="Permalink to this parameter" href="#afs_explore_c">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``afs_explore_c >= 0.0``
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  exploration-bonus coefficient added to the selection score:
+
+   -  ``score_f = gnorm_f + afs_explore_c * sqrt(ln(t+1) / max(n_f, 1))`` where
+
+   -  ``gnorm_f`` is the per-feature gain EMA normalized by its current max, ``n_f`` is
+
+   -  the number of times feature f has been selected, and ``t`` is the current tree index
+
+   -  optimism-under-uncertainty restores tree-decorrelation lost by pure gain selection
+
+   -  0 = identical to plain S-AFS selection (no exploration bonus)
+
+-  ``afs_late_phase_frac`` :raw-html:`<a id="afs_late_phase_frac" title="Permalink to this parameter" href="#afs_late_phase_frac">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= afs_late_phase_frac <= 1.0``
+
+   -  used only when ``afs_enable`` is ``true``
+
+   -  fraction of total iterations after which late-phase complementary rotation activates
+
+   -  (e.g. 0.8 = last 20% of trees); 0 = disabled
+
+-  ``afs_rotate_frac`` :raw-html:`<a id="afs_rotate_frac" title="Permalink to this parameter" href="#afs_rotate_frac">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= afs_rotate_frac <= 1.0``
+
+   -  used only when ``afs_late_phase_frac`` > 0
+
+   -  fraction of the kept feature slots reserved, during the late phase, for the
+
+   -  least-frequently-selected (starved/complementary) features to mop up residual signal
+
+   -  0 = disabled
+
 -  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds

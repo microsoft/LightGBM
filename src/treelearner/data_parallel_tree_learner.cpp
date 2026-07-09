@@ -122,6 +122,40 @@ void DataParallelTreeLearner<TREELEARNER_T>::PrepareBufferPos(
 }
 
 template <typename TREELEARNER_T>
+void DataParallelTreeLearner<TREELEARNER_T>::SyncAfsGainsAcrossMachines() {
+  if (!this->config_->afs_enable || num_machines_ <= 1) {
+    return;
+  }
+  // Each worker only computed split gains for the features in its ReduceScatter
+  // block; every feature is owned by exactly one worker, so a SUM all-reduce
+  // reconstructs the full global per-feature gain vector identically on all
+  // workers. The result feeds the EMA update -> identical EMA -> identical
+  // selection. Cost: ~num_features doubles per tree, negligible vs the histogram
+  // ReduceScatter (orders of magnitude larger).
+  this->afs_feature_gain_current_tree_ =
+      Network::GlobalSum(&this->afs_feature_gain_current_tree_);
+}
+
+template <typename TREELEARNER_T>
+void DataParallelTreeLearner<TREELEARNER_T>::SyncAfsSelectedFeaturesAcrossMachines() {
+  if (!this->config_->afs_enable || num_machines_ <= 1) {
+    return;
+  }
+  // Broadcast rank 0's mask to everyone (implemented as SUM where only rank 0
+  // contributes), guaranteeing an identical mask -> identical ReduceScatter
+  // buffer layout. Belt-and-suspenders on top of the gain sync above.
+  const int n = static_cast<int>(this->afs_selected_features_.size());
+  std::vector<int> mask(n);
+  for (int i = 0; i < n; ++i) {
+    mask[i] = (rank_ == 0) ? static_cast<int>(this->afs_selected_features_[i]) : 0;
+  }
+  std::vector<int> global_mask = Network::GlobalSum(&mask);
+  for (int i = 0; i < n; ++i) {
+    this->afs_selected_features_[i] = static_cast<int8_t>(global_mask[i] != 0 ? 1 : 0);
+  }
+}
+
+template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   TREELEARNER_T::BeforeTrain();
   // generate feature partition for current tree

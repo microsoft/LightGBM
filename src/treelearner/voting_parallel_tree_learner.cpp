@@ -94,6 +94,35 @@ void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config)
 }
 
 template <typename TREELEARNER_T>
+void VotingParallelTreeLearner<TREELEARNER_T>::SyncAfsGainsAcrossMachines() {
+  if (!this->config_->afs_enable || num_machines_ <= 1) {
+    return;
+  }
+  // SUM all-reduce reconstructs the full global per-feature gain vector on every
+  // worker, so the gain EMA (and thus the feature selection) is identical across
+  // workers. See DataParallelTreeLearner for the detailed rationale.
+  this->afs_feature_gain_current_tree_ =
+      Network::GlobalSum(&this->afs_feature_gain_current_tree_);
+}
+
+template <typename TREELEARNER_T>
+void VotingParallelTreeLearner<TREELEARNER_T>::SyncAfsSelectedFeaturesAcrossMachines() {
+  if (!this->config_->afs_enable || num_machines_ <= 1) {
+    return;
+  }
+  // Force every worker to adopt rank 0's selected-feature mask.
+  const int n = static_cast<int>(this->afs_selected_features_.size());
+  std::vector<int> mask(n);
+  for (int i = 0; i < n; ++i) {
+    mask[i] = (rank_ == 0) ? static_cast<int>(this->afs_selected_features_[i]) : 0;
+  }
+  std::vector<int> global_mask = Network::GlobalSum(&mask);
+  for (int i = 0; i < n; ++i) {
+    this->afs_selected_features_[i] = static_cast<int8_t>(global_mask[i] != 0 ? 1 : 0);
+  }
+}
+
+template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   TREELEARNER_T::BeforeTrain();
   // sync global data sumup info
