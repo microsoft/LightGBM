@@ -214,6 +214,8 @@ raises-extend-require-match-for = ["*Exception", "*Error"]
 "tests/*" = [
     # (flake8-bugbear) Found useless expression
     "B018",
+    # (pycodestyle) Module level import not at top of file
+    "E402",
     # pydocstyle
     "D",
     # flake8-print
