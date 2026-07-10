@@ -5,10 +5,11 @@ platform: x64
 configuration:
   - '3.10'
 
-# only build on 'master' and pull requests targeting it
+# only build on 'master' / 'main' and pull requests targeting it
 branches:
   only:
     - master
+    - main
 
 environment:
   matrix:
