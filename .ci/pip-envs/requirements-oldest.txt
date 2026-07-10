@@ -13,6 +13,3 @@ polars==1.0.0
 pyarrow==16.0.0
 scikit-learn==1.0.2
 scipy==1.7.2
-
-# build-time dependencies
-build>=0.10
