@@ -3,9 +3,10 @@ name: R-package
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
+      - main
       - master
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -166,7 +167,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -221,7 +222,7 @@ jobs:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: wch1/r-debug
+    container: wch1/r-debug   # zizmor: ignore[unpinned-images]
     permissions:
       contents: read
     strategy:
@@ -237,7 +238,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -278,10 +279,10 @@ jobs:
           - ubuntu-clang
           - ubuntu-gcc12
     runs-on: ubuntu-latest
-    container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
+    container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest   # zizmor: ignore[unpinned-images]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false

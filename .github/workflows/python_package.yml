@@ -3,9 +3,10 @@ name: Python-package
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
+      - main
       - master
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -40,7 +41,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -290,7 +291,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -372,7 +373,7 @@ jobs:
       - test
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -413,7 +414,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -449,7 +450,7 @@ jobs:
           - '3.10'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -477,8 +478,8 @@ jobs:
       - test
       - test-linux-aarch64
     runs-on: ubuntu-latest
-    # publish whenever a new commit is pushed to 'master'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # publish whenever a new commit is pushed to 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: nightly-python-uploads
       url: https://anaconda.org/lightgbm-packages/lightgbm

@@ -106,7 +106,7 @@ v4.1.0 was not submitted to CRAN, because https://github.com/lightgbm-org/LightG
 > Dear maintainer,
 > package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
 
-The logs linked from those messagges showed one issue remaining on Debian (0 on Windows).
+The logs linked from those messages showed one issue remaining on Debian (0 on Windows).
 
 ```text
 * checking examples ... [7s/4s] NOTE
