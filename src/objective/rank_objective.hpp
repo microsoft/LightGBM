@@ -44,6 +44,7 @@ class RankingObjective : public ObjectiveFunction {
     // get positions
     positions_ = metadata.positions();
     // get position ids
+    position_ids_ = metadata.position_ids();
     // get number of different position ids
     num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
     // get boundaries
@@ -118,6 +119,8 @@ class RankingObjective : public ObjectiveFunction {
   const label_t* weights_;
   /*! \brief Pointer of positions */
   const data_size_t* positions_;
+  /*! \brief Pointer of position IDs */
+  const std::string* position_ids_;
   /*! \brief number of position ids */
   data_size_t num_position_ids_;
   /*! \brief Query boundaries */
@@ -344,12 +347,12 @@ class LambdarankNDCG : public RankingObjective {
     message_stream << std::setw(15) << "position"
       << std::setw(15) << "bias_factor"
       << std::endl;
-    Log::Debug(message_stream.str().c_str());
+    Log::Debug("%s", message_stream.str().c_str());
     message_stream.str("");
     for (int i = 0; i < num_position_ids_; ++i) {
-      message_stream << std::setw(15) << i
+      message_stream << std::setw(15) << position_ids_[i]
         << std::setw(15) << pos_biases_[i];
-      Log::Debug(message_stream.str().c_str());
+      Log::Debug("%s", message_stream.str().c_str());
       message_stream.str("");
     }
   }

@@ -254,16 +254,23 @@ class Metadata {
   }
 
   /*!
+  * \brief Get position IDs, if does not exist then return nullptr
+  * \return Pointer of position IDs
+  */
+  inline const std::string* position_ids() const {
+    if (!position_ids_.empty()) {
+      return position_ids_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
   * \brief Get Number of different position IDs
   * \return number of different position IDs
   */
   inline size_t num_position_ids() const {
-      if (!positions_.empty()) {
-        size_t max = *std::max_element(positions_.begin(), positions_.end());
-        return max + 1;
-      } else {
-        return 0;
-      }
+    return position_ids_.size();
   }
 
   /*!
@@ -370,6 +377,8 @@ class Metadata {
   /*! \brief Set positions from pointers to the first element and the end of an iterator. */
   template <typename It>
   void SetPositionsFromIterator(It first, It last);
+  /*! \brief Map raw numeric position IDs to dense indices. */
+  void NormalizePositions();
   /*! \brief Insert positions at the given index */
   void InsertPositions(const data_size_t* positions, data_size_t start_index, data_size_t len);
   /*! \brief Set queries from pointers to the first element and the end of an iterator. */
@@ -389,6 +398,8 @@ class Metadata {
   std::vector<label_t> weights_;
   /*! \brief Positions data */
   std::vector<data_size_t> positions_;
+  /*! \brief Position identifiers */
+  std::vector<std::string> position_ids_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
