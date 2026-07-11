@@ -1,6 +1,4 @@
 # coding: utf-8
-import filecmp
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -8,7 +6,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal
+from .utils import assert_datasets_equal, np_assert_array_equal
 
 pa = pytest.importorskip("pyarrow")
 
@@ -122,12 +120,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ----------------------------------------------------------------------------------------------- #
 
 # ------------------------------------------- DATASET ------------------------------------------- #
-
-
-def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
-    lhs._dump_text(tmp_path / "arrow.txt")
-    rhs._dump_text(tmp_path / "pandas.txt")
-    assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
 
 
 @pytest.mark.parametrize(
