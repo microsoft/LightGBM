@@ -698,9 +698,13 @@ void Metadata::SetPositionsFromIterator(It first, It last) {
   }
   num_positions_ = num_data_;
 
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_positions_ >= 1024)
+  std::unordered_map<data_size_t, data_size_t> position_mapping;
   for (data_size_t i = 0; i < num_positions_; ++i) {
-    positions_[i] = first[i];
+    const auto position = static_cast<data_size_t>(first[i]);
+    const auto result = position_mapping.emplace(
+      position,
+      static_cast<data_size_t>(position_mapping.size()));
+    positions_[i] = result.first->second;
   }
   position_load_from_file_ = false;
 }
@@ -713,12 +717,7 @@ void Metadata::SetPosition(const data_size_t* position, data_size_t len) {
 void Metadata::SetPosition(struct ArrowArrayStream* stream) {
   ArrowChunkedArray chunked_array(stream);
   chunked_array.view().visit<data_size_t>([&](auto&& visitor) {
-    std::vector<data_size_t> positions;
-    positions.reserve(visitor.end() - visitor.begin());
-    for (auto it = visitor.begin(); it != visitor.end(); ++it) {
-      positions.push_back(*it);
-    }
-    SetPosition(positions.data(), static_cast<data_size_t>(positions.size()));
+    SetPositionsFromIterator(visitor.begin(), visitor.end());
   });
 }
 
@@ -726,12 +725,7 @@ void Metadata::SetPosition(int64_t n_chunks, struct ArrowArray* chunks,
                            struct ArrowSchema* schema) {
   ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
   chunked_array.view().visit<data_size_t>([&](auto&& visitor) {
-    std::vector<data_size_t> positions;
-    positions.reserve(visitor.end() - visitor.begin());
-    for (auto it = visitor.begin(); it != visitor.end(); ++it) {
-      positions.push_back(*it);
-    }
-    SetPosition(positions.data(), static_cast<data_size_t>(positions.size()));
+    SetPositionsFromIterator(visitor.begin(), visitor.end());
   });
 }
 #endif  // LGB_R_BUILD
@@ -971,7 +965,9 @@ void Metadata::LoadFromMemory(const void* memory) {
     query_load_from_file_ = true;
   }
   if (num_positions_ > 0) {
-    if (!positions_.empty()) { positions_.clear(); }
+    if (!positions_.empty()) {
+      positions_.clear();
+    }
     positions_ = std::vector<data_size_t>(num_positions_);
     std::memcpy(positions_.data(), mem_ptr, sizeof(data_size_t) * num_positions_);
     mem_ptr += VirtualFileWriter::AlignedSize(sizeof(data_size_t) * num_positions_);

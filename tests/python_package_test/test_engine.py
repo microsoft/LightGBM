@@ -909,16 +909,16 @@ def append_queries_and_positions_to_file(file_dataset_in, file_query_in, positio
     with open(file_dataset_in, "r") as f_in:
         with open(out_path, "w") as f_out:
             if positions is not None:
-                for line, query, position in zip(f_in, queries, positions):
+                for line, query, position in zip(f_in, queries, positions, strict=True):
                     f_out.write(f"{line.strip()} 301:{query} 302:{position}\n")
             else:
-                for line, query in zip(f_in, queries):
+                for line, query in zip(f_in, queries, strict=True):
                     # adding dummy position
                     f_out.write(f"{line.strip()} 301:{query} 302:1\n")
 
 
 @pytest.mark.skipif(
-    getenv("TASK", "") == "cuda",
+    BuildInfo.has_cuda,
     reason="Positions in learning to rank is not supported in CUDA version yet",
 )
 def test_ranking_with_position_and_group_information_in_single_file(tmp_path):
