@@ -2,6 +2,7 @@
 import filecmp
 import numbers
 import re
+import signal
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -49,7 +50,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -293,6 +294,25 @@ def test_save_dataset_subset_and_load_from_file(tmp_path, rng):
     ds = lgb.Dataset(data, params=params)
     ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / "subset.bin")
     lgb.Dataset(tmp_path / "subset.bin", params=params).construct()
+
+
+def test_save_binary_raises_on_truncated_write(tmp_path, rng):
+    resource = pytest.importorskip("resource")
+    if not hasattr(signal, "SIGXFSZ"):
+        pytest.skip("SIGXFSZ is not available on this platform")
+
+    data = rng.standard_normal(size=(1000, 20))
+    ds = lgb.Dataset(data).construct()
+    original_limit = resource.getrlimit(resource.RLIMIT_FSIZE)
+    original_signal_handler = signal.getsignal(signal.SIGXFSZ)
+    try:
+        signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+        resource.setrlimit(resource.RLIMIT_FSIZE, (4096, original_limit[1]))
+        with pytest.raises(lgb.basic.LightGBMError, match="Cannot write binary data"):
+            ds.save_binary(tmp_path / "truncated.bin")
+    finally:
+        resource.setrlimit(resource.RLIMIT_FSIZE, original_limit)
+        signal.signal(signal.SIGXFSZ, original_signal_handler)
 
 
 def test_subset_group():
@@ -572,7 +592,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         np_assert_array_equal(dtrain.position, np.array([0.0, 1.0], dtype=np.float32), strict=True)
         np_assert_array_equal(dtrain.get_position(), np.array([0.0, 1.0], dtype=np.float32), strict=True)
     assert dtrain.weight == [0.5, 1.5]

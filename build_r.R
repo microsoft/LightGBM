@@ -340,11 +340,17 @@ for (submodule in list.dirs(
 }
 
 # copy files into the place CMake expects
+CMAKE_R_DIR <- file.path(TEMP_SOURCE_DIR, "cmake")
 CMAKE_MODULES_R_DIR <- file.path(TEMP_SOURCE_DIR, "cmake", "modules")
 dir.create(CMAKE_MODULES_R_DIR, recursive = TRUE)
 result <- file.copy(
   from = file.path("cmake", "modules", "FindLibR.cmake")
   , to = sprintf("%s/", CMAKE_MODULES_R_DIR)
+  , overwrite = TRUE
+)
+result <- file.copy(
+  from = file.path("cmake", "Utils.cmake")
+  , to = sprintf("%s/", CMAKE_R_DIR)
   , overwrite = TRUE
 )
 .handle_result(result)
