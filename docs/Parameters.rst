@@ -631,7 +631,7 @@ Learning Control Parameters
 
    -  **Note**: the forced split logic will be ignored, if the split makes gain worse
 
-   -  see `this file <https://github.com/lightgbm-org/LightGBM/blob/master/examples/binary_classification/forced_splits.json>`__ as an example
+   -  see `this file <https://github.com/lightgbm-org/LightGBM/blob/main/examples/binary_classification/forced_splits.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
@@ -969,7 +969,7 @@ Dataset Parameters
 
    -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
 
-   -  see `this file <https://github.com/lightgbm-org/LightGBM/blob/master/examples/regression/forced_bins.json>`__ as an example
+   -  see `this file <https://github.com/lightgbm-org/LightGBM/blob/main/examples/regression/forced_bins.json>`__ as an example
 
 -  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 

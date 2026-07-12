@@ -3,9 +3,10 @@ name: Python-package
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
+      - main
       - master
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -477,8 +478,8 @@ jobs:
       - test
       - test-linux-aarch64
     runs-on: ubuntu-latest
-    # publish whenever a new commit is pushed to 'master'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # publish whenever a new commit is pushed to 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: nightly-python-uploads
       url: https://anaconda.org/lightgbm-packages/lightgbm
