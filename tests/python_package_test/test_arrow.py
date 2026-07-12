@@ -125,9 +125,9 @@ def dummy_dataset_params() -> Dict[str, Any]:
 @pytest.mark.parametrize(
     ("arrow_table_fn", "dataset_params"),
     [  # Use lambda functions here to minimize memory consumption
-        (lambda: generate_simple_arrow_table(), dummy_dataset_params()),
+        (generate_simple_arrow_table, dummy_dataset_params()),
         (lambda: generate_simple_arrow_table(empty_chunks=True), dummy_dataset_params()),
-        (lambda: generate_dummy_arrow_table(), dummy_dataset_params()),
+        (generate_dummy_arrow_table, dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.float32()), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.int32()), dummy_dataset_params()),
         (lambda: generate_random_arrow_table(3, 1000, 42), {}),

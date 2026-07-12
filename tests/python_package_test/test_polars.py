@@ -100,8 +100,8 @@ def dummy_dataset_params() -> Dict[str, Any]:
 @pytest.mark.parametrize(
     ("polars_frame_fn", "dataset_params"),
     [  # Use lambda functions here to minimize memory consumption
-        (lambda: generate_simple_polars_frame(), dummy_dataset_params()),
-        (lambda: generate_dummy_polars_frame(), dummy_dataset_params()),
+        (generate_simple_polars_frame, dummy_dataset_params()),
+        (generate_dummy_polars_frame, dummy_dataset_params()),
         (lambda: generate_nullable_polars_frame(pl.Float32), dummy_dataset_params()),
         (lambda: generate_nullable_polars_frame(pl.Int32), dummy_dataset_params()),
         (lambda: generate_random_polars_frame(3, 1000, 42), {}),

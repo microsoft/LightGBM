@@ -5,9 +5,10 @@ name: Static Analysis
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
+      - main
       - master
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -70,7 +71,7 @@ jobs:
     name: r-package-check-docs
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: rocker/verse
+    container: rocker/verse  # zizmor: ignore[unpinned-images]
     permissions:
       contents: read
     steps:

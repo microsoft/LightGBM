@@ -144,7 +144,7 @@ Rscript build_r.R --use-mingw
 
 #### Mac OS Preparation
 
-You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/lightgbm-org/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/lightgbm-org/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/lightgbm-org/LightGBM/blob/main/docs/Installation-Guide.rst#apple-clang)) first. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/lightgbm-org/LightGBM/blob/main/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
 ```
 # replace 8 with version of gcc installed on your machine
@@ -176,7 +176,7 @@ Note: for the build with Visual Studio/VS Build Tools in Windows, you should use
 
 ### Installing a GPU-enabled Build
 
-You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/lightgbm-org/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
+You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/lightgbm-org/LightGBM/blob/main/docs/Installation-Guide.rst#build-gpu-version).
 
 After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install). When you reach the step that mentions `build_r.R`, pass the flag `--use-gpu`.
 
@@ -230,15 +230,15 @@ As of version 3.0.0, this is no longer supported. If building from source is dif
 Examples
 --------
 
-Please visit [demo](https://github.com/lightgbm-org/LightGBM/tree/master/R-package/demo):
+Please visit [demo](https://github.com/lightgbm-org/LightGBM/tree/main/R-package/demo):
 
-* [Basic walkthrough of wrappers](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/basic_walkthrough.R)
-* [Boosting from existing prediction](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/boost_from_prediction.R)
-* [Early Stopping](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/early_stopping.R)
-* [Cross Validation](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/cross_validation.R)
-* [Multiclass Training/Prediction](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/multiclass.R)
-* [Leaf (in)Stability](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/leaf_stability.R)
-* [Weight-Parameter Adjustment Relationship](https://github.com/lightgbm-org/LightGBM/blob/master/R-package/demo/weight_param.R)
+* [Basic walkthrough of wrappers](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/basic_walkthrough.R)
+* [Boosting from existing prediction](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/boost_from_prediction.R)
+* [Early Stopping](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/early_stopping.R)
+* [Cross Validation](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/cross_validation.R)
+* [Multiclass Training/Prediction](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/multiclass.R)
+* [Leaf (in)Stability](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/leaf_stability.R)
+* [Weight-Parameter Adjustment Relationship](https://github.com/lightgbm-org/LightGBM/blob/main/R-package/demo/weight_param.R)
 
 Testing
 -------
