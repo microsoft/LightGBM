@@ -3493,12 +3493,7 @@ _LGBM_CustomEvalFunction = Union[
 # TODO:
 #
 #   * docstrings everywhere
-#   * check for uses of `if len(bst.eval_valid()) == 4` types of stuff in
-#     optuna, hyperopt, maybe other places
-#   * check if unpacking into exactly 4 values breaks (if it does, might need 2 classes here)
 #   * name consistency (e.g. 'eval_name' -> 'metric_name')
-#   * unit tests on new class(es), especially around len() and default values
-#    * scikit-learn type hints
 #
 class EvalResult(NamedTuple):
     """

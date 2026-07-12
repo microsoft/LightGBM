@@ -617,7 +617,6 @@ def _agg_cv_result(
     # [
     #     (<dataset_name>, <metric_name>, mean(<values>), <maximize>, std_dev(<values>))
     # ]
-    # TODO: could this be refactored?
     return [
         EvalResult(
             dataset_name=k[0],
