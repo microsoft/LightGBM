@@ -145,6 +145,7 @@ def test_pandas_categorical_code_conversion_doesnt_modify_original_data(feature_
         (pd.Float64Dtype(), [1.0, 2.0, 3.0]),
         (pd.BooleanDtype(), [True, False, True]),
         (pd.SparseDtype(), [1.0, 2.0, 3.0]),
+        # Categorical dtypes are supported, but tested separately
     ],
 )
 def test_pandas_supported_dtypes(tmp_path, dtype, values):
