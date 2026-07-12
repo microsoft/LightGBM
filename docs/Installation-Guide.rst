@@ -44,7 +44,7 @@ To download such artifacts, run the following from the root of this repository.
 
    bash .ci/download-artifacts.sh ${COMMIT_ID}
 
-Where ``COMMIT_ID`` is the full commit SHA pointing to a commit on ``master``.
+Where ``COMMIT_ID`` is the full commit SHA pointing to a commit on ``main``.
 The artifacts can then be found in the ``release-artifacts/`` directory.
 
 For the Python package, nightly packages are also available via installers like ``pip``.
@@ -282,7 +282,7 @@ gcc
 Docker
 ~~~~~~
 
-Refer to `Docker folder <https://github.com/lightgbm-org/LightGBM/tree/master/docker>`__.
+Refer to `Docker folder <https://github.com/lightgbm-org/LightGBM/tree/main/docker>`__.
 
 Build Threadless Version (not Recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -693,7 +693,7 @@ The GPU version is not supported on macOS.
 Docker
 ^^^^^^
 
-Refer to `GPU Docker folder <https://github.com/lightgbm-org/LightGBM/tree/master/docker/gpu>`__.
+Refer to `GPU Docker folder <https://github.com/lightgbm-org/LightGBM/tree/main/docker/gpu>`__.
 
 Build CUDA Version
 ~~~~~~~~~~~~~~~~~~
@@ -973,7 +973,7 @@ Refer to `the python-package documentation`_.
 Build R-package
 ~~~~~~~~~~~~~~~
 
-Refer to `R-package folder <https://github.com/lightgbm-org/LightGBM/tree/master/R-package>`__.
+Refer to `R-package folder <https://github.com/lightgbm-org/LightGBM/tree/main/R-package>`__.
 
 Build C++ Unit Tests
 ~~~~~~~~~~~~~~~~~~~~
@@ -1134,7 +1134,7 @@ gcc
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
 
-.. _the python-package documentation: https://github.com/lightgbm-org/LightGBM/tree/master/python-package
+.. _the python-package documentation: https://github.com/lightgbm-org/LightGBM/tree/main/python-package
 
 .. _the ROCm docs: https://rocm.docs.amd.com/projects/install-on-linux/en/latest/
 

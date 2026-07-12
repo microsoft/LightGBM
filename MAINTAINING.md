@@ -30,7 +30,7 @@ See https://pixi.prefix.dev/latest/ for more details.
 
 ### Step 1: Put up a Release PR
 
-Create a pull request into `master` which prepares the source code for release.
+Create a pull request into `main` which prepares the source code for release.
 
 Copy the description and checklist from the previous release PR (for example: https://github.com/lightgbm-org/LightGBM/pull/6796).
 
@@ -41,11 +41,11 @@ and the PR should be used to discuss what makes it into the release.
 
 Once the PR is approved, merge it.
 
-Do not merge any other PRs into `master` until the rest of the release is complete.
+Do not merge any other PRs into `main` until the rest of the release is complete.
 
-### Step 3: Wait for a New CI Run on `master`
+### Step 3: Wait for a New CI Run on `main`
 
-Wait for all CI runs triggered by the merge to `master` to complete successfully.
+Wait for all CI runs triggered by the merge to `main` to complete successfully.
 
 These runs build and test the official artifacts that will be attached to the GitHub release and published to package managers.
 
@@ -56,7 +56,7 @@ Navigate to https://github.com/lightgbm-org/LightGBM/releases.
 Click "edit" on the draft release that `release-drafter` has created there.
 
 * update the tag and release title to match the version of LightGBM, in the format `v{major}.{minor}.{patch}`
-* ensure that tag points at the commit on ``master`` created by merging the release PR
+* ensure that tag points at the commit on `main` created by merging the release PR
 
 When you're satisfied with the state of the release, click "Publish release".
 
@@ -77,7 +77,7 @@ gh release upload \
 
 Where:
 
-* `COMMIT_ID` = full commit hash of the commit on `master` corresponding to the release
+* `COMMIT_ID` = full commit hash of the commit on `main` corresponding to the release
 * `TAG` = the tag for the release (e.g. `v4.6.0`)
 
 ### Step 6: Complete All Other Post-merge Release Steps
@@ -88,7 +88,7 @@ See the release checklist on the PR for details.
 
 ## Nightly Packages
 
-Nightly packages for the `lightgbm` Python package are uploaded to https://anaconda.org/lightgbm-packages on every merge to `master`.
+Nightly packages for the `lightgbm` Python package are uploaded to https://anaconda.org/lightgbm-packages on every merge to `main`.
 
 That's done using an upload token stored in a secret in CI.
 Those tokens expire after 1 year.
