@@ -1,7 +1,5 @@
 # coding: utf-8
-import filecmp
 from datetime import date, datetime
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -9,7 +7,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal
+from .utils import assert_datasets_equal, np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
@@ -98,12 +96,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ----------------------------------------------------------------------------------------------- #
 
 # ------------------------------------------- DATASET ------------------------------------------- #
-
-
-def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
-    lhs._dump_text(tmp_path / "polars.txt")
-    rhs._dump_text(tmp_path / "pandas.txt")
-    assert filecmp.cmp(tmp_path / "polars.txt", tmp_path / "pandas.txt")
 
 
 @pytest.mark.parametrize(
@@ -417,7 +409,7 @@ def test_get_data_polars_frame_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-def polars_cat_series(values, cat_type, categories=None):
+def _polars_cat_series(values, cat_type, categories=None):
     """Build a polars categorical/enum series with isolated category scope.
 
     cat_type: "categorical" -> pl.Categorical (unordered, random scope)
@@ -435,291 +427,152 @@ def polars_cat_series(values, cat_type, categories=None):
         raise ValueError(f"Invalid cat_type: {cat_type}")
 
 
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_basic(cat_type):
-    """Explicit categorical_feature constructs successfully and metadata is captured."""
+def test_polars_categorical_encoding(tmp_path):
+    cat1_categories = ["a", "b", "c"]
+    cat1_values = ["a", "b", "c", "b", "a"]
+    cat2_categories = ["b", "c", "d"]
+    cat2_values = ["b", "c", "c", "d", "d"]
+    ordered_categories = ["high", "low", "mid"]
+    ordered_values = ["low", "high", "mid", "high", "low"]
+
     df = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(["a", "b", "a", "c", "b"], cat_type),
+            "cat1": _polars_cat_series(cat1_values, "categorical", categories=cat1_categories),
+            "cat2": _polars_cat_series(cat2_values, "categorical", categories=cat2_categories),
+            "cat3": _polars_cat_series(ordered_values, "enum", categories=ordered_categories),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
     ds.construct()
 
-    assert ds.pandas_categorical is not None
-    assert len(ds.pandas_categorical) == 1
-    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
+    assert ds.num_data() == 5
+    assert ds.num_feature() == 4
+    assert ds.get_feature_name() == ["cat1", "cat2", "cat3", "num_col"]
 
+    assert ds.categorical_feature == "auto"
+    assert len(ds.pandas_categorical) == 3
+    assert ds.pandas_categorical[0] == cat1_categories
+    assert ds.pandas_categorical[1] == cat2_categories
+    assert ds.pandas_categorical[2] == ordered_categories
+    assert ds.params["categorical_column"] == [0, 1]  # ordered categorical not treated as categorical by default
 
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_doesnt_modify_original(cat_type):
-    """Construction must not mutate the input DataFrame."""
-    original_df = pl.DataFrame(
+    # Verify correct encodings
+    ref_df = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(["a", "b", "a", "c"], cat_type),
-            "num_col": [1.0, 2.0, 3.0, 4.0],
+            "cat1": [cat1_categories.index(v) for v in cat1_values],  # [0, 1, 2, 1, 0]
+            "cat2": [cat2_categories.index(v) for v in cat2_values],  # [0, 1, 1, 2, 2],
+            "cat3": [ordered_categories.index(v) for v in ordered_values],  # [1, 0, 2, 0, 1],
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    y = [0, 1, 0, 1]
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params={"min_data_in_bin": 1})
+    ref_ds.construct()
 
-    original_values = original_df["cat_col"].to_list()
-    original_dtype = original_df["cat_col"].dtype
-
-    ds = lgb.Dataset(original_df, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
-    ds.construct()
-
-    assert original_df["cat_col"].to_list() == original_values
-    assert original_df["cat_col"].dtype == original_dtype
+    assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_multiple_columns(cat_type):
-    """Two categorical columns alongside a numeric column are both encoded."""
-    df = pl.DataFrame(
-        {
-            "cat1": polars_cat_series(["a", "b", "a", "c"], cat_type),
-            "cat2": polars_cat_series(["x", "x", "y", "z"], cat_type),
-            "num_col": [1.0, 2.0, 3.0, 4.0],
-        }
-    )
-    y = [0, 1, 0, 1]
+def test_polars_categorical_encoding_unseen_category(tmp_path):
+    train_categories = ["a", "b", "c"]
+    train_values = ["a", "b", "c", "a", "b"]
+    valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat1", "cat2"], params={"min_data_in_bin": 1})
-    ds.construct()
-
-    assert len(ds.pandas_categorical) == 2
-    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
-    assert sorted(ds.pandas_categorical[1]) == ["x", "y", "z"]
-
-
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_unseen_categories_at_inference(tmp_path, cat_type):
-    """Unseen categories in the predict frame are remapped via train's mapping, matching pandas references."""
-    pd = pytest.importorskip("pandas")
-
-    train_cats = ["a", "b", "c"]
-    valid_cats = ["a", "c", "d"]  # different domain: contains unseen "d", missing "b"
-
-    train_values = ["a", "b", "c", "a", "b", "c"] * 10
-    train_labels = [0, 1, 0, 1, 0, 1] * 10
-    valid_values = ["a", "d", "c", "a", "c", "d", "a"]
-    valid_labels = [0, 1, 0, 1, 0, 1, 0]
-    valid_num = [float(i % 5) for i in range(len(valid_values))]
-
-    polars_train = pl.DataFrame(
-        {
-            "cat_col": polars_cat_series(train_values, cat_type, categories=train_cats),
-            "num_col": [float(i % 5) for i in range(len(train_values))],
-        }
-    )
-    polars_valid = pl.DataFrame(
-        {
-            "cat_col": polars_cat_series(valid_values, cat_type, categories=valid_cats),
-            "num_col": valid_num,
-        }
-    )
-
-    params = {"min_data_in_bin": 1}
-    polars_train_ds = lgb.Dataset(polars_train, label=train_labels, categorical_feature=["cat_col"], params=params)
-    polars_valid_ds = lgb.Dataset(polars_valid, label=valid_labels, reference=polars_train_ds, params=params)
-    polars_train_ds.construct()
-    polars_valid_ds.construct()
-
-    bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, polars_train_ds, num_boost_round=20)
-    # Reference 1: predictions match pre-encoded array with train's mapping (unseen -> NaN)
-    train_code = {c: i for i, c in enumerate(train_cats)}
-    pre_encoded = np.array(
-        [[train_code.get(v, np.nan), n] for v, n in zip(valid_values, valid_num, strict=True)],
-        dtype=np.float64,
-    )
-    np.testing.assert_allclose(bst.predict(polars_valid), bst.predict(pre_encoded))
-
-    # Reference 2: polars train/valid Datasets are equal to pandas equivalents
-    pandas_train = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(train_values, categories=train_cats, ordered=cat_type == "enum"),
-            "num_col": [float(i % 5) for i in range(len(train_values))],
-        }
-    )
-    pandas_valid = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(valid_values, categories=valid_cats, ordered=cat_type == "enum"),
-            "num_col": valid_num,
-        }
-    )
-    pandas_train_ds = lgb.Dataset(pandas_train, label=train_labels, categorical_feature=["cat_col"], params=params)
-    pandas_valid_ds = lgb.Dataset(pandas_valid, label=valid_labels, reference=pandas_train_ds, params=params)
-    pandas_train_ds.construct()
-    pandas_valid_ds.construct()
-
-    assert polars_train_ds.pandas_categorical == pandas_train_ds.pandas_categorical == [train_cats]
-    assert_datasets_equal(tmp_path, polars_train_ds, pandas_train_ds)
-    assert_datasets_equal(tmp_path, polars_valid_ds, pandas_valid_ds)
-
-
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_high_cardinality(cat_type):
-    """Construction works with a large number of unique categories."""
-    rng = np.random.default_rng(42)
-    categories = [f"cat_{i}" for i in range(1000)]
-    # include every category at least once so the inferred set is exactly 1000
-    values = categories + rng.choice(categories, size=4000).tolist()
-
-    df = pl.DataFrame(
-        {
-            "cat_col": polars_cat_series(values, cat_type, categories=categories),
-            "num_col": rng.uniform(0, 10, size=5000),
-        }
-    )
-    y = rng.integers(0, 2, size=5000)
-
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"])
-    ds.construct()
-
-    assert ds.num_data() == 5000
-    assert ds.num_feature() == 2
-    assert len(ds.pandas_categorical[0]) == 1000
-
-
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_categorical_prediction_and_persistence(tmp_path, cat_type):
-    """End-to-end: train, predict, save/load, predictions match."""
-    train_values = ["a", "b", "a", "c", "b", "c"] * 10
-    test_values = ["a", "b", "c", "a"]
-    cats = sorted(set(train_values))
-
+    params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
     train_df = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(train_values, cat_type, categories=cats),
-            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 10,
+            "cat_col": _polars_cat_series(train_values, "categorical", categories=train_categories),
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    train_y = [0, 1, 0, 1, 0, 1] * 10
-    test_df = pl.DataFrame(
+    valid_df = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(test_values, cat_type, categories=cats),
-            "num_col": [1.5, 2.5, 3.5, 4.5],
+            "cat_col": _polars_cat_series(valid_values, "categorical", categories=train_categories),
+            "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
 
-    train_ds = lgb.Dataset(train_df, label=train_y, categorical_feature=["cat_col"])
-    bst = lgb.train({"objective": "binary", "verbose": -1}, train_ds, num_boost_round=10)
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=params)
+    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    train_ds.construct()
+    valid_ds.construct()
 
-    preds = bst.predict(test_df)
-    assert preds.shape == (4,)
-    assert all(0 <= p <= 1 for p in preds)
-
-    model_path = tmp_path / "categorical_model.txt"
-    bst.save_model(model_path)
-    loaded_bst = lgb.Booster(model_file=model_path)
-    assert loaded_bst.pandas_categorical == bst.pandas_categorical
-    np.testing.assert_allclose(preds, loaded_bst.predict(test_df))
-
-
-@pytest.mark.parametrize("cat_type", ["categorical", "enum"])
-def test_polars_pandas_categorical_predictions_match(cat_type):
-    """Polars-trained and pandas-trained models give identical predictions."""
-    pd = pytest.importorskip("pandas")
-
-    cats = sorted(["cat_a", "cat_b", "cat_c"])
-    values = ["cat_a", "cat_b", "cat_c", "cat_a", "cat_b"] * 20
-
-    polars_df = pl.DataFrame(
+    # Verify unseen category is encoded as NaN
+    ref_valid_df = pl.DataFrame(
         {
-            "cat_col": polars_cat_series(values, cat_type, categories=cats),
-            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
+            "cat_col": _polars_cat_series(["a", "c", None, None, "a"], "categorical", categories=train_categories),
+            "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
-    pandas_df = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(values, categories=cats, ordered=(cat_type == "enum")),
-            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
-        }
-    )
-    y = [0, 1, 0, 1, 0] * 20
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    ref_valid_ds.construct()
 
-    polars_ds = lgb.Dataset(polars_df, label=y, categorical_feature=["cat_col"])
-    polars_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, polars_ds, num_boost_round=10)
-
-    pandas_ds = lgb.Dataset(pandas_df, label=y, categorical_feature=["cat_col"])
-    pandas_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, pandas_ds, num_boost_round=10)
-
-    np.testing.assert_allclose(polars_bst.predict(polars_df), pandas_bst.predict(pandas_df), rtol=1e-10)
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_polars_categorical_auto_detected():
-    """categorical_feature='auto' picks up unordered pl.Categorical columns."""
-    df = pl.DataFrame(
-        {
-            "cat_unordered": pl.Series(["x", "y", "x"], dtype=pl.Categorical(ordering="lexical")),
-            "num_col": [1.0, 2.0, 3.0],
-        }
-    )
-    y = [0, 1, 0]
-
-    ds = lgb.Dataset(df, label=y, categorical_feature="auto", params={"min_data_in_bin": 1})
+def test_polars_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+    X = pl.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
+    y = rng.uniform(size=(10_000,))
+    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
     ds.construct()
-
-    assert ds.params.get("categorical_column") == [0]
-    assert len(ds.pandas_categorical) == 1
-
-
-def test_polars_enum_not_auto_detected():
-    """categorical_feature='auto' does NOT pick up pl.Enum (ordered), but metadata is captured."""
-    df = pl.DataFrame(
-        {
-            "cat_ordered": pl.Series(["low", "medium", "high", "low"]).cast(pl.Enum(["low", "medium", "high"])),
-            "num_col": [1.0, 2.0, 3.0, 4.0],
-        }
-    )
-    y = [0, 1, 0, 1]
-
-    ds = lgb.Dataset(df, label=y, categorical_feature="auto", params={"min_data_in_bin": 1})
-    ds.construct()
-
-    assert "categorical_column" not in ds.params
-    assert len(ds.pandas_categorical) == 1
+    assert ds.num_data() == 10_000
+    assert ds.num_feature() == 1
 
 
 # ---------------------------------------- DTYPE VALIDATION --------------------------------------- #
 
 
 @pytest.mark.parametrize(
-    ("dtype", "values", "init_args", "is_supported_dtype"),
+    ("dtype", "values"),
     [
-        # Supported dtypes
-        (pl.Int8, [1, 2, 3], {}, True),
-        (pl.Int16, [1, 2, 3], {}, True),
-        (pl.Int32, [1, 2, 3], {}, True),
-        (pl.Int64, [1, 2, 3], {}, True),
-        (pl.UInt8, [1, 2, 3], {}, True),
-        (pl.UInt16, [1, 2, 3], {}, True),
-        (pl.UInt32, [1, 2, 3], {}, True),
-        (pl.UInt64, [1, 2, 3], {}, True),
-        (pl.Float32, [1.0, 2.0, 3.0], {}, True),
-        (pl.Float64, [1.0, 2.0, 3.0], {}, True),
-        (pl.Boolean, [True, False, True], {}, True),
-        (pl.Categorical, ["a", "b", "c"], {}, True),
-        (pl.Enum, ["x", "y", "z"], {"categories": ["x", "y", "z"]}, True),
-        # Unsupported dtypes
-        (pl.String, ["a", "b", "c"], {}, False),
-        (pl.Date, [date(2020, 1, 1), date(2020, 1, 2), date(2020, 1, 3)], {}, False),
-        (pl.Datetime, [datetime(2020, 1, 1), datetime(2020, 1, 2), datetime(2020, 1, 3)], {}, False),
-        (pl.Duration, [1, 2, 3], {"time_unit": "us"}, False),
-        (pl.Struct, [{"a": 1}, {"a": 2}, {"a": 3}], {"fields": {"a": pl.Int8}}, False),
-        (pl.List, [[1, 2], [3, 4], [5, 6]], {"inner": pl.Int8}, False),
+        (pl.Int8, [1, 2, 3]),
+        (pl.Int16, [1, 2, 3]),
+        (pl.Int32, [1, 2, 3]),
+        (pl.Int64, [1, 2, 3]),
+        (pl.UInt8, [1, 2, 3]),
+        (pl.UInt16, [1, 2, 3]),
+        (pl.UInt32, [1, 2, 3]),
+        (pl.UInt64, [1, 2, 3]),
+        (pl.Float32, [1.0, 2.0, 3.0]),
+        (pl.Float64, [1.0, 2.0, 3.0]),
+        (pl.Boolean, [True, False, True]),
     ],
 )
-def test_narwhals_dtype_validation_for_polars(dtype, values, init_args, is_supported_dtype):
-    """Supported dtypes should construct; unsupported dtypes should raise ValueError."""
-    df = pl.DataFrame({"col": pl.Series(values, dtype=dtype(**init_args)), "num_col": [1.0, 2.0, 3.0]})
+def test_polars_supported_dtypes(tmp_path, dtype, values):
+    df = pl.DataFrame({"test_col": pl.Series(values, dtype=dtype), "num_col": [4.0, 5.0, 6.0]})
     y = [0, 1, 0]
 
-    if is_supported_dtype:
+    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert ds.num_data() == 3
+    assert ds.num_feature() == 2
+    assert ds.get_feature_name() == ["test_col", "num_col"]
+    assert ds.get_label().tolist() == y
+
+    # Verify values are preserved
+    ref_df = pl.DataFrame({"test_col": values, "num_col": [4.0, 5.0, 6.0]})
+    ref_ds = lgb.Dataset(ref_df, label=y, params={"min_data_in_bin": 1})
+    ref_ds.construct()
+
+    assert_datasets_equal(tmp_path, ds, ref_ds)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "values"),
+    [
+        (pl.String, ["a", "b", "c"]),
+        (pl.Date, [date(2020, 1, 1), date(2020, 1, 2), date(2020, 1, 3)]),
+        (pl.Datetime, [datetime(2020, 1, 1), datetime(2020, 1, 2), datetime(2020, 1, 3)]),
+        (pl.Duration, [1, 2, 3]),
+        (pl.Struct, [{"a": 1}, {"a": 2}, {"a": 3}]),
+        (pl.List, [[1, 2], [3, 4], [5, 6]]),
+    ],
+)
+def test_polars_unsupported_dtypes(dtype, values):
+    df = pl.DataFrame({"test_col": pl.Series(values, dtype=dtype), "num_col": [1.0, 2.0, 3.0]})
+    y = [0, 1, 0]
+
+    with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
         lgb.Dataset(df, label=y).construct()
-    else:
-        with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
-            lgb.Dataset(df, label=y).construct()

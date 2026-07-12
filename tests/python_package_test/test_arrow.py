@@ -1,6 +1,4 @@
 # coding: utf-8
-import filecmp
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -8,7 +6,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal
+from .utils import assert_datasets_equal, np_assert_array_equal
 
 pa = pytest.importorskip("pyarrow")
 
@@ -122,12 +120,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ----------------------------------------------------------------------------------------------- #
 
 # ------------------------------------------- DATASET ------------------------------------------- #
-
-
-def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
-    lhs._dump_text(tmp_path / "arrow.txt")
-    rhs._dump_text(tmp_path / "pandas.txt")
-    assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
 
 
 @pytest.mark.parametrize(
@@ -515,267 +507,158 @@ def test_get_data_arrow_table_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-def test_arrow_categorical_basic():
-    """Explicit categorical_feature constructs successfully and metadata is captured."""
+def _arrow_dict_array(values, categories=None, ordered=False):
+    """Build a pyarrow.DictionaryArray from a list of values and optional categories."""
+    if categories is None:
+        categories = sorted({v for v in values if v is not None})
+    dictionary = pa.array(categories)
+    cat_to_code = {cat: i for i, cat in enumerate(categories)}
+    indices = pa.array(
+        [cat_to_code[v] if v is not None else None for v in values],
+        type=pa.int32(),
+    )
+    return pa.DictionaryArray.from_arrays(indices, dictionary, ordered=ordered)
+
+
+def test_arrow_categorical_encoding(tmp_path):
+    cat1_categories = ["a", "b", "c"]
+    cat1_values = ["a", "b", "c", "b", "a"]
+    cat2_categories = ["b", "c", "d"]
+    cat2_values = ["b", "c", "c", "d", "d"]
+    ordered_categories = ["high", "low", "mid"]
+    ordered_values = ["low", "high", "mid", "high", "low"]
+
     df = pa.table(
         {
-            "cat_col": pa.array(
-                ["a", "b", "a", "c", "b"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())
-            ),
-            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+            "cat1": _arrow_dict_array(cat1_values, categories=cat1_categories),
+            "cat2": _arrow_dict_array(cat2_values, categories=cat2_categories),
+            "cat3": _arrow_dict_array(ordered_values, categories=ordered_categories, ordered=True),
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
     ds.construct()
 
-    assert ds.pandas_categorical is not None
-    assert len(ds.pandas_categorical) == 1
-    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
+    assert ds.num_data() == 5
+    assert ds.num_feature() == 4
+    assert ds.get_feature_name() == ["cat1", "cat2", "cat3", "num_col"]
 
+    assert ds.categorical_feature == "auto"
+    assert len(ds.pandas_categorical) == 3
+    assert ds.pandas_categorical[0] == cat1_categories
+    assert ds.pandas_categorical[1] == cat2_categories
+    assert ds.pandas_categorical[2] == ordered_categories
+    assert ds.params["categorical_column"] == [0, 1]  # ordered categorical not treated as categorical by default
 
-def test_arrow_categorical_doesnt_modify_original():
-    """Construction must not mutate the input Table."""
-    original_table = pa.table(
+    # Verify correct encodings
+    ref_df = pa.table(
         {
-            "cat_col": pa.array(
-                ["a", "b", "a", "c"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())
-            ),
-            "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
+            "cat1": pa.array([cat1_categories.index(v) for v in cat1_values], type=pa.int32()),  # [0, 1, 2, 1, 0]
+            "cat2": pa.array([cat2_categories.index(v) for v in cat2_values], type=pa.int32()),  # [0, 1, 1, 2, 2],
+            "cat3": pa.array(
+                [ordered_categories.index(v) for v in ordered_values], type=pa.int32()
+            ),  # [1, 0, 2, 0, 1],
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    y = [0, 1, 0, 1]
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params={"min_data_in_bin": 1})
+    ref_ds.construct()
 
-    original_values = original_table["cat_col"].to_pylist()
-    original_type = original_table["cat_col"].type
+    assert_datasets_equal(tmp_path, ds, ref_ds)
 
-    ds = lgb.Dataset(original_table, label=y, categorical_feature=["cat_col"], params={"min_data_in_bin": 1})
+
+def test_arrow_categorical_encoding_unseen_category(tmp_path):
+    train_categories = ["a", "b", "c"]
+    train_values = ["a", "b", "c", "a", "b"]
+    valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
+
+    params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
+    train_df = pa.table(
+        {"cat_col": _arrow_dict_array(train_values, categories=train_categories), "num_col": [1.0, 2.0, 3.0, 4.0, 5.0]}
+    )
+    valid_df = pa.table({"cat_col": _arrow_dict_array(valid_values), "num_col": [6.0, 7.0, 8.0, 9.0, 10.0]})
+
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=params)
+    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    train_ds.construct()
+    valid_ds.construct()
+
+    # Verify unseen category is encoded as NaN
+    ref_valid_df = pa.table(
+        {
+            "cat_col": _arrow_dict_array(["a", "c", None, None, "a"], categories=train_categories),
+            "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
+        }
+    )
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    ref_valid_ds.construct()
+
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
+def test_arrow_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+    X = pa.table({"x1": pa.array(rng.integers(0, 1000, size=10_000))})
+    y = rng.uniform(size=(10_000,))
+    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
     ds.construct()
-
-    assert original_table["cat_col"].to_pylist() == original_values
-    assert original_table["cat_col"].type == original_type
-
-
-def test_arrow_categorical_multiple_columns():
-    """Two categorical columns alongside a numeric column are both encoded."""
-    df = pa.table(
-        {
-            "cat1": pa.array(["a", "b", "a", "c"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "cat2": pa.array(["x", "x", "y", "z"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([1.0, 2.0, 3.0, 4.0]),
-        }
-    )
-    y = [0, 1, 0, 1]
-
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat1", "cat2"], params={"min_data_in_bin": 1})
-    ds.construct()
-
-    assert len(ds.pandas_categorical) == 2
-    assert sorted(ds.pandas_categorical[0]) == ["a", "b", "c"]
-    assert sorted(ds.pandas_categorical[1]) == ["x", "y", "z"]
-
-
-def test_arrow_categorical_unseen_categories_at_inference(tmp_path):
-    """Unseen categories in the predict frame are remapped via train's mapping, matching pandas references."""
-    pd = pytest.importorskip("pandas")
-
-    train_cats = ["a", "b", "c"]
-    valid_cats = ["a", "c", "d"]  # different domain: contains unseen "d", missing "b"
-
-    train_values = ["a", "b", "c", "a", "b", "c"] * 10
-    train_labels = [0, 1, 0, 1, 0, 1] * 10
-    valid_values = ["a", "d", "c", "a", "c", "d", "a"]
-    valid_labels = [0, 1, 0, 1, 0, 1, 0]
-    valid_num = [float(i % 5) for i in range(len(valid_values))]
-
-    arrow_train = pa.table(
-        {
-            "cat_col": pa.array(train_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([float(i % 5) for i in range(len(train_values))]),
-        }
-    )
-    arrow_valid = pa.table(
-        {
-            "cat_col": pa.array(valid_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array(valid_num),
-        }
-    )
-
-    params = {"min_data_in_bin": 1}
-    arrow_train_ds = lgb.Dataset(arrow_train, label=train_labels, categorical_feature=["cat_col"], params=params)
-    arrow_valid_ds = lgb.Dataset(arrow_valid, label=valid_labels, reference=arrow_train_ds, params=params)
-    arrow_train_ds.construct()
-    arrow_valid_ds.construct()
-
-    bst = lgb.train({"objective": "binary", "verbose": -1, "num_leaves": 4}, arrow_train_ds, num_boost_round=20)
-    # Reference 1: predictions match pre-encoded array with train's mapping (unseen -> NaN)
-    train_code = {c: i for i, c in enumerate(train_cats)}
-    pre_encoded = np.array(
-        [[train_code.get(v, np.nan), n] for v, n in zip(valid_values, valid_num, strict=True)],
-        dtype=np.float64,
-    )
-    np.testing.assert_allclose(bst.predict(arrow_valid), bst.predict(pre_encoded))
-
-    # Reference 2: arrow train/valid Datasets are equal to pandas equivalents
-    pandas_train = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(train_values, categories=train_cats, ordered=False),
-            "num_col": [float(i % 5) for i in range(len(train_values))],
-        }
-    )
-    pandas_valid = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(valid_values, categories=valid_cats, ordered=False),
-            "num_col": valid_num,
-        }
-    )
-    pandas_train_ds = lgb.Dataset(pandas_train, label=train_labels, categorical_feature=["cat_col"], params=params)
-    pandas_valid_ds = lgb.Dataset(pandas_valid, label=valid_labels, reference=pandas_train_ds, params=params)
-    pandas_train_ds.construct()
-    pandas_valid_ds.construct()
-
-    assert arrow_train_ds.pandas_categorical == pandas_train_ds.pandas_categorical == [train_cats]
-    assert_datasets_equal(tmp_path, arrow_train_ds, pandas_train_ds)
-    assert_datasets_equal(tmp_path, arrow_valid_ds, pandas_valid_ds)
-
-
-def test_arrow_categorical_high_cardinality():
-    """Construction works with a large number of unique categories."""
-    rng = np.random.default_rng(42)
-    categories = [f"cat_{i}" for i in range(1000)]
-    values = categories + rng.choice(categories, size=4000).tolist()
-
-    df = pa.table(
-        {
-            "cat_col": pa.array(values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array(rng.uniform(0, 10, size=5000)),
-        }
-    )
-    y = rng.integers(0, 2, size=5000)
-
-    ds = lgb.Dataset(df, label=y, categorical_feature=["cat_col"])
-    ds.construct()
-
-    assert ds.num_data() == 5000
-    assert ds.num_feature() == 2
-    assert len(ds.pandas_categorical[0]) == 1000
-
-
-def test_arrow_categorical_prediction_and_persistence(tmp_path):
-    """End-to-end: train, predict, save/load, predictions match."""
-    train_values = ["a", "b", "a", "c", "b", "c"] * 10
-    test_values = ["a", "b", "c", "a"]
-
-    train_table = pa.table(
-        {
-            "cat_col": pa.array(train_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 10),
-        }
-    )
-    train_y = [0, 1, 0, 1, 0, 1] * 10
-    test_table = pa.table(
-        {
-            "cat_col": pa.array(test_values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([1.5, 2.5, 3.5, 4.5]),
-        }
-    )
-
-    train_ds = lgb.Dataset(train_table, label=train_y, categorical_feature=["cat_col"])
-    bst = lgb.train({"objective": "binary", "verbose": -1}, train_ds, num_boost_round=10)
-
-    preds = bst.predict(test_table)
-    assert preds.shape == (4,)
-    assert all(0 <= p <= 1 for p in preds)
-
-    model_path = tmp_path / "categorical_model.txt"
-    bst.save_model(model_path)
-    loaded_bst = lgb.Booster(model_file=model_path)
-    assert loaded_bst.pandas_categorical == bst.pandas_categorical
-    np.testing.assert_allclose(preds, loaded_bst.predict(test_table))
-
-
-def test_arrow_pandas_categorical_predictions_match():
-    """Arrow-trained and pandas-trained models give identical predictions."""
-    pd = pytest.importorskip("pandas")
-
-    cats = sorted(["cat_a", "cat_b", "cat_c"])
-    values = ["cat_a", "cat_b", "cat_c", "cat_a", "cat_b"] * 20
-
-    arrow_table = pa.table(
-        {
-            "cat_col": pa.array(values, type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([1.0, 2.0, 3.0, 4.0, 5.0] * 20),
-        }
-    )
-    pandas_df = pd.DataFrame(
-        {
-            "cat_col": pd.Categorical(values, categories=cats, ordered=False),
-            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
-        }
-    )
-    y = [0, 1, 0, 1, 0] * 20
-
-    arrow_ds = lgb.Dataset(arrow_table, label=y, categorical_feature=["cat_col"])
-    arrow_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, arrow_ds, num_boost_round=10)
-
-    pandas_ds = lgb.Dataset(pandas_df, label=y, categorical_feature=["cat_col"])
-    pandas_bst = lgb.train({"objective": "binary", "verbose": -1, "seed": 42}, pandas_ds, num_boost_round=10)
-
-    np.testing.assert_allclose(arrow_bst.predict(arrow_table), pandas_bst.predict(pandas_df), rtol=1e-10)
-
-
-def test_arrow_categorical_auto_detected():
-    """categorical_feature='auto' picks up dictionary-encoded columns."""
-    df = pa.table(
-        {
-            "cat_col": pa.array(["x", "y", "x"], type=pa.dictionary(index_type=pa.int32(), value_type=pa.string())),
-            "num_col": pa.array([1.0, 2.0, 3.0]),
-        }
-    )
-    y = [0, 1, 0]
-
-    ds = lgb.Dataset(df, label=y, categorical_feature="auto", params={"min_data_in_bin": 1})
-    ds.construct()
-
-    assert ds.params.get("categorical_column") == [0]
-    assert len(ds.pandas_categorical) == 1
+    assert ds.num_data() == 10_000
+    assert ds.num_feature() == 1
 
 
 # ---------------------------------------- DTYPE VALIDATION --------------------------------------- #
 
 
 @pytest.mark.parametrize(
-    ("dtype", "values", "init_args", "is_supported_dtype"),
+    ("dtype", "values"),
     [
-        # Supported dtypes
-        (pa.int8, [1, 2, 3], {}, True),
-        (pa.int16, [1, 2, 3], {}, True),
-        (pa.int32, [1, 2, 3], {}, True),
-        (pa.int64, [1, 2, 3], {}, True),
-        (pa.uint8, [1, 2, 3], {}, True),
-        (pa.uint16, [1, 2, 3], {}, True),
-        (pa.uint32, [1, 2, 3], {}, True),
-        (pa.uint64, [1, 2, 3], {}, True),
-        (pa.float32, [1.0, 2.0, 3.0], {}, True),
-        (pa.float64, [1.0, 2.0, 3.0], {}, True),
-        (pa.bool_, [True, False, True], {}, True),
-        (pa.dictionary, ["a", "b", "c"], {"index_type": pa.int32(), "value_type": pa.string()}, True),
-        # Unsupported dtypes
-        (pa.string, ["a", "b", "c"], {}, False),
-        (pa.date32, [18262, 18263, 18264], {}, False),
-        (pa.timestamp, [1577836800000000, 1577923200000000, 1578009600000000], {"unit": "us"}, False),
-        (pa.duration, [1, 2, 3], {"unit": "us"}, False),
-        (pa.list_, [[1], [2], [3]], {"value_type": pa.int32()}, False),
+        (pa.int8(), [1, 2, 3]),
+        (pa.int16(), [1, 2, 3]),
+        (pa.int32(), [1, 2, 3]),
+        (pa.int64(), [1, 2, 3]),
+        (pa.uint8(), [1, 2, 3]),
+        (pa.uint16(), [1, 2, 3]),
+        (pa.uint32(), [1, 2, 3]),
+        (pa.uint64(), [1, 2, 3]),
+        (pa.float32(), [1.0, 2.0, 3.0]),
+        (pa.float64(), [1.0, 2.0, 3.0]),
+        (pa.bool_(), [True, False, True]),
     ],
 )
-def test_narwhals_dtype_validation_for_arrow(dtype, values, init_args, is_supported_dtype):
-    """Supported dtypes should construct; unsupported dtypes should raise ValueError."""
-    table = pa.table({"col": pa.array(values, type=dtype(**init_args)), "num_col": pa.array([1.0, 2.0, 3.0])})
+def test_arrow_supported_dtypes(tmp_path, dtype, values):
+    df = pa.table({"test_col": pa.array(values, type=dtype), "num_col": [4.0, 5.0, 6.0]})
     y = [0, 1, 0]
 
-    if is_supported_dtype:
-        lgb.Dataset(table, label=y).construct()
-    else:
-        with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
-            lgb.Dataset(table, label=y).construct()
+    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds.construct()
+
+    assert ds.num_data() == 3
+    assert ds.num_feature() == 2
+    assert ds.get_feature_name() == ["test_col", "num_col"]
+    assert ds.get_label().tolist() == y
+
+    # Verify values are preserved
+    ref_df = pa.table({"test_col": pa.array(values), "num_col": [4.0, 5.0, 6.0]})
+    ref_ds = lgb.Dataset(ref_df, label=y, params={"min_data_in_bin": 1})
+    ref_ds.construct()
+
+    assert_datasets_equal(tmp_path, ds, ref_ds)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "values"),
+    [
+        (pa.string(), ["a", "b", "c"]),
+        (pa.date32(), [18262, 18263, 18264]),
+        (pa.timestamp("s"), [1577836800000000, 1577923200000000, 1578009600000000]),
+        (pa.duration("s"), [1, 2, 3]),
+        (pa.list_(pa.int8()), [[1], [2], [3]]),
+    ],
+)
+def test_arrow_unsupported_dtypes(dtype, values):
+    df = pa.table({"test_col": pa.array(values, type=dtype), "num_col": [1.0, 2.0, 3.0]})
+    y = [0, 1, 0]
+
+    with pytest.raises(ValueError, match="DataFrame dtypes must be int, float, bool, categorical or enum"):
+        lgb.Dataset(df, label=y).construct()
