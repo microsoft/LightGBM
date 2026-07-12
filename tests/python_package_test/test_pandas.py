@@ -88,7 +88,7 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+def test_pandas_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
     y = rng.uniform(size=(10_000,))
     ds = lgb.Dataset(X, y, categorical_feature=["x1"])
@@ -99,7 +99,7 @@ def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
 
 @pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
 @pytest.mark.parametrize("categories", ["seen", "unseen"])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
+def test_pandas_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
     X = rng.choice(a=["a", "b"], size=(100, 1))
     column_name = "a" if feature_name == "auto" else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
