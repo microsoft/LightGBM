@@ -3490,11 +3490,6 @@ _LGBM_CustomEvalFunction = Union[
 ]
 
 
-# TODO:
-#
-#   * docstrings everywhere
-#   * name consistency (e.g. 'eval_name' -> 'metric_name')
-#
 class EvalResult(NamedTuple):
     """
     Result from computing an evaluation metric on a dataset.
@@ -3504,7 +3499,19 @@ class EvalResult(NamedTuple):
       * train(): ``(dataset_name, metric_name, metric_value, maximize)``
       * cv(): ``(dataset_name, metric_name, mean(metric_value), maximize, std_dev(metric_value))``
 
-
+    Parameters
+    ----------
+    dataset_name : str
+        Unique identifier for the dataset this result was computed on.
+    metric_name : str
+        Unique identifier for the metric (e.g. "rmse").
+    metric_value : float
+        Value of the evaluation metric.
+    maximize : bool
+        Are higher values better? e.g. ``True`` for AUC and ``False`` for binary error.
+    metric_std_dev : float or None
+        If not ``None``, the standard deviation of metric values computed over a range of results.
+        For example, used when aggregating over cross-validation folds in ``cv()``.
     """
 
     dataset_name: str
@@ -4408,7 +4415,8 @@ class Booster:
         Returns
         -------
         result : list
-            List with (validation_dataset_name, metric_name, metric_value, maximize) tuples.
+            List of ``lightgbm.EvalResult`` objects, named tuples of the form
+            (dataset_name, metric_name, metric_value, maximize).
         """
         return [
             item
