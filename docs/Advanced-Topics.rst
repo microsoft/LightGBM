@@ -23,8 +23,6 @@ Categorical Feature Support
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.
 
--  In the Python package, LightGBM uses Narwhals to handle categorical features from supported dataframe backends, including categorical and enum dtypes.
-
 -  Categorical features will be cast to ``int32`` (integer codes will be extracted from categorical or enum dtypes in the Python-package) so they must be encoded as non-negative integers (negative values will be treated as missing)
    less than ``Int32.MaxValue`` (2147483647).
    It is best to use a contiguous range of integers started from zero.
