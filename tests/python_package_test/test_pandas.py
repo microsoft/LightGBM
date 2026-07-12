@@ -1,6 +1,7 @@
 # coding: utf-8
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pytest
 
 import lightgbm as lgb
@@ -85,6 +86,45 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
+def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+    X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
+    y = rng.uniform(size=(10_000,))
+    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
+    ds.construct()
+    assert ds.num_data() == 10_000
+    assert ds.num_feature() == 1
+
+
+@pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
+@pytest.mark.parametrize("categories", ["seen", "unseen"])
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
+    X = rng.choice(a=["a", "b"], size=(100, 1))
+    column_name = "a" if feature_name == "auto" else feature_name[0]
+    df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
+    if categories == "seen":
+        pandas_categorical = [["a", "b"]]
+    else:
+        pandas_categorical = [["a"]]
+    data = lgb.basic._data_from_pandas(
+        data=df,
+        feature_name=feature_name,
+        categorical_feature="auto",
+        pandas_categorical=pandas_categorical,
+    )[0]
+    # check that the original data wasn't modified
+    np.testing.assert_equal(df[column_name], X[:, 0])
+    # check that the built data has the codes
+    if categories == "seen":
+        # if all categories were seen during training we just take the codes
+        codes = df[column_name].cat.codes
+    else:
+        # if we only saw 'a' during training we just replace its code
+        # and leave the rest as nan
+        a_code = df[column_name].cat.categories.get_loc("a")
+        codes = np.where(df[column_name] == "a", a_code, np.nan)
+    np.testing.assert_equal(codes, data[:, 0])
 
 
 # ---------------------------------------- DTYPE VALIDATION --------------------------------------- #
