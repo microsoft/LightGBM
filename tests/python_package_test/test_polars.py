@@ -537,6 +537,7 @@ def test_polars_dataset_construction_with_high_cardinality_categorical_succeeds(
         (pl.Float32, [1.0, 2.0, 3.0]),
         (pl.Float64, [1.0, 2.0, 3.0]),
         (pl.Boolean, [True, False, True]),
+        # Categorical dtypes are supported, but tested separately
     ],
 )
 def test_polars_supported_dtypes(tmp_path, dtype, values):

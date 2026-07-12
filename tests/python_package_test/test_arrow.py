@@ -624,6 +624,7 @@ def test_arrow_dataset_construction_with_high_cardinality_categorical_succeeds(r
         (pa.float32(), [1.0, 2.0, 3.0]),
         (pa.float64(), [1.0, 2.0, 3.0]),
         (pa.bool_(), [True, False, True]),
+        # Categorical dtypes are supported, but tested separately
     ],
 )
 def test_arrow_supported_dtypes(tmp_path, dtype, values):
