@@ -409,24 +409,6 @@ def test_get_data_polars_frame_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-def _polars_cat_series(values, cat_type, categories=None):
-    """Build a polars categorical/enum series with isolated category scope.
-
-    cat_type: "categorical" -> pl.Categorical (unordered, random scope)
-              "enum"        -> pl.Enum (ordered, fixed category list)
-    """
-    if cat_type == "categorical":
-        if hasattr(pl, "Categories"):
-            scope = pl.Categories.random()
-            return pl.Series(values, dtype=pl.Categorical(categories=scope, ordering="lexical"))
-        else:
-            return pl.Series(values, dtype=pl.Categorical(ordering="lexical"))
-    elif cat_type == "enum":
-        return pl.Series(values).cast(pl.Enum(categories or sorted(set(values))))
-    else:
-        raise ValueError(f"Invalid cat_type: {cat_type}")
-
-
 def test_polars_categorical_encoding(tmp_path):
     cat1_categories = ["a", "b", "c"]
     cat1_values = ["a", "b", "c", "b", "a"]
@@ -437,9 +419,9 @@ def test_polars_categorical_encoding(tmp_path):
 
     df = pl.DataFrame(
         {
-            "cat1": _polars_cat_series(cat1_values, "categorical", categories=cat1_categories),
-            "cat2": _polars_cat_series(cat2_values, "categorical", categories=cat2_categories),
-            "cat3": _polars_cat_series(ordered_values, "enum", categories=ordered_categories),
+            "cat1": pl.Series(cat1_values, dtype=pl.Categorical(ordering="lexical")),
+            "cat2": pl.Series(cat2_values, dtype=pl.Categorical(ordering="lexical")),
+            "cat3": pl.Series(ordered_values, dtype=pl.Enum(categories=ordered_categories)),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -475,20 +457,19 @@ def test_polars_categorical_encoding(tmp_path):
 
 
 def test_polars_categorical_encoding_unseen_category(tmp_path):
-    train_categories = ["a", "b", "c"]
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
     params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
     train_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(train_values, "categorical", categories=train_categories),
+            "cat_col": pl.Series(train_values, dtype=pl.Categorical(ordering="lexical")),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
     valid_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(valid_values, "categorical", categories=train_categories),
+            "cat_col": pl.Series(valid_values, dtype=pl.Categorical(ordering="lexical")),
             "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
@@ -501,7 +482,7 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
     # Verify unseen category is encoded as NaN
     ref_valid_df = pl.DataFrame(
         {
-            "cat_col": _polars_cat_series(["a", "c", None, None, "a"], "categorical", categories=train_categories),
+            "cat_col": pl.Series(["a", "c", None, None, "a"], dtype=pl.Categorical(ordering="lexical")),
             "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
