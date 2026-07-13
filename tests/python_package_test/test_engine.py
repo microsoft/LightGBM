@@ -956,6 +956,8 @@ def test_ranking_with_position_and_group_information_in_single_file(tmp_path):
         "bagging_fraction": 0.9,
         "min_data_in_leaf": 50,
         "min_sum_hessian_in_leaf": 5.0,
+        "num_threads": 1,
+        "gpu_use_dp": True,
         "group_column": 301,
         "position_column": 302,
         "label_column": 0,
@@ -975,6 +977,8 @@ def test_ranking_with_position_and_group_information_in_single_file(tmp_path):
         "bagging_fraction": 0.9,
         "min_data_in_leaf": 50,
         "min_sum_hessian_in_leaf": 5.0,
+        "num_threads": 1,
+        "gpu_use_dp": True,
         # ignore position and group column
         "ignore_column": "301,302",
     }
