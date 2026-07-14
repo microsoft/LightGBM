@@ -97,12 +97,18 @@ def test_pandas_dataset_construction_with_high_cardinality_categorical_succeeds(
     assert ds.num_feature() == 1
 
 
-@pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
+@pytest.mark.parametrize(
+    "feature_name",
+    [
+        pytest.param(["x1"], id="feature-name"),
+        pytest.param([42], id="feature-index"),
+        pytest.param("auto", id="auto"),
+    ],
+)
 @pytest.mark.parametrize("categories", ["seen", "unseen"])
 def test_pandas_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
     X = rng.choice(a=["a", "b"], size=(100, 1))
-    column_name = "a" if feature_name == "auto" else feature_name[0]
-    df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
+    df = pd.DataFrame(X.copy(), columns=["x1"], dtype="category")
     if categories == "seen":
         pandas_categorical = [["a", "b"]]
     else:
@@ -115,16 +121,16 @@ def test_pandas_categorical_code_conversion_doesnt_modify_original_data(feature_
     )[0]
     data = lgb.basic._pandas_df_to_numpy(data)
     # check that the original data wasn't modified
-    np.testing.assert_equal(df[column_name], X[:, 0])
+    np.testing.assert_equal(df["x1"], X[:, 0])
     # check that the built data has the codes
     if categories == "seen":
         # if all categories were seen during training we just take the codes
-        codes = df[column_name].cat.codes
+        codes = df["x1"].cat.codes
     else:
         # if we only saw 'a' during training we just replace its code
         # and leave the rest as nan
-        a_code = df[column_name].cat.categories.get_loc("a")
-        codes = np.where(df[column_name] == "a", a_code, np.nan)
+        a_code = df["x1"].cat.categories.get_loc("a")
+        codes = np.where(df["x1"] == "a", a_code, np.nan)
     np.testing.assert_equal(codes, data[:, 0])
 
 
