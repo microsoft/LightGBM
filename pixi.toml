@@ -25,6 +25,9 @@ python-graphviz = "0.20.*"
 scikit-learn = "1.0.*"
 scipy = "1.7.*"
 
+# build-time dependencies
+python-build = "1.4.*"
+
 # testing-only packages
 cloudpickle = "2.2.*"
 h5py = ">=3.10"
