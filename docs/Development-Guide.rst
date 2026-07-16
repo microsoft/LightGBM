@@ -73,7 +73,7 @@ Refer to `docs README <./README.rst>`__.
 C API
 -----
 
-Refer to `C API <./C-API.rst>`__ or the comments in `c\_api.h <https://github.com/lightgbm-org/LightGBM/blob/master/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
+Refer to `C API <./C-API.rst>`__ or the comments in `c\_api.h <https://github.com/lightgbm-org/LightGBM/blob/main/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
 
 Tests
 -----
@@ -85,7 +85,7 @@ It is highly recommended to build tests with `sanitizers <./Installation-Guide.r
 High Level Language Package
 ---------------------------
 
-See the implementations at `Python-package <https://github.com/lightgbm-org/LightGBM/tree/master/python-package>`__ and `R-package <https://github.com/lightgbm-org/LightGBM/tree/master/R-package>`__.
+See the implementations at `Python-package <https://github.com/lightgbm-org/LightGBM/tree/main/python-package>`__ and `R-package <https://github.com/lightgbm-org/LightGBM/tree/main/R-package>`__.
 
 Questions
 ---------
