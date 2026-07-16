@@ -748,7 +748,7 @@ def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
         bad_types = {col: dtype for col, dtype in bad_types.items() if col not in categorical_cols}
     # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
     # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
-    if PANDAS_INSTALLED and data.implementation.is_pandas_like() and bad_types:
+    if PANDAS_INSTALLED and data.implementation.is_pandas() and bad_types:
         native_dtypes = data.to_native().dtypes
         bad_types = {
             column_name: dtype
