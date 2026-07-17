@@ -122,6 +122,7 @@ class Log {
     va_list val;
     const size_t kBufSize = 1024;
     char str_buf[kBufSize];
+    str_buf[0] = '\0';
     va_start(val, format);
 #ifdef _MSC_VER
     vsnprintf_s(str_buf, kBufSize, _TRUNCATE, format, val);
@@ -135,7 +136,7 @@ class Log {
 #ifndef LGB_R_BUILD
     if (GetLogCallBackWithLevel() != nullptr) {
       GetLogCallBackWithLevel()(static_cast<int>(LogLevel::Fatal), str_buf);
-      // leveled callback is sole output on this thread — old callback and stderr suppressed
+      // the leveled callback replaces both stderr and the legacy callback on this thread
     } else {
       fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
       fflush(stderr);
@@ -148,8 +149,8 @@ class Log {
   }
 
  private:
-  // a trick to use static variable in header file.
-  // May be not good, but avoid to use an additional cpp file
+  // a trick to use static variables in a header file:
+  // not ideal, but avoids an additional cpp file
   static LogLevel &GetLevel() {
     static THREAD_LOCAL LogLevel level = LogLevel::Info;
     return level;
@@ -174,6 +175,7 @@ class Log {
       if (GetLogCallBackWithLevel() != nullptr) {
         const size_t kBufSize = 1024;
         char buf[kBufSize];
+        buf[0] = '\0';
 #ifdef _MSC_VER
         vsnprintf_s(buf, kBufSize, _TRUNCATE, format, val);
 #else

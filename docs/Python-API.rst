@@ -76,3 +76,5 @@ Utilities
     :toctree: pythonapi/
 
     register_logger
+    register_leveled_logger
+    unregister_leveled_logger

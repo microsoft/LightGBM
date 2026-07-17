@@ -59,16 +59,15 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 
 /*!
  * \brief Log level constants for use with ``LGBM_RegisterLogCallbackWithLevel``.
- * \note Severity ordering: Lower numeric values indicate more severe messages.
- * ``C_API_LOG_LEVEL_FATAL`` (-1) is most severe, and ``C_API_LOG_LEVEL_DEBUG`` (2) is least severe.
- * This follows the internal ``LogLevel`` enum and differs from Python logging conventions.
- * Callbacks should be careful not to use comparisons like ``level >= C_API_LOG_LEVEL_WARNING``
- * to filter "warnings and above", as that would include Info and Debug instead.
+ * \note Lower values are more severe: ``C_API_LOG_LEVEL_FATAL`` (-1) is the most severe level
+ * and ``C_API_LOG_LEVEL_DEBUG`` (2) the least. This matches the internal ``LogLevel`` enum but
+ * is the opposite of Python logging conventions, so filter "warnings and above" with
+ * ``level <= C_API_LOG_LEVEL_WARNING``; ``level >=`` would select Info and Debug instead.
  */
-#define C_API_LOG_LEVEL_FATAL   (-1)  /*!< \brief Fatal log level, for use with ``LGBM_RegisterLogCallbackWithLevel``. */
-#define C_API_LOG_LEVEL_WARNING  (0)  /*!< \brief Warning log level, for use with ``LGBM_RegisterLogCallbackWithLevel``. */
-#define C_API_LOG_LEVEL_INFO     (1)  /*!< \brief Info log level, for use with ``LGBM_RegisterLogCallbackWithLevel``. */
-#define C_API_LOG_LEVEL_DEBUG    (2)  /*!< \brief Debug log level, for use with ``LGBM_RegisterLogCallbackWithLevel``. */
+#define C_API_LOG_LEVEL_FATAL   (-1)  /*!< \brief Fatal log level. */
+#define C_API_LOG_LEVEL_WARNING  (0)  /*!< \brief Warning log level. */
+#define C_API_LOG_LEVEL_INFO     (1)  /*!< \brief Info log level. */
+#define C_API_LOG_LEVEL_DEBUG    (2)  /*!< \brief Debug log level. */
 
 /*!
  * \brief Get string message of the last error.
@@ -97,15 +96,17 @@ LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 /*!
  * \brief Register a callback function for log redirecting, with log level information.
  * \note
- * The callback receives the log level as an int (see ``C_API_LOG_LEVEL_*`` constants)
- * and the fully-assembled message body (without prefix or trailing newline).
- * Each log event produces exactly one callback invocation.
- * If both ``LGBM_RegisterLogCallback`` and this function are called on the same thread,
- * this callback takes precedence and the old callback is suppressed on that thread
- * (both for normal log messages and for fatal errors).
- * The callback must not throw; throwing from a C callback is undefined behaviour.
- * The callback is only invoked on the thread that called this function;
- * log messages from OpenMP worker threads will bypass the callback.
+ * The callback receives the log level (one of the ``C_API_LOG_LEVEL_*`` constants) and the
+ * formatted message body, with no prefix or trailing newline, truncated to at most 1023 bytes
+ * plus a null terminator. Each log event produces at most one invocation: none when the
+ * message is below the active verbosity, and none in R-package builds (``LGB_R_BUILD``),
+ * where this callback is never consulted.
+ * Registration is per-thread. On the registering thread this callback takes precedence over
+ * ``LGBM_RegisterLogCallback`` and also receives fatal errors, suppressing the stderr output
+ * they would otherwise produce (the plain callback is never invoked for fatal errors on any
+ * thread, whether or not this callback is registered).
+ * The callback is invoked only on the registering thread, so log messages from OpenMP worker
+ * threads bypass it. It must not throw: throwing from a C callback is undefined behaviour.
  * \param callback The callback function to register
  * \return 0 when succeed, -1 when failure happens
  */
@@ -114,9 +115,9 @@ LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallbackWithLevel(void (*callback)(int, co
 /*!
  * \brief Unregister the leveled log callback.
  * \note
- * This function resets the leveled callback pointer to ``nullptr`` on the calling thread.
- * This is useful for cleanup in multi-threaded scenarios or in test fixtures to avoid
- * dangling function pointers after the callback's lifetime ends.
+ * Resets the leveled callback to ``nullptr`` on the calling thread only; registrations on
+ * other threads are unaffected. Register and unregister a given thread's callback from that
+ * same thread.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_UnregisterLogCallbackWithLevel(void);
