@@ -545,7 +545,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/lightgbm-org/LightGBM/blob/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/lightgbm-org/LightGBM/blob/main/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -795,7 +795,7 @@ struct Config {
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
   // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-  // desc = see `this file <https://github.com/lightgbm-org/LightGBM/blob/master/examples/regression/forced_bins.json>`__ as an example
+  // desc = see `this file <https://github.com/lightgbm-org/LightGBM/blob/main/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
   // [no-save]

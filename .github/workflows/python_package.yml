@@ -3,9 +3,10 @@ name: Python-package
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
+      - main
       - master
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -426,7 +427,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \
@@ -462,7 +467,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \
@@ -477,8 +486,8 @@ jobs:
       - test
       - test-linux-aarch64
     runs-on: ubuntu-latest
-    # publish whenever a new commit is pushed to 'master'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # publish whenever a new commit is pushed to 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: nightly-python-uploads
       url: https://anaconda.org/lightgbm-packages/lightgbm
