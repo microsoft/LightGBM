@@ -20,7 +20,7 @@ $settings = @{
         }
         PSAvoidLongLines = @{
             Enable = $true
-            MaximumLineLength = 130
+            MaximumLineLength = 120
         }
         PSAvoidSemicolonsAsLineTerminators = @{
             Enable = $true
