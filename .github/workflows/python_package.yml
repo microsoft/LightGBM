@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -427,7 +426,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \
@@ -463,7 +466,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \

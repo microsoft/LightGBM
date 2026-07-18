@@ -1,8 +1,10 @@
 # coding: utf-8
+import filecmp
 import os
 import pickle
 from functools import lru_cache
 from inspect import getfullargspec
+from pathlib import Path
 
 import cloudpickle
 import joblib
@@ -277,3 +279,9 @@ class BuildInfo:
     has_cuda = os.getenv("TASK", "") == "cuda"
     has_gpu = os.getenv("TASK", "") == "gpu"
     has_mpi = os.getenv("TASK", "") == "mpi"
+
+
+def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset) -> None:
+    lhs._dump_text(tmp_path / "lhs.txt")
+    rhs._dump_text(tmp_path / "rhs.txt")
+    assert filecmp.cmp(tmp_path / "lhs.txt", tmp_path / "rhs.txt")

@@ -1,6 +1,4 @@
 # coding: utf-8
-import filecmp
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -8,7 +6,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal
+from .utils import assert_datasets_equal, np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
@@ -97,12 +95,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ----------------------------------------------------------------------------------------------- #
 
 # ------------------------------------------- DATASET ------------------------------------------- #
-
-
-def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
-    lhs._dump_text(tmp_path / "polars.txt")
-    rhs._dump_text(tmp_path / "pandas.txt")
-    assert filecmp.cmp(tmp_path / "polars.txt", tmp_path / "pandas.txt")
 
 
 @pytest.mark.parametrize(
@@ -227,6 +219,33 @@ def test_dataset_construct_groups(polars_type):
 
     expected = np.array([0, 2, 5], dtype=np.int32)
     np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
+
+
+# ------------------------------------------ POSITION ------------------------------------------- #
+
+
+@pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
+def test_dataset_construct_position(polars_type):
+    data = generate_dummy_polars_frame()
+    positions = pl.Series("position", [0, 1, 2, 3, 4], dtype=polars_type)
+    dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
+
+
+@pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
+def test_dataset_construct_position_with_duplicates_and_out_of_order(polars_type):
+    data = generate_dummy_polars_frame()
+    positions = pl.Series("position", [15, 15, 8, 27, 15], dtype=polars_type)
+    dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
+    dataset.construct()
+
+    # positions are remapped on the C++ side to dense indices in first-seen order:
+    # 15 -> 0, 8 -> 1, 27 -> 2
+    expected = np.array([0, 0, 1, 2, 0], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
 # ----------------------------------------- INIT SCORES ----------------------------------------- #
