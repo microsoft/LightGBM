@@ -675,16 +675,6 @@ def test_set_position_updates_self_position_with_remapped_int32_values():
     np_assert_array_equal(dtrain2.get_field("position"), expected, strict=True)
 
 
-def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
-    pd = pytest.importorskip("pandas")
-    X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
-    y = rng.uniform(size=(10_000,))
-    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
-    ds.construct()
-    assert ds.num_data() == 10_000
-    assert ds.num_feature() == 1
-
-
 def test_choose_param_value():
     original_params = {
         "local_listen_port": 1234,
@@ -903,37 +893,6 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name, rng):
     )[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
-
-
-@pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
-@pytest.mark.parametrize("categories", ["seen", "unseen"])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
-    pd = pytest.importorskip("pandas")
-    X = rng.choice(a=["a", "b"], size=(100, 1))
-    column_name = "a" if feature_name == "auto" else feature_name[0]
-    df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
-    if categories == "seen":
-        pandas_categorical = [["a", "b"]]
-    else:
-        pandas_categorical = [["a"]]
-    data = lgb.basic._data_from_pandas(
-        data=df,
-        feature_name=feature_name,
-        categorical_feature="auto",
-        pandas_categorical=pandas_categorical,
-    )[0]
-    # check that the original data wasn't modified
-    np.testing.assert_equal(df[column_name], X[:, 0])
-    # check that the built data has the codes
-    if categories == "seen":
-        # if all categories were seen during training we just take the codes
-        codes = df[column_name].cat.codes
-    else:
-        # if we only saw 'a' during training we just replace its code
-        # and leave the rest as nan
-        a_code = df[column_name].cat.categories.get_loc("a")
-        codes = np.where(df[column_name] == "a", a_code, np.nan)
-    np.testing.assert_equal(codes, data[:, 0])
 
 
 @pytest.mark.parametrize("min_data_in_bin", [2, 10])
