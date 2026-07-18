@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -59,6 +58,11 @@ jobs:
             task: cpp-tests
             compiler: msvc
             container: null
+          - os: ubuntu-24.04-ppc64le
+            task: cpp-tests
+            compiler: gcc
+            container: null
+            os-display-name: 'ubuntu24.04-ppc64le'
           ###########
           # if-else #
           ###########
@@ -128,7 +132,7 @@ jobs:
           export TASK="${{ matrix.task }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-24.04-ppc64le" ]]; then
               export OS_NAME="linux"
           fi
           if [[ "${{ matrix.container }}" == "ubuntu:22.04" ]]; then
