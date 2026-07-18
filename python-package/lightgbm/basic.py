@@ -828,12 +828,14 @@ def _data_from_narwhals(
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
     if cat_cols:  # cat_cols is list
+        exprs = []
         for col, categories in zip(cat_cols, pandas_categorical, strict=True):
             cat_to_code = {cat: i for i, cat in enumerate(categories)}
             # cast Enum -> Categorical (open domain) so replace_strict doesn't coerce the
             # mapping keys into a closed Enum domain when train and valid categories differ.
             series = data.get_column(col).cast(nw.Categorical)
-            data = data.with_columns(series.replace_strict(cat_to_code, default=None).alias(col))
+            exprs.append(series.replace_strict(cat_to_code, default=None).alias(col))
+        data = data.with_columns(exprs)
 
     # use cat cols from DataFrame
     if categorical_feature == "auto":
