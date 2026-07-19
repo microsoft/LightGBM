@@ -12,6 +12,7 @@ import abc
 import ctypes
 import inspect
 import json
+import numbers
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
@@ -903,6 +904,120 @@ class Sequence(abc.ABC):
     def __len__(self) -> int:
         """Return row count of this sequence."""
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __len__()")
+
+    @staticmethod
+    def from_lazy_frame(lf: Any, chunk_size: int = 65536) -> "Sequence":
+        """Create a Sequence that reads a narwhals-compatible LazyFrame in batches.
+
+        This enables training on datasets that are too large to fit in RAM by streaming
+        data from disk or remote object stores (e.g. Amazon S3 via ``polars.scan_parquet``)
+        without ever materialising the full frame.
+
+        For Polars-backed frames, each batch is fetched with the native ``.slice()`` method,
+        which avoids reading rows outside the requested window — important for columnar
+        remote storage.  Other backends fall back to ``.head(offset + length).tail(length)``.
+
+        Parameters
+        ----------
+        lf : narwhals.LazyFrame or polars.LazyFrame
+            A narwhals-compatible lazy frame (e.g. ``polars.scan_parquet("s3://...")`` or
+            ``narwhals.from_native(polars.scan_parquet(...))``.
+        chunk_size : int, optional (default=65536)
+            Number of rows per read batch.
+
+        Returns
+        -------
+        result : Sequence
+            A Sequence that lazily fetches ``lf`` in batches of ``chunk_size`` rows.
+
+        Examples
+        --------
+        >>> import polars as pl
+        >>> import lightgbm as lgb
+        >>> lf = pl.scan_parquet("train.parquet")
+        >>> seq = lgb.Sequence.from_lazy_frame(lf, chunk_size=65536)
+        >>> ds = lgb.Dataset(seq, label=y, feature_name=lf.collect_schema().names())
+        >>> lgb.train(params, ds)
+
+        .. versionadded:: 4.7.0
+        """
+        if not (nwd.is_narwhals_lazyframe(lf) or nwd.is_polars_lazyframe(lf)):
+            raise TypeError(
+                f"Expected a narwhals-compatible LazyFrame, got {type(lf).__name__}. "
+                "Pass a Polars LazyFrame (e.g. pl.scan_parquet(...)) or wrap one with narwhals.from_native()."
+            )
+        nw_lf = lf if nwd.is_narwhals_lazyframe(lf) else nw.from_native(lf)
+        return _NarwhalsLazySequence(nw_lf, batch_size=chunk_size)
+
+
+class _NarwhalsLazySequence(Sequence):
+    """Adapts a narwhals LazyFrame to LightGBM's Sequence API for out-of-core dataset construction.
+
+    Enables chunked loading from Polars scan_parquet/scan_csv (including S3 sources via
+    Polars' native S3 support) without materialising the full dataset into memory.
+
+    For Polars-backed lazy frames, each chunk is fetched with the native ``.slice()`` method
+    which avoids reading rows outside the requested window (important for columnar remote storage).
+    For all other backends the implementation falls back to materialising the needed window
+    via ``.head(offset + length).tail(length)`` — correct but less efficient for large offsets.
+
+    Parameters
+    ----------
+    lf : narwhals.LazyFrame
+        Lazy frame to wrap.  Must already be wrapped with ``nw.from_native()``.
+    batch_size : int, optional (default=65536)
+        Number of rows per read batch.
+    """
+
+    def __init__(self, lf: "nw.LazyFrame", batch_size: int = 65536) -> None:
+        schema = lf.collect_schema()
+        self._col_names: List[str] = list(schema.names())
+        self._lf = lf
+        # Keep a handle to the native frame; only Polars supports efficient .slice().
+        native = lf.to_native()
+        self._polars_native = native if nwd.is_polars_lazyframe(native) else None
+        # Row count: cheap on Polars and DuckDB, may trigger a full scan on Dask/Spark.
+        self._n_rows: int = lf.select(nw.len()).collect().item()
+        self.batch_size = batch_size
+
+    def __len__(self) -> int:
+        return self._n_rows
+
+    def __getitem__(self, idx: Any) -> np.ndarray:
+        if isinstance(idx, numbers.Integral):
+            # Scalar int: return a 1-D array (one row) as required by the Sequence protocol.
+            return self._fetch2d(int(idx), 1)[0]
+        elif isinstance(idx, slice):
+            start = idx.start or 0
+            stop = min(idx.stop if idx.stop is not None else self._n_rows, self._n_rows)
+            return self._fetch2d(start, max(0, stop - start))
+        elif isinstance(idx, (np.ndarray, list)):
+            # Random-index access used by LightGBM for histogram-binning sample selection.
+            # Fetch the smallest covering range and then sub-select locally to avoid
+            # issuing one remote read per row.
+            indices = np.sort(np.unique(np.asarray(idx, dtype=np.intp)))
+            if len(indices) == 0:
+                return np.empty((0, len(self._col_names)), dtype=np.float64)
+            lo, hi = int(indices[0]), int(indices[-1])
+            chunk = self._fetch2d(lo, hi - lo + 1)
+            return chunk[indices - lo]
+        else:
+            raise TypeError(f"Sequence index must be int, slice, or array-like, got {type(idx).__name__}")
+
+    def _fetch2d(self, offset: int, length: int) -> np.ndarray:
+        """Materialise ``length`` rows starting at ``offset`` and return a 2-D float64 array."""
+        if self._polars_native is not None:
+            # Fast path: Polars' .slice() reads only the requested row range,
+            # which is predicate-pushed to the storage layer for Parquet sources.
+            chunk = nw.from_native(self._polars_native.slice(offset, length)).collect()
+        else:
+            # Fallback for non-Polars backends: read from the beginning up to
+            # offset+length and keep the last ``length`` rows.
+            chunk = self._lf.head(offset + length).tail(length).collect()
+        cols = [np.asarray(chunk[col], dtype=np.float64) for col in self._col_names]
+        if len(cols) == 1:
+            return cols[0].reshape(-1, 1)
+        return np.column_stack(cols)
 
 
 class _InnerPredictor:

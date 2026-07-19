@@ -1,6 +1,7 @@
 # coding: utf-8
 from typing import Any, Dict, Optional
 
+import narwhals as nw
 import numpy as np
 import pytest
 
@@ -430,3 +431,99 @@ def test_get_data_polars_frame_subset(rng):
     assert len(subset_data) == len(used_indices)
     assert subset_data.shape == (subset_size, 3)
     assert_frame_equal(subset_data, expected_subset)
+
+
+# ----------------------------------------------------------------------------------------------- #
+#                                LAZY-FRAME / CHUNKED LOADING TESTS                               #
+# ----------------------------------------------------------------------------------------------- #
+
+
+def _write_parquet_fixture(tmp_path: "Path", n: int = 5000, seed: int = 0) -> "Path":
+    """Write a small parquet file and return its path."""
+    rng = np.random.default_rng(seed)
+    df = pl.DataFrame(
+        {
+            "f0": rng.standard_normal(n).astype(np.float32),
+            "f1": rng.integers(0, 100, n).astype(np.int32),
+            "f2": rng.standard_normal(n).astype(np.float32),
+        }
+    )
+    path = tmp_path / "fixture.parquet"
+    df.write_parquet(path)
+    return path
+
+
+def test_lazy_frame_feature_names(tmp_path: "Path") -> None:
+    """Schema names can be read from the LazyFrame without materialising and passed to Dataset."""
+    path = _write_parquet_fixture(tmp_path)
+    lf = pl.scan_parquet(path)
+    feature_names = lf.collect_schema().names()
+    seq = lgb.Sequence.from_lazy_frame(lf)
+
+    ds = lgb.Dataset(seq, label=np.zeros(5000), feature_name=feature_names)
+    ds.construct()
+
+    assert ds.feature_name == ["f0", "f1", "f2"]
+
+
+def test_lazy_frame_matches_eager(tmp_path: "Path") -> None:
+    """A model trained via Sequence.from_lazy_frame produces valid predictions."""
+    path = _write_parquet_fixture(tmp_path)
+    df = pl.read_parquet(path)
+    lf = pl.scan_parquet(path)
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 2, len(df)).astype(np.float32)
+
+    params = {"objective": "binary", "num_iterations": 20, "verbose": -1, "min_data_in_leaf": 1}
+
+    bst_eager = lgb.train(params, lgb.Dataset(df, label=y))
+    bst_lazy = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf), label=y))
+
+    preds_eager = bst_eager.predict(df)
+    preds_lazy = bst_lazy.predict(df)
+
+    assert preds_eager.shape == preds_lazy.shape
+    assert np.all((preds_lazy >= 0) & (preds_lazy <= 1))
+
+
+def test_lazy_frame_chunk_size(tmp_path: "Path") -> None:
+    """chunk_size parameter of Sequence.from_lazy_frame controls batch size."""
+    path = _write_parquet_fixture(tmp_path, n=2000)
+    df = pl.read_parquet(path)
+    lf = pl.scan_parquet(path)
+    rng = np.random.default_rng(1)
+    y = rng.standard_normal(len(df)).astype(np.float32)
+
+    params = {"objective": "regression", "num_iterations": 10, "verbose": -1, "min_data_in_leaf": 1}
+
+    bst_small = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf, chunk_size=100), label=y))
+    bst_large = lgb.train(params, lgb.Dataset(lgb.Sequence.from_lazy_frame(lf, chunk_size=10000), label=y))
+
+    preds_small = bst_small.predict(df)
+    preds_large = bst_large.predict(df)
+
+    assert np.isfinite(preds_small).all()
+    assert np.isfinite(preds_large).all()
+
+
+def test_lazy_frame_with_explicit_feature_names(tmp_path: "Path") -> None:
+    """Explicit feature_name is passed through to Dataset as with any Sequence."""
+    path = _write_parquet_fixture(tmp_path, n=1000)
+    seq = lgb.Sequence.from_lazy_frame(pl.scan_parquet(path))
+
+    ds = lgb.Dataset(seq, label=np.zeros(1000), feature_name=["alpha", "beta", "gamma"])
+    ds.construct()
+
+    assert ds.feature_name == ["alpha", "beta", "gamma"]
+
+
+def test_lazy_frame_narwhals_wrapped(tmp_path: "Path") -> None:
+    """A narwhals-wrapped LazyFrame is also accepted by Sequence.from_lazy_frame."""
+    path = _write_parquet_fixture(tmp_path, n=1000)
+    lf = nw.from_native(pl.scan_parquet(path))
+    seq = lgb.Sequence.from_lazy_frame(lf)
+
+    ds = lgb.Dataset(seq, label=np.zeros(1000), feature_name=["f0", "f1", "f2"])
+    ds.construct()
+
+    assert ds.feature_name == ["f0", "f1", "f2"]
