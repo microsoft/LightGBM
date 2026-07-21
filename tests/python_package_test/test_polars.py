@@ -492,7 +492,7 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_polars_categorical_with_null_values(tmp_path):
+def test_polars_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
     values = ["a", "b", None, "a", None]
 

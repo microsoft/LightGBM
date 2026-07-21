@@ -88,9 +88,10 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_pandas_categorical_with_null_values(tmp_path):
+@pytest.mark.parametrize("missing_value", [None, np.nan])
+def test_pandas_categorical_with_missing_values(tmp_path, missing_value):
     categories = ["a", "b"]
-    values = ["a", "b", None, "a", None]
+    values = ["a", "b", missing_value, "a", missing_value]
 
     df = pd.DataFrame({"cat": pd.Categorical(values, categories=categories), "num": [1.0, 2.0, 3.0, 4.0, 5.0]})
     y = [0, 1, 0, 1, 0]
