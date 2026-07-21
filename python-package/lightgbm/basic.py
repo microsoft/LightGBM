@@ -817,13 +817,7 @@ def _data_from_narwhals(
         ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not nw.is_ordered_categorical(data.get_column(col))]
     if pandas_categorical is None:  # train dataset
-        if data.implementation.is_polars():
-            # Use per-column observed values instead of Polars categorical metadata.
-            # Polars categories can be unstable due to the global string cache, which
-            # can leak categories across columns / slices and corrupt train->valid mapping.
-            pandas_categorical = [data.get_column(col).unique().drop_nulls().sort().to_list() for col in cat_cols]
-        else:
-            pandas_categorical = [data.get_column(col).cat.get_categories().to_list() for col in cat_cols]
+        pandas_categorical = [sorted(data.get_column(col).unique().drop_nulls().to_list()) for col in cat_cols]
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
