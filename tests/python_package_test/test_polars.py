@@ -492,6 +492,33 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
+def test_polars_categorical_with_null_values(tmp_path):
+    categories = ["a", "b"]
+    values = ["a", "b", None, "a", None]
+
+    X = pl.DataFrame(
+        {
+            "cat": pl.Series(values, dtype=pl.Categorical(ordering="lexical")),
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    y = [0, 1, 0, 1, 0]
+
+    ds = lgb.Dataset(X, label=y, params={"min_data_in_bin": 1})
+    ds.construct()
+    assert ds.pandas_categorical[0] == categories
+
+    ref_df = pl.DataFrame(
+        {
+            "cat": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params={"min_data_in_bin": 1})
+    ref_ds.construct()
+    assert_datasets_equal(tmp_path, ds, ref_ds)
+
+
 def test_polars_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     X = pl.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
     y = rng.uniform(size=(10_000,))

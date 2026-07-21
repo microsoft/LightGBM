@@ -821,18 +821,17 @@ def _data_from_narwhals(
             # Use per-column observed values instead of Polars categorical metadata.
             # Polars categories can be unstable due to the global string cache, which
             # can leak categories across columns / slices and corrupt train->valid mapping.
-            pandas_categorical = [data.get_column(col).unique().sort().to_list() for col in cat_cols]
+            pandas_categorical = [data.get_column(col).unique().drop_nulls().sort().to_list() for col in cat_cols]
         else:
             pandas_categorical = [data.get_column(col).cat.get_categories().to_list() for col in cat_cols]
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")
     if cat_cols:  # cat_cols is list
-        exprs = []
-        for col, categories in zip(cat_cols, pandas_categorical, strict=True):
-            cat_to_code = {cat: i for i, cat in enumerate(categories)}
-            exprs.append(nw.col(col).replace_strict(cat_to_code, default=None).alias(col))
-        data = data.with_columns(exprs)
+        data = data.with_columns(
+            nw.col(col).replace_strict({cat: i for i, cat in enumerate(categories)}, default=None).alias(col)
+            for col, categories in zip(cat_cols, pandas_categorical, strict=True)
+        )
 
     # use cat cols from DataFrame
     if categorical_feature == "auto":
