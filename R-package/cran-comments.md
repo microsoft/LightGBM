@@ -1,10 +1,25 @@
 # CRAN Submission History
 
-## v4.7.0 - Submission 1 - (TBD)
+## v4.7.0 - Submission 1 - (July 18, 2026)
 
 ### CRAN response
 
+Accepted to CRAN
+
 ### Maintainer Notes
+
+This fixed the following issue reported by CRAN for several check flavors.
+
+```text
+Version: 4.6.0
+Check: whether package can be installed
+Result: WARN
+  Found the following significant warnings:
+    Warning: src/Makevars.win: Unknown C++ standard '@CXX_STD@' was ignored
+  See 'd:/Rcompile/CRANpkg/local/4.6/lightgbm.Rcheck/00install.out' for details.
+  * used C++ compiler: 'g++.exe (GCC) 14.3.0'
+Flavor: r-release-windows-x86_64
+```
 
 ## v4.6.0 - Submission 1 - (February 13, 2025)
 
