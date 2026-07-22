@@ -285,6 +285,42 @@ def test_dataset_construct_groups(group_data, arrow_type):
     np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
 
 
+# ------------------------------------------ POSITION ------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    "position_data",
+    [
+        [[0, 1, 2, 3, 4]],
+        [[0, 1, 2], [3, 4]],
+        [[], [0, 1, 2], [3, 4]],
+        [[0, 1], [], [2], [3, 4], []],
+    ],
+)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
+def test_dataset_construct_position(position_data, arrow_type):
+    data = generate_dummy_arrow_table()
+    positions = pa.chunked_array(position_data, type=arrow_type)
+    dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
+
+
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
+def test_dataset_construct_position_with_duplicates_and_out_of_order(arrow_type):
+    data = generate_dummy_arrow_table()
+    positions = pa.chunked_array([[15, 15, 8, 27, 15]], type=arrow_type)
+    dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
+    dataset.construct()
+
+    # positions are remapped on the C++ side to dense indices in first-seen order:
+    # 15 -> 0, 8 -> 1, 27 -> 2
+    expected = np.array([0, 0, 1, 2, 0], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
+
+
 # ----------------------------------------- INIT SCORES ----------------------------------------- #
 
 

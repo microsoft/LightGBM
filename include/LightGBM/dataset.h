@@ -124,6 +124,8 @@ class Metadata {
   void SetQuery(int64_t n_chunks, struct ArrowArray* chunks, struct ArrowSchema* schema);
 
   void SetPosition(const data_size_t* position, data_size_t len);
+  void SetPosition(struct ArrowArrayStream* stream);
+  void SetPosition(int64_t n_chunks, struct ArrowArray* chunks, struct ArrowSchema* schema);
 
   /*!
   * \brief Set initial scores
