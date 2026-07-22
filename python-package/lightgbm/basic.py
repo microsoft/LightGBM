@@ -788,11 +788,11 @@ def _pandas_df_to_numpy(data: pd_DataFrame) -> np.ndarray:
 
 
 def _data_from_narwhals(
-    data: Any,
+    data: nwt.IntoDataFrame,
     feature_name: _LGBM_FeatureNameConfiguration,
     categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]],
-) -> Tuple[Any, List[str], Union[List[str], List[int]], List[List]]:
+) -> Tuple[nwt.IntoDataFrame, List[str], Union[List[str], List[int]], List[List]]:
     data = nw.from_native(data)
 
     # validation
