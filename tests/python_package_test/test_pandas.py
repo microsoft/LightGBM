@@ -1,4 +1,5 @@
 # coding: utf-8
+from typing import Any, Dict
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -10,6 +11,22 @@ from .utils import assert_datasets_equal
 
 pd = pytest.importorskip("pandas")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#                                            UTILITIES                                            #
+# ----------------------------------------------------------------------------------------------- #
+
+
+def dummy_dataset_params() -> Dict[str, Any]:
+    return {
+        "min_data_in_bin": 1,
+        "min_data_in_leaf": 1,
+    }
+
+
+# ----------------------------------------------------------------------------------------------- #
+#                                            UNIT TESTS                                           #
+# ----------------------------------------------------------------------------------------------- #
 
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
@@ -32,7 +49,7 @@ def test_pandas_categorical_encoding(tmp_path):
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 5
@@ -55,7 +72,7 @@ def test_pandas_categorical_encoding(tmp_path):
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)
@@ -66,12 +83,11 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
     train_df = pd.DataFrame({"cat_col": pd.Categorical(train_values), "num_col": [1.0, 2.0, 3.0, 4.0, 5.0]})
     valid_df = pd.DataFrame({"cat_col": pd.Categorical(valid_values), "num_col": [6.0, 7.0, 8.0, 9.0, 10.0]})
 
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=params)
-    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     train_ds.construct()
     valid_ds.construct()
 
@@ -82,10 +98,67 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
             "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
-    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
+def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
+    # Train sees: ordered a(0),c(2) and unordered a(0),b(1)
+    train_df = pd.DataFrame(
+        {
+            "ordered_col": pd.Categorical(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": pd.Categorical(["a", "b", "b"], categories=["a", "b", "c"]),
+        }
+    )
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
+    train_ds.construct()
+
+    # Valid: ordered has b(1, interpolated) and d(3, clipped); unordered has c(2, unseen)
+    valid_df = pd.DataFrame(
+        {
+            "ordered_col": pd.Categorical(["a", "b", "d"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": pd.Categorical(["a", "c", "b"], categories=["a", "b", "c"]),
+        }
+    )
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    valid_ds.construct()
+
+    # Reference: ordered b,d both map to same bin as c; unordered c maps to NaN
+    ref_valid_df = pd.DataFrame(
+        {
+            "ordered_col": pd.Categorical(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": pd.Categorical(["a", None, "b"], categories=["a", "b", "c"]),
+        }
+    )
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    ref_valid_ds.construct()
+
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
+@pytest.mark.parametrize("missing_value", [None, np.nan])
+def test_pandas_categorical_with_missing_values(tmp_path, missing_value):
+    categories = ["a", "b"]
+    values = ["a", "b", missing_value, "a", missing_value]
+
+    df = pd.DataFrame({"cat": pd.Categorical(values, categories=categories), "num": [1.0, 2.0, 3.0, 4.0, 5.0]})
+    y = [0, 1, 0, 1, 0]
+
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
+    ds.construct()
+    assert ds.pandas_categorical[0] == categories
+
+    ref_df = pd.DataFrame(
+        {
+            "cat": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params=dummy_dataset_params())
+    ref_ds.construct()
+    assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
 def test_pandas_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
@@ -158,7 +231,7 @@ def test_pandas_supported_dtypes(tmp_path, dtype, values):
     df = pd.DataFrame({"test_col": pd.Series(values, dtype=dtype), "num_col": [4.0, 5.0, 6.0]})
     y = [0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 3
@@ -168,7 +241,7 @@ def test_pandas_supported_dtypes(tmp_path, dtype, values):
 
     # Verify values are preserved
     ref_df = pd.DataFrame({"test_col": values, "num_col": [4.0, 5.0, 6.0]})
-    ref_ds = lgb.Dataset(ref_df, label=y, params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)
