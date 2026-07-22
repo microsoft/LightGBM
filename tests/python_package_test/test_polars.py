@@ -427,7 +427,7 @@ def test_polars_categorical_encoding(tmp_path):
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 5
@@ -450,7 +450,7 @@ def test_polars_categorical_encoding(tmp_path):
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)
@@ -460,7 +460,7 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
+    params = dummy_dataset_params()
     train_df = pl.DataFrame(
         {
             "cat_col": pl.Series(train_values, dtype=pl.Categorical(ordering="lexical")),
@@ -492,6 +492,42 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
+def test_polars_categorical_encoding_registered_but_unobserved(tmp_path):
+    params = dummy_dataset_params()
+
+    # Train sees: Enum a(0),c(2) and Categorical a,b
+    train_df = pl.DataFrame(
+        {
+            "ordered_col": pl.Series(["a", "c", "c"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
+            "unordered_col": pl.Series(["a", "b", "b"], dtype=pl.Categorical(ordering="lexical")),
+        }
+    )
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=params)
+    train_ds.construct()
+
+    # Valid: Enum has b(1, interpolated) and d(3, clipped); Categorical has c (unseen)
+    valid_df = pl.DataFrame(
+        {
+            "ordered_col": pl.Series(["a", "b", "d"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
+            "unordered_col": pl.Series(["a", "c", "b"], dtype=pl.Categorical(ordering="lexical")),
+        }
+    )
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    valid_ds.construct()
+
+    # Reference: Enum b,d both map to same bin as c; Categorical c maps to NaN
+    ref_valid_df = pl.DataFrame(
+        {
+            "ordered_col": pl.Series(["a", "c", "c"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
+            "unordered_col": pl.Series(["a", None, "b"], dtype=pl.Categorical(ordering="lexical")),
+        }
+    )
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    ref_valid_ds.construct()
+
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
 def test_polars_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
     values = ["a", "b", None, "a", None]
@@ -504,7 +540,7 @@ def test_polars_categorical_with_missing_values(tmp_path):
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(X, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(X, label=y, params=dummy_dataset_params())
     ds.construct()
     assert ds.pandas_categorical[0] == categories
 
@@ -514,7 +550,7 @@ def test_polars_categorical_with_missing_values(tmp_path):
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params=dummy_dataset_params())
     ref_ds.construct()
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
@@ -552,7 +588,7 @@ def test_polars_supported_dtypes(tmp_path, dtype, values):
     df = pl.DataFrame({"test_col": pl.Series(values, dtype=dtype), "num_col": [4.0, 5.0, 6.0]})
     y = [0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 3
@@ -562,7 +598,7 @@ def test_polars_supported_dtypes(tmp_path, dtype, values):
 
     # Verify values are preserved
     ref_df = pl.DataFrame({"test_col": values, "num_col": [4.0, 5.0, 6.0]})
-    ref_ds = lgb.Dataset(ref_df, label=y, params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)

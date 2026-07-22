@@ -817,7 +817,16 @@ def _data_from_narwhals(
         ]
     cat_cols_not_ordered: List[str] = [col for col in cat_cols if not nw.is_ordered_categorical(data.get_column(col))]
     if pandas_categorical is None:  # train dataset
-        pandas_categorical = [sorted(data.get_column(col).unique().drop_nulls().to_list()) for col in cat_cols]
+        # Ordered categoricals (Enum / ordered dict) use the full category list from dtype metadata,
+        # preserving unobserved categories and their ordering (treated as numeric features).
+        # Unordered categoricals use only observed values sorted for determinism; the C++ bin mapper
+        # only creates bins for values seen in training, so unobserved categories map to NaN anyway.
+        pandas_categorical = [
+            data.get_column(col).cat.get_categories().to_list()
+            if nw.is_ordered_categorical(data.get_column(col))
+            else sorted(data.get_column(col).unique().drop_nulls().to_list())
+            for col in cat_cols
+        ]
     else:
         if len(cat_cols) != len(pandas_categorical):
             raise ValueError("train and valid dataset categorical_feature do not match.")

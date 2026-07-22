@@ -538,7 +538,7 @@ def test_arrow_categorical_encoding(tmp_path):
     )
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 5
@@ -563,7 +563,7 @@ def test_arrow_categorical_encoding(tmp_path):
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)
@@ -574,7 +574,7 @@ def test_arrow_categorical_encoding_unseen_category(tmp_path):
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    params = {"min_data_in_bin": 1, "min_data_in_leaf": 1}
+    params = dummy_dataset_params()
     train_df = pa.table(
         {"cat_col": _arrow_dict_array(train_values, categories=train_categories), "num_col": [1.0, 2.0, 3.0, 4.0, 5.0]}
     )
@@ -598,6 +598,42 @@ def test_arrow_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
+def test_arrow_categorical_encoding_registered_but_unobserved(tmp_path):
+    params = dummy_dataset_params()
+
+    # Train sees: ordered a(0),c(2) and unordered a(0),b(1)
+    train_df = pa.table(
+        {
+            "ordered_col": _arrow_dict_array(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": _arrow_dict_array(["a", "b", "b"], categories=["a", "b", "c"]),
+        }
+    )
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=params)
+    train_ds.construct()
+
+    # Valid: ordered has b(1, interpolated) and d(3, clipped); unordered has c(2, unseen)
+    valid_df = pa.table(
+        {
+            "ordered_col": _arrow_dict_array(["a", "b", "d"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": _arrow_dict_array(["a", "c", "b"], categories=["a", "b", "c"]),
+        }
+    )
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    valid_ds.construct()
+
+    # Reference: ordered b,d both map to same bin as c; unordered c maps to NaN
+    ref_valid_df = pa.table(
+        {
+            "ordered_col": _arrow_dict_array(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
+            "unordered_col": _arrow_dict_array(["a", None, "b"], categories=["a", "b", "c"]),
+        }
+    )
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    ref_valid_ds.construct()
+
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
 def test_arrow_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
     values = ["a", "b", None, "a", None]
@@ -606,7 +642,7 @@ def test_arrow_categorical_with_missing_values(tmp_path):
     X = pa.table({"cat": pa.array(values, type=cat_type), "num": [1.0, 2.0, 3.0, 4.0, 5.0]})
     y = [0, 1, 0, 1, 0]
 
-    ds = lgb.Dataset(X, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(X, label=y, params=dummy_dataset_params())
     ds.construct()
     assert ds.pandas_categorical[0] == categories
 
@@ -616,7 +652,7 @@ def test_arrow_categorical_with_missing_values(tmp_path):
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params=dummy_dataset_params())
     ref_ds.construct()
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
@@ -654,7 +690,7 @@ def test_arrow_supported_dtypes(tmp_path, dtype, values):
     df = pa.table({"test_col": pa.array(values, type=dtype), "num_col": [4.0, 5.0, 6.0]})
     y = [0, 1, 0]
 
-    ds = lgb.Dataset(df, label=y, params={"min_data_in_bin": 1})
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
 
     assert ds.num_data() == 3
@@ -664,7 +700,7 @@ def test_arrow_supported_dtypes(tmp_path, dtype, values):
 
     # Verify values are preserved
     ref_df = pa.table({"test_col": pa.array(values), "num_col": [4.0, 5.0, 6.0]})
-    ref_ds = lgb.Dataset(ref_df, label=y, params={"min_data_in_bin": 1})
+    ref_ds = lgb.Dataset(ref_df, label=y, params=dummy_dataset_params())
     ref_ds.construct()
 
     assert_datasets_equal(tmp_path, ds, ref_ds)
