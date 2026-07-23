@@ -111,7 +111,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
         (lambda: generate_random_polars_frame(num_columns=100, num_datapoints=10000, seed=43), {}),
     ],
 )
-def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
+def test_polars_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
     polars_frame = polars_frame_fn()
 
     polars_dataset = lgb.Dataset(polars_frame, params=dataset_params)
@@ -123,7 +123,7 @@ def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
     assert_datasets_equal(tmp_path, polars_dataset, pandas_dataset)
 
 
-def test_dataset_construct_fuzzy_boolean(tmp_path):
+def test_polars_dataset_construct_fuzzy_boolean(tmp_path):
     boolean_data = generate_random_polars_frame(
         num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
     )
@@ -141,7 +141,7 @@ def test_dataset_construct_fuzzy_boolean(tmp_path):
 # -------------------------------------------- FIELDS ------------------------------------------- #
 
 
-def test_dataset_construct_fields_fuzzy():
+def test_polars_dataset_construct_fields_fuzzy():
     polars_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     polars_labels = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
     polars_weights = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
@@ -177,7 +177,7 @@ def test_dataset_construct_fields_fuzzy():
 
 
 @pytest.mark.parametrize("polars_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_dataset_construct_labels(polars_type):
+def test_polars_dataset_construct_labels(polars_type):
     data = generate_dummy_polars_frame()
     labels = pl.Series("label", [0, 1, 0, 0, 1], dtype=polars_type)
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
@@ -188,7 +188,7 @@ def test_dataset_construct_labels(polars_type):
     np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
-def test_dataset_construct_labels_boolean():
+def test_polars_dataset_construct_labels_boolean():
     data = generate_dummy_polars_frame()
     labels = pl.Series("label", [False, True, False, False, True], dtype=pl.Boolean)
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
@@ -202,7 +202,7 @@ def test_dataset_construct_labels_boolean():
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
 
 
-def test_dataset_construct_weights_none():
+def test_polars_dataset_construct_weights_none():
     data = generate_dummy_polars_frame()
     weight = pl.Series("weight", [1, 1, 1, 1, 1], dtype=pl.Float32)
     dataset = lgb.Dataset(data, weight=weight, params=dummy_dataset_params())
@@ -212,7 +212,7 @@ def test_dataset_construct_weights_none():
 
 
 @pytest.mark.parametrize("polars_type", _FLOAT_TYPES)
-def test_dataset_construct_weights(polars_type):
+def test_polars_dataset_construct_weights(polars_type):
     data = generate_dummy_polars_frame()
     weights = pl.Series("weight", [3, 0.7, 1.5, 0.5, 0.1], dtype=polars_type)
     dataset = lgb.Dataset(data, weight=weights, params=dummy_dataset_params())
@@ -227,7 +227,7 @@ def test_dataset_construct_weights(polars_type):
 
 
 @pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
-def test_dataset_construct_groups(polars_type):
+def test_polars_dataset_construct_groups(polars_type):
     data = generate_dummy_polars_frame()
     groups = pl.Series("group", [2, 3], dtype=polars_type)
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
@@ -243,7 +243,7 @@ def test_dataset_construct_groups(polars_type):
 
 
 @pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
-def test_dataset_construct_position(polars_type):
+def test_polars_dataset_construct_position(polars_type):
     data = generate_dummy_polars_frame()
     positions = pl.Series("position", [0, 1, 2, 3, 4], dtype=polars_type)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -255,7 +255,7 @@ def test_dataset_construct_position(polars_type):
 
 
 @pytest.mark.parametrize("polars_type", _INTEGER_TYPES)
-def test_dataset_construct_position_with_duplicates_and_out_of_order(polars_type):
+def test_polars_dataset_construct_position_with_duplicates_and_out_of_order(polars_type):
     data = generate_dummy_polars_frame()
     positions = pl.Series("position", [15, 15, 8, 27, 15], dtype=polars_type)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -272,7 +272,7 @@ def test_dataset_construct_position_with_duplicates_and_out_of_order(polars_type
 
 
 @pytest.mark.parametrize("polars_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_dataset_construct_init_scores_array(polars_type):
+def test_polars_dataset_construct_init_scores_array(polars_type):
     data = generate_dummy_polars_frame()
     init_scores = pl.Series("init_score", [0, 1, 2, 3, 3], dtype=polars_type)
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -283,7 +283,7 @@ def test_dataset_construct_init_scores_array(polars_type):
     np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
-def test_dataset_construct_init_scores_table():
+def test_polars_dataset_construct_init_scores_table():
     data = generate_dummy_polars_frame()
     init_scores = pl.DataFrame(
         {
@@ -327,7 +327,7 @@ def assert_equal_predict_polars_pandas(booster: lgb.Booster, data: pl.DataFrame)
     np_assert_array_equal(p_first_iter_polars, p_first_iter_pandas, strict=True)
 
 
-def test_predict_regression():
+def test_polars_predict_regression():
     data_float = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     data_bool = generate_random_polars_frame(
         num_columns=1, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
@@ -347,7 +347,7 @@ def test_predict_regression():
     assert_equal_predict_polars_pandas(booster, data)
 
 
-def test_predict_binary_classification():
+def test_polars_predict_binary_classification():
     data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -362,7 +362,7 @@ def test_predict_binary_classification():
     assert_equal_predict_polars_pandas(booster, data)
 
 
-def test_predict_multiclass_classification():
+def test_polars_predict_multiclass_classification():
     data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -377,7 +377,7 @@ def test_predict_multiclass_classification():
     assert_equal_predict_polars_pandas(booster, data)
 
 
-def test_predict_ranking():
+def test_polars_predict_ranking():
     data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -418,7 +418,7 @@ def test_polars_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
-def test_get_data_polars_frame():
+def test_polars_get_data_frame():
     from polars.testing import assert_frame_equal  # noqa: PLC0415
 
     original_frame = generate_simple_polars_frame()
@@ -432,7 +432,7 @@ def test_get_data_polars_frame():
     assert_frame_equal(returned_data, original_frame)
 
 
-def test_get_data_polars_frame_subset(rng):
+def test_polars_get_data_frame_subset(rng):
     from polars.testing import assert_frame_equal  # noqa: PLC0415
 
     original_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
