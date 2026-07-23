@@ -89,7 +89,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
 
 @pytest.mark.parametrize(
     "pandas_frame_fn",
-    [
+    [  # Use lambda functions here to minimize memory consumption
         generate_simple_pandas_frame,
         generate_dummy_pandas_frame,
         lambda: generate_random_pandas_frame(num_columns=3, num_datapoints=1000, seed=42),
@@ -102,7 +102,6 @@ def test_pandas_dataset_construct_fuzzy(tmp_path, pandas_frame_fn):
     ds1 = lgb.Dataset(df, params=dummy_dataset_params())
     ds1.construct()
 
-    # Construct a second dataset from the same data to verify determinism
     ds2 = lgb.Dataset(df.copy(), params=dummy_dataset_params())
     ds2.construct()
 
