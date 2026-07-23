@@ -171,6 +171,7 @@ def test_pandas_dataset_construct_labels(dtype):
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_label(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
@@ -194,6 +195,7 @@ def test_pandas_dataset_construct_weights(dtype):
 
     expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_weight(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("weight"), strict=True)
 
 
 # -------------------------------------------- GROUPS ------------------------------------------- #
@@ -206,8 +208,10 @@ def test_pandas_dataset_construct_groups(dtype):
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
     dataset.construct()
 
-    expected = np.array([0, 2, 5], dtype=np.int32)
-    np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
+    expected_boundaries = np.array([0, 2, 5], dtype=np.int32)
+    expected_group_sizes = np.array([2, 3], dtype=np.int32)
+    np_assert_array_equal(expected_group_sizes, dataset.get_group(), strict=True)
+    np_assert_array_equal(expected_boundaries, dataset.get_field("group"), strict=True)
 
 
 # ------------------------------------------ POSITION ------------------------------------------- #
@@ -221,6 +225,7 @@ def test_pandas_dataset_construct_position(dtype):
     dataset.construct()
 
     expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -234,6 +239,7 @@ def test_pandas_dataset_construct_position_with_duplicates_and_out_of_order(dtyp
     # positions are remapped on the C++ side to dense indices in first-seen order:
     # 15 -> 0, 8 -> 1, 27 -> 2
     expected = np.array([0, 0, 1, 2, 0], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -249,6 +255,7 @@ def test_pandas_dataset_construct_init_scores_array(dtype):
 
     expected = np.array([0, 1, 2, 3, 3], dtype=np.float64)
     np_assert_array_equal(expected, dataset.get_init_score(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
 def test_pandas_dataset_construct_init_scores_dataframe():
@@ -263,9 +270,9 @@ def test_pandas_dataset_construct_init_scores_dataframe():
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
     dataset.construct()
 
-    actual = dataset.get_init_score()
     expected = init_scores.to_numpy().astype(np.float64)
-    np_assert_array_equal(expected, actual, strict=True)
+    np_assert_array_equal(expected, dataset.get_init_score(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
 # ------------------------------------------ PREDICTION ----------------------------------------- #

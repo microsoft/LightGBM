@@ -185,6 +185,7 @@ def test_dataset_construct_labels(polars_type):
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_label(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
 def test_dataset_construct_labels_boolean():
@@ -195,6 +196,7 @@ def test_dataset_construct_labels_boolean():
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_label(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
@@ -218,6 +220,7 @@ def test_dataset_construct_weights(polars_type):
 
     expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_weight(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("weight"), strict=True)
 
 
 # -------------------------------------------- GROUPS ------------------------------------------- #
@@ -230,8 +233,10 @@ def test_dataset_construct_groups(polars_type):
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
     dataset.construct()
 
-    expected = np.array([0, 2, 5], dtype=np.int32)
-    np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
+    expected_boundaries = np.array([0, 2, 5], dtype=np.int32)
+    expected_group_sizes = np.array([2, 3], dtype=np.int32)
+    np_assert_array_equal(expected_group_sizes, dataset.get_group(), strict=True)
+    np_assert_array_equal(expected_boundaries, dataset.get_field("group"), strict=True)
 
 
 # ------------------------------------------ POSITION ------------------------------------------- #
@@ -245,6 +250,7 @@ def test_dataset_construct_position(polars_type):
     dataset.construct()
 
     expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -258,6 +264,7 @@ def test_dataset_construct_position_with_duplicates_and_out_of_order(polars_type
     # positions are remapped on the C++ side to dense indices in first-seen order:
     # 15 -> 0, 8 -> 1, 27 -> 2
     expected = np.array([0, 0, 1, 2, 0], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -273,6 +280,7 @@ def test_dataset_construct_init_scores_array(polars_type):
 
     expected = np.array([0, 1, 2, 3, 3], dtype=np.float64)
     np_assert_array_equal(expected, dataset.get_init_score(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
 def test_dataset_construct_init_scores_table():
