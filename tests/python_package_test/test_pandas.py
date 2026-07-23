@@ -131,15 +131,31 @@ def test_pandas_dataset_construct_fields_fuzzy():
     df = generate_random_pandas_frame(num_columns=3, num_datapoints=1000, seed=42)
     labels = generate_random_pandas_series(num_datapoints=1000, seed=42, generate_nulls=False)
     weights = generate_random_pandas_series(num_datapoints=1000, seed=42, generate_nulls=False)
+    init_scores = generate_random_pandas_series(num_datapoints=1000, seed=44, generate_nulls=False)
     groups = np.array([300, 400, 50, 250], dtype=np.int32)
+    positions = np.random.default_rng(45).integers(0, 10, size=1000, dtype=np.int32)
 
-    pandas_dataset = lgb.Dataset(df, label=labels, weight=weights, group=groups)
+    pandas_dataset = lgb.Dataset(
+        df,
+        label=labels,
+        weight=weights,
+        group=groups,
+        init_score=init_scores,
+        position=positions,
+    )
     pandas_dataset.construct()
 
-    numpy_dataset = lgb.Dataset(df.to_numpy(), label=labels, weight=weights, group=groups)
+    numpy_dataset = lgb.Dataset(
+        df.to_numpy(),
+        label=labels,
+        weight=weights,
+        group=groups,
+        init_score=init_scores,
+        position=positions,
+    )
     numpy_dataset.construct()
 
-    for field in ("label", "weight", "group"):
+    for field in ("label", "weight", "group", "init_score", "position"):
         np_assert_array_equal(pandas_dataset.get_field(field), numpy_dataset.get_field(field), strict=True)
 
 

@@ -175,9 +175,18 @@ def test_dataset_construct_fields_fuzzy():
     arrow_table = generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42)
     arrow_labels = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
     arrow_weights = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
+    arrow_init_scores = generate_random_arrow_array(num_datapoints=1000, seed=44, generate_nulls=False)
     arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.int32())
+    arrow_positions = pa.chunked_array([np.random.default_rng(45).integers(0, 10, size=1000)], type=pa.int32())
 
-    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups)
+    arrow_dataset = lgb.Dataset(
+        arrow_table,
+        label=arrow_labels,
+        weight=arrow_weights,
+        group=arrow_groups,
+        init_score=arrow_init_scores,
+        position=arrow_positions,
+    )
     arrow_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -185,14 +194,13 @@ def test_dataset_construct_fields_fuzzy():
         label=arrow_labels.to_numpy(),
         weight=arrow_weights.to_numpy(),
         group=arrow_groups.to_numpy(),
+        init_score=arrow_init_scores.to_numpy(),
+        position=arrow_positions.to_numpy(),
     )
     pandas_dataset.construct()
 
-    # Check for equality
-    for field in ("label", "weight", "group"):
+    for field in ("label", "weight", "group", "init_score", "position"):
         np_assert_array_equal(arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True)
-    np_assert_array_equal(arrow_dataset.get_label(), pandas_dataset.get_label(), strict=True)
-    np_assert_array_equal(arrow_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
 
 
 # -------------------------------------------- LABELS ------------------------------------------- #

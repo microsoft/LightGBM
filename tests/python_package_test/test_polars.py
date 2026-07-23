@@ -145,9 +145,18 @@ def test_dataset_construct_fields_fuzzy():
     polars_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     polars_labels = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
     polars_weights = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
+    polars_init_scores = generate_random_polars_series(num_datapoints=1000, seed=44, generate_nulls=False)
     polars_groups = pl.Series("group", [300, 400, 50, 250], dtype=pl.Int32)
+    polars_positions = pl.Series("position", np.random.default_rng(45).integers(0, 10, size=1000), dtype=pl.Int32)
 
-    polars_dataset = lgb.Dataset(polars_frame, label=polars_labels, weight=polars_weights, group=polars_groups)
+    polars_dataset = lgb.Dataset(
+        polars_frame,
+        label=polars_labels,
+        weight=polars_weights,
+        group=polars_groups,
+        init_score=polars_init_scores,
+        position=polars_positions,
+    )
     polars_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -155,14 +164,13 @@ def test_dataset_construct_fields_fuzzy():
         label=polars_labels.to_numpy(),
         weight=polars_weights.to_numpy(),
         group=polars_groups.to_numpy(),
+        init_score=polars_init_scores.to_numpy(),
+        position=polars_positions.to_numpy(),
     )
     pandas_dataset.construct()
 
-    # Check for equality
-    for field in ("label", "weight", "group"):
+    for field in ("label", "weight", "group", "init_score", "position"):
         np_assert_array_equal(polars_dataset.get_field(field), pandas_dataset.get_field(field), strict=True)
-    np_assert_array_equal(polars_dataset.get_label(), pandas_dataset.get_label(), strict=True)
-    np_assert_array_equal(polars_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
 
 
 # -------------------------------------------- LABELS ------------------------------------------- #
