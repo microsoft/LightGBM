@@ -66,6 +66,7 @@ def generate_dummy_arrow_table() -> pa.Table:
 
 
 def generate_random_arrow_table(
+    *,
     num_columns: int,
     num_datapoints: int,
     seed: int,
@@ -73,7 +74,9 @@ def generate_random_arrow_table(
     values: Optional[np.ndarray] = None,
 ) -> pa.Table:
     columns = [
-        generate_random_arrow_array(num_datapoints, seed + i, generate_nulls=generate_nulls, values=values)
+        generate_random_arrow_array(
+            num_datapoints=num_datapoints, seed=seed + i, generate_nulls=generate_nulls, values=values
+        )
         for i in range(num_columns)
     ]
     names = [f"col_{i}" for i in range(num_columns)]
@@ -81,6 +84,7 @@ def generate_random_arrow_table(
 
 
 def generate_random_arrow_array(
+    *,
     num_datapoints: int,
     seed: int,
     generate_nulls: bool = True,
@@ -131,8 +135,8 @@ def dummy_dataset_params() -> Dict[str, Any]:
         (generate_dummy_arrow_table, dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.float32()), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.int32()), dummy_dataset_params()),
-        (lambda: generate_random_arrow_table(3, 1000, 42), {}),
-        (lambda: generate_random_arrow_table(100, 10000, 43), {}),
+        (lambda: generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42), {}),
+        (lambda: generate_random_arrow_table(num_columns=100, num_datapoints=10000, seed=43), {}),
     ],
 )
 def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
@@ -148,7 +152,9 @@ def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
 
 
 def test_dataset_construct_fuzzy_boolean(tmp_path):
-    boolean_data = generate_random_arrow_table(10, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    boolean_data = generate_random_arrow_table(
+        num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
+    )
 
     float_schema = pa.schema([pa.field(f"col_{i}", pa.float32()) for i in range(len(boolean_data.columns))])
     float_data = boolean_data.cast(float_schema)
@@ -166,9 +172,9 @@ def test_dataset_construct_fuzzy_boolean(tmp_path):
 
 
 def test_dataset_construct_fields_fuzzy():
-    arrow_table = generate_random_arrow_table(3, 1000, 42)
-    arrow_labels = generate_random_arrow_array(1000, 42, generate_nulls=False)
-    arrow_weights = generate_random_arrow_array(1000, 42, generate_nulls=False)
+    arrow_table = generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42)
+    arrow_labels = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
+    arrow_weights = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
     arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.int32())
 
     arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups)
@@ -349,9 +355,9 @@ def test_dataset_construct_init_scores_table():
     data = generate_dummy_arrow_table()
     init_scores = pa.Table.from_arrays(
         [
-            generate_random_arrow_array(5, seed=1, generate_nulls=False),
-            generate_random_arrow_array(5, seed=2, generate_nulls=False),
-            generate_random_arrow_array(5, seed=3, generate_nulls=False),
+            generate_random_arrow_array(num_datapoints=5, seed=1, generate_nulls=False),
+            generate_random_arrow_array(num_datapoints=5, seed=2, generate_nulls=False),
+            generate_random_arrow_array(num_datapoints=5, seed=3, generate_nulls=False),
         ],
         names=["a", "b", "c"],
     )
@@ -389,13 +395,15 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
 
 
 def test_predict_regression():
-    data_float = generate_random_arrow_table(10, 10000, 42)
-    data_bool = generate_random_arrow_table(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    data_float = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
+    data_bool = generate_random_arrow_table(
+        num_columns=1, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
+    )
     data = pa.Table.from_arrays(data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"])
 
     dataset = lgb.Dataset(
         data,
-        label=generate_random_arrow_array(10000, 43, generate_nulls=False),
+        label=generate_random_arrow_array(num_datapoints=10000, seed=43, generate_nulls=False),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -407,10 +415,10 @@ def test_predict_regression():
 
 
 def test_predict_binary_classification():
-    data = generate_random_arrow_table(10, 10000, 42)
+    data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(2)),
+        label=generate_random_arrow_array(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(2)),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -422,10 +430,10 @@ def test_predict_binary_classification():
 
 
 def test_predict_multiclass_classification():
-    data = generate_random_arrow_table(10, 10000, 42)
+    data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(5)),
+        label=generate_random_arrow_array(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(5)),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -437,10 +445,10 @@ def test_predict_multiclass_classification():
 
 
 def test_predict_ranking():
-    data = generate_random_arrow_table(10, 10000, 42)
+    data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(4)),
+        label=generate_random_arrow_array(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(4)),
         group=np.array([1000, 2000, 3000, 4000]),
         params=dummy_dataset_params(),
     )
