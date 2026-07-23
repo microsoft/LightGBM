@@ -107,13 +107,13 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
 def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     train_df = pd.DataFrame(
         {
-            "unordered_col": pd.Categorical(["a", "b", "b"], categories=["a", "b", "c", "d"]),
+            "unordered_col": pd.Categorical(["a", "c", "c"], categories=["a", "b", "c", "d"]),
             "ordered_col": pd.Categorical(["e", "g", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
     valid_df = pd.DataFrame(
         {
-            "unordered_col": pd.Categorical(["a", "c", "b"], categories=["a", "b", "c", "d"]),
+            "unordered_col": pd.Categorical(["a", "b", "d"], categories=["a", "b", "c", "d"]),
             "ordered_col": pd.Categorical(["e", "f", "h"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
@@ -134,7 +134,7 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
         categorical_feature="auto",
         pandas_categorical=train_ds.pandas_categorical,
     )[0]
-    assert valid_df_encoded[:, 0].tolist() == [0.0, 2.0, 1.0]  # a -> 0, c -> 2, b -> 1
+    assert valid_df_encoded[:, 0].tolist() == [0.0, 1.0, 3.0]  # a -> 0, b -> 1, d -> 3
     assert valid_df_encoded[:, 1].tolist() == [0.0, 1.0, 3.0]  # e -> 0, f -> 1, h -> 3
 
     # C++ binning
@@ -142,7 +142,7 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     # - Ordered columns: treats as continuous. Unseen values interpolate (e<f<g) or clip (h clipped to g).
     ref_valid_df = pd.DataFrame(
         {
-            "unordered_col": pd.Categorical(["a", None, "b"], categories=["a", "b", "c", "d"]),
+            "unordered_col": pd.Categorical(["a", None, None], categories=["a", "b", "c", "d"]),
             "ordered_col": pd.Categorical(["e", "g", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
