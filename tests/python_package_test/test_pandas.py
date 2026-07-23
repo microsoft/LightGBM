@@ -74,6 +74,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
     return {
         "min_data_in_bin": 1,
         "min_data_in_leaf": 1,
+        "force_row_wise": True,
     }
 
 
