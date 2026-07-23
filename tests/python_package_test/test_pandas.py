@@ -105,31 +105,45 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
 
 
 def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
-    # Train sees: ordered a(0),c(2) and unordered a(0),b(1)
     train_df = pd.DataFrame(
         {
-            "ordered_col": pd.Categorical(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": pd.Categorical(["a", "b", "b"], categories=["a", "b", "c"]),
+            "unordered_col": pd.Categorical(["a", "b", "b"], categories=["a", "b", "c", "d"]),
+            "ordered_col": pd.Categorical(["e", "g", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
-    train_ds.construct()
-
-    # Valid: ordered has b(1, interpolated) and d(3, clipped); unordered has c(2, unseen)
     valid_df = pd.DataFrame(
         {
-            "ordered_col": pd.Categorical(["a", "b", "d"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": pd.Categorical(["a", "c", "b"], categories=["a", "b", "c"]),
+            "unordered_col": pd.Categorical(["a", "c", "b"], categories=["a", "b", "c", "d"]),
+            "ordered_col": pd.Categorical(["e", "f", "h"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
+
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
     valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    train_ds.construct()
     valid_ds.construct()
 
-    # Reference: ordered b,d both map to same bin as c; unordered c maps to NaN
+    assert train_ds.pandas_categorical[0] == ["a", "b", "c", "d"]
+    assert train_ds.pandas_categorical[1] == ["e", "f", "g", "h"]
+    assert train_ds.params["categorical_column"] == [0]  # only unordered column is treated as categorical
+
+    # Python-side encoding: both ordered and unordered columns use all registered categories to encode
+    valid_df_encoded = lgb.basic._data_from_pandas(
+        data=valid_df,
+        feature_name="auto",
+        categorical_feature="auto",
+        pandas_categorical=train_ds.pandas_categorical,
+    )[0]
+    assert valid_df_encoded[:, 0].tolist() == [0.0, 2.0, 1.0]  # a -> 0, c -> 2, b -> 1
+    assert valid_df_encoded[:, 1].tolist() == [0.0, 1.0, 3.0]  # e -> 0, f -> 1, h -> 3
+
+    # C++ binning
+    # - Unordered columns: only codes observed during training are binned. Unseen codes are treated as missing.
+    # - Ordered columns: treats as continuous. Unseen values interpolate (e<f<g) or clip (h clipped to g).
     ref_valid_df = pd.DataFrame(
         {
-            "ordered_col": pd.Categorical(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": pd.Categorical(["a", None, "b"], categories=["a", "b", "c"]),
+            "unordered_col": pd.Categorical(["a", None, "b"], categories=["a", "b", "c", "d"]),
+            "ordered_col": pd.Categorical(["e", "g", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
     ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
