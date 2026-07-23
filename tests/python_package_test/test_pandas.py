@@ -138,25 +138,32 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-@pytest.mark.parametrize("missing_value", [None, np.nan])
-def test_pandas_categorical_with_missing_values(tmp_path, missing_value):
+def test_pandas_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
-    values = ["a", "b", missing_value, "a", missing_value]
+    values_none = ["a", "b", None, "a", None]
+    values_nan = ["b", "a", np.nan, "b", np.nan]
 
-    df = pd.DataFrame({"cat": pd.Categorical(values, categories=categories), "num": [1.0, 2.0, 3.0, 4.0, 5.0]})
+    df = pd.DataFrame(
+        {
+            "cat_none": pd.Categorical(values_none, categories=categories),
+            "cat_nan": pd.Categorical(values_nan, categories=categories),
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
     y = [0, 1, 0, 1, 0]
 
     ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
     ds.construct()
-    assert ds.pandas_categorical[0] == categories
+    assert ds.pandas_categorical == [categories, categories]
 
     ref_df = pd.DataFrame(
         {
-            "cat": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_none": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_nan": [1.0, 0.0, np.nan, 1.0, np.nan],
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params=dummy_dataset_params())
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
     ref_ds.construct()
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
