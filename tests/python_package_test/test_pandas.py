@@ -162,20 +162,10 @@ def test_pandas_dataset_construct_fields_fuzzy():
 # -------------------------------------------- LABELS ------------------------------------------- #
 
 
-@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.float32, np.float64])
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.float32, np.float64, bool])
 def test_pandas_dataset_construct_labels(dtype):
     data = generate_dummy_pandas_frame()
     labels = pd.Series([0, 1, 0, 0, 1], dtype=dtype)
-    dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
-    dataset.construct()
-
-    expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
-    np_assert_array_equal(expected, dataset.get_label(), strict=True)
-
-
-def test_pandas_dataset_construct_labels_boolean():
-    data = generate_dummy_pandas_frame()
-    labels = pd.Series([False, True, False, False, True], dtype=bool)
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
     dataset.construct()
 
