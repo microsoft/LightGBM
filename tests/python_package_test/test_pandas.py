@@ -114,8 +114,8 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     )
 
     # Slice to get train/valid data (categories are preserved from the full set)
-    train_df = full_df.iloc[[0, 2, 2]].reset_index(drop=True)  # ["a", "c", "c"] and ["e", "g", "g"]
-    valid_df = full_df.iloc[[0, 1, 3]].reset_index(drop=True)  # ["a", "b", "d"] and ["e", "f", "h"]
+    train_df = full_df.iloc[[0, 2, 2]]  # ["a", "c", "c"] and ["e", "g", "g"]
+    valid_df = full_df.iloc[[0, 1, 3]]  # ["a", "b", "d"] and ["e", "f", "h"]
 
     train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
     valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
