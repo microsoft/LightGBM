@@ -601,7 +601,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
              sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
   std::vector<const BinMapper*> diff_bin_mappers;
-  ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
+  ret.reset(MultiValBin::CreateMultiValBin(num_data_, 0, offsets.back(),
                                            num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, std::vector<const BinMapper*>(), false, nullptr, offsets, std::vector<int>(), std::vector<int>()));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get(), diff_bin_mappers);
   ret->FinishLoad();
@@ -703,13 +703,13 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
 
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
-        num_original_data, offsets.back(), num_original_features,
+        num_original_data, num_data_, offsets.back(), num_original_features,
         1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, original_feature_bin_mappers, use_pairwise_bin_lookup, &raw_data_, offsets, diff_feature_to_original_feature_slot, diff_feature_to_raw_feature_index));
     PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get(), original_feature_bin_mappers_ordered);
   } else {
     std::vector<const BinMapper*> original_feature_bin_mappers_ordered;
     ret.reset(MultiValBin::CreateMultiValBin(
-        num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
+        num_data_, 0, offsets.back(), static_cast<int>(most_freq_bins.size()),
         1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map(), diff_feature_bin_mappers, original_feature_bin_mappers, use_pairwise_bin_lookup, &raw_data_, offsets, diff_feature_to_original_feature_slot, diff_feature_to_raw_feature_index));
     PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get(), original_feature_bin_mappers_ordered);
     // std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
