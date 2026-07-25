@@ -11,6 +11,7 @@
 
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -140,7 +141,10 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
       groups->push_back(group);
     }
     if (positions) {
-      positions->push_back(position);
+      // Use sparse, non-contiguous raw ids so that the dense first-seen remapping
+      // done by Metadata is actually exercised. A plain 0,1,2,... sequence remaps
+      // to itself and would hide a missing remap.
+      positions->push_back(position * 3 + 5);
       position++;
     }
   }
@@ -463,11 +467,21 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     if (!ref_positions) {
       FAIL() << "Expected null positions";
     }
+    // Metadata remaps raw position ids onto dense indices in first-seen order,
+    // so build that same expectation instead of comparing against the raw ids.
+    std::unordered_map<int32_t, int32_t> expected_mapping;
     for (auto i = 0; i < nTotal; i++) {
-      EXPECT_EQ(ref_positions->at(i), positions[i]) << "Inserted data: " << ref_positions->at(i);
-      if (ref_positions->at(i) != positions[i]) {
+      const int32_t raw = ref_positions->at(i);
+      const auto inserted = expected_mapping.emplace(raw, static_cast<int32_t>(expected_mapping.size()));
+      const int32_t expected = inserted.first->second;
+      EXPECT_EQ(expected, positions[i]) << "Inserted data: " << raw;
+      if (expected != positions[i]) {
         FAIL() << "Mismatched positions";  // This forces an immediate failure, which EXPECT_EQ does not
       }
+    }
+    EXPECT_EQ(expected_mapping.size(), metadata->num_position_ids()) << "Unexpected number of position ids";
+    if (expected_mapping.size() != metadata->num_position_ids()) {
+      FAIL() << "Mismatched number of position ids";  // This forces an immediate failure, which EXPECT_EQ does not
     }
   } else if (ref_positions) {
     FAIL() << "Expected non-null positions";

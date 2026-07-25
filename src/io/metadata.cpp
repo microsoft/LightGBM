@@ -119,6 +119,7 @@ void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_
       Log::Fatal("Calling Init() on Metadata positions that have already been initialized");
     }
     positions_.resize(num_data_, 0);
+    num_positions_ = num_data_;
     position_ids_.clear();
     position_load_from_file_ = false;
   }
