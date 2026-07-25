@@ -139,7 +139,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
         (lambda: generate_random_arrow_table(num_columns=100, num_datapoints=10000, seed=43), {}),
     ],
 )
-def test_arrow_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
+def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
     arrow_table = arrow_table_fn()
 
     arrow_dataset = lgb.Dataset(arrow_table, params=dataset_params)
@@ -151,7 +151,7 @@ def test_arrow_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params)
     assert_datasets_equal(tmp_path, arrow_dataset, pandas_dataset)
 
 
-def test_arrow_dataset_construct_fuzzy_boolean(tmp_path):
+def test_dataset_construct_fuzzy_boolean(tmp_path):
     boolean_data = generate_random_arrow_table(
         num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
     )
@@ -171,7 +171,7 @@ def test_arrow_dataset_construct_fuzzy_boolean(tmp_path):
 # -------------------------------------------- FIELDS ------------------------------------------- #
 
 
-def test_arrow_dataset_construct_fields_fuzzy():
+def test_dataset_construct_fields_fuzzy():
     arrow_table = generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42)
     arrow_labels = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
     arrow_weights = generate_random_arrow_array(num_datapoints=1000, seed=42, generate_nulls=False)
@@ -216,7 +216,7 @@ def test_arrow_dataset_construct_fields_fuzzy():
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_arrow_dataset_construct_labels(label_data, arrow_type):
+def test_dataset_construct_labels(label_data, arrow_type):
     data = generate_dummy_arrow_table()
     labels = pa.chunked_array(label_data, type=arrow_type)
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
@@ -236,7 +236,7 @@ def test_arrow_dataset_construct_labels(label_data, arrow_type):
         [[False], [], [True, False], [], [], [False, True], []],
     ],
 )
-def test_arrow_dataset_construct_labels_boolean(label_data):
+def test_dataset_construct_labels_boolean(label_data):
     data = generate_dummy_arrow_table()
     labels = pa.chunked_array(label_data, type=pa.bool_())
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
@@ -250,7 +250,7 @@ def test_arrow_dataset_construct_labels_boolean(label_data):
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
 
 
-def test_arrow_dataset_construct_weights_none():
+def test_dataset_construct_weights_none():
     data = generate_dummy_arrow_table()
     weight = pa.chunked_array([[1, 1, 1, 1, 1]])
     dataset = lgb.Dataset(data, weight=weight, params=dummy_dataset_params())
@@ -269,7 +269,7 @@ def test_arrow_dataset_construct_weights_none():
     ],
 )
 @pytest.mark.parametrize("arrow_type", _FLOAT_TYPES)
-def test_arrow_dataset_construct_weights(weight_data, arrow_type):
+def test_dataset_construct_weights(weight_data, arrow_type):
     data = generate_dummy_arrow_table()
     weights = pa.chunked_array(weight_data, type=arrow_type)
     dataset = lgb.Dataset(data, weight=weights, params=dummy_dataset_params())
@@ -293,7 +293,7 @@ def test_arrow_dataset_construct_weights(weight_data, arrow_type):
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
-def test_arrow_dataset_construct_groups(group_data, arrow_type):
+def test_dataset_construct_groups(group_data, arrow_type):
     data = generate_dummy_arrow_table()
     groups = pa.chunked_array(group_data, type=arrow_type)
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
@@ -318,7 +318,7 @@ def test_arrow_dataset_construct_groups(group_data, arrow_type):
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
-def test_arrow_dataset_construct_position(position_data, arrow_type):
+def test_dataset_construct_position(position_data, arrow_type):
     data = generate_dummy_arrow_table()
     positions = pa.chunked_array(position_data, type=arrow_type)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -330,7 +330,7 @@ def test_arrow_dataset_construct_position(position_data, arrow_type):
 
 
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
-def test_arrow_dataset_construct_position_with_duplicates_and_out_of_order(arrow_type):
+def test_dataset_construct_position_with_duplicates_and_out_of_order(arrow_type):
     data = generate_dummy_arrow_table()
     positions = pa.chunked_array([[15, 15, 8, 27, 15]], type=arrow_type)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -356,7 +356,7 @@ def test_arrow_dataset_construct_position_with_duplicates_and_out_of_order(arrow
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_arrow_dataset_construct_init_scores_array(init_score_data, arrow_type):
+def test_dataset_construct_init_scores_array(init_score_data, arrow_type):
     data = generate_dummy_arrow_table()
     init_scores = pa.chunked_array(init_score_data, type=arrow_type)
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -367,7 +367,7 @@ def test_arrow_dataset_construct_init_scores_array(init_score_data, arrow_type):
     np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
-def test_arrow_dataset_construct_init_scores_table():
+def test_dataset_construct_init_scores_table():
     data = generate_dummy_arrow_table()
     init_scores = pa.Table.from_arrays(
         [
@@ -410,7 +410,7 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
     np_assert_array_equal(p_first_iter_arrow, p_first_iter_pandas, strict=True)
 
 
-def test_arrow_predict_regression():
+def test_predict_regression():
     data_float = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     data_bool = generate_random_arrow_table(
         num_columns=1, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
@@ -430,7 +430,7 @@ def test_arrow_predict_regression():
     assert_equal_predict_arrow_pandas(booster, data)
 
 
-def test_arrow_predict_binary_classification():
+def test_predict_binary_classification():
     data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -445,7 +445,7 @@ def test_arrow_predict_binary_classification():
     assert_equal_predict_arrow_pandas(booster, data)
 
 
-def test_arrow_predict_multiclass_classification():
+def test_predict_multiclass_classification():
     data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -460,7 +460,7 @@ def test_arrow_predict_multiclass_classification():
     assert_equal_predict_arrow_pandas(booster, data)
 
 
-def test_arrow_predict_ranking():
+def test_predict_ranking():
     data = generate_random_arrow_table(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -515,7 +515,7 @@ def pyarrow_array_equal(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) -> bool:
     return np.array_equal(np1, np2, equal_nan=True)
 
 
-def test_arrow_get_data_table():
+def test_get_data_arrow_table():
     original_table = generate_simple_arrow_table()
     dataset = lgb.Dataset(original_table, free_raw_data=False)
     dataset.construct()
@@ -539,7 +539,7 @@ def test_arrow_get_data_table():
             assert pyarrow_array_equal(original_chunk_array, returned_chunk_array)
 
 
-def test_arrow_get_data_table_subset(rng):
+def test_get_data_arrow_table_subset(rng):
     original_table = generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42)
     dataset = lgb.Dataset(original_table, free_raw_data=False)
     dataset.construct()
