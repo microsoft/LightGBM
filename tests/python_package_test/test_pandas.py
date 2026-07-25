@@ -104,7 +104,7 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
+def test_categorical_encoding_registered_but_unobserved(tmp_path):
     # Define full DataFrame with all categories observed
     full_df = pd.DataFrame(
         {
@@ -156,7 +156,7 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_pandas_categorical_with_missing_values(tmp_path):
+def test_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
     values_none = ["a", "b", None, "a", None]
     values_nan = ["b", "a", np.nan, "b", np.nan]
