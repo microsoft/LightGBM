@@ -770,7 +770,7 @@ struct Config {
   std::string group_column = "";
 
   // type = int or string
-  // alias = position, position_id, position_column
+  // alias = position, position_id
   // desc = used to specify the position/position id column
   // desc = use number for index, e.g. ``position=0`` means column\_0 is the position id
   // desc = add a prefix ``name:`` for column name, e.g. ``position=name:position_id``

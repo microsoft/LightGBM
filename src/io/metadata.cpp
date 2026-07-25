@@ -686,7 +686,7 @@ void Metadata::SetQuery(int64_t n_chunks, struct ArrowArray* chunks,
 template <typename It>
 void Metadata::SetPositionsFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // Clear weights on empty input
+  // Clear positions on empty input
   if (last - first == 0) {
     positions_.clear();
     position_ids_.clear();
@@ -784,7 +784,7 @@ void Metadata::InsertPositions(const data_size_t* positions, data_size_t start_i
     Log::Fatal("Passed null positions");
   }
   if (positions_.size() <= 0) {
-    Log::Fatal("Inserting position data into dataset with no queries");
+    Log::Fatal("Inserting position data into dataset with no positions");
   }
   if (static_cast<size_t>(start_index + len) > positions_.size()) {
     Log::Fatal("Inserted position data is too large for dataset");

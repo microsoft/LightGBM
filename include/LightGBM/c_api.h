@@ -178,7 +178,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
  * \param has_weights Whether the dataset has Metadata weights
  * \param has_init_scores Whether the dataset has Metadata initial scores
  * \param has_queries Whether the dataset has Metadata queries/groups
- * \param has_positions Whether the dataset has Metadata positions/groups
+ * \param has_positions Whether the dataset has Metadata positions
  * \param nclasses Number of initial score classes
  * \param nthreads Number of external threads that will use the PushRows APIs
  * \param omp_max_threads Maximum number of OpenMP threads (-1 for default)
