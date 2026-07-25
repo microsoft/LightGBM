@@ -966,13 +966,6 @@ class _InnerPredictor:
         pred_parameter : dict
             Other parameters for the prediction.
         """
-        out_cur_iter = ctypes.c_int(0)
-        _safe_call(
-            _LIB.LGBM_BoosterGetCurrentIteration(
-                booster._handle,
-                ctypes.byref(out_cur_iter),
-            )
-        )
         return cls(
             booster_handle=booster._handle,
             pandas_categorical=booster.pandas_categorical,
@@ -4652,7 +4645,7 @@ class Booster:
             Loaded Booster object.
         """
         # ensure that existing Booster is freed before replacing it
-        # with a new one createdfrom file
+        # with a new one created from file
         _safe_call(_LIB.LGBM_BoosterFree(self._handle))
         self._free_buffer()
         self._handle = ctypes.c_void_p()
