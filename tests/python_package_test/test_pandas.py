@@ -96,7 +96,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
         lambda: generate_random_pandas_frame(num_columns=100, num_datapoints=10000, seed=43),
     ],
 )
-def test_pandas_dataset_construct_fuzzy(tmp_path, pandas_frame_fn):
+def test_dataset_construct_fuzzy(tmp_path, pandas_frame_fn):
     df = pandas_frame_fn()
 
     ds1 = lgb.Dataset(df, params=dummy_dataset_params())
@@ -108,7 +108,7 @@ def test_pandas_dataset_construct_fuzzy(tmp_path, pandas_frame_fn):
     assert_datasets_equal(tmp_path, ds1, ds2)
 
 
-def test_pandas_dataset_construct_fuzzy_boolean(tmp_path):
+def test_dataset_construct_fuzzy_boolean(tmp_path):
     boolean_data = generate_random_pandas_frame(
         num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
     )
@@ -126,7 +126,7 @@ def test_pandas_dataset_construct_fuzzy_boolean(tmp_path):
 # -------------------------------------------- FIELDS ------------------------------------------- #
 
 
-def test_pandas_dataset_construct_fields_fuzzy():
+def test_dataset_construct_fields_fuzzy():
     df = generate_random_pandas_frame(num_columns=3, num_datapoints=1000, seed=42)
     labels = generate_random_pandas_series(num_datapoints=1000, seed=42, generate_nulls=False)
     weights = generate_random_pandas_series(num_datapoints=1000, seed=42, generate_nulls=False)
@@ -162,7 +162,7 @@ def test_pandas_dataset_construct_fields_fuzzy():
 
 
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.float32, np.float64, bool])
-def test_pandas_dataset_construct_labels(dtype):
+def test_dataset_construct_labels(dtype):
     data = generate_dummy_pandas_frame()
     labels = pd.Series([0, 1, 0, 0, 1], dtype=dtype)
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
@@ -176,7 +176,7 @@ def test_pandas_dataset_construct_labels(dtype):
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
 
 
-def test_pandas_dataset_construct_weights_none():
+def test_dataset_construct_weights_none():
     data = generate_dummy_pandas_frame()
     weight = pd.Series([1, 1, 1, 1, 1], dtype=np.float32)
     dataset = lgb.Dataset(data, weight=weight, params=dummy_dataset_params())
@@ -186,7 +186,7 @@ def test_pandas_dataset_construct_weights_none():
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_pandas_dataset_construct_weights(dtype):
+def test_dataset_construct_weights(dtype):
     data = generate_dummy_pandas_frame()
     weights = pd.Series([3, 0.7, 1.5, 0.5, 0.1], dtype=dtype)
     dataset = lgb.Dataset(data, weight=weights, params=dummy_dataset_params())
@@ -201,7 +201,7 @@ def test_pandas_dataset_construct_weights(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.int64])
-def test_pandas_dataset_construct_groups(dtype):
+def test_dataset_construct_groups(dtype):
     data = generate_dummy_pandas_frame()
     groups = pd.Series([2, 3], dtype=dtype)
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
@@ -217,7 +217,7 @@ def test_pandas_dataset_construct_groups(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.int64])
-def test_pandas_dataset_construct_position(dtype):
+def test_dataset_construct_position(dtype):
     data = generate_dummy_pandas_frame()
     positions = pd.Series([0, 1, 2, 3, 4], dtype=dtype)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -229,7 +229,7 @@ def test_pandas_dataset_construct_position(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.int64])
-def test_pandas_dataset_construct_position_with_duplicates_and_out_of_order(dtype):
+def test_dataset_construct_position_with_duplicates_and_out_of_order(dtype):
     data = generate_dummy_pandas_frame()
     positions = pd.Series([15, 15, 8, 27, 15], dtype=dtype)
     dataset = lgb.Dataset(data, label=[0, 1, 0, 1, 0], position=positions, params=dummy_dataset_params())
@@ -246,7 +246,7 @@ def test_pandas_dataset_construct_position_with_duplicates_and_out_of_order(dtyp
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.int64, np.float32, np.float64])
-def test_pandas_dataset_construct_init_scores_array(dtype):
+def test_dataset_construct_init_scores_array(dtype):
     data = generate_dummy_pandas_frame()
     init_scores = pd.Series([0, 1, 2, 3, 3], dtype=dtype)
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -257,7 +257,7 @@ def test_pandas_dataset_construct_init_scores_array(dtype):
     np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
-def test_pandas_dataset_construct_init_scores_dataframe():
+def test_dataset_construct_init_scores_dataframe():
     data = generate_dummy_pandas_frame()
     init_scores = pd.DataFrame(
         {
@@ -277,7 +277,7 @@ def test_pandas_dataset_construct_init_scores_dataframe():
 # ------------------------------------------ PREDICTION ----------------------------------------- #
 
 
-def test_pandas_predict_regression():
+def test_predict_regression():
     data = generate_random_pandas_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -294,7 +294,7 @@ def test_pandas_predict_regression():
     np_assert_array_equal(p_pandas, p_numpy, strict=True)
 
 
-def test_pandas_predict_binary_classification():
+def test_predict_binary_classification():
     data = generate_random_pandas_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -311,7 +311,7 @@ def test_pandas_predict_binary_classification():
     np_assert_array_equal(p_pandas, p_numpy, strict=True)
 
 
-def test_pandas_predict_multiclass_classification():
+def test_predict_multiclass_classification():
     data = generate_random_pandas_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -328,7 +328,7 @@ def test_pandas_predict_multiclass_classification():
     np_assert_array_equal(p_pandas, p_numpy, strict=True)
 
 
-def test_pandas_predict_ranking():
+def test_predict_ranking():
     data = generate_random_pandas_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
@@ -346,7 +346,7 @@ def test_pandas_predict_ranking():
     np_assert_array_equal(p_pandas, p_numpy, strict=True)
 
 
-def test_pandas_feature_name_auto():
+def test_feature_name_auto():
     data = generate_dummy_pandas_frame()
     dataset = lgb.Dataset(
         data,
@@ -358,7 +358,7 @@ def test_pandas_feature_name_auto():
     assert booster.feature_name() == ["a", "b"]
 
 
-def test_pandas_feature_name_manual():
+def test_feature_name_manual():
     data = generate_dummy_pandas_frame()
     dataset = lgb.Dataset(
         data,
@@ -371,7 +371,7 @@ def test_pandas_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
-def test_pandas_get_data_frame():
+def test_get_data_frame():
     original_frame = generate_simple_pandas_frame()
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
     dataset.construct()
@@ -382,7 +382,7 @@ def test_pandas_get_data_frame():
     assert returned_data.shape == original_frame.shape
 
 
-def test_pandas_get_data_frame_subset(rng):
+def test_get_data_frame_subset(rng):
     original_frame = generate_random_pandas_frame(num_columns=3, num_datapoints=1000, seed=42)
     original_frame = pd.DataFrame(original_frame)
     dataset = lgb.Dataset(original_frame, free_raw_data=False)
