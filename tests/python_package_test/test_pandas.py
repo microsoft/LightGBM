@@ -113,9 +113,14 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
         }
     )
 
-    # Slice to get train/valid data (categories are preserved from the full set)
+    # Slice train from full_df so all categories are preserved despite not all being observed
     train_df = full_df.iloc[[0, 2, 2]]  # ["a", "c", "c"] and ["e", "g", "g"]
-    valid_df = full_df.iloc[[0, 1, 3]]  # ["a", "b", "d"] and ["e", "f", "h"]
+    valid_df = pd.DataFrame(
+        {
+            "unordered_col": pd.Categorical(["a", "b", "d"]),
+            "ordered_col": pd.Categorical(["h", "e", "f"], ordered=True),
+        }
+    )
 
     train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
     valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
@@ -134,7 +139,7 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
         pandas_categorical=train_ds.pandas_categorical,
     )[0]
     assert valid_df_encoded[:, 0].tolist() == [0.0, 1.0, 3.0]  # a -> 0, b -> 1, d -> 3
-    assert valid_df_encoded[:, 1].tolist() == [0.0, 1.0, 3.0]  # e -> 0, f -> 1, h -> 3
+    assert valid_df_encoded[:, 1].tolist() == [3.0, 0.0, 1.0]  # h -> 3, e -> 0, f -> 1
 
     # C++ binning
     # - Unordered columns: only codes observed during training are binned. Unseen codes are treated as missing.
@@ -142,7 +147,7 @@ def test_pandas_categorical_encoding_registered_but_unobserved(tmp_path):
     ref_valid_df = pd.DataFrame(
         {
             "unordered_col": pd.Categorical(["a", None, None], categories=["a", "b", "c", "d"]),
-            "ordered_col": pd.Categorical(["e", "g", "g"], categories=["e", "f", "g", "h"], ordered=True),
+            "ordered_col": pd.Categorical(["g", "e", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
     ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
