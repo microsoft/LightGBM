@@ -48,6 +48,7 @@ def generate_dummy_polars_frame() -> pl.DataFrame:
 
 
 def generate_random_polars_frame(
+    *,
     num_columns: int,
     num_datapoints: int,
     seed: int,
@@ -57,7 +58,7 @@ def generate_random_polars_frame(
     return pl.DataFrame(
         {
             f"col_{i}": generate_random_polars_series(
-                num_datapoints, seed + i, generate_nulls=generate_nulls, values=values
+                num_datapoints=num_datapoints, seed=seed + i, generate_nulls=generate_nulls, values=values
             )
             for i in range(num_columns)
         }
@@ -65,6 +66,7 @@ def generate_random_polars_frame(
 
 
 def generate_random_polars_series(
+    *,
     num_datapoints: int,
     seed: int,
     generate_nulls: bool = True,
@@ -87,6 +89,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
     return {
         "min_data_in_bin": 1,
         "min_data_in_leaf": 1,
+        "force_row_wise": True,
     }
 
 
@@ -104,8 +107,8 @@ def dummy_dataset_params() -> Dict[str, Any]:
         (generate_dummy_polars_frame, dummy_dataset_params()),
         (lambda: generate_nullable_polars_frame(pl.Float32), dummy_dataset_params()),
         (lambda: generate_nullable_polars_frame(pl.Int32), dummy_dataset_params()),
-        (lambda: generate_random_polars_frame(3, 1000, 42), {}),
-        (lambda: generate_random_polars_frame(100, 10000, 43), {}),
+        (lambda: generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42), {}),
+        (lambda: generate_random_polars_frame(num_columns=100, num_datapoints=10000, seed=43), {}),
     ],
 )
 def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
@@ -121,7 +124,9 @@ def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
 
 
 def test_dataset_construct_fuzzy_boolean(tmp_path):
-    boolean_data = generate_random_polars_frame(10, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    boolean_data = generate_random_polars_frame(
+        num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
+    )
     float_data = boolean_data.cast(pl.Float32)
 
     polars_dataset = lgb.Dataset(boolean_data)
@@ -137,12 +142,21 @@ def test_dataset_construct_fuzzy_boolean(tmp_path):
 
 
 def test_dataset_construct_fields_fuzzy():
-    polars_frame = generate_random_polars_frame(3, 1000, 42)
-    polars_labels = generate_random_polars_series(1000, 42, generate_nulls=False)
-    polars_weights = generate_random_polars_series(1000, 42, generate_nulls=False)
+    polars_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
+    polars_labels = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
+    polars_weights = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
+    polars_init_scores = generate_random_polars_series(num_datapoints=1000, seed=44, generate_nulls=False)
     polars_groups = pl.Series("group", [300, 400, 50, 250], dtype=pl.Int32)
+    polars_positions = pl.Series("position", np.random.default_rng(45).integers(0, 10, size=1000), dtype=pl.Int32)
 
-    polars_dataset = lgb.Dataset(polars_frame, label=polars_labels, weight=polars_weights, group=polars_groups)
+    polars_dataset = lgb.Dataset(
+        polars_frame,
+        label=polars_labels,
+        weight=polars_weights,
+        group=polars_groups,
+        init_score=polars_init_scores,
+        position=polars_positions,
+    )
     polars_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -150,14 +164,13 @@ def test_dataset_construct_fields_fuzzy():
         label=polars_labels.to_numpy(),
         weight=polars_weights.to_numpy(),
         group=polars_groups.to_numpy(),
+        init_score=polars_init_scores.to_numpy(),
+        position=polars_positions.to_numpy(),
     )
     pandas_dataset.construct()
 
-    # Check for equality
-    for field in ("label", "weight", "group"):
+    for field in ("label", "weight", "group", "init_score", "position"):
         np_assert_array_equal(polars_dataset.get_field(field), pandas_dataset.get_field(field), strict=True)
-    np_assert_array_equal(polars_dataset.get_label(), pandas_dataset.get_label(), strict=True)
-    np_assert_array_equal(polars_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
 
 
 # -------------------------------------------- LABELS ------------------------------------------- #
@@ -172,6 +185,7 @@ def test_dataset_construct_labels(polars_type):
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_label(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
 def test_dataset_construct_labels_boolean():
@@ -182,6 +196,7 @@ def test_dataset_construct_labels_boolean():
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_label(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("label"), strict=True)
 
 
 # ------------------------------------------- WEIGHTS ------------------------------------------- #
@@ -205,6 +220,7 @@ def test_dataset_construct_weights(polars_type):
 
     expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
     np_assert_array_equal(expected, dataset.get_weight(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("weight"), strict=True)
 
 
 # -------------------------------------------- GROUPS ------------------------------------------- #
@@ -217,8 +233,10 @@ def test_dataset_construct_groups(polars_type):
     dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
     dataset.construct()
 
-    expected = np.array([0, 2, 5], dtype=np.int32)
-    np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
+    expected_boundaries = np.array([0, 2, 5], dtype=np.int32)
+    expected_group_sizes = np.array([2, 3], dtype=np.int32)
+    np_assert_array_equal(expected_group_sizes, dataset.get_group(), strict=True)
+    np_assert_array_equal(expected_boundaries, dataset.get_field("group"), strict=True)
 
 
 # ------------------------------------------ POSITION ------------------------------------------- #
@@ -232,6 +250,7 @@ def test_dataset_construct_position(polars_type):
     dataset.construct()
 
     expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -245,6 +264,7 @@ def test_dataset_construct_position_with_duplicates_and_out_of_order(polars_type
     # positions are remapped on the C++ side to dense indices in first-seen order:
     # 15 -> 0, 8 -> 1, 27 -> 2
     expected = np.array([0, 0, 1, 2, 0], dtype=np.int32)
+    np_assert_array_equal(expected, dataset.get_position(), strict=True)
     np_assert_array_equal(expected, dataset.get_field("position"), strict=True)
 
 
@@ -260,15 +280,16 @@ def test_dataset_construct_init_scores_array(polars_type):
 
     expected = np.array([0, 1, 2, 3, 3], dtype=np.float64)
     np_assert_array_equal(expected, dataset.get_init_score(), strict=True)
+    np_assert_array_equal(expected, dataset.get_field("init_score"), strict=True)
 
 
 def test_dataset_construct_init_scores_table():
     data = generate_dummy_polars_frame()
     init_scores = pl.DataFrame(
         {
-            "a": generate_random_polars_series(5, seed=1, generate_nulls=False),
-            "b": generate_random_polars_series(5, seed=2, generate_nulls=False),
-            "c": generate_random_polars_series(5, seed=3, generate_nulls=False),
+            "a": generate_random_polars_series(num_datapoints=5, seed=1, generate_nulls=False),
+            "b": generate_random_polars_series(num_datapoints=5, seed=2, generate_nulls=False),
+            "c": generate_random_polars_series(num_datapoints=5, seed=3, generate_nulls=False),
         }
     )
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -307,13 +328,15 @@ def assert_equal_predict_polars_pandas(booster: lgb.Booster, data: pl.DataFrame)
 
 
 def test_predict_regression():
-    data_float = generate_random_polars_frame(10, 10000, 42)
-    data_bool = generate_random_polars_frame(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    data_float = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
+    data_bool = generate_random_polars_frame(
+        num_columns=1, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
+    )
     data = data_float.with_columns(data_bool["col_0"].alias("col_bool"))
 
     dataset = lgb.Dataset(
         data,
-        label=generate_random_polars_series(10000, 43, generate_nulls=False),
+        label=generate_random_polars_series(num_datapoints=10000, seed=43, generate_nulls=False),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -325,10 +348,10 @@ def test_predict_regression():
 
 
 def test_predict_binary_classification():
-    data = generate_random_polars_frame(10, 10000, 42)
+    data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_polars_series(10000, 43, generate_nulls=False, values=np.arange(2)),
+        label=generate_random_polars_series(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(2)),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -340,10 +363,10 @@ def test_predict_binary_classification():
 
 
 def test_predict_multiclass_classification():
-    data = generate_random_polars_frame(10, 10000, 42)
+    data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_polars_series(10000, 43, generate_nulls=False, values=np.arange(5)),
+        label=generate_random_polars_series(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(5)),
         params=dummy_dataset_params(),
     )
     booster = lgb.train(
@@ -355,10 +378,10 @@ def test_predict_multiclass_classification():
 
 
 def test_predict_ranking():
-    data = generate_random_polars_frame(10, 10000, 42)
+    data = generate_random_polars_frame(num_columns=10, num_datapoints=10000, seed=42)
     dataset = lgb.Dataset(
         data,
-        label=generate_random_polars_series(10000, 43, generate_nulls=False, values=np.arange(4)),
+        label=generate_random_polars_series(num_datapoints=10000, seed=43, generate_nulls=False, values=np.arange(4)),
         group=np.array([1000, 2000, 3000, 4000]),
         params=dummy_dataset_params(),
     )
