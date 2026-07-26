@@ -29,4 +29,5 @@ exclude = [
 ]
 exclude_path = [
     "(^|/)docs/.*\\.rst",
+    "(^|/)external_libs/.*",
 ]
