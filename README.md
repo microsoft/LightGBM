@@ -54,7 +54,6 @@ Next you may want to read:
 - [**Distributed Learning**](https://github.com/lightgbm-org/LightGBM/blob/main/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/lightgbm-org/LightGBM/blob/main/docs/GPU-Tutorial.rst) can speed up computation.
 - [**FLAML**](https://www.microsoft.com/en-us/research/project/fast-and-lightweight-automl-for-large-scale-data/articles/flaml-a-fast-and-lightweight-automl-library/) provides automated tuning for LightGBM ([code examples](https://microsoft.github.io/FLAML/docs/Examples/AutoML-for-LightGBM/)).
 - [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna-examples/blob/main/lightgbm/lightgbm_tuner_simple.py)).
-- [**Understanding LightGBM Parameters (and How to Tune Them using Neptune)**](https://neptune.ai/blog/lightgbm-parameters-guide).
 
 Documentation for contributors:
 
@@ -154,7 +153,7 @@ skforecast (time series forecasting with LightGBM): https://github.com/JoaquinAm
 
 `{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
 
-lightgbm-transform (feature transformation binding): https://github.com/lightgbm-org/LightGBM-transform
+lightgbm-transform (feature transformation binding): https://github.com/Microsoft/LightGBM-transform
 
 `postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
 
