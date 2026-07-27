@@ -824,7 +824,7 @@ def _data_from_narwhals(
                 # Use per-column observed values instead of Polars categorical metadata.
                 # Polars categories can be unstable due to the global string cache, which
                 # can leak categories across columns/slices and corrupt train/valid mapping.
-                pandas_categorical.append(sorted(data.get_column(col).unique().drop_nulls().to_list()))
+                pandas_categorical.append(data.get_column(col).unique().drop_nulls().sort().to_list())
             else:
                 pandas_categorical.append(data.get_column(col).cat.get_categories().to_list())
     else:
