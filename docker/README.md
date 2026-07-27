@@ -171,7 +171,7 @@ docker run \
     R
 ```
 
-To use [RStudio](https://www.rstudio.com/products/rstudio/), an interactive development environment, run the following.
+To use [RStudio](https://posit.co/products/open-source/rstudio), an interactive development environment, run the following.
 
 ```shell
 docker run \

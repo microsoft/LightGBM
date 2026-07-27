@@ -228,7 +228,7 @@ On aarch64 Linux, processes and loaded libraries share the same pool of static T
 which makes such failures more likely. See these discussions:
 
 * https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
-* https://gcc.gcc.gnu.narkive.com/vOXMQqLA/failure-to-dlopen-libgomp-due-to-static-tls-data
+* https://github.com/pytorch/pytorch/issues/2575
 
 If you are experiencing this issue when using the ``lightgbm`` Python-package, try upgrading
 to at least ``v4.6.0``.
