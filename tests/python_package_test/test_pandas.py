@@ -474,6 +474,88 @@ def test_pandas_categorical_encoding_unseen_category(tmp_path):
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
+def test_categorical_encoding_registered_but_unobserved(tmp_path):
+    # Define full DataFrame with all categories observed
+    full_df = pd.DataFrame(
+        {
+            "unordered_col": pd.Categorical(["a", "b", "c", "d"]),
+            "ordered_col": pd.Categorical(["e", "f", "g", "h"], ordered=True),
+        }
+    )
+
+    # Slice train from full_df so all categories are preserved despite not all being observed
+    train_df = full_df.iloc[[0, 2, 2]]  # ["a", "c", "c"] and ["e", "g", "g"]
+    valid_df = pd.DataFrame(
+        {
+            "unordered_col": pd.Categorical(["a", "b", "d"]),
+            "ordered_col": pd.Categorical(["h", "e", "f"], ordered=True),
+        }
+    )
+
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    train_ds.construct()
+    valid_ds.construct()
+
+    assert train_ds.pandas_categorical[0] == ["a", "b", "c", "d"]
+    assert train_ds.pandas_categorical[1] == ["e", "f", "g", "h"]
+    assert train_ds.params["categorical_column"] == [0]  # only unordered column is treated as categorical
+
+    # Python-side encoding: both ordered and unordered columns use all registered categories to encode
+    valid_df_encoded = lgb.basic._data_from_pandas(
+        data=valid_df,
+        feature_name="auto",
+        categorical_feature="auto",
+        pandas_categorical=train_ds.pandas_categorical,
+    )[0]
+    assert valid_df_encoded[:, 0].tolist() == [0.0, 1.0, 3.0]  # a -> 0, b -> 1, d -> 3
+    assert valid_df_encoded[:, 1].tolist() == [3.0, 0.0, 1.0]  # h -> 3, e -> 0, f -> 1
+
+    # C++ binning
+    # - Unordered columns: only codes observed during training are binned. Unseen codes are treated as missing.
+    # - Ordered columns: treats as continuous. Unseen values interpolate (e<f<g) or clip (h clipped to g).
+    ref_valid_df = pd.DataFrame(
+        {
+            "unordered_col": pd.Categorical(["a", None, None], categories=["a", "b", "c", "d"]),
+            "ordered_col": pd.Categorical(["g", "e", "g"], categories=["e", "f", "g", "h"], ordered=True),
+        }
+    )
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    ref_valid_ds.construct()
+
+    assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
+
+
+def test_categorical_with_missing_values(tmp_path):
+    categories = ["a", "b"]
+    values_none = ["a", "b", None, "a", None]
+    values_nan = ["b", "a", np.nan, "b", np.nan]
+
+    df = pd.DataFrame(
+        {
+            "cat_none": pd.Categorical(values_none, categories=categories),
+            "cat_nan": pd.Categorical(values_nan, categories=categories),
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    y = [0, 1, 0, 1, 0]
+
+    ds = lgb.Dataset(df, label=y, params=dummy_dataset_params())
+    ds.construct()
+    assert ds.pandas_categorical == [categories, categories]
+
+    ref_df = pd.DataFrame(
+        {
+            "cat_none": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_nan": [1.0, 0.0, np.nan, 1.0, np.nan],
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
+    ref_ds.construct()
+    assert_datasets_equal(tmp_path, ds, ref_ds)
+
+
 def test_pandas_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
     y = rng.uniform(size=(10_000,))
