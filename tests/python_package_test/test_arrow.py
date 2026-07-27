@@ -2,6 +2,7 @@
 from typing import Any, Dict, Optional
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import lightgbm as lgb
@@ -110,6 +111,10 @@ def generate_random_arrow_array(
 
     # Turn chunks into array
     return pa.chunked_array(chunks, type=pa.float32())
+
+
+def generate_arrow_dict_array(values, categories=None, ordered=False):
+    return pa.Array.from_pandas(pd.Categorical(values, categories=categories, ordered=ordered))
 
 
 def dummy_dataset_params() -> Dict[str, Any]:
@@ -568,20 +573,7 @@ def test_get_data_arrow_table_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-def _arrow_dict_array(values, categories=None, ordered=False):
-    """Build a pyarrow.DictionaryArray from a list of values and optional categories."""
-    if categories is None:
-        categories = sorted({v for v in values if v is not None})
-    dictionary = pa.array(categories)
-    cat_to_code = {cat: i for i, cat in enumerate(categories)}
-    indices = pa.array(
-        [cat_to_code[v] if v is not None else None for v in values],
-        type=pa.int32(),
-    )
-    return pa.DictionaryArray.from_arrays(indices, dictionary, ordered=ordered)
-
-
-def test_arrow_categorical_encoding(tmp_path):
+def test_categorical_encoding(tmp_path):
     cat1_categories = ["a", "b", "c"]
     cat1_values = ["a", "b", "c", "b", "a"]
     cat2_categories = ["b", "c", "d"]
@@ -591,9 +583,9 @@ def test_arrow_categorical_encoding(tmp_path):
 
     df = pa.table(
         {
-            "cat1": _arrow_dict_array(cat1_values, categories=cat1_categories),
-            "cat2": _arrow_dict_array(cat2_values, categories=cat2_categories),
-            "cat3": _arrow_dict_array(ordered_values, categories=ordered_categories, ordered=True),
+            "cat1": generate_arrow_dict_array(cat1_values, categories=cat1_categories),
+            "cat2": generate_arrow_dict_array(cat2_values, categories=cat2_categories),
+            "cat3": generate_arrow_dict_array(ordered_values, categories=ordered_categories, ordered=True),
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -616,11 +608,9 @@ def test_arrow_categorical_encoding(tmp_path):
     # Verify correct encodings
     ref_df = pa.table(
         {
-            "cat1": pa.array([cat1_categories.index(v) for v in cat1_values], type=pa.int32()),  # [0, 1, 2, 1, 0]
-            "cat2": pa.array([cat2_categories.index(v) for v in cat2_values], type=pa.int32()),  # [0, 1, 1, 2, 2],
-            "cat3": pa.array(
-                [ordered_categories.index(v) for v in ordered_values], type=pa.int32()
-            ),  # [1, 0, 2, 0, 1],
+            "cat1": pa.array([cat1_categories.index(v) for v in cat1_values]),  # [0, 1, 2, 1, 0]
+            "cat2": pa.array([cat2_categories.index(v) for v in cat2_values]),  # [0, 1, 1, 2, 2],
+            "cat3": pa.array([ordered_categories.index(v) for v in ordered_values]),  # [1, 0, 2, 0, 1],
             "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -630,95 +620,120 @@ def test_arrow_categorical_encoding(tmp_path):
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
-def test_arrow_categorical_encoding_unseen_category(tmp_path):
+def test_categorical_encoding_unseen_category(tmp_path):
     train_categories = ["a", "b", "c"]
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    params = dummy_dataset_params()
     train_df = pa.table(
-        {"cat_col": _arrow_dict_array(train_values, categories=train_categories), "num_col": [1.0, 2.0, 3.0, 4.0, 5.0]}
+        {
+            "cat_col": generate_arrow_dict_array(train_values, categories=train_categories),
+            "num_col": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
     )
-    valid_df = pa.table({"cat_col": _arrow_dict_array(valid_values), "num_col": [6.0, 7.0, 8.0, 9.0, 10.0]})
+    valid_df = pa.table({"cat_col": generate_arrow_dict_array(valid_values), "num_col": [6.0, 7.0, 8.0, 9.0, 10.0]})
 
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=params)
-    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     train_ds.construct()
     valid_ds.construct()
 
     # Verify unseen category is encoded as NaN
     ref_valid_df = pa.table(
         {
-            "cat_col": _arrow_dict_array(["a", "c", None, None, "a"], categories=train_categories),
+            "cat_col": generate_arrow_dict_array(["a", "c", None, None, "a"], categories=train_categories),
             "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
-    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_arrow_categorical_encoding_registered_but_unobserved(tmp_path):
-    params = dummy_dataset_params()
-
-    # Train sees: ordered a(0),c(2) and unordered a(0),b(1)
-    train_df = pa.table(
+def test_categorical_encoding_registered_but_unobserved(tmp_path):
+    # Define full table with all categories observed
+    full_df = pa.table(
         {
-            "ordered_col": _arrow_dict_array(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": _arrow_dict_array(["a", "b", "b"], categories=["a", "b", "c"]),
+            "unordered_col": generate_arrow_dict_array(["a", "b", "c", "d"]),
+            "ordered_col": generate_arrow_dict_array(["e", "f", "g", "h"], ordered=True),
         }
     )
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=params)
-    train_ds.construct()
 
-    # Valid: ordered has b(1, interpolated) and d(3, clipped); unordered has c(2, unseen)
+    # Slice to get train/valid data (categories are preserved from the full set)
+    train_df = full_df.take([0, 2, 2])  # ["a", "c", "c"] and ["e", "g", "g"]
     valid_df = pa.table(
         {
-            "ordered_col": _arrow_dict_array(["a", "b", "d"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": _arrow_dict_array(["a", "c", "b"], categories=["a", "b", "c"]),
+            "unordered_col": generate_arrow_dict_array(["a", "b", "d"]),
+            "ordered_col": generate_arrow_dict_array(["h", "e", "f"], ordered=True),
         }
     )
-    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    train_ds.construct()
     valid_ds.construct()
 
-    # Reference: ordered b,d both map to same bin as c; unordered c maps to NaN
+    assert train_ds.pandas_categorical[0] == ["a", "b", "c", "d"]
+    assert train_ds.pandas_categorical[1] == ["e", "f", "g", "h"]
+    assert train_ds.params["categorical_column"] == [0]  # only unordered column is treated as categorical
+
+    # Python-side encoding: both ordered and unordered columns use all registered categories to encode
+    valid_df_encoded = lgb.basic._data_from_narwhals(
+        data=valid_df,
+        feature_name="auto",
+        categorical_feature="auto",
+        pandas_categorical=train_ds.pandas_categorical,
+    )[0]
+    assert valid_df_encoded.column(0).to_pylist() == [0.0, 1.0, 3.0]  # a -> 0, b -> 1, d -> 3
+    assert valid_df_encoded.column(1).to_pylist() == [3.0, 0.0, 1.0]  # h -> 3, e -> 0, f -> 1
+
+    # C++ binning
+    # - Unordered columns: only codes observed during training are binned. Unseen codes are treated as missing.
+    # - Ordered columns: treats as continuous. Unseen values interpolate (e<f<g) or clip (h clipped to g).
     ref_valid_df = pa.table(
         {
-            "ordered_col": _arrow_dict_array(["a", "c", "c"], categories=["a", "b", "c", "d"], ordered=True),
-            "unordered_col": _arrow_dict_array(["a", None, "b"], categories=["a", "b", "c"]),
+            "unordered_col": generate_arrow_dict_array(["a", None, None], categories=["a", "b", "c", "d"]),
+            "ordered_col": generate_arrow_dict_array(["g", "e", "g"], categories=["e", "f", "g", "h"], ordered=True),
         }
     )
-    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_arrow_categorical_with_missing_values(tmp_path):
+def test_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
-    values = ["a", "b", None, "a", None]
+    values_none = ["a", "b", None, "a", None]
+    values_nan = ["b", "a", np.nan, "b", np.nan]
 
-    cat_type = pa.dictionary(pa.int32(), pa.utf8())
-    X = pa.table({"cat": pa.array(values, type=cat_type), "num": [1.0, 2.0, 3.0, 4.0, 5.0]})
+    X = pa.table(
+        {
+            "cat_none": generate_arrow_dict_array(values_none),
+            "cat_nan": generate_arrow_dict_array(values_nan),
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
     y = [0, 1, 0, 1, 0]
 
     ds = lgb.Dataset(X, label=y, params=dummy_dataset_params())
     ds.construct()
-    assert ds.pandas_categorical[0] == categories
+    assert ds.pandas_categorical == [categories, categories]
 
     ref_df = pa.table(
         {
-            "cat": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_none": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_nan": [1.0, 0.0, np.nan, 1.0, np.nan],
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
-    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0], params=dummy_dataset_params())
+    ref_ds = lgb.Dataset(ref_df, label=y, categorical_feature=[0, 1], params=dummy_dataset_params())
     ref_ds.construct()
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
-def test_arrow_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     X = pa.table({"x1": pa.array(rng.integers(0, 1000, size=10_000))})
     y = rng.uniform(size=(10_000,))
     ds = lgb.Dataset(X, y, categorical_feature=["x1"])

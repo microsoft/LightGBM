@@ -459,7 +459,7 @@ def test_get_data_polars_frame_subset(rng):
 # ------------------------------------------- CATEGORICAL ----------------------------------------- #
 
 
-def test_polars_categorical_encoding(tmp_path):
+def test_categorical_encoding(tmp_path):
     cat1_categories = ["a", "b", "c"]
     cat1_values = ["a", "b", "c", "b", "a"]
     cat2_categories = ["b", "c", "d"]
@@ -506,11 +506,10 @@ def test_polars_categorical_encoding(tmp_path):
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
-def test_polars_categorical_encoding_unseen_category(tmp_path):
+def test_categorical_encoding_unseen_category(tmp_path):
     train_values = ["a", "b", "c", "a", "b"]
     valid_values = ["a", "c", "d", "d", "a"]  # "d" is unseen in training data
 
-    params = dummy_dataset_params()
     train_df = pl.DataFrame(
         {
             "cat_col": pl.Series(train_values, dtype=pl.Categorical(ordering="lexical")),
@@ -524,8 +523,8 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
         }
     )
 
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=params)
-    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     train_ds.construct()
     valid_ds.construct()
 
@@ -536,55 +535,74 @@ def test_polars_categorical_encoding_unseen_category(tmp_path):
             "num_col": [6.0, 7.0, 8.0, 9.0, 10.0],
         }
     )
-    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=params)
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[1, 0, 1, 0, 1], reference=train_ds, params=dummy_dataset_params())
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_polars_categorical_encoding_registered_but_unobserved(tmp_path):
-    params = dummy_dataset_params()
-
-    # Train sees: Enum a(0),c(2) and Categorical a,b
-    train_df = pl.DataFrame(
+def test_categorical_encoding_registered_but_unobserved(tmp_path):
+    # Define full DataFrame with all categories observed
+    full_df = pl.DataFrame(
         {
-            "ordered_col": pl.Series(["a", "c", "c"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
-            "unordered_col": pl.Series(["a", "b", "b"], dtype=pl.Categorical(ordering="lexical")),
+            "unordered_col": pl.Series(["a", "b", "c", "d"], dtype=pl.Categorical(ordering="lexical")),
+            "ordered_col": pl.Series(["e", "f", "g", "h"], dtype=pl.Enum(categories=["e", "f", "g", "h"])),
         }
     )
-    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=params)
-    train_ds.construct()
 
-    # Valid: Enum has b(1, interpolated) and d(3, clipped); Categorical has c (unseen)
+    # Slice train from full_df so all categories are preserved despite not all being observed
+    train_df = full_df[[0, 2, 2]]  # ["a", "c", "c"] and ["e", "g", "g"]
     valid_df = pl.DataFrame(
         {
-            "ordered_col": pl.Series(["a", "b", "d"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
-            "unordered_col": pl.Series(["a", "c", "b"], dtype=pl.Categorical(ordering="lexical")),
+            "unordered_col": pl.Series(["a", "b", "d"], dtype=pl.Categorical(ordering="lexical")),
+            "ordered_col": pl.Series(["h", "e", "f"], dtype=pl.Enum(categories=["e", "f", "g", "h"])),
         }
     )
-    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+
+    train_ds = lgb.Dataset(train_df, label=[0, 1, 0], params=dummy_dataset_params())
+    valid_ds = lgb.Dataset(valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
+    train_ds.construct()
     valid_ds.construct()
 
-    # Reference: Enum b,d both map to same bin as c; Categorical c maps to NaN
+    # NOTE: Polars is deviating from the pandas behavior here. In pandas, the category set is attached to
+    # the dtype and unobserved categories are preserved. In Polars, unoberved categories are dropped.
+    assert train_ds.pandas_categorical[0] == ["a", "c"]
+    assert train_ds.pandas_categorical[1] == ["e", "f", "g", "h"]
+    assert train_ds.params["categorical_column"] == [0]  # only unordered column is treated as categorical
+
+    # Python-side encoding: both ordered and unordered columns use all registered categories to encode
+    valid_df_encoded = lgb.basic._data_from_narwhals(
+        data=valid_df,
+        feature_name="auto",
+        categorical_feature="auto",
+        pandas_categorical=train_ds.pandas_categorical,
+    )[0]
+    assert valid_df_encoded[:, 0].to_list() == [0.0, None, None]  # a -> 0, b -> None, d -> None
+    assert valid_df_encoded[:, 1].to_list() == [3.0, 0.0, 1.0]  # h -> 3, e -> 0, f -> 1
+
+    # C++ binning
+    # - Unordered columns: only codes observed during training are binned. Unseen codes are treated as missing.
+    # - Ordered columns: treats as continuous. Unseen values interpolate (e<f<g) or clip (h clipped to g).
     ref_valid_df = pl.DataFrame(
         {
-            "ordered_col": pl.Series(["a", "c", "c"], dtype=pl.Enum(categories=["a", "b", "c", "d"])),
-            "unordered_col": pl.Series(["a", None, "b"], dtype=pl.Categorical(ordering="lexical")),
+            "unordered_col": pl.Series(["a", None, None], dtype=pl.Categorical(ordering="lexical")),
+            "ordered_col": pl.Series(["g", "e", "g"], dtype=pl.Enum(categories=["e", "f", "g", "h"])),
         }
     )
-    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=params)
+    ref_valid_ds = lgb.Dataset(ref_valid_df, label=[0, 1, 0], reference=train_ds, params=dummy_dataset_params())
     ref_valid_ds.construct()
 
     assert_datasets_equal(tmp_path, valid_ds, ref_valid_ds)
 
 
-def test_polars_categorical_with_missing_values(tmp_path):
+def test_categorical_with_missing_values(tmp_path):
     categories = ["a", "b"]
-    values = ["a", "b", None, "a", None]
+    values_none = ["a", "b", None, "a", None]
+    # NOTE: Polars does not allow NaN values in categorical columns
 
     X = pl.DataFrame(
         {
-            "cat": pl.Series(values, dtype=pl.Categorical(ordering="lexical")),
+            "cat_none": pl.Series(values_none, dtype=pl.Categorical(ordering="lexical")),
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -592,11 +610,11 @@ def test_polars_categorical_with_missing_values(tmp_path):
 
     ds = lgb.Dataset(X, label=y, params=dummy_dataset_params())
     ds.construct()
-    assert ds.pandas_categorical[0] == categories
+    assert ds.pandas_categorical == [categories]
 
     ref_df = pl.DataFrame(
         {
-            "cat": [0.0, 1.0, np.nan, 0.0, np.nan],
+            "cat_none": [0.0, 1.0, np.nan, 0.0, np.nan],
             "num": [1.0, 2.0, 3.0, 4.0, 5.0],
         }
     )
@@ -605,7 +623,7 @@ def test_polars_categorical_with_missing_values(tmp_path):
     assert_datasets_equal(tmp_path, ds, ref_ds)
 
 
-def test_polars_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
+def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     X = pl.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
     y = rng.uniform(size=(10_000,))
     ds = lgb.Dataset(X, y, categorical_feature=["x1"])
