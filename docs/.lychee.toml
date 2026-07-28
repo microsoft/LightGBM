@@ -24,7 +24,7 @@ exclude = [
     '^https://www\.jstor\.org/stable/2281952$',
     '^https://dl\.acm\.org/doi/10\.1145/3298689\.3347033$',
     '^https://.*medium\.com/.*',
-    "^https://www\.ozone3d\.net/gpu_caps_viewer/.*",
+    '^https://www\.ozone3d\.net/gpu_caps_viewer/.*',
     '^https://packages\.ubuntu\.com/search.*',
     '^https://stackoverflow\.com/.*',
     '^https://.*\.stackexchange\.com/.*',
