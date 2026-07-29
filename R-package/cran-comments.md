@@ -1,5 +1,26 @@
 # CRAN Submission History
 
+## v4.7.0 - Submission 1 - (July 18, 2026)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This fixed the following issue reported by CRAN for several check flavors.
+
+```text
+Version: 4.6.0
+Check: whether package can be installed
+Result: WARN
+  Found the following significant warnings:
+    Warning: src/Makevars.win: Unknown C++ standard '@CXX_STD@' was ignored
+  See 'd:/Rcompile/CRANpkg/local/4.6/lightgbm.Rcheck/00install.out' for details.
+  * used C++ compiler: 'g++.exe (GCC) 14.3.0'
+Flavor: r-release-windows-x86_64
+```
+
 ## v4.6.0 - Submission 1 - (February 13, 2025)
 
 ### CRAN response
@@ -106,7 +127,7 @@ v4.1.0 was not submitted to CRAN, because https://github.com/lightgbm-org/LightG
 > Dear maintainer,
 > package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
 
-The logs linked from those messagges showed one issue remaining on Debian (0 on Windows).
+The logs linked from those messages showed one issue remaining on Debian (0 on Windows).
 
 ```text
 * checking examples ... [7s/4s] NOTE

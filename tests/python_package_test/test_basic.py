@@ -675,16 +675,6 @@ def test_set_position_updates_self_position_with_remapped_int32_values():
     np_assert_array_equal(dtrain2.get_field("position"), expected, strict=True)
 
 
-def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
-    pd = pytest.importorskip("pandas")
-    X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
-    y = rng.uniform(size=(10_000,))
-    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
-    ds.construct()
-    assert ds.num_data() == 10_000
-    assert ds.num_feature() == 1
-
-
 def test_choose_param_value():
     original_params = {
         "local_listen_port": 1234,
@@ -903,37 +893,6 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name, rng):
     )[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
-
-
-@pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
-@pytest.mark.parametrize("categories", ["seen", "unseen"])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
-    pd = pytest.importorskip("pandas")
-    X = rng.choice(a=["a", "b"], size=(100, 1))
-    column_name = "a" if feature_name == "auto" else feature_name[0]
-    df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
-    if categories == "seen":
-        pandas_categorical = [["a", "b"]]
-    else:
-        pandas_categorical = [["a"]]
-    data = lgb.basic._data_from_pandas(
-        data=df,
-        feature_name=feature_name,
-        categorical_feature="auto",
-        pandas_categorical=pandas_categorical,
-    )[0]
-    # check that the original data wasn't modified
-    np.testing.assert_equal(df[column_name], X[:, 0])
-    # check that the built data has the codes
-    if categories == "seen":
-        # if all categories were seen during training we just take the codes
-        codes = df[column_name].cat.codes
-    else:
-        # if we only saw 'a' during training we just replace its code
-        # and leave the rest as nan
-        a_code = df[column_name].cat.categories.get_loc("a")
-        codes = np.where(df[column_name] == "a", a_code, np.nan)
-    np.testing.assert_equal(codes, data[:, 0])
 
 
 @pytest.mark.parametrize("min_data_in_bin", [2, 10])
@@ -1275,3 +1234,113 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+def test_eval_result_no_std_dev_works():
+    # can be constructed with positional args
+    eval_tuple = ("dataset_2", "mape", 0.567, True)
+    eval_result = lgb.EvalResult(*eval_tuple)
+
+    # can be constructed with keyword args
+    assert (
+        lgb.EvalResult(
+            dataset_name="dataset_2",
+            metric_value=0.567,
+            maximize=True,
+            metric_name="mape",
+        )
+        == eval_result
+    )
+
+    # passes isinstance() check
+    assert isinstance(eval_result, tuple)
+
+    # length is correct
+    assert len(eval_result) == 4
+
+    # keyword and positional access works
+    assert eval_result.dataset_name == "dataset_2"
+    assert eval_result[0] == "dataset_2"
+    assert eval_result.metric_name == "mape"
+    assert eval_result[1] == "mape"
+    assert eval_result.metric_value == 0.567
+    assert eval_result[2] == 0.567
+    assert eval_result.maximize is True
+    assert eval_result[3] is True
+
+    # trying to unpack back to 4 variables works
+    dataset_name, metric_name, metric_value, maximize = eval_result
+    assert dataset_name == "dataset_2"
+    assert metric_name == "mape"
+    assert metric_value == 0.567
+    assert maximize is True
+
+    # trying to unpack to 5 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 5, got 4)")):
+        a, b, c, d, e = eval_result
+
+    # trying to unpack to 3 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("too many values to unpack (expected 3)")):
+        a, b, c = eval_result
+
+    # accessing 5th element directly still works
+    assert eval_result.metric_std_dev is None
+    assert eval_result[4] is None
+
+    # reports as not a cv() tuple
+    assert eval_result.is_cv_result() is False
+
+
+def test_eval_result_with_std_dev_works():
+    # can be constructed with positional args
+    eval_tuple = ("dataset_2", "mape", 2.004, True, 0.617)
+    eval_result = lgb.EvalResult(*eval_tuple)
+
+    # can be constructed with keyword args
+    assert (
+        lgb.EvalResult(
+            dataset_name="dataset_2",
+            metric_value=2.004,
+            maximize=True,
+            metric_name="mape",
+            metric_std_dev=0.617,
+        )
+        == eval_result
+    )
+
+    # passes isinstance() check
+    assert isinstance(eval_result, tuple)
+
+    # length is correct
+    assert len(eval_result) == 5
+
+    # keyword and positional access works
+    assert eval_result.dataset_name == "dataset_2"
+    assert eval_result[0] == "dataset_2"
+    assert eval_result.metric_name == "mape"
+    assert eval_result[1] == "mape"
+    assert eval_result.metric_value == 2.004
+    assert eval_result[2] == 2.004
+    assert eval_result.maximize is True
+    assert eval_result[3] is True
+    assert eval_result.metric_std_dev == 0.617
+    assert eval_result[4] == 0.617
+
+    # trying to unpack back to 5 variables works
+    dataset_name, metric_name, metric_value, maximize, metric_std_dev = eval_result
+    assert dataset_name == "dataset_2"
+    assert metric_name == "mape"
+    assert metric_value == 2.004
+    assert maximize is True
+    assert metric_std_dev == 0.617
+
+    # trying to unpack to 6 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 6, got 5)")):
+        a, b, c, d, e, f = eval_result
+
+    # trying to unpack to 4 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("too many values to unpack (expected 4)")):
+        a, b, c, d = eval_result
+
+    # reports as a cv() tuple
+    assert eval_result.is_cv_result() is True

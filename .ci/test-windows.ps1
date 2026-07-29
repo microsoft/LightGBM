@@ -33,8 +33,11 @@ if ($env:TASK -eq "cpp-tests") {
 if ($env:TASK -eq "swig") {
     $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
     $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
+    $ReleaseInfo = Invoke-RestMethod "https://sourceforge.net/projects/swig/best_release.json"
+    $SwigFilename = $ReleaseInfo.platform_releases.windows.filename
+    # e.g. "/swigwin/swigwin-4.4.1/swigwin-4.4.1.zip"
     $params = @{
-        Uri = "https://sourceforge.net/projects/swig/files/latest/download"
+        Uri = "https://sourceforge.net/projects/swig/files$SwigFilename/download"
         OutFile = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip"
         UserAgent = "curl"
     }
@@ -86,6 +89,7 @@ if ($env:PYTHON_VERSION -eq "3.10") {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 
     $condaParams = @(
+        "-q",
         "-y",
         "-n", "$env:CONDA_ENV",
         "--file", "$env:CONDA_REQUIREMENT_FILE",
@@ -167,7 +171,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
     # install optional plotting libraries
     # (not necessary for pixi-managed environments, where they're just installed by default)
     if ($env:PYTHON_VERSION -ne "3.10") {
-        conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
+        conda install -q -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
     }
     # Run all examples
     foreach ($file in @(Get-ChildItem *.py)) {

@@ -113,6 +113,7 @@ if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
 else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
     conda create \
+        -q \
         -y \
         -n "${CONDA_ENV}" \
         --file "${CONDA_REQUIREMENT_FILE}" \
@@ -292,7 +293,7 @@ matplotlib.use\(\"Agg\"\)\
     # install optional plotting libraries
     # (not necessary for pixi-managed environments, where they're just installed by default)
     if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
-        conda install -y -n $CONDA_ENV \
+        conda install -q -y -n $CONDA_ENV \
             'h5py>=3.10' \
             'ipywidgets>=8.1.2' \
             'notebook>=7.1.2'
@@ -304,7 +305,7 @@ matplotlib.use\(\"Agg\"\)\
 
     # importing the library should succeed even if all optional dependencies are not present
     if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
-        conda uninstall -n $CONDA_ENV --force --yes \
+        conda uninstall -q -n $CONDA_ENV --force --yes \
             cffi \
             dask \
             distributed \
