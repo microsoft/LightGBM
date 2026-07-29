@@ -10,7 +10,7 @@
 
 * [Installation](#installation)
     - [Installing the CRAN Package](#installing-the-cran-package)
-    - [Installing from Source with CMake](#install)
+    - [Installing from Source with CMake](#installation)
     - [Installing a GPU-enabled Build](#installing-a-gpu-enabled-build)
     - [Installing Precompiled Binaries](#installing-precompiled-binaries)
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
@@ -83,7 +83,7 @@ To check the values R is using, run the following:
 R CMD config --all
 ```
 
-### Installing from Source with CMake <a id="install"></a>
+### <a id="install"></a>Installing from Source with CMake
 
 You need to install git and [CMake](https://cmake.org/) first.
 
@@ -221,7 +221,7 @@ These packages do not require compilation, so they will be faster and easier to 
 
 CRAN does not prepare precompiled binaries for Linux, and as of this writing neither does this project.
 
-### Installing from a Pre-compiled lib_lightgbm <a id="lib_lightgbm"></a>
+### <a id="lib_lightgbm"></a>Installing from a Pre-compiled lib_lightgbm
 
 Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R-package that wraps it.
 
