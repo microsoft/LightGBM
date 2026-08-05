@@ -33,8 +33,8 @@ import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, pd_CategoricalDtype, pd_DataFrame, pd_Series
 
-_NARWHALS_MAJOR, _NARWHALS_MINOR, *_ = nw.__version__.split(".")
-_NARWHALS_VERSION_GTE_2_23 = (int(_NARWHALS_MAJOR), int(_NARWHALS_MINOR)) >= (2, 23)
+_NARWHALS_VERSION = tuple(int(v) for v in nw.__version__.split("."))
+_NARWHALS_VERSION_GTE_2_23 = _NARWHALS_VERSION >= (2, 23)
 
 if TYPE_CHECKING:
     from typing import Literal, TypeGuard
