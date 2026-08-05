@@ -31,7 +31,7 @@ import narwhals.typing as nwt
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, pd_DataFrame, pd_Series
+from .compat import PANDAS_INSTALLED, concat, pd_CategoricalDtype, pd_DataFrame, pd_Series
 
 _NARWHALS_MAJOR, _NARWHALS_MINOR, *_ = nw.__version__.split(".")
 _NARWHALS_VERSION_GTE_2_23 = (int(_NARWHALS_MAJOR), int(_NARWHALS_MINOR)) >= (2, 23)
@@ -738,24 +738,24 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 
 def _check_for_bad_narwhals_dtypes(data: nw.DataFrame) -> None:
-    allowed_dtypes = (nw_dtypes.IntegerType, nw_dtypes.FloatType, nw.Boolean, nw.Categorical, nw.Enum)
-    bad_types = {col: dtype for col, dtype in data.schema.items() if not isinstance(dtype, allowed_dtypes)}
-    # workaround for narwhals < 2.23: Polars Categorical with defined categories is
-    # reported as Unknown in the schema but correctly selected by ncs.categorical()
-    # (https://github.com/narwhals-dev/narwhals/issues/3719)
-    # This workaround can be removed once minimum narwhals version is 2.23.
-    if not _NARWHALS_VERSION_GTE_2_23 and bad_types:
-        categorical_cols = data.select(ncs.categorical()).columns
-        bad_types = {col: dtype for col, dtype in bad_types.items() if col not in categorical_cols}
-    # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to re-check
-    # those bad types to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
-    if PANDAS_INSTALLED and data.implementation.is_pandas() and bad_types:
-        native_dtypes = data.to_native().dtypes
+    # Narwhals schema inference does not support pandas' SparseDtype columns, so we need to check pandas
+    # types separately to prevent false positives (https://github.com/narwhals-dev/narwhals/issues/3722)
+    if data.implementation.is_pandas():
         bad_types = {
             column_name: dtype
-            for column_name, dtype in bad_types.items()
-            if not _is_allowed_numpy_dtype(native_dtypes[column_name].type)
+            for column_name, dtype in data.to_native().dtypes.items()
+            if not isinstance(dtype, pd_CategoricalDtype) and not _is_allowed_numpy_dtype(dtype.type)
         }
+    else:
+        allowed_dtypes = (nw_dtypes.IntegerType, nw_dtypes.FloatType, nw.Boolean, nw.Categorical, nw.Enum)
+        bad_types = {col: dtype for col, dtype in data.schema.items() if not isinstance(dtype, allowed_dtypes)}
+        # workaround for narwhals < 2.23: Polars Categorical with defined categories is
+        # reported as Unknown in the schema but correctly selected by ncs.categorical()
+        # (https://github.com/narwhals-dev/narwhals/issues/3719)
+        # This workaround can be removed once minimum narwhals version is 2.23.
+        if not _NARWHALS_VERSION_GTE_2_23 and bad_types:
+            categorical_cols = data.select(ncs.categorical()).columns
+            bad_types = {col: dtype for col, dtype in bad_types.items() if col not in categorical_cols}
     if bad_types:
         raise ValueError(
             f"DataFrame dtypes must be int, float, bool, categorical or enum.\n"
