@@ -241,6 +241,15 @@ def test_xendcg():
     assert gbm.best_score_["valid_0"]["ndcg@3"] > 0.6253
 
 
+def test_estimator_docstrings():
+    from numpydoc.docscrape import NumpyDocString
+    import lightgbm as lgb
+
+    classifier_docs = NumpyDocString(lgb.LGBMClassifier.fit.__doc__)
+    regressor_docs = NumpyDocString(lgb.LGBMRegressor.fit.__doc__)
+
+
+
 def test_eval_at_aliases():
     rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
     X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
