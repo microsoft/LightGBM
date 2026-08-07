@@ -138,6 +138,19 @@ Tree* LinearTreeLearner<TREE_LEARNER_TYPE>::Train(const score_t* gradients, cons
 template <typename TREE_LEARNER_TYPE>
 Tree* LinearTreeLearner<TREE_LEARNER_TYPE>::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
   auto tree = TREE_LEARNER_TYPE::FitByExistingTree(old_tree, gradients, hessians);
+  if (!old_tree->is_linear()) {
+    // old_tree was never trained as a linear tree -- e.g. a constant tree
+    // produced when the objective determined this class didn't need
+    // boosting (single-class data), which is built via the plain
+    // Tree(max_leaves, false, /*is_linear=*/false) placeholder and so
+    // never had its per-leaf linear-model arrays (leaf_features_,
+    // leaf_coeff_, leaf_const_) allocated. Forcing SetIsLinear(true) on
+    // it here would leave those arrays empty while CalculateLinear's
+    // is_refit path indexes into them (e.g. LeafFeatures()), reading
+    // past the end of a zero-length vector. Refit it as the constant
+    // tree it actually is instead.
+    return tree;
+  }
   bool has_nan = false;
   if (any_nan_) {
     for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {

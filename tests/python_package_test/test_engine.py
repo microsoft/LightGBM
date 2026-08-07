@@ -3926,6 +3926,36 @@ def test_linear_single_leaf():
     assert log_loss(y_train, y_pred) < 0.661
 
 
+def test_linear_refit_single_class_does_not_segfault(rng):
+    # a linear-tree model refit on data containing only one label class
+    # produces trees that were never actually trained as linear (the
+    # objective decides that class doesn't need boosting), which used to
+    # segfault refit() by reading un-allocated per-leaf linear-model
+    # arrays. See https://github.com/lightgbm-org/LightGBM/issues/6792.
+    X = rng.integers(low=0, high=10, size=(1_000, 5))
+    y = np.ones(shape=(X.shape[0],))
+    categorical_feature = list(range(X.shape[1]))
+
+    train_data = lgb.Dataset(X, label=y, categorical_feature=categorical_feature)
+    bst = lgb.train(
+        train_set=train_data,
+        params={"objective": "binary", "num_leaves": 7, "linear_tree": True, "verbose": -1},
+        num_boost_round=2,
+    )
+    # must not crash the process
+    refit_bst = bst.refit(X, label=y, categorical_feature=categorical_feature)
+    assert isinstance(refit_bst, lgb.Booster)
+    y_pred = refit_bst.predict(X)
+    assert np.all(np.isfinite(y_pred))
+
+    # those constant trees must stay non-linear, so that the (num_leaves <= 1
+    # && !is_linear) early return in Tree's model-string constructor still
+    # applies to them. Marking them linear instead makes the deserializer try
+    # to parse the legitimately-empty leaf_weight field and abort the process.
+    reloaded = lgb.Booster(model_str=refit_bst.model_to_string())
+    np.testing.assert_allclose(y_pred, reloaded.predict(X))
+
+
 def test_linear_raises_informative_errors_on_unsupported_params():
     X, y = make_synthetic_regression()
     with pytest.raises(lgb.basic.LightGBMError, match="Cannot use regression_l1 objective when fitting linear trees"):

@@ -42,6 +42,16 @@ class LinearTreeLearner: public TREE_LEARNER_TYPE {
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
     CHECK_LE(tree->num_leaves(), this->data_partition_->num_leaves());
+    if (!tree->is_linear()) {
+      // tree was never trained as a linear tree (e.g. the constant
+      // placeholder built when a class doesn't need boosting), so its
+      // leaf_const_/leaf_coeff_ arrays were never allocated. Reading
+      // them here (via LeafConst/LeafCoeffs below) would index past the
+      // end of a zero-length vector. Fall back to the plain non-linear
+      // implementation, same as TREE_LEARNER_TYPE would use directly.
+      TREE_LEARNER_TYPE::AddPredictionToScore(tree, out_score);
+      return;
+    }
     bool has_nan = false;
     if (any_nan_) {
       for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {
