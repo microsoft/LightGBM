@@ -810,8 +810,8 @@ struct Config {
   bool precise_float_parser = false;
 
   // desc = path to a ``.json`` file that specifies customized parser initialized configuration
-  // desc = see `lightgbm-transform <https://github.com/lightgbm-org/LightGBM-transform>`__ for usage examples
-  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/lightgbm-org/LightGBM-transform/issues>`__
+  // desc = see `lightgbm-transform <https://github.com/Microsoft/LightGBM-transform>`__ for usage examples
+  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/Microsoft/LightGBM-transform/issues>`__
   // desc = *New in version 4.0.0*
   std::string parser_config_file = "";
 
