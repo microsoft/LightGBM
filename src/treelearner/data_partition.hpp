@@ -98,7 +98,7 @@ class DataPartition {
   * \param dataset dataset that holds the bin data
   * \param feature index of the feature to split on
   * \param threshold threshold that want to split
-  * \param num_threshold number of thresholds
+  * \param num_threshold number of "words" in the bitset for categorical features, 1 for continuous features
   * \param default_left whether missing values go to the left leaf
   * \param right_leaf index of right leaf
   */
