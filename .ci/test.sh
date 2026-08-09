@@ -83,9 +83,13 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# Match the standard CPython ABI exactly. A trailing wildcard also matches free-threaded
-# builds like "cp314t", which are a different runtime target from "cp314".
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp${PYTHON_VERSION/./}]"
+# The broad build match keeps compatibility with the available builds for older Python versions.
+# Python 3.14 also has free-threaded "cp314t" builds, so select the standard ABI explicitly there.
+CONDA_PYTHON_BUILD="*_cp*"
+if [[ "${PYTHON_VERSION}" == "3.14" ]]; then
+    CONDA_PYTHON_BUILD="*_cp314"
+fi
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=${CONDA_PYTHON_BUILD}]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
