@@ -83,9 +83,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
-# other implementations like pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
+# Match the standard CPython ABI exactly. A trailing wildcard also matches free-threaded
+# builds like "cp314t", which are a different runtime target from "cp314".
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp${PYTHON_VERSION/./}]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
@@ -127,6 +127,10 @@ else
     # shellcheck disable=SC1091
     source activate $CONDA_ENV
 fi
+
+# Keep this check close to environment creation so an unexpected free-threaded solve fails
+# with the actual cause instead of surfacing later as an unrelated native test crash.
+python -c 'import sysconfig; assert not sysconfig.get_config_var("Py_GIL_DISABLED"), "CI selected a free-threaded CPython build"'
 
 cd "${BUILD_DIRECTORY}"
 
