@@ -83,11 +83,13 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# The broad build match keeps compatibility with the available builds for older Python versions.
-# Python 3.14 also has free-threaded "cp314t" builds, so select the standard ABI explicitly there.
+# Python 3.13 and later have both standard and free-threaded conda builds.
+# Older standard builds use the "cpython" tag, so keep the broader match for them.
+PYTHON_MAJOR_VERSION="${PYTHON_VERSION%%.*}"
+PYTHON_MINOR_VERSION="${PYTHON_VERSION#*.}"
 CONDA_PYTHON_BUILD="*_cp*"
-if [[ "${PYTHON_VERSION}" == "3.14" ]]; then
-    CONDA_PYTHON_BUILD="*_cp314"
+if ((PYTHON_MAJOR_VERSION > 3 || (PYTHON_MAJOR_VERSION == 3 && PYTHON_MINOR_VERSION >= 13))); then
+    CONDA_PYTHON_BUILD="*_cp${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}"
 fi
 CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=${CONDA_PYTHON_BUILD}]"
 
