@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: update-version
         name: update-version
-        entry: bash
+        entry: sh
         args:
           - .ci/update-version.sh
         language: system
