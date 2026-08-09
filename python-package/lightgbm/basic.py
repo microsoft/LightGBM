@@ -198,7 +198,7 @@ class _MissingType(Enum):
 
 class _DummyLogger:
     def info(self, msg: str) -> None:
-        print(msg)  # noqa: T201
+        print(msg, flush=True)  # noqa: T201
 
     def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
