@@ -33,7 +33,7 @@ jobs:
         with:
           fetch-depth: 5
           persist-credentials: false
-          submodules: false
+          submodules: true
       - name: Build docs
         run: |
           export CONDA=${HOME}/miniforge

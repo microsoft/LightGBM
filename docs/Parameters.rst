@@ -989,9 +989,9 @@ Dataset Parameters
 
    -  path to a ``.json`` file that specifies customized parser initialized configuration
 
-   -  see `lightgbm-transform <https://github.com/lightgbm-org/LightGBM-transform>`__ for usage examples
+   -  see `lightgbm-transform <https://github.com/Microsoft/LightGBM-transform>`__ for usage examples
 
-   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/lightgbm-org/LightGBM-transform/issues>`__
+   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/Microsoft/LightGBM-transform/issues>`__
 
    -  *New in version 4.0.0*
 
