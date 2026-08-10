@@ -80,7 +80,21 @@ if ($env:PYTHON_VERSION -eq "3.10") {
     conda config --add channels nodefaults ; Assert-Output $?
     conda config --add channels conda-forge ; Assert-Output $?
     conda config --set channel_priority strict ; Assert-Output $?
-    conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
+
+    # From Python 3.13 onwards, CPython packages on conda-forge have build strings
+    # with formats like "*_cp314".
+    #
+    # Have to be specific here (no trailing wildcard) to avoid unintentionally pulling
+    # in free-threaded builds (e.g. "*_cp314t").
+    $PythonMajorVersion, $PythonMinorVersion = $env:PYTHON_VERSION.Split(".")
+    if ([int]$PythonMajorVersion -gt 3 -or ([int]$PythonMajorVersion -eq 3 -and [int]$PythonMinorVersion -gt 12)) {
+        $env:PYTHON_ABI_TAG = "cp$($env:PYTHON_VERSION -replace '\.', '')"
+    } else {
+        $env:PYTHON_ABI_TAG = "cpython"
+    }
+    $env:CONDA_PYTHON_REQUIREMENT = "python=$env:PYTHON_VERSION[build=*_$env:PYTHON_ABI_TAG]"
+
+    conda install -q -y conda "$env:CONDA_PYTHON_REQUIREMENT" ; Assert-Output $?
 
     # print output of 'conda info', to help in submitting bug reports
     Write-Output "conda info:"
@@ -93,7 +107,7 @@ if ($env:PYTHON_VERSION -eq "3.10") {
         "-y",
         "-n", "$env:CONDA_ENV",
         "--file", "$env:CONDA_REQUIREMENT_FILE",
-        "python=$env:PYTHON_VERSION[build=*_cp*]"
+        "$env:CONDA_PYTHON_REQUIREMENT"
     )
     conda create @condaParams ; Assert-Output $?
 
