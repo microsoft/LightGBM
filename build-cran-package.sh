@@ -125,7 +125,6 @@ cd "${TEMP_R_DIR}"
     # and date so they don't have to be updated manually
     sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" configure.ac
     sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
-    sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
 
     # Remove 'region', 'endregion', and 'warning' pragmas.
     # This won't change the correctness of the code. CRAN does
