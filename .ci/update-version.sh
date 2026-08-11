@@ -1,4 +1,11 @@
 #!/bin/sh
+#
+# [description]
+#     Update files in source control based on the content of 'VERSION.txt'.
+#
+# [usage]
+#
+#     update-version.sh
 
 set -e -u
 
@@ -16,17 +23,18 @@ update_file() {
     printf '%s\n' "${UPDATED_CONTENTS}" > "${TARGET_FILE}"
 }
 
-DESCRIPTION_FILE="./R-package/DESCRIPTION"
-CONFIGURE_AC_FILE="./R-package/configure.ac"
+update_file \
+    ./.appveyor.yml \
+    "s|^version: .*$|version: ${LGB_VERSION}.{build}|"
 
 update_file \
-    "${DESCRIPTION_FILE}" \
+    ./python-package/pyproject.toml \
+    "s|^version = \"[0-9a-z.]+\"$|version = \"${LGB_VERSION}\"|"
+
+update_file \
+    ./R-package/DESCRIPTION \
     "s|^Version: .*$|Version: ${LGB_VERSION}|"
-update_file \
-    "${CONFIGURE_AC_FILE}" \
-    "s|^AC_INIT.*$|AC_INIT([lightgbm], [${LGB_VERSION}], [], [lightgbm], [])|"
 
-grep -Fqx "Version: ${LGB_VERSION}" "${DESCRIPTION_FILE}"
-grep -Fqx \
-    "AC_INIT([lightgbm], [${LGB_VERSION}], [], [lightgbm], [])" \
-    "${CONFIGURE_AC_FILE}"
+update_file \
+    ./R-package/configure.ac \
+    "s|^AC_INIT.*$|AC_INIT([lightgbm], [${LGB_VERSION}], [], [lightgbm], [])|"

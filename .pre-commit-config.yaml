@@ -35,18 +35,18 @@ repos:
           - --filter=-build/include_subdir,-whitespace/line_length
   - repo: local
     hooks:
-      - id: update-version
-        name: update-version
-        entry: sh
-        args:
-          - .ci/update-version.sh
-        language: system
-        pass_filenames: false
       - id: check-omp-pragmas
         name: check-omp-pragmas
         entry: sh
         args:
           - .ci/check-omp-pragmas.sh
+        language: system
+        pass_filenames: false
+      - id: update-version
+        name: update-version
+        entry: sh
+        args:
+          - .ci/update-version.sh
         language: system
         pass_filenames: false
   - repo: https://github.com/adrienverge/yamllint
