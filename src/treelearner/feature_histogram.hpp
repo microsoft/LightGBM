@@ -56,7 +56,7 @@ class FeatureHistogram {
    * \brief Init the feature histogram
    * \param data the histogram data for this feature
    * \param data_int16 the 16-bit histogram data for this feature (used for quantized training via 'use_quantized_grad')
-   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled, and a pointer to the Config object with parameters
+   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled and a pointer to the Config object with parameters
    */
   void Init(hist_t* data, int16_t* data_int16, const FeatureMetainfo* meta) {
     meta_ = meta;
@@ -68,7 +68,7 @@ class FeatureHistogram {
   /*!
    * \brief Init the feature histogram
    * \param data the histogram data for this feature
-   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled, and a pointer to the Config object with parameters
+   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled and a pointer to the Config object with parameters
    */
   void Init(hist_t* data, const FeatureMetainfo* meta) {
     meta_ = meta;
