@@ -219,6 +219,11 @@ class MultiValBinWrapper {
     is_subrow_copied_ = is_subrow_copied;
   }
 
+  bool GetPairwiseRowData(PairwiseRowData* out) const {
+    return multi_val_bin_ != nullptr &&
+           multi_val_bin_->GetPairwiseRowData(out);
+  }
+
 
   #ifdef USE_CUDA
   const void* GetRowWiseData(
@@ -330,6 +335,11 @@ struct TrainingShareStates {
     if (multi_val_bin_wrapper_ != nullptr) {
       multi_val_bin_wrapper_->SetSubrowCopied(is_subrow_copied);
     }
+  }
+
+  bool GetPairwiseRowData(PairwiseRowData* out) const {
+    return multi_val_bin_wrapper_ != nullptr &&
+           multi_val_bin_wrapper_->GetPairwiseRowData(out);
   }
 
 

@@ -243,6 +243,39 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
+  if (use_active_pairwise_partition_) {
+    active_pairwise_full_leaf_indices_.resize(num_data_);
+    const PairwiseRowData* pairwise_row_data_ptr =
+        has_active_pairwise_row_data_ ? &active_pairwise_row_data_ : nullptr;
+    bool reuse_leaf_indices = false;
+    std::vector<data_size_t> active_leaf_counts;
+    if (pairwise_row_data_ptr != nullptr && tree->num_leaves() < 256) {
+      const uint8_t unassigned = static_cast<uint8_t>(tree->num_leaves());
+      active_leaf_counts.resize(tree->num_leaves());
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 4096)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        active_pairwise_full_leaf_indices_[i] = unassigned;
+      }
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic, 1)
+      for (int leaf = 0; leaf < tree->num_leaves(); ++leaf) {
+        data_size_t count = 0;
+        const data_size_t* indices =
+            data_partition_->GetIndexOnLeaf(leaf, &count);
+        active_leaf_counts[leaf] = count;
+        for (data_size_t i = 0; i < count; ++i) {
+          active_pairwise_full_leaf_indices_[indices[i]] =
+              static_cast<uint8_t>(leaf);
+        }
+      }
+      reuse_leaf_indices = true;
+    }
+    tree->RecomputeCounts(train_data_, num_data_,
+                          active_pairwise_full_leaf_indices_.data(),
+                          pairwise_row_data_ptr, reuse_leaf_indices,
+                          active_leaf_counts.empty()
+                              ? nullptr : active_leaf_counts.data());
+  }
+
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
@@ -296,6 +329,66 @@ void SerialTreeLearner::BeforeTrain() {
 
   col_sampler_.ResetByTree();
   train_data_->InitTrain(col_sampler_.is_feature_used_bytree(), share_state_.get());
+  use_active_pairwise_partition_ =
+      config_->objective == std::string("pairwise_lambdarank") &&
+      config_->num_leaves <= 256 &&
+      config_->min_data_in_leaf == 0 && config_->path_smooth <= kEpsilon &&
+      config_->bagging_fraction >= 1.0 && !config_->use_quantized_grad;
+  if (use_active_pairwise_partition_) {
+    has_active_pairwise_row_data_ =
+        share_state_->GetPairwiseRowData(&active_pairwise_row_data_);
+    const int num_threads = OMP_NUM_THREADS();
+    if (active_pairwise_thread_buffers_.size() !=
+        static_cast<size_t>(num_threads)) {
+      active_pairwise_thread_buffers_.resize(num_threads);
+    }
+    std::vector<data_size_t> thread_offsets(
+        static_cast<size_t>(num_threads) + 1, 0);
+#pragma omp parallel for schedule(static, 1) num_threads(num_threads)
+    for (int tid = 0; tid < num_threads; ++tid) {
+      const data_size_t begin = static_cast<data_size_t>(
+          static_cast<int64_t>(num_data_) * tid / num_threads);
+      const data_size_t end = static_cast<data_size_t>(
+          static_cast<int64_t>(num_data_) * (tid + 1) / num_threads);
+      std::vector<data_size_t>& indices =
+          active_pairwise_thread_buffers_[tid].indices;
+      indices.clear();
+      const size_t estimated_active =
+          static_cast<size_t>(end - begin + 2) / 3;
+      if (indices.capacity() < estimated_active) {
+        indices.reserve(estimated_active);
+      }
+      for (data_size_t i = begin; i < end; ++i) {
+        if (gradients_[i] != 0.0 || hessians_[i] != 0.0) {
+          indices.push_back(i);
+        }
+      }
+      thread_offsets[tid + 1] =
+          static_cast<data_size_t>(indices.size());
+    }
+    for (int tid = 0; tid < num_threads; ++tid) {
+      thread_offsets[tid + 1] += thread_offsets[tid];
+    }
+    active_pairwise_data_indices_.resize(thread_offsets.back());
+#pragma omp parallel for schedule(static, 1) num_threads(num_threads)
+    for (int tid = 0; tid < num_threads; ++tid) {
+      const std::vector<data_size_t>& indices =
+          active_pairwise_thread_buffers_[tid].indices;
+      if (!indices.empty()) {
+        std::memcpy(active_pairwise_data_indices_.data() + thread_offsets[tid],
+                    indices.data(), indices.size() * sizeof(data_size_t));
+      }
+    }
+    data_partition_->SetUsedDataIndices(
+        active_pairwise_data_indices_.data(),
+        static_cast<data_size_t>(active_pairwise_data_indices_.size()));
+  } else {
+    has_active_pairwise_row_data_ = false;
+    active_pairwise_thread_buffers_.clear();
+    active_pairwise_data_indices_.clear();
+    active_pairwise_full_leaf_indices_.clear();
+    data_partition_->SetUsedDataIndices(nullptr, 0);
+  }
   // initialize data partition
   data_partition_->Init();
 

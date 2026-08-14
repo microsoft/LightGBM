@@ -8,7 +8,8 @@ void UpdatePointwiseScoresForOneQuery(double* score_pointwise, const double* sco
   const std::vector<std::vector<std::pair<short, data_size_t>>>& left2right2pair_map,
   int truncation_level, double sigma, const CommonC::SigmoidCache& sigmoid_cache, bool model_indirect_comparison, bool model_conditional_rel,
   bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference, int indirect_comparison_max_rank,
-  double indirect_comparison_weight, double l2_pairwise_diff_weight) {
+  double indirect_comparison_weight, double l2_pairwise_diff_weight,
+  const data_size_t* direct_pair_index) {
 
   // get sorted indices for scores
   global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
@@ -41,13 +42,19 @@ void UpdatePointwiseScoresForOneQuery(double* score_pointwise, const double* sco
       double delta_score_total_weight = 0.0;
       int comparisons_direct = 0;
 
-      data_size_t pair = get_pair_index(left2right2pair_map[indexLeft], indexRight);
+      data_size_t pair = direct_pair_index == nullptr
+          ? get_pair_index(left2right2pair_map[indexLeft], indexRight)
+          : direct_pair_index[
+              static_cast<size_t>(indexLeft) * cnt_pointwise + indexRight];
       if (pair != static_cast<data_size_t>(-1)) {
         delta_score += score_pairwise[pair];
         ++comparisons_direct;
       }
 
-      data_size_t pair_inverse = get_pair_index(left2right2pair_map[indexRight], indexLeft);
+      data_size_t pair_inverse = direct_pair_index == nullptr
+          ? get_pair_index(left2right2pair_map[indexRight], indexLeft)
+          : direct_pair_index[
+              static_cast<size_t>(indexRight) * cnt_pointwise + indexLeft];
       if (pair_inverse != static_cast<data_size_t>(-1)) {
         delta_score -= score_pairwise[pair_inverse];
         ++comparisons_direct;
@@ -71,6 +78,7 @@ void UpdatePointwiseScoresForOneQuery(double* score_pointwise, const double* sco
         process_indirect_comparisons_optimized(
           indexLeft, indexRight, ranks, left2right2pair_map, right2left2pair_map,
           indirect_comparison_max_rank, indirect_comparison_above_only, model_conditional_rel,
+          direct_pair_index,
           // Case 1: (+, −)
           [&](data_size_t idxA, data_size_t idxB) noexcept { apply_score(idxA, idxB, +1, -1); },
           // Case 2: (−, −)

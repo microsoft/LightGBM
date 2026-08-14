@@ -44,6 +44,21 @@ const size_t kInt16HistEntrySize = 2 * sizeof(int16_t);
 const int kHistOffset = 2;
 const double kSparseThreshold = 0.7;
 
+struct PairwiseRowData {
+  const void* original_bins = nullptr;
+  const std::pair<data_size_t, data_size_t>* pair_indices = nullptr;
+  const uint8_t* ternary_bins = nullptr;
+  const float* differential_raw_values = nullptr;
+  const uint32_t* original_most_freq_bins = nullptr;
+  data_size_t num_pairwise_rows = 0;
+  data_size_t num_original_rows = 0;
+  int num_original_features = 0;
+  int num_differential_features = 0;
+  int ternary_bytes_per_row = 0;
+  int differential_raw_stride = 0;
+  uint8_t original_bin_bytes = 0;
+};
+
 #define GET_GRAD(hist, i) hist[(i) << 1]
 #define GET_HESS(hist, i) hist[((i) << 1) + 1]
 
@@ -678,6 +693,11 @@ class MultiValBin {
   virtual void FinishLoad() = 0;
 
   virtual bool IsSparse() = 0;
+
+  virtual bool GetPairwiseRowData(PairwiseRowData* out) const {
+    static_cast<void>(out);
+    return false;
+  }
 
   static MultiValBin* CreateMultiValBin(data_size_t num_data,
                                         data_size_t num_pairwise_data, int num_bin,

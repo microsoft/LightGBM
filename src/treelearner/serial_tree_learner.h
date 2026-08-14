@@ -104,6 +104,19 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) {
       return;
     }
+    if (use_active_pairwise_partition_ &&
+        active_pairwise_full_leaf_indices_.size() ==
+            static_cast<size_t>(num_data_)) {
+      std::vector<double> leaf_outputs(tree->num_leaves());
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        leaf_outputs[i] = static_cast<double>(tree->LeafOutput(i));
+      }
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        out_score[i] += leaf_outputs[active_pairwise_full_leaf_indices_[i]];
+      }
+      return;
+    }
 #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
@@ -195,6 +208,16 @@ class SerialTreeLearner: public TreeLearner {
   const score_t* hessians_;
   /*! \brief training data partition on leaves */
   std::unique_ptr<DataPartition> data_partition_;
+  /*! \brief nonzero-gradient rows used by pairwise tree construction */
+  struct alignas(64) ActivePairwiseThreadBuffer {
+    std::vector<data_size_t> indices;
+  };
+  std::vector<ActivePairwiseThreadBuffer> active_pairwise_thread_buffers_;
+  std::vector<data_size_t> active_pairwise_data_indices_;
+  std::vector<uint8_t> active_pairwise_full_leaf_indices_;
+  PairwiseRowData active_pairwise_row_data_;
+  bool has_active_pairwise_row_data_ = false;
+  bool use_active_pairwise_partition_ = false;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */

@@ -118,6 +118,235 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     score[(data_idx)] += static_cast<double>(leaf_value_[~node]);             \
   }\
 
+#define CountPredictionFun(niter, fidx_in_iter, decision_fun, iter_idx)       \
+  std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
+  for (int iter_i = 0; iter_i < (niter); ++iter_i) {                          \
+    iter[iter_i].reset(data->FeatureIterator((fidx_in_iter)));                \
+    iter[iter_i]->Reset(start);                                               \
+  }                                                                           \
+  for (data_size_t row = start; row < end; ++row) {                           \
+    int node = 0;                                                             \
+    while (node >= 0) {                                                       \
+      node = decision_fun(iter[(iter_idx)]->Get(row), node,                   \
+                          default_bins[node], max_bins[node]);                \
+    }                                                                         \
+    const int leaf = ~node;                                                   \
+    ++thread_counts[tid][leaf];                                               \
+    if (leaf_indices != nullptr) {                                            \
+      leaf_indices[row] = static_cast<uint8_t>(leaf);                         \
+    }                                                                         \
+  }
+
+template <typename BIN_TYPE>
+void Tree::RecomputePairwiseCountsInner(
+    const PairwiseRowData& row_data, data_size_t num_data,
+    const std::vector<uint32_t>& default_bins,
+    const std::vector<uint32_t>& max_bins,
+    std::vector<std::vector<data_size_t>>* thread_counts,
+    uint8_t* leaf_indices, bool reuse_leaf_indices,
+    bool count_reused_leaf_indices) const {
+  const BIN_TYPE* original_bins =
+      static_cast<const BIN_TYPE*>(row_data.original_bins);
+  const auto* pair_indices = row_data.pair_indices;
+  const uint8_t* ternary_bins = row_data.ternary_bins;
+  const int num_original_features = row_data.num_original_features;
+  const uint32_t* original_most_freq_bins =
+      row_data.original_most_freq_bins;
+  const int second_feature_end = 2 * num_original_features;
+  const int ternary_bytes_per_row = row_data.ternary_bytes_per_row;
+  const bool has_categorical = num_cat_ > 0;
+  Threading::For<data_size_t>(
+      0, num_data, 4096,
+      [this, original_bins, pair_indices, ternary_bins,
+       original_most_freq_bins,
+       num_original_features, second_feature_end, ternary_bytes_per_row,
+       has_categorical, &default_bins, &max_bins, thread_counts, leaf_indices,
+       reuse_leaf_indices, count_reused_leaf_indices]
+      (int tid, data_size_t start, data_size_t end) {
+        auto& counts = (*thread_counts)[tid];
+        for (data_size_t row = start; row < end; ++row) {
+          if (reuse_leaf_indices && leaf_indices[row] < num_leaves_) {
+            if (count_reused_leaf_indices) {
+              ++counts[leaf_indices[row]];
+            }
+            continue;
+          }
+          const auto pair = pair_indices[row];
+          const BIN_TYPE* first = original_bins +
+              static_cast<size_t>(pair.first) * num_original_features;
+          const BIN_TYPE* second = original_bins +
+              static_cast<size_t>(pair.second) * num_original_features;
+          const uint8_t* pair_ternary_bins = ternary_bins +
+              static_cast<size_t>(row) * ternary_bytes_per_row;
+          int node = 0;
+          while (node >= 0) {
+            const int feature = split_feature_inner_[node];
+            uint32_t bin;
+            if (feature < num_original_features) {
+              const uint32_t stored_bin =
+                  static_cast<uint32_t>(first[feature]);
+              const uint32_t most_freq_bin =
+                  original_most_freq_bins[feature];
+              bin = stored_bin == 0
+                  ? most_freq_bin
+                  : stored_bin - static_cast<uint32_t>(most_freq_bin > 0);
+            } else if (feature < second_feature_end) {
+              const int original_feature =
+                  feature - num_original_features;
+              const uint32_t stored_bin =
+                  static_cast<uint32_t>(second[original_feature]);
+              const uint32_t most_freq_bin =
+                  original_most_freq_bins[original_feature];
+              bin = stored_bin == 0
+                  ? most_freq_bin
+                  : stored_bin - static_cast<uint32_t>(most_freq_bin > 0);
+            } else {
+              const int differential_feature = feature - second_feature_end;
+              const uint8_t bit = static_cast<uint8_t>(
+                  1u << (differential_feature & 7));
+              const uint8_t* masks = pair_ternary_bins +
+                  ((differential_feature >> 3) << 1);
+              bin = (masks[0] & bit) != 0
+                  ? 0u : ((masks[1] & bit) != 0 ? 2u : 1u);
+            }
+            node = has_categorical
+                ? DecisionInner(bin, node, default_bins[node], max_bins[node])
+                : NumericalDecisionInner(
+                      bin, node, default_bins[node], max_bins[node]);
+          }
+          const int leaf = ~node;
+          ++counts[leaf];
+          if (leaf_indices != nullptr) {
+            leaf_indices[row] = static_cast<uint8_t>(leaf);
+          }
+        }
+      });
+}
+
+void Tree::RecomputeCounts(const Dataset* data, data_size_t num_data,
+                           uint8_t* leaf_indices,
+                           const PairwiseRowData* pairwise_row_data,
+                           bool reuse_leaf_indices,
+                           const data_size_t* reused_leaf_counts) {
+  Common::FunctionTimer fun_timer("Tree::RecomputeCounts", global_timer);
+  if (num_leaves_ <= 1) {
+    leaf_count_[0] = num_data;
+    return;
+  }
+  std::vector<uint32_t> default_bins(num_leaves_ - 1);
+  std::vector<uint32_t> max_bins(num_leaves_ - 1);
+  for (int i = 0; i < num_leaves_ - 1; ++i) {
+    const int fidx = split_feature_inner_[i];
+    const auto* bin_mapper = data->FeatureBinMapper(fidx);
+    default_bins[i] = bin_mapper->GetDefaultBin();
+    max_bins[i] = bin_mapper->num_bin() - 1;
+  }
+  const int num_threads = OMP_NUM_THREADS();
+  std::vector<std::vector<data_size_t>> thread_counts(
+      num_threads, std::vector<data_size_t>(num_leaves_, 0));
+  bool used_pairwise_row_data = false;
+  if (pairwise_row_data != nullptr &&
+      pairwise_row_data->original_bins != nullptr &&
+      pairwise_row_data->pair_indices != nullptr &&
+      pairwise_row_data->ternary_bins != nullptr &&
+      pairwise_row_data->original_most_freq_bins != nullptr &&
+      pairwise_row_data->num_pairwise_rows == num_data &&
+      pairwise_row_data->num_original_features > 0 &&
+      pairwise_row_data->num_differential_features >= 0 &&
+      pairwise_row_data->ternary_bytes_per_row ==
+          2 * ((pairwise_row_data->num_differential_features + 7) / 8)) {
+    const int num_routing_features =
+        2 * pairwise_row_data->num_original_features +
+        pairwise_row_data->num_differential_features;
+    used_pairwise_row_data = true;
+    for (int node = 0; node < num_leaves_ - 1; ++node) {
+      if (split_feature_inner_[node] < 0 ||
+          split_feature_inner_[node] >= num_routing_features) {
+        used_pairwise_row_data = false;
+        break;
+      }
+    }
+    if (used_pairwise_row_data) {
+      if (pairwise_row_data->original_bin_bytes == 1) {
+        RecomputePairwiseCountsInner<uint8_t>(
+            *pairwise_row_data, num_data, default_bins, max_bins,
+            &thread_counts, leaf_indices, reuse_leaf_indices,
+            reused_leaf_counts == nullptr);
+      } else if (pairwise_row_data->original_bin_bytes == 2) {
+        RecomputePairwiseCountsInner<uint16_t>(
+            *pairwise_row_data, num_data, default_bins, max_bins,
+            &thread_counts, leaf_indices, reuse_leaf_indices,
+            reused_leaf_counts == nullptr);
+      } else if (pairwise_row_data->original_bin_bytes == 4) {
+        RecomputePairwiseCountsInner<uint32_t>(
+            *pairwise_row_data, num_data, default_bins, max_bins,
+            &thread_counts, leaf_indices, reuse_leaf_indices,
+            reused_leaf_counts == nullptr);
+      } else {
+        used_pairwise_row_data = false;
+      }
+    }
+  }
+  if (!used_pairwise_row_data && num_cat_ > 0) {
+    if (data->num_features() > num_leaves_ - 1) {
+      Threading::For<data_size_t>(
+          0, num_data, 512,
+          [this, &data, &default_bins, &max_bins, &thread_counts, leaf_indices]
+          (int tid, data_size_t start, data_size_t end) {
+            CountPredictionFun(num_leaves_ - 1, split_feature_inner_[iter_i],
+                               DecisionInner, node);
+          });
+    } else {
+      Threading::For<data_size_t>(
+          0, num_data, 512,
+          [this, &data, &default_bins, &max_bins, &thread_counts, leaf_indices]
+          (int tid, data_size_t start, data_size_t end) {
+            CountPredictionFun(data->num_features(), iter_i, DecisionInner,
+                               split_feature_inner_[node]);
+          });
+    }
+  } else if (!used_pairwise_row_data) {
+    if (data->num_features() > num_leaves_ - 1) {
+      Threading::For<data_size_t>(
+          0, num_data, 512,
+          [this, &data, &default_bins, &max_bins, &thread_counts, leaf_indices]
+          (int tid, data_size_t start, data_size_t end) {
+            CountPredictionFun(num_leaves_ - 1, split_feature_inner_[iter_i],
+                               NumericalDecisionInner, node);
+          });
+    } else {
+      Threading::For<data_size_t>(
+          0, num_data, 512,
+          [this, &data, &default_bins, &max_bins, &thread_counts, leaf_indices]
+          (int tid, data_size_t start, data_size_t end) {
+            CountPredictionFun(data->num_features(), iter_i,
+                               NumericalDecisionInner,
+                               split_feature_inner_[node]);
+          });
+    }
+  }
+  const data_size_t* initial_leaf_counts =
+      used_pairwise_row_data && reuse_leaf_indices
+      ? reused_leaf_counts : nullptr;
+  if (initial_leaf_counts == nullptr) {
+    std::fill(leaf_count_.begin(), leaf_count_.begin() + num_leaves_, 0);
+  } else {
+    std::copy(initial_leaf_counts, initial_leaf_counts + num_leaves_,
+              leaf_count_.begin());
+  }
+  for (const auto& counts : thread_counts) {
+    for (int leaf = 0; leaf < num_leaves_; ++leaf) {
+      leaf_count_[leaf] += counts[leaf];
+    }
+  }
+  for (int node = num_leaves_ - 2; node >= 0; --node) {
+    internal_count_[node] =
+        data_count(left_child_[node]) + data_count(right_child_[node]);
+  }
+}
+
+#undef CountPredictionFun
+
 
 #define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,     \
                             iter_idx, data_idx)                               \

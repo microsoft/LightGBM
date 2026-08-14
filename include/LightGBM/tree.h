@@ -117,6 +117,12 @@ class Tree {
                             const data_size_t* used_data_indices,
                             data_size_t num_data, double* score) const;
 
+  void RecomputeCounts(const Dataset* data, data_size_t num_data,
+                       uint8_t* leaf_indices = nullptr,
+                       const PairwiseRowData* pairwise_row_data = nullptr,
+                       bool reuse_leaf_indices = false,
+                       const data_size_t* reused_leaf_counts = nullptr);
+
   /*!
   * \brief Get upper bound leaf value of this tree model
   */
@@ -414,6 +420,15 @@ class Tree {
       return NumericalDecisionInner(fval, node, default_bin, max_bin);
     }
   }
+
+  template <typename BIN_TYPE>
+  void RecomputePairwiseCountsInner(
+      const PairwiseRowData& row_data, data_size_t num_data,
+      const std::vector<uint32_t>& default_bins,
+      const std::vector<uint32_t>& max_bins,
+      std::vector<std::vector<data_size_t>>* thread_counts,
+      uint8_t* leaf_indices, bool reuse_leaf_indices,
+      bool count_reused_leaf_indices) const;
 
   inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
                     double left_weight, double right_weight, float gain);
