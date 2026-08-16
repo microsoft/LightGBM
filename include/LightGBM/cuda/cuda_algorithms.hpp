@@ -187,6 +187,7 @@ __device__ __forceinline__ void GlobalMemoryPrefixSum(T* array, const size_t len
   for (size_t index = start + 1; index < end; ++index) {
     array[index] += array[index - 1];
   }
+  __syncthreads();
 }
 
 template <typename T>
