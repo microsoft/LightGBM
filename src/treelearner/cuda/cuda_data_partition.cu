@@ -906,7 +906,9 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
     } else if (global_thread_index == 13) {
       smaller_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
     } else if (global_thread_index == 14) {
-      cuda_hist_pool[right_leaf_index] = cuda_hist + 2 * right_leaf_index * num_total_bin;
+      cuda_hist_pool[right_leaf_index] = USE_GRAD_DISCRETIZED ?
+        cuda_hist + right_leaf_index * num_total_bin :
+        cuda_hist + 2 * right_leaf_index * num_total_bin;
       smaller_leaf_splits->hist_in_leaf = cuda_hist_pool[right_leaf_index];
     } else if (global_thread_index == 15) {
       larger_leaf_splits->hist_in_leaf = cuda_hist_pool[left_leaf_index];
