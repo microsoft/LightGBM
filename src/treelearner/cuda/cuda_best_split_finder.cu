@@ -974,9 +974,9 @@ __global__ void FindBestSplitsDiscretizedForLeafKernel(
             // output parameters
             out);
         } else {
-          const int32_t* hist_ptr =
-            reinterpret_cast<const int32_t*>(IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + task->hist_offset;
-          FindBestSplitsDiscretizedForLeafKernelInner<USE_RAND, USE_L1, USE_SMOOTHING, false, int32_t, int64_t, false, false>(
+          const int64_t* hist_ptr =
+            reinterpret_cast<const int64_t*>(IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + task->hist_offset;
+          FindBestSplitsDiscretizedForLeafKernelInner<USE_RAND, USE_L1, USE_SMOOTHING, false, int64_t, int64_t, false, false>(
             // input feature information
             hist_ptr,
             // input task information
@@ -1028,9 +1028,9 @@ __global__ void FindBestSplitsDiscretizedForLeafKernel(
             // output parameters
             out);
         } else {
-          const int32_t* hist_ptr =
-            reinterpret_cast<const int32_t*>(IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + task->hist_offset;
-          FindBestSplitsDiscretizedForLeafKernelInner<USE_RAND, USE_L1, USE_SMOOTHING, true, int32_t, int64_t, false, false>(
+          const int64_t* hist_ptr =
+            reinterpret_cast<const int64_t*>(IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + task->hist_offset;
+          FindBestSplitsDiscretizedForLeafKernelInner<USE_RAND, USE_L1, USE_SMOOTHING, true, int64_t, int64_t, false, false>(
             // input feature information
             hist_ptr,
             // input task information
