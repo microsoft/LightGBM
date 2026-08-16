@@ -98,7 +98,7 @@ __device__ __forceinline__ T ShufflePrefixSumExclusive(T value, T* shared_mem_bu
   if (threadIdx.x == 0) {
     exclusive_result = 0;
   } else if (threadIdx.x % warpSize == 0) {
-    exclusive_result = shared_mem_buffer[warpLane - 1];
+    exclusive_result = shared_mem_buffer[warpID - 1];
   }
   return exclusive_result;
 }
