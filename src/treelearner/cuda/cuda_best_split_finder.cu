@@ -1599,7 +1599,8 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
   hist_t* feature_hist_grad_buffer,
   hist_t* feature_hist_hess_buffer,
   hist_t* feature_hist_stat_buffer,
-  data_size_t* feature_hist_index_buffer) {
+  data_size_t* feature_hist_index_buffer,
+  const int num_total_bin) {
   const unsigned int task_index = blockIdx.x;
   const SplitFindTask* task = tasks + task_index;
   const double parent_gain = IS_LARGER ? larger_leaf_splits->gain : smaller_leaf_splits->gain;
@@ -1614,10 +1615,11 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
   if (is_feature_used_bytree[task->inner_feature_index]) {
     const uint32_t hist_offset = task->hist_offset;
     const hist_t* hist_ptr = (IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + hist_offset * 2;
-    hist_t* hist_grad_buffer_ptr = feature_hist_grad_buffer + hist_offset * 2;
-    hist_t* hist_hess_buffer_ptr = feature_hist_hess_buffer + hist_offset * 2;
-    hist_t* hist_stat_buffer_ptr = feature_hist_stat_buffer + hist_offset * 2;
-    data_size_t* hist_index_buffer_ptr = feature_hist_index_buffer + hist_offset * 2;
+    const uint32_t buffer_offset = hist_offset + (task->reverse ? static_cast<uint32_t>(num_total_bin) : 0u);
+    hist_t* hist_grad_buffer_ptr = feature_hist_grad_buffer + buffer_offset;
+    hist_t* hist_hess_buffer_ptr = feature_hist_hess_buffer + buffer_offset;
+    hist_t* hist_stat_buffer_ptr = feature_hist_stat_buffer + buffer_offset;
+    data_size_t* hist_index_buffer_ptr = feature_hist_index_buffer + buffer_offset;
     if (task->is_categorical) {
       FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory<USE_RAND, USE_L1, USE_SMOOTHING>(
         // input feature information
@@ -1751,7 +1753,8 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
   cuda_feature_hist_grad_buffer_.RawData(), \
   cuda_feature_hist_hess_buffer_.RawData(), \
   cuda_feature_hist_stat_buffer_.RawData(), \
-  cuda_feature_hist_index_buffer_.RawData()
+  cuda_feature_hist_index_buffer_.RawData(), \
+  num_total_bin_
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(LaunchFindBestSplitsForLeafKernel_PARAMS) {
   if (!is_smaller_leaf_valid && !is_larger_leaf_valid) {
