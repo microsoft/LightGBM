@@ -241,12 +241,21 @@ def test_xendcg():
     assert gbm.best_score_["valid_0"]["ndcg@3"] > 0.6253
 
 
-def test_estimator_docstrings():
-    from numpydoc.docscrape import NumpyDocString
+def test_estimator_fit_docstrings_are_consistent():
+    from numpydoc.docscrape import NumpyDocString, Parameter
     import lightgbm as lgb
 
     classifier_docs = NumpyDocString(lgb.LGBMClassifier.fit.__doc__)
+    ranker_docs = NumpyDocString(lgb.LGBMRanker.fit.__doc__)
     regressor_docs = NumpyDocString(lgb.LGBMRegressor.fit.__doc__)
+    for doc_key in classifier_docs.keys():
+        if doc_key == "Parameters":
+            continue
+        elif doc_key == "Returns":
+            continue
+        else:
+            assert classifier_docs[doc_key] == ranker_docs[doc_key], f"mismatch for key '{doc_key}'"
+            assert ranker_docs[doc_key] == regressor_docs[doc_key], f"mismatch for key '{doc_key}'"
 
 
 

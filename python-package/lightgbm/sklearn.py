@@ -435,8 +435,8 @@ _lgbmmodel_doc_fit = """
     """
 
 _lgbmmodel_doc_custom_eval_note = """
-    Note
-    ----
+    Notes
+    -----
     Custom eval function expects a callable with following signatures:
     ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
     ``func(y_true, y_pred, weight, group)``
@@ -685,8 +685,8 @@ class LGBMModel(_LGBMModelBase):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Note
-        ----
+        Notes
+        -----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,

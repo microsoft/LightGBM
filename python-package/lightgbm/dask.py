@@ -521,8 +521,8 @@ def _train(
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Returns fitted underlying model.
 
-    Note
-    ----
+    Notes
+    -----
 
     This method handles setting up the following network parameters based on information
     about the Dask cluster referenced by ``client``.
