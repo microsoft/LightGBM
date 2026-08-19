@@ -59,8 +59,6 @@ if test -d "${TEMP_R_DIR}"; then
 fi
 mkdir -p "${TEMP_R_DIR}"
 
-CURRENT_DATE=$(date +'%Y-%m-%d')
-
 # R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
 LGB_VERSION=$(head -1 ./VERSION.txt | sed "s/rc/-/g")
