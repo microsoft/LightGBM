@@ -121,11 +121,6 @@ cd "${TEMP_R_DIR}"
     rm src/include/LightGBM/application.h
     rm src/main.cpp
 
-    # configure.ac and DESCRIPTION have placeholders for version
-    # and date so they don't have to be updated manually
-    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" configure.ac
-    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
-
     # Remove 'region', 'endregion', and 'warning' pragmas.
     # This won't change the correctness of the code. CRAN does
     # not allow you to use compiler flag '-Wno-unknown-pragmas' or
