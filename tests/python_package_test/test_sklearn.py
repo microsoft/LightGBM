@@ -2367,9 +2367,15 @@ def test_eval_X_eval_y_eval_set_equivalence():
     )
 
 
-@pytest.mark.parametrize("classes", [np.array(["down", "up"]), np.array([1, 2])])
-@pytest.mark.parametrize("multiple_eval_sets", [False, True])
-def test_classifier_eval_X_eval_y_encodes_labels(classes, multiple_eval_sets):
+@pytest.mark.parametrize(
+    "classes",
+    [
+        pytest.param(np.array(["down", "up"]), id="string-labels"),
+        pytest.param(np.array([1, 2]), id="non-zero-based-integer-labels"),
+    ],
+)
+@pytest.mark.parametrize("pass_as_tuples", [False, True])
+def test_classifier_eval_X_eval_y_encodes_labels(classes, pass_as_tuples):
     """Test that eval_y labels use the classifier's label encoding."""
     X, y, _ = _create_data(task="binary-classification")
     y = classes[y]
@@ -2390,8 +2396,12 @@ def test_classifier_eval_X_eval_y_encodes_labels(classes, multiple_eval_sets):
             eval_set=[(X_test, y_test)],
         )
 
-    eval_X = (X_test,) if multiple_eval_sets else X_test
-    eval_y = (y_test,) if multiple_eval_sets else y_test
+    if pass_as_tuples:
+        eval_X = (X_test,)
+        eval_y = (y_test,)
+    else:
+        eval_X = X_test
+        eval_y = y_test
     model_with_eval_X_y = lgb.LGBMClassifier(**params).fit(
         X_train,
         y_train,
