@@ -131,6 +131,24 @@ def test_rf():
     assert evals_result["valid_0"]["binary_logloss"][-1] == pytest.approx(ret)
 
 
+def test_bagging_does_not_use_empty_sample(capsys):
+    X = np.array([[0.0, 1.0]])
+    y = np.array([1.0])
+    params = {
+        "bagging_fraction": 0.5,
+        "bagging_freq": 5,
+        "bagging_seed": 5006,
+        "min_data_in_bin": 1,
+        "min_data_in_leaf": 1,
+        "verbosity": 1,
+    }
+
+    booster = lgb.train(params, lgb.Dataset(X, label=y), num_boost_round=1)
+
+    assert booster.num_trees() == 1
+    assert "[LightGBM] [Warning] bagging_fraction is too small" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("objective", ["regression", "regression_l1", "huber", "fair", "poisson", "quantile"])
 def test_regression(objective):
     X, y = make_synthetic_regression()

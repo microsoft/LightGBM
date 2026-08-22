@@ -50,6 +50,10 @@ class BaggingSampleStrategy : public SampleStrategy {
           },
           bag_data_indices_.data());
         bag_data_cnt_ = left_cnt;
+        if (bag_data_cnt_ == 0) {
+          bag_data_indices_[0] = bagging_rands_[0].NextInt(0, num_data_);
+          bag_data_cnt_ = 1;
+        }
       } else {
         num_sampled_queries_ = bagging_runner_.Run<true>(
           num_queries_,
@@ -59,6 +63,10 @@ class BaggingSampleStrategy : public SampleStrategy {
             cur_left_count = BaggingHelper(cur_start, cur_cnt, left);
             return cur_left_count;
           }, bag_query_indices_.data());
+        if (num_sampled_queries_ == 0 && num_queries_ > 0) {
+          bag_query_indices_[0] = bagging_rands_[0].NextInt(0, num_queries_);
+          num_sampled_queries_ = 1;
+        }
 
         sampled_query_boundaries_[0] = 0;
         OMP_INIT_EX();
@@ -160,6 +168,17 @@ class BaggingSampleStrategy : public SampleStrategy {
                         + static_cast<data_size_t>((num_data_ - num_pos_data) * config_->neg_bagging_fraction);
       } else {
         bag_data_cnt_ = static_cast<data_size_t>(config_->bagging_fraction * num_data_);
+      }
+      if (bag_data_cnt_ == 0) {
+        if (balance_bagging_cond) {
+          Log::Warning("pos_bagging_fraction and neg_bagging_fraction are too small for the number of data points. "
+                       "Using 1 data point for bagging. Increase one of them to avoid this warning.");
+        } else {
+          Log::Warning("bagging_fraction is too small for the number of data points. Using 1 data point for bagging. "
+                       "Increase bagging_fraction to at least %.17g to avoid this warning.",
+                       1.0 / static_cast<double>(num_data_));
+        }
+        bag_data_cnt_ = 1;
       }
       bag_data_indices_.resize(num_data_);
       #ifdef USE_CUDA
