@@ -1,8 +1,6 @@
 name: ci-images
 
 on:
-  # TODO(jameslamb): remove 'push' trigger before merging
-  push:
   workflow_dispatch:
     inputs:
       tag-suffix:
@@ -37,15 +35,11 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      # NOTE: Cannot use "{{ github.repository }}" because that'd return "{org}/LightGBM" which results in
-      #       and error like "repository name must be lowercase".
       matrix:
         include:
           - os: ubuntu-24.04-ppc64le
             dockerfile: .ci/ci-images/ppc64le-manylinux/Dockerfile
-            # TODO(jameslamb): revert hard-coded tag before merging
-            image-tag: ppc64le-manylinux-2_28-dev
-            #image-tag: ppc64le-manylinux-2_28${{ inputs.tag-suffix }}
+            image-tag: ppc64le-manylinux-2_28${{ inputs.tag-suffix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
