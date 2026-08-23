@@ -1,0 +1,60 @@
+name: ci-images
+
+on:
+  # TODO(jameslamb): remove 'push' trigger before merging
+  push:
+  workflow_dispatch:
+    inputs:
+      tag-suffix:
+        type: string
+        default: "-dev"
+        description: |
+          Suffix for image tags, including a leading "-" if desired.
+          Set to the empty string to overwrite the main images used by LightGBM's CI.
+
+jobs:
+  build-and-push-images:
+    name: build-ci-images (${{ matrix.tag }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      # NOTE: Cannot use "{{ github.repository }}" because that'd return "{org}/LightGBM" which results in
+      #       and error like "repository name must be lowercase".
+      matrix:
+        include:
+          - os: ubuntu-24.04-ppc64le
+            dockerfile: .ci/ci-images/ppc64le-manylinux
+            # TODO(jameslamb): revert hard-coded tag before merging
+            image-tag: ci-manylinux_2_28_ppc64le-dev
+            #image-tag: ci-manylinux_2_28_aarch64${{ inputs.tag-suffix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Log in to the Container registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
+        with:
+          context: null
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/lightgbm:${{ matrix.image-tag }}
+      # create an attestation to prove that this image came from a workflow in this repository
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/lightgbm
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

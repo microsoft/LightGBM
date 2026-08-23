@@ -8,6 +8,10 @@ SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 ARCH=$(uname -m)
 
+if [[ $OS_NAME == "ppc64le" ]]; then
+    # no additional setup needed... everything is already bundled in the CI image
+    exit 0
+fi
 
 if [[ $OS_NAME == "macos" ]]; then
     # Check https://github.com/actions/runner-images/tree/main/images/macos for available
@@ -43,17 +47,12 @@ else  # Linux
             curl
     fi
     CMAKE_VERSION="3.30.0"
-    # kitware does not publish 3.30.0 .sh installers for ppc64le
-    if [[ $ARCH == "ppc64le" ]]; then
-        sudo apt-get install --no-install-recommends -y cmake
-    else
-        curl -O -L \
-            "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
-        || exit 1
-        sudo mkdir /opt/cmake || exit 1
-        sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
-        sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
-    fi
+    curl -O -L \
+        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
+    || exit 1
+    sudo mkdir /opt/cmake || exit 1
+    sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
+    sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153

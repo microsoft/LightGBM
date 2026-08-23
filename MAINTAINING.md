@@ -25,6 +25,24 @@ pixi run -e py310 python -c "import pandas; print(pandas.__version__)"
 
 See https://pixi.prefix.dev/latest/ for more details.
 
+## Continuous Integration
+
+This section describes how to maintain the project's continuous integration ("CI").
+
+### Docker Images (CI)
+
+Most Linux CI jobs use container images built from within this repository.
+
+* Dockerfiles: `.ci/ci-images/`
+* workflow: `.github/workflows/ci-images.yml`
+
+To build new images, do the following:
+
+1. create a branch in the LightGBM repo (not a fork!)
+2. navigate to https://github.com/lightgbm-org/LightGBM/actions/workflows/ci-images.yml and click "Run workflow"
+  - for the `tag-suffix` input, provide a string beginning with a `-`, like "`-dev`"
+3. attempt a run of regular CI with the image references switched to those `-dev` images
+4. if all succeeds, do another run building the CI images
 
 ## Releasing
 
