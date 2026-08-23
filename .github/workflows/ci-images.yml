@@ -12,6 +12,16 @@ on:
           Suffix for image tags, including a leading "-" if desired.
           Set to the empty string to overwrite the main images used by LightGBM's CI.
 
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# default to 0 permissions
+# (job-level overrides add the minimal permissions needed)
+permissions:
+  contents: none
+
 jobs:
   build-and-push-images:
     name: build-ci-images (${{ matrix.image-tag }})
