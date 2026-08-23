@@ -8,7 +8,7 @@ SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 ARCH=$(uname -m)
 
-if [[ $OS_NAME == "ppc64le" ]]; then
+if [[ "${ARCH}" == "ppc64le" ]]; then
     # no additional setup needed... everything is already bundled in the CI image
     exit 0
 fi
