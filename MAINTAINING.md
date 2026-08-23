@@ -36,9 +36,19 @@ Most Linux CI jobs use container images built from within this repository.
 * Dockerfiles: `.ci/ci-images/`
 * workflow: `.github/workflows/ci-images.yml`
 
-To build new images, do the following:
+To build new images:
 
 1. create a branch in the LightGBM repo (not a fork!)
+2. trigger a run of the image-building working
+
+```shell
+gh workflow run \
+  --repo lightgbm-org/LightGBM \
+  --ref ci/image-builds-pt1 \
+  -f tag-suffix="-dev"\
+  ci-images.yml
+```
+
 2. navigate to https://github.com/lightgbm-org/LightGBM/actions/workflows/ci-images.yml and click "Run workflow"
   - for the `tag-suffix` input, provide a string beginning with a `-`, like "`-dev`"
 3. attempt a run of regular CI with the image references switched to those `-dev` images
