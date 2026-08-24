@@ -191,7 +191,7 @@ elif [[ $TASK == "bdist" ]]; then
             if [[ $ARCH == "x86_64" ]]; then
                 PLATFORM="manylinux_2_27_x86_64.manylinux_2_28_x86_64"
             elif [[ $ARCH == "ppc64le" ]]; then
-                PLATFORM="manylinux_2_28_ppc64le"
+                PLATFORM="manylinux_2_27_ppc64le.manylinux_2_28_ppc64le"
             else
                 PLATFORM="manylinux2014_aarch64.manylinux_2_17_aarch64"
             fi
