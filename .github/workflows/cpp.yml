@@ -61,7 +61,7 @@ jobs:
           - os: ubuntu-24.04-ppc64le
             task: cpp-tests
             compiler: gcc
-            container: 'ghcr.io/lightgbm-org/lightgbm-ci:ppc64le-manylinux-2_28-dev'
+            container: 'ghcr.io/lightgbm-org/lightgbm-ci:ppc64le-manylinux-2_28'
             os-display-name: 'ubuntu24.04-ppc64le'
           ###########
           # if-else #

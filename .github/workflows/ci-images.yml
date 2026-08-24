@@ -5,7 +5,7 @@ on:
     inputs:
       tag-suffix:
         type: string
-        default: "-dev"
+        required: true
         description: |
           Suffix for image tags, including a leading "-" if desired.
           Set to the empty string to overwrite the main images used by LightGBM's CI.

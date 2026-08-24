@@ -38,21 +38,28 @@ Most Linux CI jobs use container images built from within this repository.
 
 To build new images:
 
-1. create a branch in the LightGBM repo (not a fork!)
-2. trigger a run of the image-building working
+1. push changes to a branch in the LightGBM repo (not a fork!)
+2. trigger a run of the image-building workflow from that branch
 
 ```shell
 gh workflow run \
   --repo lightgbm-org/LightGBM \
-  --ref ci/image-builds-pt1 \
+  --ref $(git branch --show-current) \
   -f tag-suffix="-dev"\
   ci-images.yml
 ```
 
-2. navigate to https://github.com/lightgbm-org/LightGBM/actions/workflows/ci-images.yml and click "Run workflow"
-  - for the `tag-suffix` input, provide a string beginning with a `-`, like "`-dev`"
-3. attempt a run of regular CI with the image references switched to those `-dev` images
-4. if all succeeds, do another run building the CI images
+2. attempt a run of regular CI with the image references switched to those `-dev` images
+3. if all succeeds, do another run building the CI images without a suffix
+
+```shell
+gh workflow run \
+  --repo lightgbm-org/LightGBM \
+  --ref $(git branch --show-current) \
+  -f tag-suffix="" \
+  ci-images.yml
+```
+
 
 ## Releasing
 
