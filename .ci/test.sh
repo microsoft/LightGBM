@@ -157,7 +157,12 @@ elif [[ $TASK == "bdist" ]]; then
             cp "$(echo "dist/lightgbm-${LGB_VER}-py3-none-macosx"*.whl)" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
     else
-        sh ./build-python.sh bdist_wheel --integrated-opencl || exit 1
+        BUILD_PYTHON_FLAGS=()
+        if [[ "${ARCH}" != "ppc64le" ]]; then
+            BUILD_PYTHON_FLAGS+=(--integrated-opencl)
+        fi
+
+        sh ./build-python.sh bdist_wheel "${BUILD_PYTHON_FLAGS[@]}" || exit 1
 
         # print some debugging logs about the wheel's GLIBC version and dependencies on shared libraries
         pip install 'auditwheel>=6.5.1'
