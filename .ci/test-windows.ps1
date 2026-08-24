@@ -80,7 +80,21 @@ if ($env:PYTHON_VERSION -eq "3.10") {
     conda config --add channels nodefaults ; Assert-Output $?
     conda config --add channels conda-forge ; Assert-Output $?
     conda config --set channel_priority strict ; Assert-Output $?
-    conda install -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]" ; Assert-Output $?
+
+    # From Python 3.13 onwards, CPython packages on conda-forge have build strings
+    # with formats like "*_cp314".
+    #
+    # Have to be specific here (no trailing wildcard) to avoid unintentionally pulling
+    # in free-threaded builds (e.g. "*_cp314t").
+    $PythonMajorVersion, $PythonMinorVersion = $env:PYTHON_VERSION.Split(".")
+    if ([int]$PythonMajorVersion -gt 3 -or ([int]$PythonMajorVersion -eq 3 -and [int]$PythonMinorVersion -gt 12)) {
+        $env:PYTHON_ABI_TAG = "cp$($env:PYTHON_VERSION -replace '\.', '')"
+    } else {
+        $env:PYTHON_ABI_TAG = "cpython"
+    }
+    $env:CONDA_PYTHON_REQUIREMENT = "python=$env:PYTHON_VERSION[build=*_$env:PYTHON_ABI_TAG]"
+
+    conda install -q -y conda "$env:CONDA_PYTHON_REQUIREMENT" ; Assert-Output $?
 
     # print output of 'conda info', to help in submitting bug reports
     Write-Output "conda info:"
@@ -89,10 +103,11 @@ if ($env:PYTHON_VERSION -eq "3.10") {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 
     $condaParams = @(
+        "-q",
         "-y",
         "-n", "$env:CONDA_ENV",
         "--file", "$env:CONDA_REQUIREMENT_FILE",
-        "python=$env:PYTHON_VERSION[build=*_cp*]"
+        "$env:CONDA_PYTHON_REQUIREMENT"
     )
     conda create @condaParams ; Assert-Output $?
 
@@ -170,7 +185,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
     # install optional plotting libraries
     # (not necessary for pixi-managed environments, where they're just installed by default)
     if ($env:PYTHON_VERSION -ne "3.10") {
-        conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
+        conda install -q -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
     }
     # Run all examples
     foreach ($file in @(Get-ChildItem *.py)) {
