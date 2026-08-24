@@ -8,6 +8,10 @@ SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 ARCH=$(uname -m)
 
+if [[ "${ARCH}" == "ppc64le" ]]; then
+    # no additional setup needed... everything is already bundled in the CI image
+    exit 0
+fi
 
 if [[ $OS_NAME == "macos" ]]; then
     # Check https://github.com/actions/runner-images/tree/main/images/macos for available
