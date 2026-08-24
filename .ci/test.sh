@@ -186,7 +186,7 @@ elif [[ $TASK == "bdist" ]]; then
             if [[ $ARCH == "x86_64" ]]; then
                 PLATFORM="manylinux_2_27_x86_64.manylinux_2_28_x86_64"
             elif [[ $ARCH == "ppc64le" ]]; then
-                PLATFORM="manylinux_2_39_ppc64le"
+                PLATFORM="manylinux_2_28_ppc64le"
             else
                 PLATFORM="manylinux2014_aarch64.manylinux_2_17_aarch64"
             fi
@@ -196,14 +196,7 @@ elif [[ $TASK == "bdist" ]]; then
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install -v --no-deps ./dist/*.whl || exit 1
-    # Skip GPU validation for CPU-only builds. The test requires an
-    # OpenCL-capable device, which is not available in ppc64le
-    if [[ $ARCH == "ppc64le" ]]; then
-        pytest -ra ./tests \
-            --deselect tests/python_package_test/test_dual.py::test_cpu_and_gpu_work || exit 1
-    else
-        pytest -ra ./tests || exit 1
-    fi
+    pytest -ra ./tests || exit 1
     exit 0
 fi
 

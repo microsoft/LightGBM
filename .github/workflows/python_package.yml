@@ -35,7 +35,7 @@ env:
 
 jobs:
   test-linux-aarch64:
-    name: bdist wheel (manylinux2014-arm, gcc, Python 3.14)
+    name: bdist wheel (aarch64-manylinux2014, gcc, Python 3.14)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -145,7 +145,7 @@ jobs:
           #   in-ubuntu-base-container: 'true'
           - os: ubuntu-latest
             container: &manylinux_amd64_image ghcr.io/lightgbm-org/lightgbm-vsts-agent:manylinux_2_28_x86_64
-            os-display-name: &manylinux_amd64_display_name 'manylinux_2_28'
+            os-display-name: &manylinux_amd64_display_name 'x86_64_manylinux_2_28'
             task: gpu
             method: source
             compiler: gcc
@@ -265,6 +265,8 @@ jobs:
             artifact-name: 'windows-amd64-cli-and-liblightgbm'
             python_version: '3.11'
           - os: ubuntu-24.04-ppc64le
+            container: 'ghcr.io/lightgbm-org/lightgbm-ci:ppc64le-manylinux-2_28'
+            os-display-name: 'ppc64le-manylinux_2_28'
             task: bdist
             compiler: gcc
             method: wheel
