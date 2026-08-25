@@ -43,13 +43,17 @@ else  # Linux
             curl
     fi
     CMAKE_VERSION="3.30.0"
-    curl -O -L \
-        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
-    || exit 1
-    sudo mkdir /opt/cmake || exit 1
-    sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
-    sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
-
+    # kitware does not publish 3.30.0 .sh installers for ppc64le
+    if [[ $ARCH == "ppc64le" ]]; then
+        sudo apt-get install --no-install-recommends -y cmake
+    else
+        curl -O -L \
+            "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
+        || exit 1
+        sudo mkdir /opt/cmake || exit 1
+        sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
+        sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
+    fi
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
@@ -136,12 +140,42 @@ else  # Linux
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-        if [[ $COMPILER == "clang" ]]; then
-            apt-get update
-            apt-get install --no-install-recommends -y \
-                clang \
-                libomp-dev
+        apt-get update
+        APT_INSTALL_PACKAGES=()
+
+        # only re-install NCCL if there wasn't one already pre-installed in the image
+        # (for example, nvidia/cuda 12.9.1 images excluded it)
+        if ! apt list --installed | grep -E 'libnccl\-dev' >/dev/null 2>&1; then
+            echo "libnccl-dev not found, manually installing it"
+
+            # find a compatible libnccl-dev for this CUDA version
+            #
+            # (just 'apt-get install libnccl-dev' can result in mixing across CUDA versions)
+            IFS='.' read -r CUDA_MAJOR CUDA_MINOR _ <<< "${CI_CUDA_VERSION}"
+            NCCL_VERSION=$(
+                apt-cache madison libnccl-dev \
+                | awk -F'|' '{print $2}' \
+                | tr -d ' ' \
+                | grep "+cuda${CUDA_MAJOR}.${CUDA_MINOR}$" \
+                | sort -V \
+                | tail -1
+            )
+
+            APT_INSTALL_PACKAGES+=(
+                "libnccl-dev=${NCCL_VERSION}"
+                "libnccl2=${NCCL_VERSION}"
+            )
+        else
+            echo "libnccl-dev already installed"
         fi
+        if [[ $COMPILER == "clang" ]]; then
+            APT_INSTALL_PACKAGES+=(
+                clang
+                libomp-dev
+            )
+        fi
+        apt-get install --no-install-recommends -y \
+          "${APT_INSTALL_PACKAGES[@]}"
     fi
 fi
 
