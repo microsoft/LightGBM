@@ -1532,6 +1532,7 @@ def test_init_score(task, output, cluster, rng):
     "check",
     [
         sklearn_checks.check_get_params_invariance,
+        sklearn_checks.check_parameters_default_constructible,
         sklearn_checks.check_set_params,
     ],
 )
@@ -1540,21 +1541,6 @@ def test_sklearn_integration(estimator, check, cluster):
         estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
-
-
-# this test is separate because it takes a not-yet-constructed estimator
-@pytest.mark.parametrize(
-    "estimator",
-    [
-        lgb.DaskLGBMClassifier,
-        lgb.DaskLGBMRanker,
-        lgb.DaskLGBMRegressor,
-    ],
-)
-def test_parameters_default_constructible(estimator):
-    name = estimator.__class__.__name__
-    Estimator = estimator
-    sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
 @pytest.mark.parametrize("task", tasks)
