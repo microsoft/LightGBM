@@ -1,7 +1,10 @@
 # coding: utf-8
+import filecmp
+import os
 import pickle
 from functools import lru_cache
 from inspect import getfullargspec
+from pathlib import Path
 
 import cloudpickle
 import joblib
@@ -264,3 +267,21 @@ def assert_all_trees_valid(model_dump):
     for idx, tree in enumerate(model_dump["tree_info"]):
         assert tree["tree_index"] == idx, f"tree {idx} should have tree_index={idx}. Full tree: {tree}"
         assert_subtree_valid(tree["tree_structure"])
+
+
+# This mapping from CI-time environment variables is a placeholder
+# until there is a more reliable way to detect which customizations
+# LightGBM was built with.
+#
+# see https://github.com/lightgbm-org/LightGBM/issues/7273
+#
+class BuildInfo:
+    has_cuda = os.getenv("TASK", "") == "cuda"
+    has_gpu = os.getenv("TASK", "") == "gpu"
+    has_mpi = os.getenv("TASK", "") == "mpi"
+
+
+def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset) -> None:
+    lhs._dump_text(tmp_path / "lhs.txt")
+    rhs._dump_text(tmp_path / "rhs.txt")
+    assert filecmp.cmp(tmp_path / "lhs.txt", tmp_path / "rhs.txt")

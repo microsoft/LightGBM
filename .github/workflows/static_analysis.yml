@@ -5,10 +5,10 @@ name: Static Analysis
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -53,7 +53,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -70,7 +70,7 @@ jobs:
     name: r-package-check-docs
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: rocker/verse
+    container: rocker/verse  # zizmor: ignore[unpinned-images]
     permissions:
       contents: read
     steps:
@@ -78,7 +78,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false

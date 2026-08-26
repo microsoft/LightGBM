@@ -5,7 +5,7 @@ This document gives a basic walk-through of LightGBM Python-package.
 
 **List of other helpful links**
 
--  `Python Examples <https://github.com/lightgbm-org/LightGBM/tree/master/examples/python-guide>`__
+-  `Python Examples <https://github.com/lightgbm-org/LightGBM/tree/main/examples/python-guide>`__
 
 -  `Python API <./Python-API.rst>`__
 
@@ -35,7 +35,9 @@ The LightGBM Python module can load data from:
 
 -  LibSVM (zero-based) / TSV / CSV format text file
 
--  NumPy 2D array(s), pandas DataFrame, pyarrow Table, SciPy sparse matrix
+-  NumPy 2D array(s), SciPy sparse matrix
+
+-  pandas DataFrame, polars DataFrame, pyarrow Table
 
 -  LightGBM binary file
 
@@ -102,7 +104,7 @@ Features of using ``Sequence`` interface:
 
 Please refer to ``Sequence`` `API doc <./Python-API.rst#data-structure-api>`__.
 
-`dataset_from_multi_hdf5.py <https://github.com/lightgbm-org/LightGBM/blob/master/examples/python-guide/dataset_from_multi_hdf5.py>`__ is a detailed example.
+`dataset_from_multi_hdf5.py <https://github.com/lightgbm-org/LightGBM/blob/main/examples/python-guide/dataset_from_multi_hdf5.py>`__ is a detailed example.
 
 **Saving Dataset into a LightGBM binary file will make loading faster:**
 
@@ -262,4 +264,4 @@ If early stopping is enabled during training, you can get predictions from the b
 
     ypred = bst.predict(data, num_iteration=bst.best_iteration)
 
-.. _Python-package: https://github.com/lightgbm-org/LightGBM/tree/master/python-package
+.. _Python-package: https://github.com/lightgbm-org/LightGBM/tree/main/python-package

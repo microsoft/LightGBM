@@ -83,9 +83,19 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
-# other implementations like pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
+# From Python 3.13 onwards, CPython packages on conda-forge have build strings
+# with formats like "*_cp314".
+#
+# Have to be specific here (no trailing wildcard) to avoid unintentionally pulling
+# in free-threaded builds (e.g. "*_cp314t").
+PYTHON_MAJOR_VERSION="${PYTHON_VERSION%%.*}"
+PYTHON_MINOR_VERSION="${PYTHON_VERSION#*.}"
+if (( PYTHON_MAJOR_VERSION > 3 || (PYTHON_MAJOR_VERSION == 3 && PYTHON_MINOR_VERSION > 12) )); then
+    PYTHON_ABI_TAG="cp${PYTHON_VERSION//./}"
+else
+    PYTHON_ABI_TAG="cpython"
+fi
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_${PYTHON_ABI_TAG}]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
@@ -101,36 +111,43 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $PYTHON_VERSION == "3.10" ]]; then
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py310.txt"
-else
-    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
+PYTHON_ENV_MANAGER="conda"
+if [[ "${PYTHON_VERSION}" == "3.10" ]]; then
+    PYTHON_ENV_MANAGER="pixi"
+    CI_PIXI_ENV="py310"
 fi
 
-conda create \
-    -y \
-    -n "${CONDA_ENV}" \
-    --file "${CONDA_REQUIREMENT_FILE}" \
-    "${CONDA_PYTHON_REQUIREMENT}" \
-|| exit 1
+# 'pixi' is used for end-of-life Python versions
+if [[ "${PYTHON_ENV_MANAGER}" == "pixi" ]]; then
+    eval "$(pixi shell-hook --locked -e "${CI_PIXI_ENV}")"
+else
+    CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
+    conda create \
+        -q \
+        -y \
+        -n "${CONDA_ENV}" \
+        --file "${CONDA_REQUIREMENT_FILE}" \
+        "${CONDA_PYTHON_REQUIREMENT}" \
+    || exit 1
 
-# print output of 'conda list', to help in submitting bug reports
-echo "conda list:"
-conda list -n ${CONDA_ENV}
+    # print output of 'conda list', to help in submitting bug reports
+    echo "conda list:"
+    conda list -n ${CONDA_ENV}
 
-# shellcheck disable=SC1091
-source activate $CONDA_ENV
+    # shellcheck disable=SC1091
+    source activate $CONDA_ENV
+fi
 
 cd "${BUILD_DIRECTORY}"
 
 if [[ $TASK == "sdist" ]]; then
     sh ./build-python.sh sdist || exit 1
     sh .ci/check-python-dists.sh ./dist || exit 1
-    pip install "./dist/lightgbm-${LGB_VER}.tar.gz" -v || exit 1
+    pip install -v --no-deps "./dist/lightgbm-${LGB_VER}.tar.gz" || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp "./dist/lightgbm-${LGB_VER}.tar.gz" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
     fi
-    pytest ./tests/python_package_test || exit 1
+    pytest -ra ./tests/python_package_test || exit 1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
@@ -176,8 +193,8 @@ elif [[ $TASK == "bdist" ]]; then
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
-    pip install -v ./dist/*.whl || exit 1
-    pytest ./tests || exit 1
+    pip install -v --no-deps ./dist/*.whl || exit 1
+    pytest -ra ./tests || exit 1
     exit 0
 fi
 
@@ -189,16 +206,17 @@ if [[ $TASK == "gpu" ]]; then
         sh .ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
+            --no-deps \
             --config-settings=cmake.define.USE_GPU=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_GPU=ON
@@ -214,19 +232,25 @@ elif [[ $TASK == "cuda" ]]; then
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
+            --no-deps \
             --config-settings=cmake.define.USE_CUDA=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -B build -S . -DUSE_CUDA=ON
+        # we want at least 1 CI job testing that manual override of CMAKE_CUDA_ARCHITECTURES works
+        cmake \
+            -B build \
+            -S . \
+            -DUSE_CUDA=ON \
+            -DCMAKE_CUDA_ARCHITECTURES="native"
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
@@ -234,16 +258,17 @@ elif [[ $TASK == "mpi" ]]; then
         sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
+            --no-deps \
             --config-settings=cmake.define.USE_MPI=ON \
             "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
-        pytest ./tests/python_package_test || exit 1
+        pytest -ra ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
-        pytest ./tests || exit 1
+        pip install -v --no-deps "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" || exit 1
+        pytest -ra ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_MPI=ON -DUSE_DEBUG=ON
@@ -255,7 +280,7 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 sh ./build-python.sh install --precompile || exit 1
-pytest ./tests || exit 1
+pytest -ra ./tests || exit 1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
@@ -275,27 +300,33 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    # requirements for examples
-    conda install -y -n $CONDA_ENV \
-        'h5py>=3.10' \
-        'ipywidgets>=8.1.2' \
-        'notebook>=7.1.2'
+    # install optional plotting libraries
+    # (not necessary for pixi-managed environments, where they're just installed by default)
+    if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
+        conda install -q -y -n $CONDA_ENV \
+            'h5py>=3.10' \
+            'ipywidgets>=8.1.2' \
+            'notebook>=7.1.2'
+    fi
     for f in *.py **/*.py; do python "${f}" || exit 1; done  # run all examples
     cd "$BUILD_DIRECTORY/examples/python-guide/notebooks"
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace ./*.ipynb || exit 1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall -n $CONDA_ENV --force --yes \
-        cffi \
-        dask \
-        distributed \
-        joblib \
-        matplotlib-base \
-        pandas \
-        psutil \
-        pyarrow \
-        python-graphviz \
-        scikit-learn || exit 1
+    if [[ "${PYTHON_ENV_MANAGER}" != "pixi" ]]; then
+        conda uninstall -q -n $CONDA_ENV --force --yes \
+            cffi \
+            dask \
+            distributed \
+            joblib \
+            matplotlib-base \
+            pandas \
+            polars \
+            psutil \
+            pyarrow \
+            python-graphviz \
+            scikit-learn || exit 1
+    fi
     python -c "import lightgbm" || exit 1
 fi

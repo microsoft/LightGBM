@@ -3,10 +3,10 @@ name: Python-package
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -97,10 +97,12 @@ jobs:
             task: sdist
             compiler: clang
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: windows-2022
             task: sdist
             compiler: MSVC
             python_version: '3.10'
+            pixi-env: 'py310'
           - os: ubuntu-latest
             container: &ubuntu_latest_image ubuntu:22.04
             os-display-name: &ubuntu_latest_display_name 'ubuntu22.04'
@@ -190,6 +192,7 @@ jobs:
             compiler: clang-17
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'true'
           #####################
           # jobs that create  #
@@ -232,6 +235,7 @@ jobs:
             compiler: gcc
             method: wheel
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -242,6 +246,7 @@ jobs:
             task: sdist
             compiler: gcc
             python_version: '3.10'
+            pixi-env: 'py310'
             in-ubuntu-base-container: 'false'
             setup-conda: 'false'
             produces-artifacts: 'true'
@@ -285,11 +290,16 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
+      - name: Set up 'pixi' for jobs that need it
+        if: matrix.pixi-env != ''
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f  # v0.10.0
+        with:
+          environments: ${{ matrix.pixi-env }}
       - name: Setup and run tests on Linux and macOS
         if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu') || endsWith(matrix.os, 'gpu-amd64')
         shell: bash
@@ -362,7 +372,7 @@ jobs:
       - test
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -375,7 +385,7 @@ jobs:
           pattern: '*amd64*-liblightgbm'
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
-        uses: NuGet/setup-nuget@b26b823c478ee115be5c9403e62c90b0bf943843  # v3.1.0
+        uses: NuGet/setup-nuget@fd55a6f3b34392fa83fde1454582407d8c714123  # v4.0
       # ref: https://github.com/NuGet/setup-nuget/issues/168
       - name: Setup mono
         run: |
@@ -403,7 +413,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -416,7 +426,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \
@@ -439,7 +453,7 @@ jobs:
           - '3.10'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -452,7 +466,11 @@ jobs:
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
-            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+            /bin/bash -c '
+              export PATH=/opt/miniforge/bin:$PATH
+              pip install "build>=0.10"
+              sh ./build-python.sh bdist_wheel --nomp
+            '
       - name: Test compatibility
         run: |
           docker run \
@@ -467,8 +485,8 @@ jobs:
       - test
       - test-linux-aarch64
     runs-on: ubuntu-latest
-    # publish whenever a new commit is pushed to 'master'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # publish whenever a new commit is pushed to 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: nightly-python-uploads
       url: https://anaconda.org/lightgbm-packages/lightgbm
