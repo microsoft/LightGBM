@@ -4866,7 +4866,7 @@ def test_train_raises_informative_error_for_unknown_metric():
         "custom",
         "na",
         "none",
-        "null"
+        "null",
         ["none", "null"],
         ["None"],
         ["NULL"],
