@@ -82,7 +82,7 @@ if ($IsArm64) {
     # purpose. Every test that needs it guards itself with 'pytest.importorskip("pyarrow")'
     # (see tests/python_package_test/test_arrow.py and test_sklearn.py), so those tests
     # are automatically skipped on this runner instead of failing.
-    pip install -q -U pip "build>=0.10" ; Assert-Output $?
+    python -m pip install -q -U pip "build>=0.10" ; Assert-Output $?
     pip install -q -r "$env:BUILD_SOURCESDIRECTORY/.ci/pip-envs/requirements-windows-arm64.txt" ; Assert-Output $?
 }
 # 'pixi' is used for end-of-life Python versions
