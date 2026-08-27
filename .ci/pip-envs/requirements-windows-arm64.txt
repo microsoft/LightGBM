@@ -1,0 +1,57 @@
+# [description]
+#
+#   Test dependencies for the 'windows-11-arm' CI job.
+#
+#   conda-forge / Miniforge do not yet support win-arm64 (still experimental,
+#   cross-compiled, and missing packages like 'numpy':
+#   https://conda-forge.org/blog/2026/02/09/win-arm64/), so that job uses a native
+#   win-arm64 CPython (installed by '.ci/install-python-arm64-windows.ps1') and pip
+#   instead of conda, unlike every other Windows CI job.
+#
+#   This intentionally excludes 'pyarrow' and 'python-graphviz': PyPI doesn't publish a
+#   'win_arm64' wheel for pyarrow, and the Graphviz binary that 'python-graphviz' wraps
+#   isn't known to be available for win-arm64 yet. Every test that needs either of them
+#   guards itself with a skip (see 'is_windows_arm64()' / 'SKIP_PYARROW_REASON' in
+#   tests/python_package_test/utils.py, and their use in test_arrow.py, test_sklearn.py,
+#   and test_plotting.py), so not installing them here just means those specific tests
+#   are skipped on this runner instead of failing.
+#
+#   'lightgbm's own polars ingestion (see 'basic.py') reads the Arrow C Data Interface
+#   capsule that polars exposes natively, via raw ctypes pointers, so it needs no pyarrow
+#   at all. A handful of test_polars.py tests still need it, though, because THEY call
+#   polars' own '.to_pandas()' (which does require pyarrow) to build a reference pandas
+#   Dataset for a round-trip equality check; those specific tests skip on this runner
+#   too (see 'test_dataset_construct_fuzzy', 'test_dataset_construct_fuzzy_boolean',
+#   'test_dataset_construct_fields_fuzzy', and 'assert_equal_predict_polars_pandas').
+#
+#   For the same reason, 'dask' below is installed with only its 'array' and 'distributed'
+#   extras, not 'dataframe': the 'dataframe' extra hard-depends on 'pyarrow>=16.0'
+#   (see its PyPI project page), which would silently drag pyarrow back in. dask.dataframe
+#   still works on top of the plain 'pandas' install below; it just won't use
+#   pyarrow-backed string columns.
+#
+# [usage]
+#
+#   pip install -r ./.ci/pip-envs/requirements-windows-arm64.txt
+#
+
+# direct imports
+cffi
+cloudpickle
+dask[array,distributed]
+joblib
+matplotlib
+narwhals
+numpy
+pandas
+polars
+psutil
+pytest
+scikit-learn
+scipy
+
+# build-time dependencies
+build
+pip
+setuptools
+wheel

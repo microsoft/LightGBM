@@ -58,6 +58,10 @@ jobs:
             task: cpp-tests
             compiler: msvc
             container: null
+          - os: windows-11-arm
+            task: cpp-tests
+            compiler: msvc
+            container: null
           - os: ubuntu-24.04-ppc64le
             task: cpp-tests
             compiler: gcc

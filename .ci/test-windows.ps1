@@ -23,8 +23,12 @@ if ($env:TASK -eq "r-package") {
     exit 0
 }
 
+# native arm64 runners report PROCESSOR_ARCHITECTURE=ARM64; everything else builds for x64
+$IsArm64 = ($env:PROCESSOR_ARCHITECTURE -eq "ARM64")
+$CmakePlatform = if ($IsArm64) { "ARM64" } else { "x64" }
+
 if ($env:TASK -eq "cpp-tests") {
-    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_DEBUG=ON -A x64
+    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_DEBUG=ON -A $CmakePlatform
     cmake --build build --target testlightgbm --config Debug ; Assert-Output $?
     .\Debug\testlightgbm.exe ; Assert-Output $?
     exit 0
@@ -67,8 +71,22 @@ if ($env:TASK -eq "swig") {
     exit 0
 }
 
+if ($IsArm64) {
+    # conda-forge / Miniforge don't support win-arm64 yet (still experimental,
+    # untested, and missing packages like 'numpy': https://conda-forge.org/blog/2026/02/09/win-arm64/).
+    # Use the native win-arm64 CPython installed by '.ci/install-python-arm64-windows.ps1'
+    # (already on PATH) and pip instead.
+    #
+    # NOTE: 'pyarrow' is intentionally not installed here. PyPI does not publish a
+    # 'win_arm64' wheel for it, so it's left out of requirements-windows-arm64.txt on
+    # purpose. Every test that needs it guards itself with 'pytest.importorskip("pyarrow")'
+    # (see tests/python_package_test/test_arrow.py and test_sklearn.py), so those tests
+    # are automatically skipped on this runner instead of failing.
+    pip install -q -U pip "build>=0.10" ; Assert-Output $?
+    pip install -q -r "$env:BUILD_SOURCESDIRECTORY/.ci/pip-envs/requirements-windows-arm64.txt" ; Assert-Output $?
+}
 # 'pixi' is used for end-of-life Python versions
-if ($env:PYTHON_VERSION -eq "3.10") {
+elseif ($env:PYTHON_VERSION -eq "3.10") {
     $activation = ((& pixi shell-hook --locked -e py310 --shell powershell) -join "`n")
     Invoke-Expression $activation ; Assert-Output $?
 } else {
@@ -124,33 +142,49 @@ if ($env:PYTHON_VERSION -eq "3.10") {
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
-    cmake -B build -S . -A x64 ; Assert-Output $?
+    cmake -B build -S . -A $CmakePlatform ; Assert-Output $?
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
     sh ./build-python.sh install --precompile ; Assert-Output $?
-    cp ./Release/lib_lightgbm.dll "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
-    cp ./Release/lightgbm.exe "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
+    if ($IsArm64) {
+        # put these in their own subfolder so this artifact's files don't collide with the
+        # win-x64 build's identically-named ones once both get merged into one directory
+        # later (see '.ci/create-nuget.py'); the workflow's 'Upload artifacts' step keeps
+        # this subfolder intact because its *.dll/*.exe patterns match paths below it
+        [Void][System.IO.Directory]::CreateDirectory("$env:BUILD_ARTIFACTSTAGINGDIRECTORY/win-arm64")
+        cp ./Release/lib_lightgbm.dll "$env:BUILD_ARTIFACTSTAGINGDIRECTORY/win-arm64/lib_lightgbm.dll"
+        cp ./Release/lightgbm.exe "$env:BUILD_ARTIFACTSTAGINGDIRECTORY/win-arm64/lightgbm.exe"
+    } else {
+        cp ./Release/lib_lightgbm.dll "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
+        cp ./Release/lightgbm.exe "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
+    }
 } elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install --no-deps @(Get-ChildItem *.gz) -v ; Assert-Output $?
 } elseif ($env:TASK -eq "bdist") {
-    # Import the Chocolatey profile module so that the RefreshEnv command
-    # invoked below properly updates the current PowerShell session environment.
-    $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-    Import-Module "$module" ; Assert-Output $?
-    RefreshEnv
+    if ($IsArm64) {
+        $WheelPlatformTag = "win_arm64"
+    } else {
+        # Import the Chocolatey profile module so that the RefreshEnv command
+        # invoked below properly updates the current PowerShell session environment.
+        $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+        Import-Module "$module" ; Assert-Output $?
+        RefreshEnv
 
-    Write-Output "Current OpenCL drivers:"
-    Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+        Write-Output "Current OpenCL drivers:"
+        Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
-    # (re-) activate conda environment, in case any activation logic was overridden by that 'RefreshEnv' call above
-    conda activate $env:CONDA_ENV
+        # (re-) activate conda environment, in case any activation logic was overridden by that 'RefreshEnv' call above
+        conda activate $env:CONDA_ENV
+
+        $WheelPlatformTag = "win_amd64"
+    }
 
     # TODO: restore --integrated-opencl as part of https://github.com/lightgbm-org/LightGBM/issues/6968
     sh "build-python.sh" bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    Set-Location dist; pip install --no-deps @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
-    cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
+    Set-Location dist; pip install --no-deps @(Get-ChildItem "*py3-none-$WheelPlatformTag.whl") ; Assert-Output $?
+    cp @(Get-ChildItem "*py3-none-$WheelPlatformTag.whl") "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
     if ($env:COMPILER -eq "MINGW") {
         sh ./build-python.sh install --mingw ; Assert-Output $?
@@ -173,7 +207,9 @@ if ($env:TASK -eq "bdist") {
 
 pytest -ra $tests ; Assert-Output $?
 
-if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+if ((($env:TASK -eq "regular") -and (-not $IsArm64)) -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+    # TODO(arm64): this block needs 'jupyter'/'notebook'/'ipywidgets'/'h5py' and a working
+    # Graphviz binary, none of which are wired up yet for the pip-based win-arm64 environment
     Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
     # Prevent interactive window mode

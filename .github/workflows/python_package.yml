@@ -264,6 +264,20 @@ jobs:
             produces-artifacts: 'true'
             artifact-name: 'windows-amd64-cli-and-liblightgbm'
             python_version: '3.11'
+          # keep this Python version in sync with '.ci/install-python-arm64-windows.ps1'
+          - os: windows-11-arm
+            task: bdist
+            compiler: MSVC
+            method: wheel
+            produces-artifacts: 'true'
+            artifact-name: 'windows-arm64-wheel'
+            python_version: '3.13'
+          - os: windows-11-arm
+            task: regular
+            compiler: MSVC
+            produces-artifacts: 'true'
+            artifact-name: 'windows-arm64-cli-and-liblightgbm'
+            python_version: '3.13'
     steps:
       - name: Install packages used by third-party actions
         if: ${{ matrix.in-ubuntu-base-container == 'true' }}
@@ -328,15 +342,23 @@ jobs:
           export PRODUCES_ARTIFACTS="${{ matrix.produces-artifacts }}"
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+      # the runner's pre-installed Miniconda targets x64 and conda-forge doesn't support
+      # win-arm64 yet, so this job uses a native win-arm64 CPython + pip instead of conda
+      # (see '.ci/install-python-arm64-windows.ps1' and '.ci/test-windows.ps1')
+      - name: Install Python for Windows arm64
+        if: matrix.os == 'windows-11-arm'
+        shell: pwsh -command ". {0}"
+        run: |
+          & "$env:GITHUB_WORKSPACE/.ci/install-python-arm64-windows.ps1"
       - name: Install OpenCL on Windows
-        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
+        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist') && (matrix.os != 'windows-11-arm')
         shell: pwsh -command ". {0}"
         run: |
           & "$env:GITHUB_WORKSPACE/.ci/install-opencl.ps1"
       # 'conda init powershell' needs to be run in a separate process
       # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
       - name: Initialize conda on Windows
-        if: startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os, 'windows') && (matrix.os != 'windows-11-arm')
         shell: pwsh -command ". {0}"
         run: |
           $env:PATH = "$env:CONDA/Scripts;$env:PATH"
@@ -356,10 +378,14 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: ${{ matrix.artifact-name }}
+          # '**' lets these also match the 'win-arm64/' subfolder that the 'regular' task
+          # writes to on windows-11-arm (see '.ci/test-windows.ps1'); the artifact's root
+          # stays 'artifacts/' either way, since that's the literal path segment before the
+          # first wildcard in each pattern
           path: |
-            artifacts/*.dll
+            artifacts/**/*.dll
             artifacts/*.dylib
-            artifacts/*.exe
+            artifacts/**/*.exe
             artifacts/*.so
             artifacts/*.tar.gz
             artifacts/*.whl
@@ -382,7 +408,7 @@ jobs:
         with:
           merge-multiple: true
           path: ${{ env.BUILD_ARTIFACTSTAGINGDIRECTORY }}
-          pattern: '*amd64*-liblightgbm'
+          pattern: '*-liblightgbm'
           run-id: ${{ github.run_id }}
       - name: Setup NuGet CLI
         uses: NuGet/setup-nuget@fd55a6f3b34392fa83fde1454582407d8c714123  # v4.0

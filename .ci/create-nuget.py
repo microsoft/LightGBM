@@ -23,6 +23,17 @@ if __name__ == "__main__":
     copyfile(source / "lib_lightgbm.dylib", osx_folder_path / "lib_lightgbm.dylib")
     copyfile(source / "lib_lightgbm.dll", windows_folder_path / "lib_lightgbm.dll")
     copyfile(source / "lightgbm.exe", windows_folder_path / "lightgbm.exe")
+
+    # win-arm64 build artifacts live in their own 'win-arm64' subfolder so they don't collide
+    # with the win-x64 ones above when both get merged into the same source directory (see
+    # the 'arm64' branch of the 'regular' task in '.ci/test-windows.ps1')
+    windows_arm64_dll = source / "win-arm64" / "lib_lightgbm.dll"
+    windows_arm64_exe = source / "win-arm64" / "lightgbm.exe"
+    if windows_arm64_dll.exists() and windows_arm64_exe.exists():
+        windows_arm64_folder_path = nuget_dir / "runtimes" / "win-arm64" / "native"
+        windows_arm64_folder_path.mkdir(parents=True, exist_ok=True)
+        copyfile(windows_arm64_dll, windows_arm64_folder_path / "lib_lightgbm.dll")
+        copyfile(windows_arm64_exe, windows_arm64_folder_path / "lightgbm.exe")
     version = (nuget_dir.parents[1] / "VERSION.txt").read_text(encoding="utf-8").strip().replace("rc", "-rc")
     print(f"Setting version to '{version}'")
     nuget_str = rf"""<?xml version="1.0"?>
@@ -61,6 +72,16 @@ if __name__ == "__main__":
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <Visible>false</Visible>
         </Content>
+        <Content Include="$(MSBuildThisFileDirectory)/../runtimes/win-arm64/native/*.dll"
+                Condition="'$(PlatformTarget)' == 'ARM64'">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Visible>false</Visible>
+        </Content>
+        <Content Include="$(MSBuildThisFileDirectory)/../runtimes/win-arm64/native/*.exe"
+                Condition="'$(PlatformTarget)' == 'ARM64'">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Visible>false</Visible>
+        </Content>
     </ItemGroup>
     </Project>
     """
@@ -72,10 +93,10 @@ if __name__ == "__main__":
     <Target Name="_LightGBMCheckForUnsupportedPlatformTarget"
             Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == 'true'"
             AfterTargets="_CheckForInvalidConfigurationAndPlatform">
-        <Error Condition="'$(PlatformTarget)' != 'x64' AND
+        <Error Condition="'$(PlatformTarget)' != 'x64' AND '$(PlatformTarget)' != 'ARM64' AND
                         ('$(OutputType)' == 'Exe' OR '$(OutputType)'=='WinExe') AND
                         !('$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(PlatformTarget)' == '')"
-            Text="LightGBM currently supports 'x64' processor architectures. Please ensure your application is targeting 'x64'." />
+            Text="LightGBM currently supports 'x64' and 'ARM64' processor architectures. Please ensure your application is targeting one of those." />
     </Target>
     </Project>
     """
