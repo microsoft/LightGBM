@@ -6,7 +6,10 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import assert_datasets_equal, np_assert_array_equal
+from .utils import SKIP_PYARROW_REASON, assert_datasets_equal, is_windows_arm64, np_assert_array_equal
+
+if is_windows_arm64():
+    pytest.skip(SKIP_PYARROW_REASON, allow_module_level=True)
 
 pa = pytest.importorskip("pyarrow")
 

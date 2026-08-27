@@ -6,7 +6,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import assert_datasets_equal, np_assert_array_equal
+from .utils import SKIP_PYARROW_REASON, assert_datasets_equal, is_windows_arm64, np_assert_array_equal
 
 pl = pytest.importorskip("polars")
 
@@ -112,6 +112,10 @@ def dummy_dataset_params() -> Dict[str, Any]:
     ],
 )
 def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
+    # polars' own '.to_pandas()' needs pyarrow, unlike lightgbm's own polars ingestion path
+    if is_windows_arm64():
+        pytest.skip(SKIP_PYARROW_REASON)
+
     polars_frame = polars_frame_fn()
 
     polars_dataset = lgb.Dataset(polars_frame, params=dataset_params)
@@ -124,6 +128,10 @@ def test_dataset_construct_fuzzy(tmp_path, polars_frame_fn, dataset_params):
 
 
 def test_dataset_construct_fuzzy_boolean(tmp_path):
+    # polars' own '.to_pandas()' needs pyarrow, unlike lightgbm's own polars ingestion path
+    if is_windows_arm64():
+        pytest.skip(SKIP_PYARROW_REASON)
+
     boolean_data = generate_random_polars_frame(
         num_columns=10, num_datapoints=10000, seed=42, generate_nulls=False, values=np.array([True, False])
     )
@@ -142,6 +150,10 @@ def test_dataset_construct_fuzzy_boolean(tmp_path):
 
 
 def test_dataset_construct_fields_fuzzy():
+    # polars' own '.to_pandas()' needs pyarrow, unlike lightgbm's own polars ingestion path
+    if is_windows_arm64():
+        pytest.skip(SKIP_PYARROW_REASON)
+
     polars_frame = generate_random_polars_frame(num_columns=3, num_datapoints=1000, seed=42)
     polars_labels = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
     polars_weights = generate_random_polars_series(num_datapoints=1000, seed=42, generate_nulls=False)
@@ -304,6 +316,10 @@ def test_dataset_construct_init_scores_table():
 
 
 def assert_equal_predict_polars_pandas(booster: lgb.Booster, data: pl.DataFrame):
+    # polars' own '.to_pandas()' needs pyarrow, unlike lightgbm's own polars ingestion path
+    if is_windows_arm64():
+        pytest.skip(SKIP_PYARROW_REASON)
+
     pandas_data = data.to_pandas()
 
     p_polars = booster.predict(data)

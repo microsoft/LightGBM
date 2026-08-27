@@ -33,8 +33,10 @@ from lightgbm.compat import (
 )
 
 from .utils import (
+    SKIP_PYARROW_REASON,
     BuildInfo,
     assert_silent,
+    is_windows_arm64,
     load_breast_cancer,
     load_digits,
     load_iris,
@@ -1750,6 +1752,8 @@ def test_feature_names_in_and_predict_warning(
     Regression test for https://github.com/lightgbm-org/LightGBM/issues/6798.
     """
     if fit_X_type.startswith("pa_") or predict_X_type.startswith("pa_"):
+        if is_windows_arm64():
+            pytest.skip(SKIP_PYARROW_REASON)
         pa = pytest.importorskip("pyarrow")
         pd = pytest.importorskip("pandas")
     if fit_X_type.startswith("pd_") or predict_X_type.startswith("pd_"):
@@ -2083,6 +2087,8 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
 
 def _run_minimal_test(*, X_type, y_type, g_type, task, rng):
     if any(t.startswith("pa_") for t in [X_type, y_type, g_type]):
+        if is_windows_arm64():
+            pytest.skip(SKIP_PYARROW_REASON)
         pa = pytest.importorskip("pyarrow")
     if any(t.startswith("pl_") for t in [X_type, y_type, g_type]):
         pl = pytest.importorskip("polars")

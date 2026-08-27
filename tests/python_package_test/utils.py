@@ -2,6 +2,8 @@
 import filecmp
 import os
 import pickle
+import platform
+import sys
 from functools import lru_cache
 from inspect import getfullargspec
 from pathlib import Path
@@ -15,6 +17,17 @@ from sklearn.utils import check_random_state
 import lightgbm as lgb
 
 SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
+
+# PyPI does not currently publish 'win_arm64' wheels for pyarrow, so it's deliberately
+# left out of that CI job's environment (see '.ci/pip-envs/requirements-windows-arm64.txt').
+# Tests that need pyarrow check this and skip explicitly there, instead of relying on
+# 'pytest.importorskip' to turn an ImportError into a skip.
+SKIP_PYARROW_REASON = "pyarrow does not publish 'win_arm64' wheels yet"
+
+
+def is_windows_arm64() -> bool:
+    """Whether tests are running on a native Windows arm64 machine."""
+    return sys.platform == "win32" and platform.machine() == "ARM64"
 
 
 @lru_cache(maxsize=None)
