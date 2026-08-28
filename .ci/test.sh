@@ -83,9 +83,19 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
-# other implementations like pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
+# From Python 3.13 onwards, CPython packages on conda-forge have build strings
+# with formats like "*_cp314".
+#
+# Have to be specific here (no trailing wildcard) to avoid unintentionally pulling
+# in free-threaded builds (e.g. "*_cp314t").
+PYTHON_MAJOR_VERSION="${PYTHON_VERSION%%.*}"
+PYTHON_MINOR_VERSION="${PYTHON_VERSION#*.}"
+if (( PYTHON_MAJOR_VERSION > 3 || (PYTHON_MAJOR_VERSION == 3 && PYTHON_MINOR_VERSION > 12) )); then
+    PYTHON_ABI_TAG="cp${PYTHON_VERSION//./}"
+else
+    PYTHON_ABI_TAG="cpython"
+fi
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_${PYTHON_ABI_TAG}]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
