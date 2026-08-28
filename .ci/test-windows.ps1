@@ -74,8 +74,8 @@ if (-not $UseConda) {
         --only-binary=:all: `
         --requirement "$env:BUILD_SOURCESDIRECTORY/.ci/pip-envs/requirements-windows-arm64.txt" `
         --upgrade ; Assert-Output $?
-# 'pixi' is used for end-of-life Python versions
 } elseif ($env:PYTHON_VERSION -eq "3.10") {
+    # 'pixi' is used for end-of-life Python versions
     $activation = ((& pixi shell-hook --locked -e py310 --shell powershell) -join "`n")
     Invoke-Expression $activation ; Assert-Output $?
 } else {
@@ -158,15 +158,8 @@ if ($env:TASK -eq "regular") {
     # TODO: restore --integrated-opencl as part of https://github.com/lightgbm-org/LightGBM/issues/6968
     sh "build-python.sh" bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
-    Set-Location dist
-    $Wheels = @(Get-ChildItem "*py3-none-$env:WHEEL_PLATFORM_TAG.whl")
-    if ($Wheels.Count -ne 1) {
-        Write-Output "Expected one $env:WHEEL_PLATFORM_TAG wheel, found $($Wheels.Count)."
-        Assert-Output $False
-    }
-    $Wheel = $Wheels[0]
-    python -m pip install --no-deps $Wheel.FullName ; Assert-Output $?
-    cp $Wheel.FullName "$env:BUILD_ARTIFACTSTAGINGDIRECTORY" ; Assert-Output $?
+    Set-Location dist; pip install --no-deps @(Get-ChildItem "*py3-none-$env:WHEEL_PLATFORM_TAG.whl") ; Assert-Output $?
+    cp @(Get-ChildItem "*py3-none-$env:WHEEL_PLATFORM_TAG.whl") "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
     if ($env:COMPILER -eq "MINGW") {
         sh ./build-python.sh install --mingw ; Assert-Output $?
