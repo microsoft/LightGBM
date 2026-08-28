@@ -257,6 +257,17 @@ jobs:
             method: wheel
             produces-artifacts: 'true'
             artifact-name: 'windows-amd64-wheel'
+            wheel-platform-tag: 'win_amd64'
+            python_version: '3.13'
+          - os: windows-11-arm
+            task: bdist
+            compiler: MSVC
+            method: wheel
+            produces-artifacts: 'true'
+            artifact-name: 'windows-arm64-wheel'
+            architecture: 'arm64'
+            setup-conda: 'false'
+            wheel-platform-tag: 'win_arm64'
             python_version: '3.13'
           - os: windows-2022
             task: regular
@@ -295,6 +306,12 @@ jobs:
           fetch-depth: 5
           persist-credentials: false
           submodules: true
+      - name: Set up Python on Windows Arm64
+        if: startsWith(matrix.os, 'windows') && matrix.setup-conda == 'false'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          architecture: ${{ matrix.architecture }}
+          python-version: ${{ matrix.python_version }}
       - name: Set up 'pixi' for jobs that need it
         if: matrix.pixi-env != ''
         uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f  # v0.10.0
@@ -329,14 +346,14 @@ jobs:
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
       - name: Install OpenCL on Windows
-        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist')
+        if: startsWith(matrix.os, 'windows') && (matrix.task == 'bdist') && matrix.setup-conda != 'false'
         shell: pwsh -command ". {0}"
         run: |
           & "$env:GITHUB_WORKSPACE/.ci/install-opencl.ps1"
       # 'conda init powershell' needs to be run in a separate process
       # ref: https://docs.conda.io/projects/conda/en/stable/dev-guide/deep-dives/activation.html
       - name: Initialize conda on Windows
-        if: startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os, 'windows') && matrix.setup-conda != 'false'
         shell: pwsh -command ". {0}"
         run: |
           $env:PATH = "$env:CONDA/Scripts;$env:PATH"
@@ -349,7 +366,9 @@ jobs:
           $env:METHOD = "${{ matrix.method }}"
           $env:PRODUCES_ARTIFACTS = "${{ matrix.produces-artifacts }}"
           $env:PYTHON_VERSION = "${{ matrix.python_version }}"
+          $env:SETUP_CONDA = "${{ matrix.setup-conda }}"
           $env:TASK = "${{ matrix.task }}"
+          $env:WHEEL_PLATFORM_TAG = "${{ matrix.wheel-platform-tag }}"
           & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
       - name: Upload artifacts
         if: ${{ matrix.produces-artifacts == 'true' }}
