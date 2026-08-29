@@ -120,7 +120,9 @@ jobs:
           - os: macos-15-intel
             task: r-package
             compiler: clang
-            r_version: 4.3
+            # This 'r_version' is just for the display name in CI.
+            # Version is locked in the pixi env.
+            r_version: 4.6
             build_type: cran
             container: null
             pixi-env: 'r-macos-intel'
