@@ -46,8 +46,16 @@ distributed = "2022.12.*"
 platforms = ["osx-64"]
 
 [feature.r-macos-intel.dependencies]
-r-base = ">=4.6"
 qpdf = "*"
+r-base = ">=4.5"
+"r-data.table" = ">=1.9.6"
+r-jsonlite = ">=1.0"
+r-knitr = "*"
+r-markdown = "*"
+r-Matrix = ">=1.1"
+r-R6 = "*"
+r-RhpcBLASctl = "*"
+r-testthat = "*"
 texlive-core = "*"
 
 [environments]

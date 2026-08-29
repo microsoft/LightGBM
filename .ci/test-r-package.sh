@@ -116,17 +116,20 @@ if [[ $OS_NAME == "macos" ]]; then
     export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
-# {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
-# This should be unnecessary on R >=4.4.0
-# ref: https://github.com/lightgbm-org/LightGBM/issues/6433
-Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
+# install dependencies, unless in an activated 'pixi' environment (which should already have them)
+if [[ -z "${PIXI_IN_SHELL:-}" ]]; then
+    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+    # This should be unnecessary on R >=4.4.0
+    # ref: https://github.com/lightgbm-org/LightGBM/issues/6433
+    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 
-# manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
-# ref: https://github.com/lightgbm-org/LightGBM/issues/6433
-Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+    # manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
+    # ref: https://github.com/lightgbm-org/LightGBM/issues/6433
+    Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
-# Manually install dependencies to avoid a CI-time dependency on devtools (for devtools::install_deps())
-Rscript --vanilla ./.ci/install-r-deps.R --build --test --exclude=Matrix || exit 1
+    # Manually install dependencies to avoid a CI-time dependency on devtools (for devtools::install_deps())
+    Rscript --vanilla ./.ci/install-r-deps.R --build --test --exclude=Matrix || exit 1
+fi
 
 cd "${BUILD_DIRECTORY}"
 PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
