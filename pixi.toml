@@ -46,6 +46,7 @@ distributed = "2022.12.*"
 platforms = ["osx-64"]
 
 [feature.r-macos-intel.dependencies]
+binutils = "*"
 r-base = ">=4.6"
 qpdf = "*"
 texlive-core = "*"
