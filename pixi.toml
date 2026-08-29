@@ -46,6 +46,8 @@ distributed = "2022.12.*"
 platforms = ["osx-64"]
 
 [feature.r-macos-intel.dependencies]
+autoconf = "*"
+automake = "*"
 # putting a ceiling on 'clang' to avoid this compiler warning:
 #
 #   warning "The selected platform is no longer supported by libc++."
@@ -61,7 +63,6 @@ r-Matrix = ">=1.1"
 r-R6 = "*"
 r-RhpcBLASctl = "*"
 r-testthat = "*"
-texlive-core = "*"
 
 [environments]
 default = []

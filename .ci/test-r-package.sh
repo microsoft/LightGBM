@@ -73,22 +73,25 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-    brew_packages=(checkbashisms)
-    if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew_packages+=(automake)
-    fi
-    if [[ "${ARCH}" == "arm64" ]]; then
-        brew update-reset --auto-update
-        brew update --auto-update
-        brew_packages+=(
-            basictex
-            qpdf
-        )
-        brew install "${brew_packages[@]}" || exit 1
-        export PATH="/Library/TeX/texbin:$PATH"
-        sudo tlmgr --verify-repo=none update --self || exit 1
-        sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
+    brew_packages=(
+        checkbashisms
+    )
 
+    # install BasicTeX
+    curl -sL "https://mirror.ctan.org/systems/mac/mactex/BasicTeX.pkg" -o BasicTeX.pkg || exit 1
+    sudo installer \
+        -pkg "$(pwd)/BasicTeX.pkg" \
+        -target / || exit 1
+
+    export PATH="/Library/TeX/texbin:$PATH"
+    sudo tlmgr --verify-repo=none update --self || exit 1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
+
+    if [[ "${ARCH}" == "arm64" ]]; then
+        brew_packages+=(qpdf)
+        if [[ $R_BUILD_TYPE == "cran" ]]; then
+            brew_packages+=(automake)
+        fi
         curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
         sudo installer \
             -pkg "$(pwd)/R.pkg" \
@@ -102,10 +105,12 @@ if [[ $OS_NAME == "macos" ]]; then
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
         set -u
         echo "done setting up 'pixi' environment"
-
-        # install a few more packages that weren't available on 'conda-forge'
-        brew install "${brew_packages[@]}" || exit 1
     fi
+
+    # install a few more packages that weren't available on 'conda-forge'
+    brew update-reset --auto-update
+    brew update --auto-update
+    brew install "${brew_packages[@]}" || exit 1
 
     # install tidy v5.8.0
     # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
