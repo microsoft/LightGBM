@@ -87,21 +87,23 @@ if [[ $OS_NAME == "macos" ]]; then
         export PATH="/Library/TeX/texbin:$PATH"
         sudo tlmgr --verify-repo=none update --self || exit 1
         sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
+
+        curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
+        sudo installer \
+            -pkg "$(pwd)/R.pkg" \
+            -target / || exit 1
     else
+        echo "setting up 'pixi' environment"
         # conda-forge's activation scripts rely on being able to reference shell
         # variables that may not be defined, which can result in errors like
         # 'AR: unbound variable' when run in bash with 'set -u'.
         set +u
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
         set -u
+        echo "done setting up 'pixi' environment"
     fi
 
     brew install checkbashisms || exit 1
-
-    curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
-    sudo installer \
-        -pkg "$(pwd)/R.pkg" \
-        -target / || exit 1
 
     # install tidy v5.8.0
     # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
