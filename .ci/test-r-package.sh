@@ -73,16 +73,17 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+    brew_packages=(checkbashisms)
+    if [[ $R_BUILD_TYPE == "cran" ]]; then
+        brew_packages+=(automake)
+    fi
     if [[ "${ARCH}" == "arm64" ]]; then
         brew update-reset --auto-update
         brew update --auto-update
-        brew_packages=(
+        brew_packages+=(
             basictex
             qpdf
         )
-        if [[ $R_BUILD_TYPE == "cran" ]]; then
-            brew_packages+=(automake)
-        fi
         brew install "${brew_packages[@]}" || exit 1
         export PATH="/Library/TeX/texbin:$PATH"
         sudo tlmgr --verify-repo=none update --self || exit 1
@@ -101,9 +102,10 @@ if [[ $OS_NAME == "macos" ]]; then
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
         set -u
         echo "done setting up 'pixi' environment"
-    fi
 
-    brew install checkbashisms || exit 1
+        # install a few more packages that weren't available on 'conda-forge'
+        brew install "${brew_packages[@]}" || exit 1
+    fi
 
     # install tidy v5.8.0
     # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM

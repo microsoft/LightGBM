@@ -46,6 +46,11 @@ distributed = "2022.12.*"
 platforms = ["osx-64"]
 
 [feature.r-macos-intel.dependencies]
+# putting a ceiling on 'clang' to avoid this compiler warning:
+#
+#   warning "The selected platform is no longer supported by libc++."
+#
+clang = "<22"
 qpdf = "*"
 r-base = ">=4.5"
 "r-data.table" = ">=1.9.6"
