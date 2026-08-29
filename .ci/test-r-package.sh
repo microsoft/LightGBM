@@ -83,12 +83,17 @@ if [[ $OS_NAME == "macos" ]]; then
         if [[ $R_BUILD_TYPE == "cran" ]]; then
             brew_packages+=(automake)
         fi
-        brew "${brew_packages[@]}" || exit 1
+        brew install "${brew_packages[@]}" || exit 1
         export PATH="/Library/TeX/texbin:$PATH"
         sudo tlmgr --verify-repo=none update --self || exit 1
         sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
     else
+        # conda-forge's activation scripts rely on being able to reference shell
+        # variables that may not be defined, which can result in errors like
+        # 'AR: unbound variable' when run in bash with 'set -u'.
+        set +u
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
+        set -u
     fi
 
     brew install checkbashisms || exit 1
