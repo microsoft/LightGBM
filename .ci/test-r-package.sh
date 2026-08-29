@@ -73,18 +73,25 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-    brew update-reset --auto-update
-    brew update --auto-update
-    if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install automake || exit 1
+    if [[ "${ARCH}" == "arm64" ]]; then
+        brew update-reset --auto-update
+        brew update --auto-update
+        brew_packages=(
+            basictex
+            qpdf
+        )
+        if [[ $R_BUILD_TYPE == "cran" ]]; then
+            brew_packages+=(automake)
+        fi
+        brew "${brew_packages[@]}" || exit 1
+        export PATH="/Library/TeX/texbin:$PATH"
+        sudo tlmgr --verify-repo=none update --self || exit 1
+        sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
+    else
+        eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
     fi
-    brew install \
-        checkbashisms \
-        qpdf || exit 1
-    brew install basictex || exit 1
-    export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr --verify-repo=none update --self || exit 1
-    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
+
+    brew install checkbashisms || exit 1
 
     curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
     sudo installer \

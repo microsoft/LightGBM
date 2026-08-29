@@ -42,6 +42,15 @@ pytest = "7.4.*"
 dask = "2022.12.*"
 distributed = "2022.12.*"
 
+[feature.r-macos-intel]
+platforms = ["osx-64"]
+
+[feature.r-macos-intel.dependencies]
+r-base = ">=4.6"
+qpdf = "*"
+texlive-core = "*"
+
 [environments]
 default = []
 py310 = ["py310"]
+r-macos-intel = ["r-macos-intel"]
