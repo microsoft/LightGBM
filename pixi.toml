@@ -4,6 +4,14 @@ name = "lightgbm"
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
+# This project has non-Python pixi environments, so want to avoid
+# requiring 'pip' or a Python interpreter in the default dependencies.
+#
+# Every CI job ends up making network requests, and so needs 'ca-certificates',
+# so it's used here just to have a non-empty default set of dependencies.
+ca-certificates = ">=2026"
+
+[feature.python-common.dependencies]
 narwhals = ">=1.15"
 numpy = ">=1.21.3"
 pip = "*"
@@ -26,7 +34,9 @@ scikit-learn = "1.0.*"
 scipy = "1.7.*"
 
 # build-time dependencies
+hatchling = ">=1.27.0"
 python-build = "1.4.*"
+scikit-build-core = ">=0.11.0"
 
 # testing-only packages
 cloudpickle = "2.2.*"
@@ -67,7 +77,7 @@ r-testthat = "*"
 # reference for 'R CMD check' variables: https://cran.r-project.org/doc/manuals/r-devel/R-ints.html
 [feature.r-macos-intel.activation.env]
 # avoid needing to install 'checkbashisms', which is not available on conda-forge
-_R_CHECK_BASHISMS_="false"
+_R_CHECK_BASHISMS_="FALSE"
 
 # suppress 'R CMD check --as-cran' notes like this:
 #
@@ -79,5 +89,5 @@ _R_CHECK_COMPILATION_FLAGS_KNOWN_="-march=core2 -mssse3"
 
 [environments]
 default = []
-py310 = ["py310"]
+py310 = ["python-common", "py310"]
 r-macos-intel = ["r-macos-intel"]
