@@ -20,9 +20,6 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
 
 if [[ "${OS_NAME}" == "macos" ]] && [[ "${ARCH}" == "x86_64" ]]; then
-    # avoid needing to install 'checkbashisms', which is not available on conda-forge
-    export _R_CHECK_BASHISMS_="FALSE"
-
     # suppress 'R CMD check --as-cran' notes like this:
     #
     #    * checking compilation flags used ... NOTE
@@ -126,6 +123,13 @@ if [[ $OS_NAME == "macos" ]]; then
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
         set -u
         echo "done setting up 'pixi' environment"
+
+        # install 'checkbashisms' directly from Debian mirror
+        gh api \
+            -H "Accept: application/vnd.github.raw" \
+            "repos/Debian/devscripts/contents/scripts/checkbashisms.pl?ref=555a93fde8f16b53de01def05f23f71ac25fe51a" \
+            > /usr/local/bin/checkbashisms
+        chmod +x /usr/local/bin/checkbashisms
     fi
 
     # install tidy v5.8.0
