@@ -12,10 +12,24 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
+# reference for configuring 'R CMD check' via environment variables:
+# https://cran.r-project.org/doc/manuals/r-devel/R-ints.html
+
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/lightgbm-org/LightGBM/issues/4049#issuecomment-793412254.
-if [[ $R_BUILD_TYPE != "cran" ]]; then
-    export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+
+if [[ "${OS_NAME}" == "macos" ]] && [[ "${ARCH}" == "x86_64" ]]; then
+    # avoid needing to install 'checkbashisms', which is not available on conda-forge
+    export _R_CHECK_BASHISMS_="FALSE"
+
+    # suppress 'R CMD check --as-cran' notes like this:
+    #
+    #    * checking compilation flags used ... NOTE
+    #    Compilation used the following non-portable flag(s):
+    #    ‘-march=core2’ ‘-mssse3’
+    #
+    export _R_CHECK_COMPILATION_FLAGS_KNOWN_="-march=core2 -mssse3"
 fi
 
 # Get details needed for installing R components

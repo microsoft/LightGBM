@@ -74,19 +74,6 @@ r-R6 = "*"
 r-RhpcBLASctl = "*"
 r-testthat = "*"
 
-# reference for 'R CMD check' variables: https://cran.r-project.org/doc/manuals/r-devel/R-ints.html
-[feature.r-macos-intel.activation.env]
-# avoid needing to install 'checkbashisms', which is not available on conda-forge
-_R_CHECK_BASHISMS_="FALSE"
-
-# suppress 'R CMD check --as-cran' notes like this:
-#
-#    * checking compilation flags used ... NOTE
-#    Compilation used the following non-portable flag(s):
-#    ‘-march=core2’ ‘-mssse3’
-#
-_R_CHECK_COMPILATION_FLAGS_KNOWN_="-march=core2 -mssse3"
-
 [environments]
 default = []
 py310 = ["python-common", "py310"]
