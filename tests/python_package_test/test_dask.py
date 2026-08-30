@@ -1520,34 +1520,27 @@ def test_init_score(task, output, cluster, rng):
             assert_eq(pred, pred_init_score)
 
 
-def sklearn_checks_to_run():
-    check_names = ["check_estimator_get_tags_default_keys", "check_get_params_invariance", "check_set_params"]
-    for check_name in check_names:
-        check_func = getattr(sklearn_checks, check_name, None)
-        if check_func:
-            yield check_func
-
-
-def _tested_estimators():
-    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
-        yield Estimator()
-
-
-@pytest.mark.parametrize("estimator", _tested_estimators())
-@pytest.mark.parametrize("check", sklearn_checks_to_run())
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        lgb.DaskLGBMClassifier(),
+        lgb.DaskLGBMRanker(),
+        lgb.DaskLGBMRegressor(),
+    ],
+)
+@pytest.mark.parametrize(
+    "check",
+    [
+        sklearn_checks.check_get_params_invariance,
+        sklearn_checks.check_parameters_default_constructible,
+        sklearn_checks.check_set_params,
+    ],
+)
 def test_sklearn_integration(estimator, check, cluster):
     with Client(cluster):
         estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
-
-
-# this test is separate because it takes a not-yet-constructed estimator
-@pytest.mark.parametrize("estimator", list(_tested_estimators()))
-def test_parameters_default_constructible(estimator):
-    name = estimator.__class__.__name__
-    Estimator = estimator
-    sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
 @pytest.mark.parametrize("task", tasks)
