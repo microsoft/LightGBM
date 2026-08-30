@@ -75,7 +75,7 @@ _R_CHECK_BASHISMS_="false"
 #    Compilation used the following non-portable flag(s):
 #    ‘-march=core2’ ‘-mssse3’
 #
-_R_CHECK_COMPILATION_FLAGS_KNOWN_="-march=core2 -mssse3" 
+_R_CHECK_COMPILATION_FLAGS_KNOWN_="-march=core2 -mssse3"
 
 [environments]
 default = []
