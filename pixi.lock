@@ -1715,7 +1715,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-withr-3.0.3-r45hc72bb7e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sdkroot_env_osx-64-26.0-h62b880e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/_openmp_mutex-4.5-7_kmp_llvm.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/_openmp_mutex-4.5-8_kmp_llvm.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/autoconf-2.72-pl5321had7229c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/automake-1.17-pl5321h694c41f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/bwidget-1.10.1-h8822bef_3.conda
@@ -1750,8 +1750,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libblas-3.11.0-9_he492b99_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libcblas-3.11.0-9_h9b27e0a_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp21.1-21.1.8-default_h0a1f3f9_6.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.0-default_h6e863b9_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.0-default_h4b7e6e3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.0-default_h6e863b9_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.0-default_h74d5376_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libcompiler-rt-21.1.8-h8c1e6b9_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libcurl-8.21.0-h5318221_5.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-23.1.0-h19cb2f5_0.conda
@@ -8825,6 +8825,18 @@ packages:
     - _openmp_mutex >=4.5
   size: 8328
   timestamp: 1764092562779
+- conda: https://conda.anaconda.org/conda-forge/osx-64/_openmp_mutex-4.5-8_kmp_llvm.conda
+  build_number: 8
+  sha256: 09ba32614a1512b729e3cb608b0714c24654f37b5d0f8239bdb77d7be0ede4f7
+  md5: b9e2e7fcf1926cedbdb216a6974d67e3
+  depends:
+  - llvm-openmp >=9.0.1
+  license: BSD-3-Clause
+  run_exports:
+    weak:
+    - _openmp_mutex >=4.5
+  size: 8002
+  timestamp: 1788046683209
 - conda: https://conda.anaconda.org/conda-forge/osx-64/argon2-cffi-bindings-25.1.0-py310hd2d5e8d_2.conda
   sha256: 18ef1903012161df483df264401aec47e5164c156d1202655209918de87b6149
   md5: 37915464daee9e9cf50b96b79ec722f7
@@ -10087,43 +10099,41 @@ packages:
     - libclang-cpp21.1 >=21.1.8,<21.2.0a0
   size: 14492801
   timestamp: 1787464712817
-- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.0-default_h6e863b9_0.conda
-  sha256: 1ef8269744c921c85e22512da2fc82c89e76d91459ae67a59a7646103e649f26
-  md5: 1820a7541a8cac2650ba3217c6bfb782
+- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.0-default_h6e863b9_1.conda
+  sha256: 03b2783996d6977e3c69c0338f1c45d1e4084c8046087b7258728de8bf279e88
+  md5: ebd846b462b7db53c9eda061fc7a92a8
   depends:
   - libcxx >=23.1.0
   - __osx >=11.0
-  - libzlib >=1.3.2,<2.0a0
   - zstd >=1.5.7,<1.6.0a0
   - libxml2
   - libxml2-16 >=2.15.3
+  - libzlib >=1.3.2,<2.0a0
   - libllvm23 >=23.1.0,<23.2.0a0
   license: Apache-2.0 WITH LLVM-exception
-  license_family: APACHE
   run_exports:
     weak:
     - libclang-cpp23.1 >=23.1.0,<23.2.0a0
-  size: 17899779
-  timestamp: 1787735189766
-- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.0-default_h4b7e6e3_0.conda
-  sha256: 2098a57d05681ba7c4dd99ebd821d017eb9a31f2925d9e251f33cb369dda44ad
-  md5: 28c65396e788bee243cba7eebb4a682c
+  size: 17899906
+  timestamp: 1788037748188
+- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.0-default_h74d5376_1.conda
+  sha256: 63b678fdd18a5b2a5b076f21090b0b3521ab07f8be508a6dc4c96608012ab948
+  md5: d1d72034d4b72af97e9cb40c0f0292b7
   depends:
-  - libclang-cpp23.1 ==23.1.0 default_h6e863b9_0
+  - libclang-cpp23.1 ==23.1.0 default_h6e863b9_1
   - libcxx >=23.1.0
   - __osx >=11.0
-  - libzlib >=1.3.2,<2.0a0
   - zstd >=1.5.7,<1.6.0a0
   - libxml2
   - libxml2-16 >=2.15.3
+  - libzlib >=1.3.2,<2.0a0
   - libllvm23 >=23.1.0,<23.2.0a0
   license: Apache-2.0 WITH LLVM-exception
-  license_family: APACHE
   run_exports:
     weak:
     - libclang13 >=23.1.0
-  size: 11365379
-  timestamp: 1787735189766
+  size: 11365507
+  timestamp: 1788037748188
 - conda: https://conda.anaconda.org/conda-forge/osx-64/libcompiler-rt-21.1.8-h8c1e6b9_2.conda
   sha256: 7613a1a6085d287a3607529e64f3aeafc9af26c79d3e916baffc9e629830bb40
   md5: 5dbe869e022b709ec049a081a448eb90

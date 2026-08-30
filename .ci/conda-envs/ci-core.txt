@@ -32,6 +32,7 @@ scipy>=1.7
 
 # build-time dependencies
 python-build>=0.10
+scikit-build-core>=0.11.0
 
 # starting some time around 2026, 'pip' is no longer guaranteed to be installed
 pip>=24
