@@ -123,13 +123,6 @@ if [[ $OS_NAME == "macos" ]]; then
         eval "$(pixi shell-hook --locked -e 'r-macos-intel')"
         set -u
         echo "done setting up 'pixi' environment"
-
-        # install 'checkbashisms' directly from Debian mirror
-        gh api \
-            -H "Accept: application/vnd.github.raw" \
-            "repos/Debian/devscripts/contents/scripts/checkbashisms.pl?ref=555a93fde8f16b53de01def05f23f71ac25fe51a" \
-            > /usr/local/bin/checkbashisms
-        chmod +x /usr/local/bin/checkbashisms
     fi
 
     # install tidy v5.8.0
