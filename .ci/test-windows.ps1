@@ -126,11 +126,11 @@ Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
     cmake -B build -S . -A x64 ; Assert-Output $?
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
-    sh ./build-python.sh install --precompile ; Assert-Output $?
+    sh ./build-python.sh install --precompile --no-isolation ; Assert-Output $?
     cp ./Release/lib_lightgbm.dll "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
     cp ./Release/lightgbm.exe "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif ($env:TASK -eq "sdist") {
-    sh ./build-python.sh sdist ; Assert-Output $?
+    sh ./build-python.sh --no-isolation sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install --no-deps @(Get-ChildItem *.gz) -v ; Assert-Output $?
 } elseif ($env:TASK -eq "bdist") {
@@ -147,7 +147,7 @@ if ($env:TASK -eq "regular") {
     conda activate $env:CONDA_ENV
 
     # TODO: restore --integrated-opencl as part of https://github.com/lightgbm-org/LightGBM/issues/6968
-    sh "build-python.sh" bdist_wheel ; Assert-Output $?
+    sh "build-python.sh" --no-isolation bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install --no-deps @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"

@@ -93,11 +93,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15-intel
-            task: sdist
-            compiler: clang
-            python_version: '3.10'
-            pixi-env: 'py310'
           - os: windows-2022
             task: sdist
             compiler: MSVC
@@ -155,11 +150,6 @@ jobs:
           ############
           # MPI jobs #
           ############
-          - os: macos-15-intel
-            task: mpi
-            compiler: gcc
-            method: source
-            python_version: '3.12'
           - os: ubuntu-latest
             container: *manylinux_amd64_image
             os-display-name: *manylinux_amd64_display_name
