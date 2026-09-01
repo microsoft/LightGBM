@@ -34,6 +34,7 @@ from lightgbm.compat import (
 
 from .utils import (
     BuildInfo,
+    assert_docstrings_equal,
     assert_silent,
     load_breast_cancer,
     load_digits,
@@ -240,8 +241,123 @@ def test_xendcg():
     assert gbm.best_score_["valid_0"]["ndcg@1"] > 0.6211
     assert gbm.best_score_["valid_0"]["ndcg@3"] > 0.6253
 
+@pytest.mark.parametrize("method", ("__init__", "get_params", "predict", "set_params",))
+def test_estimator_docstrings_that_should_be_identical(method):
+    assert_docstrings_equal(lgb.LGBMModel, lgb.LGBMClassifier, method)
+    assert_docstrings_equal(lgb.LGBMClassifier, lgb.LGBMRanker, method)
+    assert_docstrings_equal(lgb.LGBMRanker, lgb.LGBMRegressor, method)
 
-def test_estimator_fit_docstrings_are_consistent():
+def test_estimator_docstrings_are_consistent():
+    # __init__()
+    assert_docstrings_equal(lgb.LGBMModel, lgb.LGBMClassifier, "__init__")
+    assert_docstrings_equal(lgb.LGBMClassifier, lgb.LGBMRanker, "__init__")
+    assert_docstrings_equal(lgb.LGBMRanker, lgb.LGBMRegressor, "__init__")
+
+    # fit()
+    assert_docstrings_equal(
+        lgb.LGBMModel,
+        lgb.LGBMClassifier,
+        "fit",
+        expected_diff=textwrap.dedent("""\
+            --- LGBMModel.fit
+            +++ LGBMClassifier.fit
+            @@ -38,12 +37,0 @@
+            -group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
+            -    Group/query data.
+            -    Only used in the learning-to-rank task.
+            -    sum(group) = n_samples.
+            -    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            -    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+            -    
+            -    .. versionadded:: 4.2.0
+            -        Support for ``pyarrow`` inputs
+            -    
+            -    .. versionadded:: 4.7.0
+            -        Support for ``polars`` inputs
+            @@ -63,2 +50,0 @@
+            -eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
+            -    Group data of eval data.
+            @@ -100 +86 @@
+            -self : LGBMModel
+            +self : LGBMClassifier
+        """),
+    )
+    assert_docstrings_equal(
+        lgb.LGBMClassifier,
+        lgb.LGBMRanker,
+        "fit",
+        expected_diff=textwrap.dedent("""\
+            --- LGBMClassifier.fit
+            +++ LGBMRanker.fit
+            @@ -37,0 +38,12 @@
+            +group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
+            +    Group/query data.
+            +    Only used in the learning-to-rank task.
+            +    sum(group) = n_samples.
+            +    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            +    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+            +    
+            +    .. versionadded:: 4.2.0
+            +        Support for ``pyarrow`` inputs
+            +    
+            +    .. versionadded:: 4.7.0
+            +        Support for ``polars`` inputs
+            @@ -47,2 +58,0 @@
+            -eval_class_weight : list or None, optional (default=None)
+            -    Class weights of eval data.
+            @@ -50,0 +61,2 @@
+            +eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
+            +    Group data of eval data.
+            @@ -56,0 +69,2 @@
+            +eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
+            +    The evaluation positions of the specified metric.
+            @@ -86 +100 @@
+            -self : LGBMClassifier
+            +self : LGBMRanker
+        """),
+    )
+    assert_docstrings_equal(
+        lgb.LGBMRanker,
+        lgb.LGBMRegressor,
+        "fit",
+        expected_diff=textwrap.dedent("""\
+            --- LGBMRanker.fit
+            +++ LGBMRegressor.fit
+            @@ -38,12 +37,0 @@
+            -group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
+            -    Group/query data.
+            -    Only used in the learning-to-rank task.
+            -    sum(group) = n_samples.
+            -    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            -    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+            -    
+            -    .. versionadded:: 4.2.0
+            -        Support for ``pyarrow`` inputs
+            -    
+            -    .. versionadded:: 4.7.0
+            -        Support for ``polars`` inputs
+            @@ -61,2 +48,0 @@
+            -eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
+            -    Group data of eval data.
+            @@ -69,2 +54,0 @@
+            -eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
+            -    The evaluation positions of the specified metric.
+            @@ -100 +84 @@
+            -self : LGBMRanker
+            +self : LGBMRegressor
+        """),
+    )
+
+    # get_params()
+
+    # set_params()
+
+    # 
+
+    # predict()
+
+    # predict() vs. predict_proba()
+
     from numpydoc.docscrape import NumpyDocString, Parameter
     import lightgbm as lgb
 
@@ -250,6 +366,7 @@ def test_estimator_fit_docstrings_are_consistent():
     regressor_docs = NumpyDocString(lgb.LGBMRegressor.fit.__doc__)
     for doc_key in classifier_docs.keys():
         if doc_key == "Parameters":
+            raise RuntimeError
             continue
         elif doc_key == "Returns":
             continue

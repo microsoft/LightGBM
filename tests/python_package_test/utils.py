@@ -1,7 +1,9 @@
 # coding: utf-8
+import difflib
 import filecmp
 import os
 import pickle
+import textwrap
 from functools import lru_cache
 from inspect import getfullargspec
 from pathlib import Path
@@ -10,6 +12,7 @@ import cloudpickle
 import joblib
 import numpy as np
 import sklearn.datasets
+from numpydoc.docscrape import NumpyDocString
 from sklearn.utils import check_random_state
 
 import lightgbm as lgb
@@ -285,3 +288,26 @@ def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset) ->
     lhs._dump_text(tmp_path / "lhs.txt")
     rhs._dump_text(tmp_path / "rhs.txt")
     assert filecmp.cmp(tmp_path / "lhs.txt", tmp_path / "rhs.txt")
+
+def assert_docstrings_equal(
+    class1: type,
+    class2: type,
+    method: str,
+    *,
+    expected_diff: str="",
+) -> None:
+
+    # this will fail (intentionally) if either class doesn't have the method
+    doc1_docstring = getattr(class1, method).__doc__
+    doc2_docstring = getattr(class2, method).__doc__
+
+    # if they do, compare them
+    diff = difflib.unified_diff(
+        str(NumpyDocString(doc1_docstring)).splitlines(keepends=True),
+        str(NumpyDocString(doc2_docstring)).splitlines(keepends=True),
+        fromfile=f"{class1.__name__}.{method}",
+        tofile=f"{class2.__name__}.{method}",
+        n=0,
+    )
+    stringified_diff = "".join(line for line in diff)
+    assert stringified_diff == expected_diff, f"docs differ:\n\n{stringified_diff}"
