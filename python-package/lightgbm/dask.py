@@ -523,7 +523,6 @@ def _train(
 
     Notes
     -----
-
     This method handles setting up the following network parameters based on information
     about the Dask cluster referenced by ``client``.
 

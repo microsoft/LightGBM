@@ -3,7 +3,6 @@ import difflib
 import filecmp
 import os
 import pickle
-import textwrap
 from functools import lru_cache
 from inspect import getfullargspec
 from pathlib import Path
@@ -289,12 +288,13 @@ def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset) ->
     rhs._dump_text(tmp_path / "rhs.txt")
     assert filecmp.cmp(tmp_path / "lhs.txt", tmp_path / "rhs.txt")
 
+
 def assert_docstrings_equal(
     class1: type,
     class2: type,
     method: str,
     *,
-    expected_diff: str="",
+    expected_diff: str = "",
 ) -> None:
 
     # this will fail (intentionally) if either class doesn't have the method

@@ -4,6 +4,7 @@ import itertools
 import math
 import re
 import sys
+import textwrap
 import warnings
 from functools import partial
 from pathlib import Path
@@ -241,11 +242,21 @@ def test_xendcg():
     assert gbm.best_score_["valid_0"]["ndcg@1"] > 0.6211
     assert gbm.best_score_["valid_0"]["ndcg@3"] > 0.6253
 
-@pytest.mark.parametrize("method", ("__init__", "get_params", "predict", "set_params",))
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        "__init__",
+        "get_params",
+        "predict",
+        "set_params",
+    ],
+)
 def test_estimator_docstrings_that_should_be_identical(method):
     assert_docstrings_equal(lgb.LGBMModel, lgb.LGBMClassifier, method)
     assert_docstrings_equal(lgb.LGBMClassifier, lgb.LGBMRanker, method)
     assert_docstrings_equal(lgb.LGBMRanker, lgb.LGBMRegressor, method)
+
 
 def test_estimator_docstrings_are_consistent():
     # __init__()
@@ -268,10 +279,10 @@ def test_estimator_docstrings_are_consistent():
             -    sum(group) = n_samples.
             -    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             -    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            -    
+            -
             -    .. versionadded:: 4.2.0
             -        Support for ``pyarrow`` inputs
-            -    
+            -
             -    .. versionadded:: 4.7.0
             -        Support for ``polars`` inputs
             @@ -63,2 +50,0 @@
@@ -296,10 +307,10 @@ def test_estimator_docstrings_are_consistent():
             +    sum(group) = n_samples.
             +    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             +    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            +    
+            +
             +    .. versionadded:: 4.2.0
             +        Support for ``pyarrow`` inputs
-            +    
+            +
             +    .. versionadded:: 4.7.0
             +        Support for ``polars`` inputs
             @@ -47,2 +58,0 @@
@@ -330,10 +341,10 @@ def test_estimator_docstrings_are_consistent():
             -    sum(group) = n_samples.
             -    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             -    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            -    
+            -
             -    .. versionadded:: 4.2.0
             -        Support for ``pyarrow`` inputs
-            -    
+            -
             -    .. versionadded:: 4.7.0
             -        Support for ``polars`` inputs
             @@ -61,2 +48,0 @@
@@ -348,32 +359,7 @@ def test_estimator_docstrings_are_consistent():
         """),
     )
 
-    # get_params()
-
-    # set_params()
-
-    # 
-
-    # predict()
-
     # predict() vs. predict_proba()
-
-    from numpydoc.docscrape import NumpyDocString, Parameter
-    import lightgbm as lgb
-
-    classifier_docs = NumpyDocString(lgb.LGBMClassifier.fit.__doc__)
-    ranker_docs = NumpyDocString(lgb.LGBMRanker.fit.__doc__)
-    regressor_docs = NumpyDocString(lgb.LGBMRegressor.fit.__doc__)
-    for doc_key in classifier_docs.keys():
-        if doc_key == "Parameters":
-            raise RuntimeError
-            continue
-        elif doc_key == "Returns":
-            continue
-        else:
-            assert classifier_docs[doc_key] == ranker_docs[doc_key], f"mismatch for key '{doc_key}'"
-            assert ranker_docs[doc_key] == regressor_docs[doc_key], f"mismatch for key '{doc_key}'"
-
 
 
 def test_eval_at_aliases():
