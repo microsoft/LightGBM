@@ -1718,14 +1718,11 @@ def test_estimator_constructor_docstrings_are_consistent():
         expected_diff=textwrap.dedent("""\
             --- LGBMClassifier.__init__
             +++ DaskLGBMClassifier.__init__
-            @@ -79 +79,6 @@
-            -        **kwargs
+            @@ -78,0 +79,4 @@
             +        client : distributed.Client or None, optional (default=None)
-            +    Dask client.
-            +    If ``None``, ``distributed.default_client()`` will be used at runtime.
-            +    The Dask client used by this class will not be saved if the model object is pickled.
-            +**kwargs
-            +
+            +            Dask client.
+            +            If ``None``, ``distributed.default_client()`` will be used at runtime.
+            +            The Dask client used by this class will not be saved if the model object is pickled.
         """),
     )
     assert_docstrings_equal(lgb.DaskLGBMClassifier, "__init__", lgb.DaskLGBMRanker, "__init__")
@@ -1779,10 +1776,6 @@ def test_estimator_fit_docstrings_are_consistent():
             @@ -91 +79 @@
             -self : LGBMClassifier
             +self : lightgbm.DaskLGBMClassifier
-            @@ -92,0 +81 @@
-            +
-            @@ -121,0 +111 @@
-            +
         """),
     )
     assert_docstrings_equal(
