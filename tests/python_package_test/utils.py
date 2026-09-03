@@ -11,7 +11,6 @@ import cloudpickle
 import joblib
 import numpy as np
 import sklearn.datasets
-from numpydoc.docscrape import NumpyDocString
 from sklearn.utils import check_random_state
 
 import lightgbm as lgb
@@ -291,22 +290,23 @@ def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset) ->
 
 def assert_docstrings_equal(
     class1: type,
+    method1: str,
     class2: type,
-    method: str,
+    method2: str,
     *,
     expected_diff: str = "",
 ) -> None:
 
     # this will fail (intentionally) if either class doesn't have the method
-    doc1_docstring = getattr(class1, method).__doc__
-    doc2_docstring = getattr(class2, method).__doc__
+    doc1_docstring = getattr(class1, method1).__doc__
+    doc2_docstring = getattr(class2, method2).__doc__
 
     # if they do, compare them
     diff = difflib.unified_diff(
-        str(NumpyDocString(doc1_docstring)).splitlines(keepends=True),
-        str(NumpyDocString(doc2_docstring)).splitlines(keepends=True),
-        fromfile=f"{class1.__name__}.{method}",
-        tofile=f"{class2.__name__}.{method}",
+        doc1_docstring.splitlines(keepends=True),
+        doc2_docstring.splitlines(keepends=True),
+        fromfile=f"{class1.__name__}.{method1}",
+        tofile=f"{class2.__name__}.{method2}",
         n=0,
     )
     stringified_diff = "".join(line for line in diff)

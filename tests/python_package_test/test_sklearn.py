@@ -253,20 +253,16 @@ def test_xendcg():
     ],
 )
 def test_estimator_docstrings_that_should_be_identical(method):
-    assert_docstrings_equal(lgb.LGBMModel, lgb.LGBMClassifier, method)
-    assert_docstrings_equal(lgb.LGBMClassifier, lgb.LGBMRanker, method)
-    assert_docstrings_equal(lgb.LGBMRanker, lgb.LGBMRegressor, method)
+    assert_docstrings_equal(lgb.LGBMModel, method, lgb.LGBMClassifier, method)
+    assert_docstrings_equal(lgb.LGBMClassifier, method, lgb.LGBMRanker, method)
+    assert_docstrings_equal(lgb.LGBMRanker, method, lgb.LGBMRegressor, method)
 
 
-def test_estimator_docstrings_are_consistent():
-    # __init__()
-    assert_docstrings_equal(lgb.LGBMModel, lgb.LGBMClassifier, "__init__")
-    assert_docstrings_equal(lgb.LGBMClassifier, lgb.LGBMRanker, "__init__")
-    assert_docstrings_equal(lgb.LGBMRanker, lgb.LGBMRegressor, "__init__")
-
+def test_estimator_fit_docstrings_are_consistent():
     # fit()
     assert_docstrings_equal(
         lgb.LGBMModel,
+        "fit",
         lgb.LGBMClassifier,
         "fit",
         expected_diff=textwrap.dedent("""\
@@ -295,6 +291,7 @@ def test_estimator_docstrings_are_consistent():
     )
     assert_docstrings_equal(
         lgb.LGBMClassifier,
+        "fit",
         lgb.LGBMRanker,
         "fit",
         expected_diff=textwrap.dedent("""\
@@ -329,6 +326,7 @@ def test_estimator_docstrings_are_consistent():
     )
     assert_docstrings_equal(
         lgb.LGBMRanker,
+        "fit",
         lgb.LGBMRegressor,
         "fit",
         expected_diff=textwrap.dedent("""\
@@ -359,8 +357,23 @@ def test_estimator_docstrings_are_consistent():
         """),
     )
 
-    # predict() vs. predict_proba()
-
+def test_classifier_predict_and_predict_proba_docstrings_are_consistent():
+    assert_docstrings_equal(
+        lgb.LGBMClassifier,
+        "predict",
+        lgb.LGBMClassifier,
+        "predict_proba",
+        expected_diff=textwrap.dedent("""\
+            --- LGBMClassifier.predict
+            +++ LGBMClassifier.predict_proba
+            @@ -2 +2 @@
+            -    Return the predicted value for each sample.
+            +    Return the predicted probability for each class for each sample.
+            @@ -39 +39 @@
+            -    predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
+            +    predicted_probability : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
+        """),
+    )
 
 def test_eval_at_aliases():
     rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
