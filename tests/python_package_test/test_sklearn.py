@@ -268,7 +268,7 @@ def test_estimator_fit_docstrings_are_consistent():
         expected_diff=textwrap.dedent("""\
             --- LGBMModel.fit
             +++ LGBMClassifier.fit
-            @@ -38,12 +37,0 @@
+            @@ -42,13 +41,0 @@
             -group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
             -    Group/query data.
             -    Only used in the learning-to-rank task.
@@ -281,10 +281,11 @@ def test_estimator_fit_docstrings_are_consistent():
             -
             -    .. versionadded:: 4.7.0
             -        Support for ``polars`` inputs
-            @@ -63,2 +50,0 @@
+            -
+            @@ -68,2 +54,0 @@
             -eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
             -    Group data of eval data.
-            @@ -100 +86 @@
+            @@ -106 +91 @@
             -self : LGBMModel
             +self : LGBMClassifier
         """),
@@ -297,7 +298,7 @@ def test_estimator_fit_docstrings_are_consistent():
         expected_diff=textwrap.dedent("""\
             --- LGBMClassifier.fit
             +++ LGBMRanker.fit
-            @@ -37,0 +38,12 @@
+            @@ -41,0 +42,13 @@
             +group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
             +    Group/query data.
             +    Only used in the learning-to-rank task.
@@ -310,16 +311,17 @@ def test_estimator_fit_docstrings_are_consistent():
             +
             +    .. versionadded:: 4.7.0
             +        Support for ``polars`` inputs
-            @@ -47,2 +58,0 @@
+            +
+            @@ -51,2 +63,0 @@
             -eval_class_weight : list or None, optional (default=None)
             -    Class weights of eval data.
-            @@ -50,0 +61,2 @@
+            @@ -54,0 +66,2 @@
             +eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
             +    Group data of eval data.
-            @@ -56,0 +69,2 @@
+            @@ -60,0 +74,2 @@
             +eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
             +    The evaluation positions of the specified metric.
-            @@ -86 +100 @@
+            @@ -91 +106 @@
             -self : LGBMClassifier
             +self : LGBMRanker
         """),
@@ -332,7 +334,7 @@ def test_estimator_fit_docstrings_are_consistent():
         expected_diff=textwrap.dedent("""\
             --- LGBMRanker.fit
             +++ LGBMRegressor.fit
-            @@ -38,12 +37,0 @@
+            @@ -42,13 +41,0 @@
             -group : numpy array, pandas Series, pyarrow ChunkedArray, polars Series, list of int or float, or None, optional (default=None)
             -    Group/query data.
             -    Only used in the learning-to-rank task.
@@ -345,17 +347,19 @@ def test_estimator_fit_docstrings_are_consistent():
             -
             -    .. versionadded:: 4.7.0
             -        Support for ``polars`` inputs
-            @@ -61,2 +48,0 @@
+            -
+            @@ -66,2 +52,0 @@
             -eval_group : list of array (same types as ``group`` supports), or None, optional (default=None)
             -    Group data of eval data.
-            @@ -69,2 +54,0 @@
+            @@ -74,2 +58,0 @@
             -eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
             -    The evaluation positions of the specified metric.
-            @@ -100 +84 @@
+            @@ -106 +89 @@
             -self : LGBMRanker
             +self : LGBMRegressor
         """),
     )
+
 
 def test_classifier_predict_and_predict_proba_docstrings_are_consistent():
     assert_docstrings_equal(
@@ -367,13 +371,14 @@ def test_classifier_predict_and_predict_proba_docstrings_are_consistent():
             --- LGBMClassifier.predict
             +++ LGBMClassifier.predict_proba
             @@ -2 +2 @@
-            -    Return the predicted value for each sample.
-            +    Return the predicted probability for each class for each sample.
+            -Return the predicted value for each sample.
+            +Return the predicted probability for each class for each sample.
             @@ -39 +39 @@
-            -    predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
-            +    predicted_probability : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
+            -predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
+            +predicted_probability : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
         """),
     )
+
 
 def test_eval_at_aliases():
     rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
