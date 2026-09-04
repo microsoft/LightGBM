@@ -293,6 +293,7 @@ jobs:
           - clang21
           - clang22
           - gcc16
+          - nosuggests
           - rchk
           - ubuntu-clang
           - ubuntu-gcc12
@@ -345,8 +346,13 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript ./.ci/install-r-deps.R --build --test --exclude=testthat
-          sh build-cran-package.sh
+          if [[ "${{ matrix.image }}" == "nosuggests" ]]; then
+            Rscript ./.ci/install-r-deps.R
+            sh build-cran-package.sh --no-build-vignettes
+          else
+            Rscript ./.ci/install-r-deps.R --build --test --exclude=testthat
+            sh build-cran-package.sh
+          fi
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at
           # https://r-hub.github.io/containers/local.html
@@ -378,6 +384,13 @@ jobs:
             repos = 'https://cran.rstudio.com',
             Ncpus = parallel::detectCores())
           "
+
+          if [[ "${{ matrix.image }}" == "nosuggests" ]]; then
+            Rscript -e "
+              suggests <- trimws(strsplit(read.dcf('lightgbm_r/DESCRIPTION')[, 'Suggests'], ',')[[1]])
+              stopifnot(identical(intersect(suggests, rownames(installed.packages())), 'testthat'))
+            "
+          fi
 
           if [[ "${{ matrix.image }}" =~ "clang" ]]; then
             # allowing the following NOTEs (produced by default in the clang images):
