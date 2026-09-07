@@ -102,6 +102,7 @@ autodoc_mock_imports = [
     "dask.distributed",
     "graphviz",
     "matplotlib",
+    "narwhals",
     "numpy",
     "pandas",
     "scipy",

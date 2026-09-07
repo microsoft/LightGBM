@@ -3,10 +3,10 @@ name: C++
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -48,7 +48,7 @@ jobs:
             method: with-sanitizers
             container: 'ubuntu:22.04'
             os-display-name: 'ubuntu22.04'
-          - os: macos-15-intel
+          - os: macos-14
             task: cpp-tests
             compiler: clang
             method: with-sanitizers
@@ -58,6 +58,11 @@ jobs:
             task: cpp-tests
             compiler: msvc
             container: null
+          - os: ubuntu-24.04-ppc64le
+            task: cpp-tests
+            compiler: gcc
+            container: 'ghcr.io/lightgbm-org/lightgbm-ci:ppc64le-manylinux-2_28'
+            os-display-name: 'ubuntu24.04-ppc64le'
           ###########
           # if-else #
           ###########
@@ -108,7 +113,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 5
           persist-credentials: false
@@ -127,7 +132,7 @@ jobs:
           export TASK="${{ matrix.task }}"
           if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-24.04-ppc64le" ]]; then
               export OS_NAME="linux"
           fi
           if [[ "${{ matrix.container }}" == "ubuntu:22.04" ]]; then

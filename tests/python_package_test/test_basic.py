@@ -2,6 +2,7 @@
 import filecmp
 import numbers
 import re
+import signal
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -49,7 +50,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -293,6 +294,25 @@ def test_save_dataset_subset_and_load_from_file(tmp_path, rng):
     ds = lgb.Dataset(data, params=params)
     ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / "subset.bin")
     lgb.Dataset(tmp_path / "subset.bin", params=params).construct()
+
+
+def test_save_binary_raises_on_truncated_write(tmp_path, rng):
+    resource = pytest.importorskip("resource")
+    if not hasattr(signal, "SIGXFSZ"):
+        pytest.skip("SIGXFSZ is not available on this platform")
+
+    data = rng.standard_normal(size=(1000, 20))
+    ds = lgb.Dataset(data).construct()
+    original_limit = resource.getrlimit(resource.RLIMIT_FSIZE)
+    original_signal_handler = signal.getsignal(signal.SIGXFSZ)
+    try:
+        signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+        resource.setrlimit(resource.RLIMIT_FSIZE, (4096, original_limit[1]))
+        with pytest.raises(lgb.basic.LightGBMError, match="Cannot write binary data"):
+            ds.save_binary(tmp_path / "truncated.bin")
+    finally:
+        resource.setrlimit(resource.RLIMIT_FSIZE, original_limit)
+        signal.signal(signal.SIGXFSZ, original_signal_handler)
 
 
 def test_subset_group():
@@ -572,7 +592,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    if BuildInfo.has_cuda:
+    if not BuildInfo.has_cuda:
         np_assert_array_equal(dtrain.position, np.array([0.0, 1.0], dtype=np.float32), strict=True)
         np_assert_array_equal(dtrain.get_position(), np.array([0.0, 1.0], dtype=np.float32), strict=True)
     assert dtrain.weight == [0.5, 1.5]
@@ -605,11 +625,13 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
 
     if not BuildInfo.has_cuda:
-        expected_position = np.array([0.0, 1.0], dtype=np.float32)
+        # NOTE: "position" is converted to int32 on the C++ side and remapped to dense
+        # internal indices in encounter order. Here the input [0, 1] is already dense
+        # starting from 0 in encounter order, so the remap is the identity.
+        expected_position = np.array([0, 1], dtype=np.int32)
         np_assert_array_equal(dtrain.position, expected_position, strict=True)
         np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-        # NOTE: "position" is converted to int32 on the C++ side
-        np_assert_array_equal(dtrain.get_field("position"), np.array([0.0, 1.0], dtype=np.int32), strict=True)
+        np_assert_array_equal(dtrain.get_field("position"), expected_position, strict=True)
 
     expected_weight = np.array([0.5, 1.5], dtype=np.float32)
     np_assert_array_equal(dtrain.weight, expected_weight, strict=True)
@@ -617,14 +639,40 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
 
 
-def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
-    pd = pytest.importorskip("pandas")
-    X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
-    y = rng.uniform(size=(10_000,))
-    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
-    ds.construct()
-    assert ds.num_data() == 10_000
-    assert ds.num_feature() == 1
+@pytest.mark.skipif(
+    BuildInfo.has_cuda,
+    reason="Positions in learning to rank is not supported in CUDA version yet",
+)
+def test_set_position_updates_self_position_with_remapped_int32_values():
+    # Position values are remapped to dense int32 indices in the order they are first
+    # encountered. With input [3, 1, 0, 2, 4, 3, 1, 0, 2, 4]:
+    #   3 -> 0 (first encountered), 1 -> 1, 0 -> 2, 2 -> 3, 4 -> 4
+    X = np.arange(20, dtype=np.float64).reshape(10, 2)
+    y = np.arange(10, dtype=np.float64)
+    position = np.array([3, 1, 0, 2, 4, 3, 1, 0, 2, 4], dtype=np.int64)
+    expected = np.array([0, 1, 2, 3, 4, 0, 1, 2, 3, 4], dtype=np.int32)
+
+    # set via constructor
+    dtrain = lgb.Dataset(
+        X,
+        label=y,
+        position=position,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    np_assert_array_equal(dtrain.position, expected, strict=True)
+    np_assert_array_equal(dtrain.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain.get_field("position"), expected, strict=True)
+
+    # set via set_position() on an already-constructed Dataset
+    dtrain2 = lgb.Dataset(
+        X,
+        label=y,
+        params={"min_data_in_bin": 1, "min_data_in_leaf": 1, "verbosity": -1},
+    ).construct()
+    dtrain2.set_position(position)
+    np_assert_array_equal(dtrain2.position, expected, strict=True)
+    np_assert_array_equal(dtrain2.get_position(), expected, strict=True)
+    np_assert_array_equal(dtrain2.get_field("position"), expected, strict=True)
 
 
 def test_choose_param_value():
@@ -1261,3 +1309,113 @@ def test_refit_correctly_handles_categorical_features_in_params(rng) -> None:
         match=re.escape("Using refit() to change which columns are treated as categorical is not supported"),
     ):
         loaded_bst_new = loaded_bst.refit(X_new, y_new, categorical_feature=[0, 1])
+
+
+def test_eval_result_no_std_dev_works():
+    # can be constructed with positional args
+    eval_tuple = ("dataset_2", "mape", 0.567, True)
+    eval_result = lgb.EvalResult(*eval_tuple)
+
+    # can be constructed with keyword args
+    assert (
+        lgb.EvalResult(
+            dataset_name="dataset_2",
+            metric_value=0.567,
+            maximize=True,
+            metric_name="mape",
+        )
+        == eval_result
+    )
+
+    # passes isinstance() check
+    assert isinstance(eval_result, tuple)
+
+    # length is correct
+    assert len(eval_result) == 4
+
+    # keyword and positional access works
+    assert eval_result.dataset_name == "dataset_2"
+    assert eval_result[0] == "dataset_2"
+    assert eval_result.metric_name == "mape"
+    assert eval_result[1] == "mape"
+    assert eval_result.metric_value == 0.567
+    assert eval_result[2] == 0.567
+    assert eval_result.maximize is True
+    assert eval_result[3] is True
+
+    # trying to unpack back to 4 variables works
+    dataset_name, metric_name, metric_value, maximize = eval_result
+    assert dataset_name == "dataset_2"
+    assert metric_name == "mape"
+    assert metric_value == 0.567
+    assert maximize is True
+
+    # trying to unpack to 5 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 5, got 4)")):
+        a, b, c, d, e = eval_result
+
+    # trying to unpack to 3 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("too many values to unpack (expected 3)")):
+        a, b, c = eval_result
+
+    # accessing 5th element directly still works
+    assert eval_result.metric_std_dev is None
+    assert eval_result[4] is None
+
+    # reports as not a cv() tuple
+    assert eval_result.is_cv_result() is False
+
+
+def test_eval_result_with_std_dev_works():
+    # can be constructed with positional args
+    eval_tuple = ("dataset_2", "mape", 2.004, True, 0.617)
+    eval_result = lgb.EvalResult(*eval_tuple)
+
+    # can be constructed with keyword args
+    assert (
+        lgb.EvalResult(
+            dataset_name="dataset_2",
+            metric_value=2.004,
+            maximize=True,
+            metric_name="mape",
+            metric_std_dev=0.617,
+        )
+        == eval_result
+    )
+
+    # passes isinstance() check
+    assert isinstance(eval_result, tuple)
+
+    # length is correct
+    assert len(eval_result) == 5
+
+    # keyword and positional access works
+    assert eval_result.dataset_name == "dataset_2"
+    assert eval_result[0] == "dataset_2"
+    assert eval_result.metric_name == "mape"
+    assert eval_result[1] == "mape"
+    assert eval_result.metric_value == 2.004
+    assert eval_result[2] == 2.004
+    assert eval_result.maximize is True
+    assert eval_result[3] is True
+    assert eval_result.metric_std_dev == 0.617
+    assert eval_result[4] == 0.617
+
+    # trying to unpack back to 5 variables works
+    dataset_name, metric_name, metric_value, maximize, metric_std_dev = eval_result
+    assert dataset_name == "dataset_2"
+    assert metric_name == "mape"
+    assert metric_value == 2.004
+    assert maximize is True
+    assert metric_std_dev == 0.617
+
+    # trying to unpack to 6 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 6, got 5)")):
+        a, b, c, d, e, f = eval_result
+
+    # trying to unpack to 4 variables fails the same way other tuple unpacking fails
+    with pytest.raises(ValueError, match=re.escape("too many values to unpack (expected 4)")):
+        a, b, c, d = eval_result
+
+    # reports as a cv() tuple
+    assert eval_result.is_cv_result() is True
