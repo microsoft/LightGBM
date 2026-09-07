@@ -222,28 +222,28 @@ create_isolated_source_dir() {
     # small and avoid redistributing code with licenses incompatible with
     # LightGBM's license
 
-    ######################
-    # fast_double_parser #
-    ######################
-    mkdir -p ./lightgbm-python/external_libs/fast_double_parser
+    ##############
+    # fast_float #
+    ##############
+    mkdir -p ./lightgbm-python/external_libs/fast_float
     cp \
-        external_libs/fast_double_parser/CMakeLists.txt \
-        ./lightgbm-python/external_libs/fast_double_parser/CMakeLists.txt
+        external_libs/fast_float/CMakeLists.txt \
+        ./lightgbm-python/external_libs/fast_float/CMakeLists.txt
     cp \
-        external_libs/fast_double_parser/LICENSE* \
-        ./lightgbm-python/external_libs/fast_double_parser/
+        external_libs/fast_float/LICENSE* \
+        ./lightgbm-python/external_libs/fast_float/
 
-    mkdir -p ./lightgbm-python/external_libs/fast_double_parser/include/
+    mkdir -p ./lightgbm-python/external_libs/fast_float/include/fast_float
     cp \
-        external_libs/fast_double_parser/include/fast_double_parser.h \
-        ./lightgbm-python/external_libs/fast_double_parser/include/
+        external_libs/fast_float/include/fast_float/*.h \
+        ./lightgbm-python/external_libs/fast_float/include/fast_float/
 
     #######
     # fmt #
     #######
     mkdir -p ./lightgbm-python/external_libs/fmt
     cp \
-        external_libs/fast_double_parser/CMakeLists.txt \
+        external_libs/fmt/CMakeLists.txt \
         ./lightgbm-python/external_libs/fmt/CMakeLists.txt
     cp \
         external_libs/fmt/LICENSE* \
