@@ -968,16 +968,22 @@ def test_early_stopping_ignores_training_set(use_valid):
         assert bst.best_iteration == 0
 
 
-@pytest.mark.parametrize("disabling_run", ["dart", "train_set_only"])
-def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disabling_run):
+@pytest.mark.parametrize("disabling_reason", ["dart", "train_set_only"])
+def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disabling_reason):
     X, y = make_synthetic_regression()
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
-    params = {"objective": "regression", "verbose": -1, "num_leaves": 2, "metric": "None"}
+    params = {
+        "metric": "None",
+        "min_data": 1,
+        "num_leaves": 2,
+        "objective": "regression",
+        "verbose": -1,
+    }
     num_boost_round = 5
     callback = lgb.early_stopping(1, verbose=False)
     train_ds = lgb.Dataset(X_train, y_train)
 
-    if disabling_run == "dart":
+    if disabling_reason == "dart":
         disabling_params = {**params, "boosting": "dart"}
         disabling_valid_sets = [lgb.Dataset(X_valid, y_valid)]
         warning_match = "Early stopping is not available in dart mode"
@@ -987,7 +993,7 @@ def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disablin
         warning_match = "Only training set found, disabling early stopping."
 
     with pytest.warns(UserWarning, match=warning_match):
-        lgb.train(
+        bst0 = lgb.train(
             disabling_params,
             train_ds,
             num_boost_round=num_boost_round,
@@ -995,10 +1001,14 @@ def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disablin
             feval=constant_metric,
             callbacks=[callback],
         )
-    assert callback.enabled is False
 
-    # the same callback object must still early stop on a later run that does have a validation set
-    bst = lgb.train(
+    # early stopping should not have been triggered
+    assert callback.enabled is False
+    assert bst0.best_iteration == 0
+    assert bst0.current_iteration() == num_boost_round
+
+    # re-using the same callback object in a later training call, early stopping is successfully enabled
+    bst1 = lgb.train(
         params,
         lgb.Dataset(X_train, y_train),
         num_boost_round=num_boost_round,
@@ -1007,8 +1017,8 @@ def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disablin
         callbacks=[callback],
     )
     assert callback.enabled is True
-    assert bst.best_iteration == 1
-    assert bst.current_iteration() < num_boost_round
+    assert bst1.best_iteration == 1
+    assert bst1.current_iteration() == 1
 
 
 @pytest.mark.parametrize("first_metric_only", [True, False])
