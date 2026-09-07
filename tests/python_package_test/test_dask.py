@@ -5,7 +5,6 @@ import inspect
 import re
 import socket
 from itertools import groupby
-from os import getenv
 from sys import platform
 from urllib.parse import urlparse
 
@@ -14,12 +13,16 @@ from sklearn.metrics import accuracy_score, r2_score
 
 import lightgbm as lgb
 
-from .utils import np_assert_array_equal, sklearn_multiclass_custom_objective
+from .utils import (
+    BuildInfo,
+    np_assert_array_equal,
+    sklearn_multiclass_custom_objective,
+)
 
 if platform in {"cygwin", "win32"}:
     pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
-if not lgb.compat.DASK_INSTALLED:
-    pytest.skip("Dask is not installed", allow_module_level=True)
+
+dask = pytest.importorskip("dask")
 
 import dask.array as da
 import dask.dataframe as dd
@@ -53,9 +56,9 @@ task_to_local_factory = {
 }
 
 pytestmark = [
-    pytest.mark.skipif(getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface"),
-    pytest.mark.skipif(getenv("TASK", "") == "gpu", reason="Fails to run with GPU interface"),
-    pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(BuildInfo.has_cuda, reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(BuildInfo.has_gpu, reason="Fails to run with GPU interface"),
+    pytest.mark.skipif(BuildInfo.has_mpi, reason="Fails to run with MPI interface"),
 ]
 
 
@@ -226,8 +229,8 @@ def _accuracy_score(dy_true, dy_pred):
 def _constant_metric(y_true, y_pred):
     metric_name = "constant_metric"
     value = 0.708
-    is_higher_better = False
-    return metric_name, value, is_higher_better
+    maximize = False
+    return metric_name, value, maximize
 
 
 def _objective_least_squares(y_true, y_pred):
@@ -283,7 +286,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
         s2 = local_classifier.score(X, y)
 
         if boosting_type == "rf":
-            # https://github.com/microsoft/LightGBM/issues/4118
+            # https://github.com/lightgbm-org/LightGBM/issues/4118
             assert_eq(s1, s2, atol=0.01)
             assert_eq(p1_proba, p2_proba, atol=0.8)
         else:
@@ -672,7 +675,7 @@ def test_regressor_custom_objective(output, cluster):
     platform.lower().startswith("darwin"),
     reason=(
         "learning-to-rank Dask tests are unreliable on macOS. "
-        "See https://github.com/microsoft/LightGBM/issues/4074#issuecomment-3124996317"
+        "See https://github.com/lightgbm-org/LightGBM/issues/4074#issuecomment-3124996317"
     ),
 )
 @pytest.mark.parametrize("output", ["array", "dataframe", "dataframe-with-categorical"])
@@ -698,7 +701,7 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             client.rebalance()
 
         # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
-        # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
+        # serial learner. See https://github.com/lightgbm-org/LightGBM/issues/3292#issuecomment-671288210.
         params = {
             "boosting_type": boosting_type,
             "random_state": 42,
@@ -1353,7 +1356,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
 
 @pytest.mark.parametrize("task", tasks)
 def test_machines_should_be_used_if_provided(task, cluster):
-    pytest.skip("skipping due to timeout issues discussed in https://github.com/microsoft/LightGBM/issues/5390")
+    pytest.skip("skipping due to timeout issues discussed in https://github.com/lightgbm-org/LightGBM/issues/5390")
     with Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(objective=task, output="array", chunk_size=10, group=None)
 
@@ -1517,34 +1520,27 @@ def test_init_score(task, output, cluster, rng):
             assert_eq(pred, pred_init_score)
 
 
-def sklearn_checks_to_run():
-    check_names = ["check_estimator_get_tags_default_keys", "check_get_params_invariance", "check_set_params"]
-    for check_name in check_names:
-        check_func = getattr(sklearn_checks, check_name, None)
-        if check_func:
-            yield check_func
-
-
-def _tested_estimators():
-    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
-        yield Estimator()
-
-
-@pytest.mark.parametrize("estimator", _tested_estimators())
-@pytest.mark.parametrize("check", sklearn_checks_to_run())
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        lgb.DaskLGBMClassifier(),
+        lgb.DaskLGBMRanker(),
+        lgb.DaskLGBMRegressor(),
+    ],
+)
+@pytest.mark.parametrize(
+    "check",
+    [
+        sklearn_checks.check_get_params_invariance,
+        sklearn_checks.check_parameters_default_constructible,
+        sklearn_checks.check_set_params,
+    ],
+)
 def test_sklearn_integration(estimator, check, cluster):
     with Client(cluster):
         estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
-
-
-# this test is separate because it takes a not-yet-constructed estimator
-@pytest.mark.parametrize("estimator", list(_tested_estimators()))
-def test_parameters_default_constructible(estimator):
-    name = estimator.__class__.__name__
-    Estimator = estimator
-    sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
 @pytest.mark.parametrize("task", tasks)
