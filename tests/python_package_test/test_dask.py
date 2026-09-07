@@ -1719,10 +1719,10 @@ def test_estimator_constructor_docstrings_are_consistent():
             --- LGBMClassifier.__init__
             +++ DaskLGBMClassifier.__init__
             @@ -78,0 +79,4 @@
-            +        client : distributed.Client or None, optional (default=None)
-            +            Dask client.
-            +            If ``None``, ``distributed.default_client()`` will be used at runtime.
-            +            The Dask client used by this class will not be saved if the model object is pickled.
+            +client : distributed.Client or None, optional (default=None)
+            +    Dask client.
+            +    If ``None``, ``distributed.default_client()`` will be used at runtime.
+            +    The Dask client used by this class will not be saved if the model object is pickled.
         """),
     )
     assert_docstrings_equal(lgb.DaskLGBMClassifier, "__init__", lgb.DaskLGBMRanker, "__init__")

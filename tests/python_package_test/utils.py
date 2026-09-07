@@ -3,9 +3,8 @@ import difflib
 import filecmp
 import os
 import pickle
-import textwrap
 from functools import lru_cache
-from inspect import getfullargspec
+from inspect import cleandoc, getfullargspec
 from pathlib import Path
 
 import cloudpickle
@@ -299,8 +298,8 @@ def assert_docstrings_equal(
 ) -> None:
 
     # this will fail (intentionally) if either class doesn't have the method
-    doc1_docstring = textwrap.dedent(getattr(class1, method1).__doc__)
-    doc2_docstring = textwrap.dedent(getattr(class2, method2).__doc__)
+    doc1_docstring = cleandoc(getattr(class1, method1).__doc__)
+    doc2_docstring = cleandoc(getattr(class2, method2).__doc__)
 
     # if they do, compare them
     diff = difflib.unified_diff(
