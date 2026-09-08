@@ -518,8 +518,8 @@ def _train(
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Returns fitted underlying model.
 
-    Notes
-    -----
+    Note
+    ----
     This method handles setting up the following network parameters based on information
     about the Dask cluster referenced by ``client``.
 
@@ -1288,8 +1288,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -1445,8 +1445,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         self : lightgbm.DaskLGBMClassifier
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
@@ -1760,8 +1760,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -1914,8 +1914,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         self : lightgbm.DaskLGBMRegressor
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
@@ -2158,8 +2158,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -2332,8 +2332,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         self : lightgbm.DaskLGBMRanker
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``

@@ -165,8 +165,8 @@ def train(
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
-    Notes
-    -----
+    Note
+    ----
     A custom objective function can be provided for the ``objective`` parameter.
     It should accept two parameters: preds, train_data and return (grad, hess).
 
@@ -709,8 +709,8 @@ def cv(
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
 
-    Notes
-    -----
+    Note
+    ----
     A custom objective function can be provided for the ``objective`` parameter.
     It should accept two parameters: preds, train_data and return (grad, hess).
 

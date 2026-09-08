@@ -495,8 +495,8 @@ class LGBMModel(_LGBMModelBase):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -952,8 +952,8 @@ class LGBMModel(_LGBMModelBase):
         self : LGBMModel
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
@@ -1527,8 +1527,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -1705,8 +1705,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         self : LGBMRegressor
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
@@ -1869,8 +1869,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -2054,8 +2054,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         self : LGBMClassifier
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
@@ -2493,8 +2493,8 @@ class LGBMRanker(LGBMModel):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Notes
-        -----
+        Note
+        ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
         ``objective(y_true, y_pred) -> grad, hess``,
@@ -2678,8 +2678,8 @@ class LGBMRanker(LGBMModel):
         self : LGBMRanker
             Returns self.
 
-        Notes
-        -----
+        Note
+        ----
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
