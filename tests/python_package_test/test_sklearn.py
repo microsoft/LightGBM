@@ -3,6 +3,7 @@ import inspect
 import itertools
 import math
 import re
+import sys
 import warnings
 from functools import partial
 from pathlib import Path
@@ -25,7 +26,6 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
-    DASK_INSTALLED,
     PANDAS_INSTALLED,
     _sklearn_version,
     pd_DataFrame,
@@ -589,7 +589,12 @@ def test_subclassing_get_params_works():
             "learning_rate": 0.1,
         }
 
-    if DASK_INSTALLED:
+    try:
+        import dask  # noqa: F401,PLC0415
+    except lgb.dask._DaskImportErrorTypes:
+        pass
+
+    if "dask" in sys.modules:
         for est in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRanker, lgb.DaskLGBMRegressor]:
             assert est().get_params() == {
                 **expected_params,
@@ -1855,12 +1860,28 @@ def test_feature_names_in_and_predict_warning(
 # can be compatible with scikit-learn <1.6 and >=1.6.
 #
 # This should be removed once minimum supported scikit-learn version is at least 1.6.
-if SKLEARN_VERSION_GTE_1_6:
-    parametrize_with_checks = sklearn_parametrize_with_checks
-else:
+def parametrize_with_checks(estimator, *args, **kwargs):
+    if SKLEARN_VERSION_GTE_1_6:
+        mark_decorator = sklearn_parametrize_with_checks(estimator, *args, **kwargs)
+    else:
+        mark_decorator = sklearn_parametrize_with_checks(estimator)
 
-    def parametrize_with_checks(estimator, *args, **kwargs):
-        return sklearn_parametrize_with_checks(estimator)
+    # Some time around pytest 9.1, 'pytest' started raising a deprecation warning
+    # when 'pytest.parametrize()` inputs used generators.
+    #
+    # see: https://github.com/scikit-learn/scikit-learn/issues/34738
+    #
+    # scikit-learn's `sklearn.utils.estimator_checks.parametrize_with_checks()`
+    # returns a generator of checks.
+    #
+    # This make's LightGBM's use of `sklearn.utils.estimator_checks.parametrize_with_checks()`
+    # compatible with newer and older versions of 'pytest', so tests won't be broken
+    # when pytest '10.x' starts raising an exception for those inputs.
+    #
+    # This workaround can be removed if LightGBM drops its use of parametrize_with_checks()
+    # or its minimum scikit-learn version contains https://github.com/scikit-learn/scikit-learn/pull/34448
+    argnames, argvalues = mark_decorator.args
+    return pytest.mark.parametrize(argnames, list(argvalues), **mark_decorator.kwargs)
 
 
 def _get_expected_failed_tests(estimator):

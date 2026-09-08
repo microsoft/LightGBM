@@ -332,18 +332,53 @@ _lgbmmodel_doc_fit = """
     ----------
     X : {X_shape}
         Input feature matrix.
+
+        .. versionadded:: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded:: 4.7.0
+            Support for ``polars`` inputs
+
     y : {y_shape}
         The target values (class labels in classification, real numbers in regression).
+
+        .. versionadded:: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded:: 4.7.0
+            Support for ``polars`` inputs
+
     sample_weight : {sample_weight_shape}
         Weights of training data. Weights should be non-negative.
+
+        .. versionadded:: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded:: 4.7.0
+            Support for ``polars`` inputs
+
     init_score : {init_score_shape}
         Init score of training data.
+
+        .. versionadded:: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded:: 4.7.0
+            Support for ``polars`` inputs
+
     group : {group_shape}
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+
+        .. versionadded:: 4.2.0
+            Support for ``pyarrow`` inputs
+
+        .. versionadded:: 4.7.0
+            Support for ``polars`` inputs
+
     eval_set : list or None, optional (default=None)
         .. deprecated:: 4.7.0
             A list of (X, y) tuple pairs to use as validation sets.
@@ -385,8 +420,13 @@ _lgbmmodel_doc_fit = """
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
     eval_X : {X_shape}, or tuple of such inputs, or None, optional (default=None)
         Feature matrix or tuple thereof, e.g. ``(X_val0, X_val1)``, to use as validation sets.
+
+        .. versionadded:: 4.7.0
+
     eval_y : {y_shape}, or tuple of such inputs, or None, optional (default=None)
         Target values or tuple thereof, e.g. ``(y_val0, y_val1)``, to use as validation sets.
+
+        .. versionadded:: 4.7.0
 
     Returns
     -------
@@ -1776,6 +1816,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any,
     ) -> _LGBM_PredictReturnType:
         """Return the raw margin score for each sample.
+
+        .. versionadded:: 4.7.0
 
         Parameters
         ----------

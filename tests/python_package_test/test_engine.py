@@ -157,6 +157,47 @@ def test_regression(objective):
     assert evals_result["valid_0"]["l2"][-1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(
+    BuildInfo.has_cuda, reason="CUDA version has a different implementation of WeightedPercentileFun, not tested here"
+)
+@pytest.mark.parametrize("objective", ["regression_l1", "quantile", "mape"])
+def test_weighted_percentile_inside_label_range(objective):
+    # Regression test for https://github.com/lightgbm-org/LightGBM/issues/7151
+    # WeightedPercentileFun used the wrong
+    # CDF segment for linear interpolation and could return values outside
+    # [min(y), max(y)]. The pre-fix implementation produced a "weighted
+    # median" of 1.0 for y=[2,3,4,5], w=[4,3,2,1], far below min(y)=2.
+    #
+    # The correct weighted median for that example is 2 + 1/3 = 2.333..., and
+    # any weighted percentile with non-negative weights must lie in the label
+    # range. We train a model that cannot learn any structure from X (a single
+    # constant feature) so BoostFromScore dominates the prediction.
+    X = np.zeros((4, 1))
+    y = np.array([2.0, 3.0, 4.0, 5.0])
+    w = np.array([4.0, 3.0, 2.0, 1.0])
+    params = {
+        "objective": objective,
+        "verbose": -1,
+        "num_leaves": 2,
+        "min_data_in_leaf": 1,
+        "min_sum_hessian_in_leaf": 0.0,
+        "learning_rate": 1.0,
+        "feature_fraction": 1.0,
+        "bagging_fraction": 1.0,
+    }
+    if objective == "quantile":
+        params["alpha"] = 0.5
+    train = lgb.Dataset(X, label=y, weight=w)
+    gbm = lgb.train(params, train, num_boost_round=1)
+    preds = gbm.predict(X)
+    assert np.all(preds >= y.min() - 1e-6), f"{objective}: prediction {preds.min()} fell below min(y)={y.min()}"
+    assert np.all(preds <= y.max() + 1e-6), f"{objective}: prediction {preds.max()} rose above max(y)={y.max()}"
+    # For regression_l1 the single-leaf prediction is exactly the weighted
+    # median of y; verify it matches the expected 2 + 1/3.
+    if objective == "regression_l1":
+        np.testing.assert_allclose(preds, 2.0 + 1.0 / 3.0, rtol=1e-6)
+
+
 def test_missing_value_handle():
     X_train = np.zeros((100, 1))
     y_train = np.zeros(100)
@@ -925,6 +966,59 @@ def test_early_stopping_ignores_training_set(use_valid):
             bst = train_fn()
         assert bst.current_iteration() == 2
         assert bst.best_iteration == 0
+
+
+@pytest.mark.parametrize("disabling_reason", ["dart", "train_set_only"])
+def test_early_stopping_callback_can_be_reused_after_it_disabled_itself(disabling_reason):
+    X, y = make_synthetic_regression()
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        "metric": "None",
+        "min_data": 1,
+        "num_leaves": 2,
+        "objective": "regression",
+        "verbose": -1,
+    }
+    num_boost_round = 5
+    callback = lgb.early_stopping(1, verbose=False)
+    train_ds = lgb.Dataset(X_train, y_train)
+
+    if disabling_reason == "dart":
+        disabling_params = {**params, "boosting": "dart"}
+        disabling_valid_sets = [lgb.Dataset(X_valid, y_valid)]
+        warning_match = "Early stopping is not available in dart mode"
+    else:
+        disabling_params = params
+        disabling_valid_sets = [train_ds]
+        warning_match = "Only training set found, disabling early stopping."
+
+    with pytest.warns(UserWarning, match=warning_match):
+        bst0 = lgb.train(
+            disabling_params,
+            train_ds,
+            num_boost_round=num_boost_round,
+            valid_sets=disabling_valid_sets,
+            feval=constant_metric,
+            callbacks=[callback],
+        )
+
+    # early stopping should not have been triggered
+    assert callback.enabled is False
+    assert bst0.best_iteration == 0
+    assert bst0.current_iteration() == num_boost_round
+
+    # re-using the same callback object in a later training call, early stopping is successfully enabled
+    bst1 = lgb.train(
+        params,
+        lgb.Dataset(X_train, y_train),
+        num_boost_round=num_boost_round,
+        valid_sets=[lgb.Dataset(X_valid, y_valid)],
+        feval=constant_metric,
+        callbacks=[callback],
+    )
+    assert callback.enabled is True
+    assert bst1.best_iteration == 1
+    assert bst1.current_iteration() == 1
 
 
 @pytest.mark.parametrize("first_metric_only", [True, False])
@@ -2468,7 +2562,11 @@ def test_mape_for_specific_boosting_types(boosting_type):
     pred_mean = pred.mean()
     # the following checks that dart and rf with mape can predict outside the 0-1 range
     # https://github.com/lightgbm-org/LightGBM/issues/1579
-    assert pred_mean > 8
+    # Threshold is intentionally loose (>5) because fixing the
+    # WeightedPercentileFun segment bug (#7151) shifted the output of MAPE
+    # training. The intent of this assertion is to guard against predictions
+    # being stuck inside [0, 1]; a mean around 6-8 satisfies that.
+    assert pred_mean > 5
 
 
 def check_constant_features(y_true, expected_pred, more_params):
@@ -4805,6 +4903,45 @@ def test_train_raises_informative_error_for_params_of_wrong_type():
     dtrain = lgb.Dataset(X, label=y)
     with pytest.raises(lgb.basic.LightGBMError, match='Parameter num_leaves should be of type int, got "too-many"'):
         lgb.train(params, dtrain)
+
+
+def test_train_raises_informative_error_for_unknown_metric():
+    X, y = load_breast_cancer(return_X_y=True)
+    dtrain = lgb.Dataset(X, label=y)
+    params = {"objective": "binary", "metric": "nonsense", "verbose": -1}
+    with pytest.raises(lgb.basic.LightGBMError, match="Unknown metric 'nonsense'"):
+        lgb.train(params, dtrain, num_boost_round=1, valid_sets=[dtrain])
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "custom",
+        "na",
+        "none",
+        "null",
+        ["none", "null"],
+        ["None"],
+        ["NULL"],
+    ],
+)
+def test_train_sentinel_metric_disables_builtin_metrics(metric):
+    X, y = load_breast_cancer(return_X_y=True)
+    dtrain = lgb.Dataset(X, label=y)
+    evals_result = {}
+    params = {"objective": "binary", "metric": metric, "verbose": -1}
+    lgb.train(params, dtrain, num_boost_round=1, valid_sets=[dtrain], callbacks=[lgb.record_evaluation(evals_result)])
+    assert evals_result == {}
+
+
+def test_train_with_metric_python_none_uses_default_metric():
+    X, y = load_breast_cancer(return_X_y=True)
+    dtrain = lgb.Dataset(X, label=y)
+    dvalid = lgb.Dataset(X, label=y, reference=dtrain)
+    evals_result = {}
+    params = {"objective": "binary", "metric": None, "verbose": -1}
+    lgb.train(params, dtrain, num_boost_round=1, valid_sets=[dvalid], callbacks=[lgb.record_evaluation(evals_result)])
+    assert "binary_logloss" in evals_result["valid_0"]
 
 
 def test_quantized_training():
